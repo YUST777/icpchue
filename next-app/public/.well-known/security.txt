@@ -1,0 +1,5 @@
+Contact: mailto:security@icpchue.com
+Preferred-Languages: en, ar
+Canonical: https://icpchue.com/.well-known/security.txt
+Policy: https://icpchue.com/security-policy
+Expires: 2027-01-01T00:00:00.000Z

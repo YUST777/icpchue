@@ -1,0 +1,79 @@
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.bak
+*.backup
+*.tmp
+passwords.txt
+secrets.json
+
+# Dependencies
+node_modules/
+venv/
+env/
+.venv/
+.cache
+.npm
+.eslintcache
+
+# Compiled and Build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.o
+*.out
+*.exe
+build/
+dist/
+dist-ssr
+.next/
+out/
+.vercel
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS and Editor files
+.vscode/
+.idea/
+*.swp
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Logs and Databases
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.sqlite
+*.sqlite3
+*.db
+data.db
+*.cld
+
+# Data & User Uploads
+pfps/
+next-app/pfps/
+mail-server/docker-data/
+**/docker-data/
+backups/
+reports/
+*.pdf
+scrape/
+temp_pg_install/
+
+# Application Specific
+judge0/judge0.conf
+Mirror/
+
+# Allow essential examples
+!*.env.example
+!*.env.docker.example
+!.vscode/extensions.json

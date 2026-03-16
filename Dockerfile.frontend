@@ -1,0 +1,53 @@
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Disable telemetry
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy package files
+COPY next-app/package.json next-app/bun.lock* ./
+
+# Install dependencies
+RUN npm install -g bun && bun install
+
+# Copy source files and env
+COPY next-app/ ./
+COPY next-app/.env.production .env.production
+
+# Build Next.js application
+ENV NODE_ENV=production
+RUN bun next build
+
+# Runner stage
+FROM oven/bun:1.2-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Assets
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Install native modules explicitly for Alpine runtime
+RUN apk add --no-cache python3 py3-pip font-noto-arabic g++ make binutils vips-dev libc6-compat && \
+    pip3 install pillow arabic-reshaper python-bidi --break-system-packages
+RUN bun install sharp pg bcryptjs
+
+# Ensure .next/cache exists and is writable
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["bun", "server.js"]

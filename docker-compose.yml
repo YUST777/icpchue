@@ -1,0 +1,290 @@
+# ICPC HUE - Unified Docker Compose
+# Run: docker compose up -d
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ===========================================
+  # NGINX REVERSE PROXY
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: icpchue-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./pfps:/var/www/pfps:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # FRONTEND (Next.js)
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: icpchue-frontend
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - NEXT_PUBLIC_SITE_URL=https://icpchue.com
+      - SMTP_SERVER=mailserver
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file:
+      - ./next-app/.env.production
+    depends_on:
+      - backend
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    volumes:
+      - ./pfps:/app/public/pfps
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      # Alpine uses wget by default, curl might not be present or minimal
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================
+  # BACKEND (Express)
+  # ===========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: icpchue-backend
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - PORT=3001
+      - SMTP_SERVER=mailserver
+    env_file:
+      - ./express-backend/.env
+    volumes:
+      - ./pfps:/app/pfps
+    depends_on:
+      - redis
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 768M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3001/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # REDIS
+  # ===========================================
+  redis:
+    image: redis:7.2-alpine
+    container_name: icpchue-redis
+    command: ["redis-server", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================
+  # MAIL SERVER
+  # ===========================================
+  mailserver:
+    image: mailserver/docker-mailserver:latest
+    container_name: icpchue-mailserver
+    hostname: mail
+    domainname: icpchue.com
+    ports:
+      - "25:25"
+      - "110:110"
+      - "143:143"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+      - "995:995"
+    volumes:
+      - ./infrastructure/mail-server/docker-data/dms/mail-data/:/var/mail/
+      - ./infrastructure/mail-server/docker-data/dms/mail-state/:/var/mail-state/
+      - ./infrastructure/mail-server/docker-data/dms/mail-logs/:/var/log/mail/
+      - ./infrastructure/mail-server/docker-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    environment:
+      - ENABLE_POP3=1
+      - ENABLE_SPAMASSASSIN=1
+      - ENABLE_CLAMAV=1
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_POSTGREY=0
+      - ONE_DIR=1
+      - DMS_DEBUG=0
+      - ENABLE_OPENDKIM=1
+      - PERMIT_DOCKER=connected-networks
+      - SSL_TYPE=letsencrypt
+      - SSL_DOMAIN=icpchue.com
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    healthcheck:
+      test: "ss --listening --tcp | grep -P 'LISTEN.+:smtp' || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================
+  # NETDATA (Monitoring)
+  # ===========================================
+  netdata:
+    image: netdata/netdata:stable
+    container_name: icpchue-netdata
+    pid: host
+    network_mode: host
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /:/host/root:ro,rslave
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/log:/host/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/dbus:/run/dbus:ro
+    environment:
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN}
+      - NETDATA_CLAIM_URL=${NETDATA_CLAIM_URL:-https://app.netdata.cloud}
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS}
+    logging: *default-logging
+
+  # ===========================================
+  # JUDGE0 (Code Execution)
+  # ===========================================
+  judge0-server:
+    image: judge0/judge0:latest
+    container_name: judge0-server
+    volumes:
+      - ./infrastructure/judge0/judge0.conf:/judge0.conf:ro
+    ports:
+      - "127.0.0.1:2358:2358"
+    privileged: true
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: judge0-worker
+    command: ["./scripts/workers"]
+    volumes:
+      - ./infrastructure/judge0/judge0.conf:/judge0.conf:ro
+    privileged: true
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    depends_on:
+      - judge0-db
+      - judge0-redis
+
+  judge0-db:
+    image: postgres:16.2-alpine
+    container_name: judge0-db
+    environment:
+      - POSTGRES_PASSWORD=${JUDGE0_POSTGRES_PASSWORD:-judge0secret}
+      - POSTGRES_USER=judge0
+      - POSTGRES_DB=judge0
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data/
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+
+  judge0-redis:
+    image: redis:7.2-alpine
+    container_name: judge0-redis
+    command: ["redis-server", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+
+# ===========================================
+# NETWORKS
+# ===========================================
+networks:
+  icpchue-network:
+    driver: bridge
+
+# ===========================================
+# VOLUMES
+# ===========================================
+volumes:
+  redis-data:
+  netdataconfig:
+  netdatalib:
+  netdatacache:
+  judge0-db-data:

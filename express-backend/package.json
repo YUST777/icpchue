@@ -1,0 +1,26 @@
+{
+  "name": "icpchue-server",
+  "version": "1.5.0",
+  "description": "Backend server for ICPC HUE application form",
+  "type": "module",
+  "license": "AGPL-3.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "PORT=3001 bun index.js",
+    "dev": "NODE_ENV=development PORT=3001 bun index.js"
+  },
+  "dependencies": {
+    "axios": "latest",
+    "bullmq": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "helmet": "latest",
+    "ioredis": "latest",
+    "nodemailer": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "knip": "^5.85.0"
+  }
+}
