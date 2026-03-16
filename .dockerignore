@@ -1,0 +1,32 @@
+# Exclude common large directories
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.production
+!.env.local
+
+# Build artifacts
+dist
+build
+.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lock*
+
+# Data directories (huge)
+mail-server/docker-data
+judge0
+pfps
+backups
+temp_pg_install
+
+# OS specific
+.DS_Store
+Thumbs.db

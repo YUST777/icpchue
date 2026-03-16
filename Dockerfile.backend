@@ -1,0 +1,35 @@
+# Backend Dockerfile for Express server
+FROM oven/bun:1.2
+WORKDIR /app
+
+# Install dependencies for sharp (libvips)
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    python3 \
+    python3-pip \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip3 install pillow --break-system-packages
+
+# Copy package files
+COPY express-backend/package.json express-backend/package-lock.json* ./
+
+# Install dependencies
+RUN bun install
+
+# Copy server source code
+COPY express-backend ./
+
+# Create directory for profile pictures
+RUN mkdir -p /app/pfps && chmod 755 /app/pfps
+
+# Set environment
+ENV NODE_ENV=production
+ENV PORT=3001
+
+EXPOSE 3001
+
+CMD ["bun", "index.js"]

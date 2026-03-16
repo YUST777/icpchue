@@ -1,0 +1,39 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# misc & OS
+.DS_Store
+*.pem
+Thumbs.db
+*.bak
+*.tmp
+
+# env files (Security: do not commit)
+.env*
+!.env.example
+!.env.docker.example
+
+# user uploads & data
+/pfps/
+/public/pfps/
+/data/
+
+# vercel
+.vercel
