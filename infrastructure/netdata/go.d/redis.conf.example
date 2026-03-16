@@ -1,0 +1,7 @@
+# Netdata Redis Monitoring Configuration (EXAMPLE)
+# Copy to redis.conf and edit with your actual values
+
+jobs:
+  - name: local
+    host: shared-redis-icpc-verdict:6379
+    password: YOUR_REDIS_PASSWORD_HERE

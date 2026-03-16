@@ -1,0 +1,19 @@
+# Judge0 Configuration Template
+# For full options, see judge0.conf
+# Ensure these match your docker-compose environment
+
+# Database
+POSTGRES_HOST=judge0-db
+POSTGRES_PORT=5432
+POSTGRES_DB=judge0
+POSTGRES_USER=judge0
+POSTGRES_PASSWORD=your_judge0_db_password
+
+# Redis
+REDIS_HOST=judge0-redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+
+# Authentication
+AUTHN_HEADER=X-Judge0-Token
+AUTHN_TOKEN=your_judge0_auth_token

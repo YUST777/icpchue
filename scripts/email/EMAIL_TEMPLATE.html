@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        /* Reset and Core Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            font-family: Helvetica, Arial, sans-serif;
+            color: #e4e6eb;
+            line-height: 1.5;
+        }
+        table {
+            border-spacing: 0;
+            width: 100%;
+        }
+        td {
+            padding: 0;
+        }
+        img {
+            border: 0;
+        }
+        /* GLASSMORPHISM BACKGROUND */
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #000000;
+            background-image: 
+                radial-gradient(circle at 0% 0%, #2a1f0a 0%, transparent 50%), 
+                radial-gradient(circle at 100% 100%, #1a1a1a 0%, transparent 50%);
+            padding-bottom: 60px;
+            padding-top: 60px;
+        }
+        /* GLASS CONTAINER */
+        .glass-card {
+            margin: 0 auto;
+            width: 100%;
+            max-width: 600px;
+            border-spacing: 0;
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: rgba(20, 20, 20, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        /* Header */
+        .header {
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .header-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-user {
+            text-align: right;
+            font-size: 14px;
+            color: #b0b3b8;
+            opacity: 0.8;
+        }
+        /* Body */
+        .body-content {
+            padding: 40px 30px;
+        }
+        .heading {
+            font-size: 26px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .text-paragraph {
+            font-size: 16px;
+            color: #e4e6eb;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        /* GLASS OTP BOX */
+        .code-container {
+            width: 100%;
+            margin: 30px 0 15px 0;
+        }
+        .code-box {
+            background-color: rgba(214, 160, 52, 0.1);
+            border: 1px solid rgba(214, 160, 52, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: #d6a034;
+            text-shadow: 0 0 20px rgba(214, 160, 52, 0.3);
+            display: block;
+            text-decoration: none;
+            cursor: text;
+            user-select: all;
+            -webkit-user-select: all;
+            -moz-user-select: all;
+            -ms-user-select: all;
+        }
+        .security-note {
+            text-align: center;
+            font-size: 13px;
+            color: #b0b3b8;
+            margin-top: 15px;
+            opacity: 0.8;
+        }
+        .expiration-note {
+            text-align: center;
+            font-size: 14px;
+            color: #e4e6eb;
+            margin-bottom: 30px;
+            opacity: 0.7;
+        }
+        /* Warning Section */
+        .warning-section {
+            background-color: rgba(255, 0, 0, 0.05);
+            border: 1px solid rgba(255, 100, 100, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .warning-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 8px;
+        }
+        .warning-text {
+            font-size: 13px;
+            color: #d1d1d1;
+            line-height: 1.5;
+        }
+        /* Footer */
+        .footer {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #8d949e;
+        }
+        .footer a {
+            color: #d6a034;
+            text-decoration: none;
+        }
+        /* Mobile Responsive */
+        @media only screen and (max-width: 600px) {
+            .glass-card {
+                width: 90% !important;
+                border-radius: 12px !important;
+            }
+            .wrapper {
+                padding: 20px 0 !important;
+            }
+            .header, .body-content, .footer {
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }
+            .code-box {
+                font-size: 22px !important;
+                letter-spacing: 4px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <table class="glass-card" align="center" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="header">
+                    <table width="100%">
+                        <tr>
+                            <td align="left">
+                                <div class="header-logo-container">
+                                    <img src="https://icpchue.com/icpchue-logo.webp" alt="ICPC HUE Logo" class="header-logo-img" style="height: 32px; width: auto; max-width: 32px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));" />
+                                </div>
+                            </td>
+                            <td class="header-user">
+                                <span style="font-family: Helvetica, Arial, sans-serif;">USER_NAME</span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="body-content">
+                    <div class="heading">One more step to sign up</div>
+                    <div class="text-paragraph">
+                        Hi USER_NAME,
+                    </div>
+                    <div class="text-paragraph">
+                        We got your request to create an account for ICPC HUE. Here's your confirmation code:
+                    </div>
+                    <table class="code-container">
+                        <tr>
+                            <td>
+                                <div class="code-box" onclick="this.select(); document.execCommand('copy');" title="Click to select">
+                                    OTP_CODE
+                                </div>
+                                <div class="security-note">Don't share this code with anyone.</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="expiration-note">This code will expire in 10 minutes.</div>
+                    <div class="warning-section">
+                        <div class="warning-title">⚠️ If someone asks for this code</div>
+                        <div class="warning-text">
+                            Don't share this code with anyone, especially if they claim to be from ICPC or Support. We will never ask for this code outside the login screen.
+                        </div>
+                    </div>
+                    <div class="text-paragraph" style="margin-top: 30px;">
+                        Thanks,<br>
+                        <strong>ICPC HUE Security Team</strong>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="footer">
+                    © 2024 ICPC HUE - Horus University Competitive Programming Team<br>
+                    New Damietta City, Damietta, Egypt
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+services:
+  mailserver:
+    image: mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mail
+    domainname: icpchue.com
+    ports:
+      - "25:25"
+      - "143:143"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./docker-data/dms/mail-data/:/var/mail/
+      - ./docker-data/dms/mail-state/:/var/mail-state/
+      - ./docker-data/dms/mail-logs/:/var/log/mail/
+      - ./docker-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - ENABLE_SPAMASSASSIN=1
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_POSTGREY=0
+      - ONE_DIR=1
+      - DMS_DEBUG=0
+      - PERMIT_DOCKER=connected-networks
+      - SSL_TYPE=base # 'base' is often used for manual/file based in some versions, or stick to 'manual' if supported. 
+      # Actually 'self-signed' expects to CA-sign it. 
+      # Let's try 'manual' which expects specific files?
+      # Getting 'SSL_TYPE=manual' behavior from docs is better.
+      # Commonly: SSL_TYPE=manual
+      # SSL_CERT_PATH=/tmp/docker-mailserver/ssl/mail.icpc-hue.com-cert.pem
+      # SSL_KEY_PATH=/tmp/docker-mailserver/ssl/mail.icpc-hue.com-key.pem
+      - SSL_TYPE=manual
+      - SSL_CERT_PATH=/tmp/docker-mailserver/ssl/mail.icpchue.com-cert.pem
+      - SSL_KEY_PATH=/tmp/docker-mailserver/ssl/mail.icpchue.com-key.pem
+    cap_add:
+      - NET_ADMIN
+    restart: always
