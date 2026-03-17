@@ -27,7 +27,8 @@ export const judge0 = {
                 source_code: sourceCode,
                 language_id: languageId,
                 stdin,
-                expected_output: expectedOutput
+                expected_output: expectedOutput,
+                ...(languageId === 54 && { compiler_options: '-std=c++17 -O2' })
             }, {
                 headers: {
                     'Content-Type': 'application/json',
