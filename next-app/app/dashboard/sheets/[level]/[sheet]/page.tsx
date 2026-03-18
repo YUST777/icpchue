@@ -339,7 +339,7 @@ export default function SheetDetailPage() {
                             return (
                                 <Link
                                     key={problem.id}
-                                    href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter}` : '#'}
+                                    href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
                                         relative group rounded-xl p-4 border transition-all text-center
                                         ${isAvailable

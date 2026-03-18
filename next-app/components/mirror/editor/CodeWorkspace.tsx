@@ -452,6 +452,8 @@ export default function CodeWorkspace({
                                     ) : (
                                         <XCircle size={14} className="text-red-400" />
                                     )
+                                ) : cfStatus && cfStatus.status === 'error' ? (
+                                    <XCircle size={14} className="text-red-400" />
                                 ) : (
                                     <Loader2 size={14} className="animate-spin text-blue-400" />
                                 )

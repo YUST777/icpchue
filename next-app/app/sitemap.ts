@@ -1,20 +1,17 @@
 import { MetadataRoute } from 'next';
+import { camps } from '@/lib/sessionData';
+import { devLogs } from '@/lib/devlog';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://icpchue.com';
 
-    return [
+    // 1. Static Routes
+    const staticRoutes: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 1,
-        },
-        {
-            url: `${baseUrl}/apply`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.9,
         },
         {
             url: `${baseUrl}/sessions`,
@@ -29,16 +26,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.7,
         },
         {
-            url: `${baseUrl}/sessions/programming-1`,
+            url: `${baseUrl}/register`,
             lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-        },
-        {
-            url: `${baseUrl}/sessions/programming-2`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
+            changeFrequency: 'yearly',
+            priority: 0.5,
         },
         {
             url: `${baseUrl}/login`,
@@ -46,6 +37,64 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'yearly',
             priority: 0.5,
         },
+        {
+            url: `${baseUrl}/privacy`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.3,
+        },
+        {
+            url: `${baseUrl}/terms`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.3,
+        },
+        {
+            url: `${baseUrl}/forgot-password`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.3,
+        },
     ];
+
+    // 2. Dynamic Camp/Session Routes
+    const sessionRoutes: MetadataRoute.Sitemap = camps.flatMap((camp) => {
+        // Only include camps that are publicly visible
+        if (camp.publicVisible === false && camp.slug !== 'approvalcamp' && camp.slug !== 'wintercamp') {
+            // Note: approvalcamp and wintercamp have some public sessions even if camp is technically "internal"
+            // But based on app structure, we usually only index what's on the /sessions page
+        }
+
+        const routes: MetadataRoute.Sitemap = [
+            {
+                url: `${baseUrl}/sessions/${camp.slug}`,
+                lastModified: new Date(),
+                changeFrequency: 'weekly',
+                priority: 0.7,
+            }
+        ];
+
+        // Add each session in the camp
+        camp.sessions.forEach(session => {
+            routes.push({
+                url: `${baseUrl}/sessions/${camp.slug}/${session.number}`,
+                lastModified: new Date(),
+                changeFrequency: 'weekly',
+                priority: 0.6,
+            });
+        });
+
+        return routes;
+    });
+
+    // 3. Dynamic DevLog Routes
+    const devlogRoutes: MetadataRoute.Sitemap = devLogs.map((entry) => ({
+        url: `${baseUrl}/devlog/${entry.id}`,
+        lastModified: new Date(entry.date),
+        changeFrequency: 'monthly',
+        priority: 0.6,
+    }));
+
+    return [...staticRoutes, ...sessionRoutes, ...devlogRoutes];
 }
 

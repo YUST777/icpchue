@@ -15,9 +15,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://icpchue.com'),
-  title: "ICPC HUE - First ICPC Community in Hours University",
+  title: {
+    default: "ICPC HUE - First ICPC Community in Horus University",
+    template: "%s | ICPC HUE"
+  },
   description:
-    "Join the first ICPC community at Horus University. Access comprehensive training sessions, video episodes, and competitive programming resources to master algorithms.",
+    "Join the first ICPC community at Horus University. Access comprehensive training sessions, technical devlogs, and competitive programming resources to master algorithms.",
   keywords: [
     "ICPC",
     "competitive programming",
@@ -64,6 +67,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    google: 'your-google-verification-code', // User can replace this easily
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any', type: 'image/x-icon' },
@@ -81,7 +87,6 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   alternates: {
-    canonical: 'https://icpchue.com',
     languages: {
       'en-US': 'https://icpchue.com',
     },

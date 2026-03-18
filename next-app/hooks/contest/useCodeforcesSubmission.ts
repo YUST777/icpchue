@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
 import { mapLanguageToExtension, getSubmitUrl, getProblemDescriptionUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
 import { fetchWithAuth } from '@/lib/api';
@@ -45,26 +45,68 @@ export function useCodeforcesSubmission({
 }: UseCodeforcesSubmissionParams): UseCodeforcesSubmissionReturn {
     const [cfStatus, setCfStatus] = useState<CFSubmissionStatus | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const activeSubIdRef = useRef<number | null>(null);
+    const isMountedRef = useRef(true);
+
+    // Track mount status
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => { isMountedRef.current = false; };
+    }, []);
 
     // Reset status when problem changes
     useEffect(() => {
         setCfStatus(null);
+        activeSubIdRef.current = null; // Cancel any active polling's state updates
     }, [contestId, problemId]);
 
     const handleSubmit = async () => {
-        if (!code) return;
+        if (!code || submitting) return;
 
         setSubmitting(true);
         setIsTestPanelVisible(true);
-
         setTestPanelActiveTab('codeforces');
         setCfStatus({ status: 'submitting' });
+        activeSubIdRef.current = null;
 
         if (!document.getElementById('verdict-extension-installed')) {
             window.open(codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId), '_blank');
             setCfStatus({
                 status: 'error',
                 error: 'Extension not detected. Opened Codeforces problem page in a new tab.'
+            });
+            setSubmitting(false);
+            return;
+        }
+
+        // Check login status first
+        const loginStatus = await new Promise<{ loggedIn: boolean; handle?: string }>((resolve) => {
+            const timeout = setTimeout(() => {
+                window.removeEventListener('message', handler);
+                resolve({ loggedIn: false });
+            }, 3000);
+
+            const handler = (event: MessageEvent) => {
+                if (event.data?.type === 'VERDICT_LOGIN_STATUS') {
+                    clearTimeout(timeout);
+                    window.removeEventListener('message', handler);
+                    resolve({
+                        loggedIn: event.data.loggedIn,
+                        handle: event.data.handle
+                    });
+                }
+            };
+
+            window.addEventListener('message', handler);
+            window.postMessage({ type: 'VERDICT_CHECK_LOGIN' }, '*');
+        });
+
+        if (!loginStatus.loggedIn) {
+            setCfStatus({
+                status: 'error',
+                error: 'You must make an account in CF or login to your account in CF',
+                needsLogin: true,
+                captchaUrl: codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId)
             });
             setSubmitting(false);
             return;
@@ -196,6 +238,7 @@ export function useCodeforcesSubmission({
 
                 // Start Polling if we have an ID
                 if (submissionId) {
+                    activeSubIdRef.current = submissionId;
                     let attempts = 0;
                     const maxAttempts = 120; // ~3 minutes max
 
@@ -215,6 +258,12 @@ export function useCodeforcesSubmission({
                     };
 
                     while (attempts < maxAttempts) {
+                        // Check if this polling is still relevant (user hasn't switched problems or started new submission)
+                        if (!isMountedRef.current || activeSubIdRef.current !== submissionId) {
+                            console.log(`Polling for ${submissionId} cancelled.`);
+                            return;
+                        }
+
                         // Fast polling - 1 second intervals
                         await new Promise(r => setTimeout(r, 1000));
 
@@ -316,10 +365,11 @@ export function useCodeforcesSubmission({
                 // Handle specific error types
                 let errorMessage = response.error || 'Submission failed';
                 let needsCaptcha = false;
+                let needsLogin = false;
 
                 if (response.error === 'NOT_LOGGED_IN') {
                     errorMessage = 'Please log in to Codeforces first';
-                    needsCaptcha = true; // User needs to visit CF
+                    needsLogin = true; // User needs to visit CF
                 } else if (response.error === 'RATE_LIMITED') {
                     errorMessage = 'Too many submissions. Please wait a moment.';
                 } else if (response.error === 'VIRTUAL_REGISTRATION_REQUIRED') {
@@ -333,8 +383,9 @@ export function useCodeforcesSubmission({
                 setCfStatus({
                     status: 'error',
                     error: errorMessage,
-                    needsCaptcha,
-                    captchaUrl: needsCaptcha ? getSubmitUrl(contestId, problemId, urlType, groupId) : undefined
+                    needsCaptcha: !needsLogin && needsCaptcha,
+                    needsLogin,
+                    captchaUrl: (needsCaptcha || needsLogin) ? getSubmitUrl(contestId, problemId, urlType, groupId) : undefined
                 });
             }
         } catch (err) {

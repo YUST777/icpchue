@@ -77,17 +77,21 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
     return (
         <div className="space-y-4 animate-fade-in">
-            {/* Captcha Required Warning */}
-            {cfStatus.needsCaptcha && (
+            {/* Login/Captcha Required Warning */}
+            {(cfStatus.needsCaptcha || cfStatus.needsLogin) && (
                 <div className="flex flex-col gap-3 p-4 rounded-xl border bg-orange-500/10 border-orange-500/20 text-orange-400">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-orange-500/20">
-                            <XCircle size={18} />
+                            {cfStatus.needsLogin ? <AlertTriangle size={18} /> : <XCircle size={18} />}
                         </div>
                         <div className="flex-1">
-                            <div className="font-bold text-lg">Captcha Required</div>
+                            <div className="font-bold text-lg">
+                                {cfStatus.needsLogin ? 'Login Required' : 'Captcha Required'}
+                            </div>
                             <div className="text-xs opacity-70 mt-0.5">
-                                Codeforces requires you to verify you&apos;re human
+                                {cfStatus.needsLogin 
+                                    ? 'You must be logged into Codeforces to submit directly' 
+                                    : 'Codeforces requires you to verify you\'re human'}
                             </div>
                         </div>
                     </div>
@@ -95,7 +99,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         <p className="mb-2">Please follow these steps:</p>
                         <ol className="list-decimal list-inside space-y-1 text-orange-200">
                             <li>Click the button below to open Codeforces</li>
-                            <li>Complete the captcha verification</li>
+                            <li>{cfStatus.needsLogin ? 'Log in to your account' : 'Complete the captcha verification'}</li>
                             <li>Come back and click Submit again</li>
                         </ol>
                     </div>
@@ -111,7 +115,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                                 alt="CF"
                                 className="w-4 h-4"
                             />
-                            Open Codeforces & Solve Captcha
+                            {cfStatus.needsLogin ? 'Open Codeforces to Login' : 'Open Codeforces & Solve Captcha'}
                             <ExternalLink size={14} />
                         </a>
                     )}

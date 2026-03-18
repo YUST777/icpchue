@@ -35,6 +35,7 @@ export default function ProblemPage() {
     const problemLetter = (params.problem as string).toUpperCase();
 
     const [loading, setLoading] = useState(true);
+    const [isNavigating, setIsNavigating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [meta, setMeta] = useState<any>(null);
     const [prefetchedCfData, setPrefetchedCfData] = useState<CFProblemData | null>(null);
@@ -42,6 +43,13 @@ export default function ProblemPage() {
     // Fetch BOTH curriculum meta AND codeforces mirror data in one go
     useEffect(() => {
         let cancelled = false;
+        
+        // If we already have meta, this is a navigation loading, not initial loading
+        if (meta) {
+            setIsNavigating(true);
+        } else {
+            setLoading(true);
+        }
 
         const loadAll = async () => {
             try {
@@ -52,17 +60,24 @@ export default function ProblemPage() {
                     return;
                 }
                 const problem = metaData.problem;
-                if (!cancelled) setMeta(problem);
-
+                
                 const urlType = problem.groupId ? 'group' : 'contest';
                 const mirrorUrl = `/api/codeforces/mirror?contestId=${problem.contestId}&problemId=${problemLetter}&type=${urlType}${problem.groupId ? `&groupId=${problem.groupId}` : ''}`;
 
                 const cfData: CFProblemData = await fetchWithCache<CFProblemData>(mirrorUrl, {}, 300);
-                if (!cancelled) setPrefetchedCfData(cfData);
+                
+                if (!cancelled) {
+                    setMeta(problem);
+                    setPrefetchedCfData(cfData);
+                    setError(null);
+                }
             } catch (err: any) {
                 if (!cancelled) setError(err.message || 'Network error — please refresh');
             } finally {
-                if (!cancelled) setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                    setIsNavigating(false);
+                }
             }
         };
 
@@ -70,7 +85,8 @@ export default function ProblemPage() {
         return () => { cancelled = true; };
     }, [levelSlug, sheetSlug, problemLetter]);
 
-    if (loading) {
+    // Initial loading state (first time entering any problem)
+    if (loading && !meta) {
         return (
             <div className="fixed inset-0 bg-[#0B0B0C] flex flex-col items-center justify-center z-50 gap-6">
                 <TestCasesLoader />
@@ -81,7 +97,8 @@ export default function ProblemPage() {
         );
     }
 
-    if (error || !meta || !prefetchedCfData) {
+    // Error state (only if we don't have meta yet)
+    if (error && !meta) {
         return (
             <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center p-4">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
@@ -94,9 +111,16 @@ export default function ProblemPage() {
         );
     }
 
+    if (!meta || !prefetchedCfData) return null;
+
     return (
         <>
             <OnboardingTour delay={1500} />
+            {isNavigating && (
+                <div className="fixed top-0 left-0 right-0 h-0.5 z-[100] bg-[#E8C15A]/20 overflow-hidden">
+                    <div className="h-full bg-[#E8C15A] animate-loader-progress shadow-[0_0_10px_#E8C15A]" />
+                </div>
+            )}
             <MirrorUI
                 contestId={meta.contestId}
                 groupId={meta.groupId}
@@ -106,6 +130,16 @@ export default function ProblemPage() {
                 sheetSlug={sheetSlug}
                 prefetchedCfData={prefetchedCfData}
             />
+            <style jsx global>{`
+                @keyframes loader-progress {
+                    0% { width: 0; transform: translateX(-100%); }
+                    50% { width: 70%; transform: translateX(0); }
+                    100% { width: 100%; transform: translateX(100%); }
+                }
+                .animate-loader-progress {
+                    animation: loader-progress 2s infinite ease-in-out;
+                }
+            `}</style>
         </>
     );
 }
@@ -129,7 +163,8 @@ function MirrorUI({
         problemId,
         urlType,
         groupId,
-        initialCfData: prefetchedCfData
+        initialCfData: prefetchedCfData,
+        sheetId
     });
 
     // Code Persistence Hook

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/simple-rate-limit';
+import { getCachedData } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,45 +46,39 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Fetch more submissions to ensure we get the user's submissions for this problem
-        // Codeforces API allows up to 10000, but we'll fetch 1000 to be safe
-        const apiUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=1000`;
+        // Use Redis cache to prevent dog-piling Codeforces API
+        const cacheKey = `cf:user-status:${handle}`;
+        const TTL = 300; // 5 minutes cache for user status (sync)
 
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': 'Verdict/1.0 (Competitive Programming Tool)',
-                'Accept': 'application/json'
-            },
-            next: { revalidate: 0 }
-        });
+        const submissions = await getCachedData<any[]>(cacheKey, TTL, async () => {
+            // Fetch fewer submissions to be faster. 200 is plenty for recent solves.
+            const apiUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=200`;
 
-        if (!response.ok) {
-            return NextResponse.json({
-                error: `Codeforces API Error: ${response.status}`,
-                success: false
-            }, { status: response.status });
-        }
-
-        const data = await response.json();
-
-        if (data.status !== 'OK') {
-            return NextResponse.json({
-                error: data.comment || 'Codeforces API failed',
-                success: false
-            }, { status: 500 });
-        }
-
-        if (!data.result || !Array.isArray(data.result)) {
-            return NextResponse.json({
-                error: 'Invalid API response',
-                success: false,
-                submissions: []
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': 'Verdict/1.0 (Competitive Programming Tool)',
+                    'Accept': 'application/json'
+                },
+                next: { revalidate: 300 }
             });
-        }
+
+            if (!response.ok) {
+                // Return empty if CF is down to avoid crashing the whole page
+                console.error(`CF API error: ${response.status}`);
+                return [];
+            }
+
+            const data = await response.json();
+            if (data.status !== 'OK' || !Array.isArray(data.result)) {
+                return [];
+            }
+
+            return data.result;
+        });
 
         // Filter submissions by contestId and optionally by problemIndex
         const normalizedContestId = contestId.toString();
-        let userSubmissions = (data.result as CFUserSubmission[]).filter((sub) => {
+        let userSubmissions = (submissions as CFUserSubmission[]).filter((sub) => {
             const subContestId = sub.contestId?.toString();
             return subContestId === normalizedContestId;
         });

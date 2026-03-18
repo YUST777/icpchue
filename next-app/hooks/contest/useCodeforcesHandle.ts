@@ -143,7 +143,11 @@ export function useCodeforcesHandle(): UseCodeforcesHandleReturn {
 
     // Load handle on mount
     useEffect(() => {
-        refreshHandle();
+        let cancelled = false;
+        if (!cancelled) {
+            refreshHandle();
+        }
+        return () => { cancelled = true; };
     }, [refreshHandle]);
 
     return {

@@ -219,7 +219,7 @@ services:
   # JUDGE0 (Code Execution)
   # ===========================================
   judge0-server:
-    image: judge0/judge0:latest
+    image: mrkushalsm/judge0:latest
     container_name: judge0-server
     volumes:
       - ./infrastructure/judge0/judge0.conf:/judge0.conf:ro
@@ -235,7 +235,7 @@ services:
       - judge0-redis
 
   judge0-worker:
-    image: judge0/judge0:latest
+    image: mrkushalsm/judge0:latest
     container_name: judge0-worker
     command: ["./scripts/workers"]
     volumes:

@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
                 SELECT
                     cf.id,
                     cf.problem_index AS problem_id,
+                    cf.contest_id,
                     cf.verdict,
                     cf.time_ms,
                     cf.memory_kb,
@@ -86,30 +87,41 @@ export async function GET(req: NextRequest) {
                   AND cf.problem_index = UPPER($${pIndex})
             `);
         } else if (sheetId && !problemId) {
-            // Sheet-level: get ALL CF submissions for this sheet
-            // cf_submissions stores the DB sheet_id in sheet_id column
-            p++;
-            const pCfSheet = p;
-            params.push(sheetId);
+            // Sheet-level Logic [V2]: 
+            // 1. We find all problems that BELONG to this sheet
+            // 2. We find ALL submissions for those problems by this user
+            // This ensures that if a problem is in multiple sheets, solving it once marks it solved everywhere.
+            
+            const problemsRes = await query(
+                `SELECT contest_id, problem_letter FROM curriculum_problems WHERE sheet_id = $1`,
+                [sheetId]
+            );
 
-            parts.push(`
-                SELECT
-                    cf.id,
-                    cf.problem_index AS problem_id,
-                    cf.verdict,
-                    cf.time_ms,
-                    cf.memory_kb,
-                    NULL::integer AS test_cases_passed,
-                    NULL::integer AS total_test_cases,
-                    cf.submitted_at,
-                    NULL::integer AS attempt_number,
-                    cf.language,
-                    'codeforces' AS source,
-                    cf.cf_submission_id
-                FROM cf_submissions cf
-                WHERE cf.user_id = $1
-                  AND cf.sheet_id = $${pCfSheet}::varchar
-            `);
+            if (problemsRes.rows.length > 0) {
+                const problemFilters = problemsRes.rows.map((row: any) => 
+                    `(cf.contest_id = '${row.contest_id}' AND cf.problem_index = '${row.problem_letter.toUpperCase()}')`
+                ).join(' OR ');
+
+                parts.push(`
+                    SELECT
+                        cf.id,
+                        cf.problem_index AS problem_id,
+                        cf.contest_id,
+                        cf.verdict,
+                        cf.time_ms,
+                        cf.memory_kb,
+                        NULL::integer AS test_cases_passed,
+                        NULL::integer AS total_test_cases,
+                        cf.submitted_at,
+                        NULL::integer AS attempt_number,
+                        cf.language,
+                        'codeforces' AS source,
+                        cf.cf_submission_id
+                    FROM cf_submissions cf
+                    WHERE cf.user_id = $1
+                      AND (${problemFilters})
+                `);
+            }
         }
 
         if (parts.length === 0) {
@@ -137,6 +149,7 @@ export async function GET(req: NextRequest) {
         const submissions = result.rows.map((row: any) => ({
             id: row.id,
             problemId: row.problem_id,
+            contestId: row.contest_id,
             verdict: row.verdict,
             timeMs: row.time_ms ?? 0,
             memoryKb: row.memory_kb ?? 0,

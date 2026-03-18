@@ -4,6 +4,27 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Play, FileText } from 'lucide-react';
 import Providers from '@/components/Providers';
 import { camps } from '@/lib/sessionData';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: Promise<{ campSlug: string }> }): Promise<Metadata> {
+    const { campSlug } = await params;
+    const camp = camps.find(c => c.slug === campSlug);
+
+    if (!camp) return { title: 'Camp Not Found' };
+
+    return {
+        title: camp.title,
+        description: camp.description,
+        alternates: {
+            canonical: `https://icpchue.com/sessions/${campSlug}`,
+        },
+        openGraph: {
+            title: `${camp.title} | ICPC HUE`,
+            description: camp.description,
+            images: [camp.image],
+        }
+    };
+}
 
 async function CampSessionsContent({ params }: { params: Promise<{ campSlug: string }> }) {
     const { campSlug } = await params;

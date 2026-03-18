@@ -36,7 +36,7 @@ export default function ProblemHeader({
     const currentId = problemId || "";
 
     const currentIndex = sheetProblems?.findIndex(
-        (p) => p.index.toUpperCase() === currentId.toUpperCase()
+        (p) => p.index.trim().toUpperCase() === currentId.trim().toUpperCase()
     ) ?? -1;
 
     const prevProblem = currentIndex > 0 ? sheetProblems![currentIndex - 1] : null;
@@ -144,7 +144,7 @@ export default function ProblemHeader({
 
                     <div className="flex items-center shrink-0 gap-0.5 ml-2">
                         <Link
-                            href={prevId ? `${navigationBaseUrl}/${prevId}` : "#"}
+                            href={prevId ? `${navigationBaseUrl}/${prevId.trim()}` : "#"}
                             className={`p-1.5 rounded-md active:bg-white/20 transition-all flex items-center justify-center touch-manipulation min-w-[28px] min-h-[28px] ${prevId
                                 ? "text-white/70 active:text-white hover:bg-white/5"
                                 : "text-white/20 cursor-not-allowed pointer-events-none"
@@ -155,7 +155,7 @@ export default function ProblemHeader({
                             <ChevronLeft size={16} />
                         </Link>
                         <Link
-                            href={nextId ? `${navigationBaseUrl}/${nextId}` : "#"}
+                            href={nextId ? `${navigationBaseUrl}/${nextId.trim()}` : "#"}
                             className={`p-1.5 rounded-md active:bg-white/20 transition-all flex items-center justify-center touch-manipulation min-w-[28px] min-h-[28px] ${nextId
                                 ? "text-white/70 active:text-white hover:bg-white/5"
                                 : "text-white/20 cursor-not-allowed pointer-events-none"

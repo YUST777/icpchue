@@ -114,5 +114,6 @@ export interface CFSubmissionStatus {
     compilationError?: string;
     failedTestCase?: number; // The test case number that failed (1-indexed for display)
     needsCaptcha?: boolean; // True if user needs to manually solve captcha
-    captchaUrl?: string; // URL to open for captcha solving
+    needsLogin?: boolean; // True if user needs to login to Codeforces
+    captchaUrl?: string; // URL to open for captcha solving or login
 }

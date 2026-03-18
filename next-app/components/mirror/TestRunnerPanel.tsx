@@ -105,6 +105,8 @@ export default function TestRunnerPanel({
                                     ) : (
                                         <XCircle size={12} className="text-red-400" />
                                     )
+                                ) : cfStatus && cfStatus.status === 'error' ? (
+                                    <XCircle size={12} className="text-red-400" />
                                 ) : (
                                     <Loader2 size={12} className="animate-spin text-blue-400" />
                                 )
