@@ -138,8 +138,8 @@ export const scrapeCodeforces = async (username, retryCount = 0) => {
             }
         }
 
-        // Then get submission stats (increase limit to 50000 to get accurate solved count for power users)
-        const submissionsUrl = `https://codeforces.com/api/user.status?handle=${username}&from=1&count=50000`;
+        // Then get submission stats (limit to 10000 to prevent memory spikes while covering almost all users)
+        const submissionsUrl = `https://codeforces.com/api/user.status?handle=${username}&from=1&count=10000`;
         const submissionsResponse = await axios.get(submissionsUrl, {
             timeout: 15000,
             headers: {
