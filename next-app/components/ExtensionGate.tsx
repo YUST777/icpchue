@@ -89,7 +89,7 @@ export default function ExtensionGate({ children }: ExtensionGateProps) {
 
         window.addEventListener('focus', handleFocus);
         return () => window.removeEventListener('focus', handleFocus);
-    }, [checkCount, performCheck, status]);
+    }, [checkCount, performCheck]);
 
     // Listen for extension ready event
     useEffect(() => {

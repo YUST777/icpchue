@@ -21,9 +21,7 @@ export async function GET(request: Request) {
 
     try {
         const statsMap = await getCachedData<Record<string, ProblemStats>>(CACHE_KEY, TTL, async () => {
-            const res = await fetch('https://codeforces.com/api/problemset.problems', {
-                next: { revalidate: 3600 } // Parallel Next.js fetch cache
-            });
+            const res = await fetch('https://codeforces.com/api/problemset.problems');
 
             if (!res.ok) throw new Error(`CF API responded with ${res.status}`);
 

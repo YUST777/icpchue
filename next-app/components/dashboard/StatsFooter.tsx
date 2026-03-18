@@ -53,7 +53,8 @@ export function StatsFooter({ streak, totalSolved, rank, loading, studentId }: S
                 </div>
             </div>
 
-            {/* Quick Links - Horizontal Scroll or Flex */}
+            {/* Quick Links - Hidden as per user request */}
+            {/* 
             <div className="flex items-center justify-center gap-6 text-sm text-white/40 pt-2 pb-1">
                 <Link
                     href={`/2025/${studentId || 'user'}`}
@@ -68,6 +69,7 @@ export function StatsFooter({ streak, totalSolved, rank, loading, studentId }: S
                     <TrendingUp size={14} /> Community
                 </Link>
             </div>
+            */}
         </div>
     );
 }

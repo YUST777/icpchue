@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, Search, Link as LinkIcon, ArrowRight, Loader2,
@@ -120,7 +121,7 @@ export default function ProblemDrawer({
                                     contestType: "contest",
                                     lastAccessedAt: new Date().toISOString(),
                                     problems: data.problems.map((p: any) => ({
-                                        index: p.letter || p.title.split('.')[0] || 'A',
+                                        index: (p.letter || p.title.split('.')[0] || 'A').trim(),
                                         name: p.title,
                                         rating: p.rating,
                                         contestId: Number(data.sheet.contestId) || 0,
@@ -172,6 +173,39 @@ export default function ProblemDrawer({
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentContestId, user]);
+
+    // Fetch solved problems for the current sheet/contest
+    useEffect(() => {
+        if (!sheet || !user) return;
+        let cancelled = false;
+
+        const fetchSolved = async () => {
+            try {
+                const params = new URLSearchParams();
+                if (sheetId) params.set('sheetId', sheetId);
+                params.set('contestId', sheet.contestId);
+                
+                const res = await fetch(`/api/submissions?${params}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!cancelled && data.success) {
+                        const solved = new Set<string>();
+                        data.submissions.forEach((s: any) => {
+                            if (s.verdict === 'Accepted' || s.verdict === 'OK') {
+                                solved.add(`${s.contestId}-${s.problemId}`);
+                            }
+                        });
+                        setSolvedSet(solved);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch solved status:', err);
+            }
+        };
+
+        fetchSolved();
+        return () => { cancelled = true; };
+    }, [sheet, user, sheetId]);
 
     // Focus input when opened
     useEffect(() => {
@@ -394,10 +428,15 @@ export default function ProblemDrawer({
                                         const isSolved = solvedSet.has(`${problem.contestId}-${problem.index}`);
                                         const diff = getDifficultyColor(problem.rating);
 
+                                        const href = levelSlug && sheetSlug
+                                            ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.index}`
+                                            : `${getNavigationBaseUrl(String(problem.contestId), "contest")}/${problem.index}`;
+
                                         return (
-                                            <button
+                                            <Link
                                                 key={`${problem.contestId}-${problem.index}`}
-                                                onClick={() => navigateToProblem(problem)}
+                                                href={href}
+                                                onClick={onClose}
                                                 className={`
                                                     w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group
                                                     ${isCurrent
@@ -443,7 +482,7 @@ export default function ProblemDrawer({
                                                         <Circle size={15} className="text-white/10 group-hover:text-white/20" />
                                                     )}
                                                 </div>
-                                            </button>
+                                            </Link>
                                         );
                                     })}
                                 </div>
