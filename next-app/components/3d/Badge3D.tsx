@@ -5,7 +5,7 @@ import { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Environment, Float, OrbitControls, Center, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import Loader from './Loader';
+import Loader from '@/components/common/Loader';
 
 interface ModelProps {
     path: string;

@@ -15,7 +15,7 @@ import dynamic from 'next/dynamic';
 import { MapExpandedProvider } from '@/context/MapExpandedContext';
 
 // Dynamically import BuildingPublicly to avoid SSR issues with ReactFlow
-const BuildingPublicly = dynamic(() => import('@/components/BuildingPublicly'), {
+const BuildingPublicly = dynamic(() => import('@/components/landing/BuildingPublicly'), {
     ssr: false,
     loading: () => <div className="w-full h-96 bg-zinc-900/50 rounded-3xl animate-pulse" />
 });

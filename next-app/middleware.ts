@@ -72,7 +72,12 @@ export async function middleware(request: NextRequest) {
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Referrer-Policy', 'origin-when-cross-origin');
 
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob:; media-src 'self' https: data: blob:; frame-src 'self' https://drive.google.com https://www.youtube.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;");
+    const isDev = process.env.NODE_ENV === 'development';
+    const scriptSrc = isDev 
+        ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: blob:" 
+        : "'self' 'unsafe-inline' 'wasm-unsafe-eval' https: blob:";
+
+    headers.set('Content-Security-Policy', `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob:; media-src 'self' https: data: blob:; frame-src 'self' https://drive.google.com https://www.youtube.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`);
 
     // --- 2. Bot Blocking ---
     const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';

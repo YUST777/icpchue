@@ -155,7 +155,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         <div className="font-bold text-lg">
                             {cfStatus.status === 'submitting' && 'Submitting to Codeforces...'}
                             {cfStatus.status === 'waiting' && 'In Queue...'}
-                            {cfStatus.status === 'testing' && `Testing on test ${cfStatus.testNumber || '?'}...`}
+                            {cfStatus.status === 'testing' && `Testing on test ${!!cfStatus.testNumber ? cfStatus.testNumber : '?'}...`}
                             {cfStatus.status === 'done' && (cfStatus.verdict || 'Done')}
                             {cfStatus.status === 'error' && (cfStatus.error || 'Submission Failed')}
                         </div>
@@ -172,14 +172,14 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
             )}
 
             {/* Failed Test Case Info */}
-            {cfStatus.status === 'done' && cfStatus.failedTestCase && cfStatus.verdict !== 'Accepted' && (
+            {cfStatus.status === 'done' && !!cfStatus.failedTestCase && cfStatus.verdict !== 'Accepted' && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                     <div className="flex items-center gap-2 text-red-400 mb-2">
                         <XCircle size={16} />
                         <span className="font-semibold text-sm">Failed on Test {cfStatus.failedTestCase}</span>
                     </div>
                     <div className="text-xs text-[#888]">
-                        {cfStatus.testNumber !== undefined && cfStatus.testNumber > 0 && (
+                        {!!cfStatus.testNumber && cfStatus.testNumber > 0 && (
                             <span>Passed {cfStatus.testNumber} test{cfStatus.testNumber !== 1 ? 's' : ''} before failing</span>
                         )}
                     </div>
@@ -187,7 +187,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
             )}
 
             {/* Accepted - All Tests Passed */}
-            {cfStatus.status === 'done' && cfStatus.verdict === 'Accepted' && cfStatus.testNumber && (
+            {cfStatus.status === 'done' && cfStatus.verdict === 'Accepted' && !!cfStatus.testNumber && (
                 <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
                     <div className="flex items-center gap-2 text-green-400">
                         <CheckCircle2 size={16} />
@@ -204,6 +204,18 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     </div>
                     <pre className="p-3 text-[10px] text-orange-300 max-h-40 overflow-auto whitespace-pre-wrap font-mono">
                         {cfStatus.compilationError}
+                    </pre>
+                </div>
+            )}
+
+            {/* Other Details (e.g. Failed Test Case Info) */}
+            {cfStatus.details && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl overflow-hidden">
+                    <div className="px-3 py-2 text-blue-400 text-xs font-medium border-b border-blue-500/20">
+                        Detailed Information
+                    </div>
+                    <pre className="p-3 text-[10px] text-blue-300 max-h-60 overflow-auto whitespace-pre-wrap font-mono">
+                        {cfStatus.details}
                     </pre>
                 </div>
             )}

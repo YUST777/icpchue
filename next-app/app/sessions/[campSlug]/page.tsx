@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Play, FileText } from 'lucide-react';
-import Providers from '@/components/Providers';
+import Providers from '@/components/core/Providers';
 import { camps } from '@/lib/sessionData';
 import { Metadata } from 'next';
 

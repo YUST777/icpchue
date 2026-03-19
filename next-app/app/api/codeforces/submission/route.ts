@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
     const contestId = searchParams.get('contestId');
     const submissionId = searchParams.get('submissionId');
     const handle = searchParams.get('handle');
+    const cookies = searchParams.get('cookies');
+    const urlType = searchParams.get('urlType') || 'contest';
+    const groupId = searchParams.get('groupId');
 
     if (!contestId || !submissionId) {
         return NextResponse.json({ error: 'Missing contestId or submissionId' }, { status: 400 });
@@ -57,8 +60,40 @@ export async function GET(req: NextRequest) {
 
     try {
         let result;
+        const isRestricted = urlType === 'group' || urlType === 'gym';
 
-        // 1. Try public user.status if handle is provided (works for most contests, including group ones if public)
+        // 1. For Restricted contests (Group/Gym), use the Bridge FIRST
+        if (isRestricted && cookies) {
+            try {
+                const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
+                const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
+                });
+
+                if (bridgeRes.ok) {
+                    const bridgeData = await bridgeRes.json();
+                    if (bridgeData.success && bridgeData.verdict) {
+                        return NextResponse.json({
+                            success: true,
+                            verdict: bridgeData.verdict,
+                            testNumber: bridgeData.testNumber || 0,
+                            time: bridgeData.time || 0,
+                            memory: bridgeData.memory || 0,
+                            compilationError: bridgeData.compilationError || null,
+                            details: bridgeData.details || null,
+                            waiting: !bridgeData.verdict || 
+                                     ['queue', 'testing'].some(s => bridgeData.verdict.toLowerCase().includes(s))
+                        });
+                    }
+                }
+            } catch (err: any) {
+                console.warn('[Bridge Status Fallback] Error:', err.message);
+            }
+        }
+
+        // 2. Try official APIs (faster for public contests)
         if (handle) {
             result = await cfPublicApiCall('user.status', { handle, from: '1', count: '15' });
             if (result.status === 'OK') {
@@ -76,7 +111,6 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // 2. Fallback to authenticated contest.status if API keys exist
         if (API_KEY && API_SECRET) {
             result = await cfApiCall('contest.status', { contestId, from: 1, count: 15 });
             if (result.status === 'OK') {
@@ -94,7 +128,38 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // If we found nothing but polling still makes sense (e.g. status returned OK but sub not there yet)
+        // 3. Fallback to Bridge for public contests if official APIs failed to find it
+        if (!isRestricted && cookies) {
+            try {
+                const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
+                const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
+                });
+
+                if (bridgeRes.ok) {
+                    const bridgeData = await bridgeRes.json();
+                    if (bridgeData.success && bridgeData.verdict) {
+                        return NextResponse.json({
+                            success: true,
+                            verdict: bridgeData.verdict,
+                            testNumber: bridgeData.testNumber || 0,
+                            time: bridgeData.time || 0,
+                            memory: bridgeData.memory || 0,
+                            compilationError: bridgeData.compilationError || null,
+                            details: bridgeData.details || null,
+                            waiting: !bridgeData.verdict || 
+                                     ['queue', 'testing'].some(s => bridgeData.verdict.toLowerCase().includes(s))
+                        });
+                    }
+                }
+            } catch (err: any) {
+                console.warn('[Bridge Status] Fallback error:', err.message);
+            }
+        }
+
+        // If we found nothing but polling still makes sense
         return NextResponse.json({
             success: true,
             waiting: true,

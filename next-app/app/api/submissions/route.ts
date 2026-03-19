@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
                 SELECT
                     ts.id,
                     ts.problem_id,
+                    NULL AS contest_id,
                     ts.verdict,
                     ts.time_ms,
                     ts.memory_kb,
@@ -51,7 +52,10 @@ export async function GET(req: NextRequest) {
                     ts.attempt_number,
                     ts.language,
                     'judge0' AS source,
-                    NULL::bigint AS cf_submission_id
+                    NULL::bigint AS cf_submission_id,
+                    ts.compile_error AS compilation_error,
+                    NULL AS details,
+                    NULL::integer AS test_number
                 FROM training_submissions ts
                 WHERE ${judge0Where}
             `);
@@ -80,7 +84,10 @@ export async function GET(req: NextRequest) {
                     NULL::integer AS attempt_number,
                     cf.language,
                     'codeforces' AS source,
-                    cf.cf_submission_id
+                    cf.cf_submission_id,
+                    cf.compilation_error,
+                    cf.details,
+                    cf.test_number
                 FROM cf_submissions cf
                 WHERE cf.user_id = $1
                   AND cf.contest_id = $${pContest}
@@ -116,7 +123,10 @@ export async function GET(req: NextRequest) {
                         NULL::integer AS attempt_number,
                         cf.language,
                         'codeforces' AS source,
-                        cf.cf_submission_id
+                        cf.cf_submission_id,
+                        cf.compilation_error,
+                        cf.details,
+                        cf.test_number
                     FROM cf_submissions cf
                     WHERE cf.user_id = $1
                       AND (${problemFilters})
@@ -160,6 +170,9 @@ export async function GET(req: NextRequest) {
             language: row.language || 'C++20 (GCC 13-64)',
             source: row.source,
             cfSubmissionId: row.cf_submission_id,
+            compilationError: row.compilation_error,
+            details: row.details,
+            testNumber: row.test_number,
         }));
 
         return NextResponse.json({
@@ -168,7 +181,14 @@ export async function GET(req: NextRequest) {
             pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
         });
 
-    } catch (error) {
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('[API Submissions] Database error:', error.message);
+        // If it's a connection or DB error, return empty instead of 500 to keep UI alive
+        return NextResponse.json({ 
+            success: true, 
+            submissions: [], 
+            pagination: { page: 1, limit: 30, total: 0, totalPages: 0 },
+            error: 'DATABASE_UNAVAILABLE'
+        });
     }
 }

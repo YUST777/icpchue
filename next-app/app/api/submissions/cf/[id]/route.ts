@@ -20,7 +20,10 @@ export async function GET(
         }
 
         const result = await query(
-            `SELECT source_code, verdict, language, time_ms, memory_kb, cf_handle, cf_submission_id, contest_id, problem_index, submitted_at
+            `SELECT 
+                source_code, verdict, language, time_ms, memory_kb, cf_handle, 
+                cf_submission_id, contest_id, problem_index, submitted_at, 
+                compilation_error, details, test_number
              FROM cf_submissions
              WHERE id = $1 AND user_id = $2`,
             [submissionId, user.id]
@@ -44,6 +47,9 @@ export async function GET(
             contestId: row.contest_id,
             problemIndex: row.problem_index,
             submittedAt: row.submitted_at,
+            compilationError: row.compilation_error,
+            details: row.details,
+            testNumber: row.test_number,
         });
     } catch (error) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

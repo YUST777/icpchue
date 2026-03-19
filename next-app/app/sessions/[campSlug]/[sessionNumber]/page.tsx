@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Info, Eye } from 'lucide-react';
-import Providers from '@/components/Providers';
+import Providers from '@/components/core/Providers';
 import { camps } from '@/lib/sessionData';
 
 function SessionContent() {

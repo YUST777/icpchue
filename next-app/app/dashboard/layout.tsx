@@ -13,7 +13,7 @@ import {
     ChevronRight, ChevronLeft, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TestCasesLoader } from '@/components/TestCasesLoader';
+import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '' }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string }) {
     const [showTooltip, setShowTooltip] = useState(false);

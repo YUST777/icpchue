@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
             cfHandle,
             urlType,
             groupId,
+            compilationError,
+            details,
+            testNumber,
         } = body;
 
         if (!cfSubmissionId || !contestId || !problemIndex || !verdict) {
@@ -63,12 +66,15 @@ export async function POST(req: NextRequest) {
             `INSERT INTO cf_submissions (
                 user_id, cf_submission_id, contest_id, problem_index, sheet_id,
                 verdict, time_ms, memory_kb, language, source_code,
-                cf_handle, url_type, group_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                cf_handle, url_type, group_id, compilation_error, details, test_number
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             ON CONFLICT (cf_submission_id) DO UPDATE SET
                 verdict = EXCLUDED.verdict,
                 time_ms = EXCLUDED.time_ms,
-                memory_kb = EXCLUDED.memory_kb
+                memory_kb = EXCLUDED.memory_kb,
+                compilation_error = EXCLUDED.compilation_error,
+                details = EXCLUDED.details,
+                test_number = EXCLUDED.test_number
             RETURNING id`,
             [
                 user.id,
@@ -84,6 +90,9 @@ export async function POST(req: NextRequest) {
                 cfHandle || null,
                 urlType || 'contest',
                 groupId || null,
+                compilationError || null,
+                details || null,
+                testNumber || null,
             ]
         );
 
@@ -169,12 +178,20 @@ export async function POST(req: NextRequest) {
             trackingProblemId
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
+        console.error('[API Save Submission] Database error:', error.message);
+        
         // Handle unique constraint violation gracefully (duplicate submission)
-        if (error instanceof Error && error.message?.includes('cf_submissions_cf_id_unique')) {
+        if (error.message?.includes('cf_submissions_cf_id_unique') || error.message?.includes('duplicate key')) {
             return NextResponse.json({ success: true, duplicate: true });
         }
 
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        // If it's a general DB connection error, don't crash the proxy response
+        // because the submission actually succeeded on Codeforces!
+        return NextResponse.json({ 
+            success: true, 
+            warning: 'Submission succeeded on CF but failed to save to local database',
+            error: 'DATABASE_UNAVAILABLE'
+        });
     }
 }

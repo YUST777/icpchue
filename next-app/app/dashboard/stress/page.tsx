@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import VirtualLeaderboard from '@/components/VirtualLeaderboard';
+import VirtualLeaderboard from '@/components/common/VirtualLeaderboard';
 
 export default function StressTestPage() {
     const [count, setCount] = useState(1000); // Start with 1k

@@ -30,6 +30,7 @@ build/
 dist/
 dist-ssr
 .next/
+.turbo/
 out/
 .vercel
 *.suo
@@ -77,3 +78,7 @@ Mirror/
 !*.env.example
 !*.env.docker.example
 !.vscode/extensions.json
+
+# Extension Builds
+*.zip
+*.crx

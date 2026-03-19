@@ -8,6 +8,8 @@ interface SubmissionsListProps {
     onViewCode: (id: number) => void;
     contestId?: string;
     problemIndex?: string;
+    urlType?: string;
+    groupId?: string;
 }
 
 interface GlobalSubmission {
@@ -20,7 +22,7 @@ interface GlobalSubmission {
     language: string;
 }
 
-/* ââ helpers ââ */
+/* ── helpers ── */
 
 function timeAgo(dateStr: string): string {
     const now = Date.now();
@@ -37,9 +39,11 @@ function timeAgo(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString();
 }
 
-function timeAgoUnix(ts: number): string {
+function timeAgoUnix(ts: number | string): string {
+    const tsNum = typeof ts === 'string' ? parseInt(ts) || 0 : ts;
+    if (!tsNum) return 'recently';
     const now = Date.now();
-    const then = ts * 1000;
+    const then = tsNum * 1000;
     const diff = Math.max(0, now - then);
     const sec = Math.floor(diff / 1000);
     if (sec < 60) return 'just now';
@@ -52,33 +56,38 @@ function timeAgoUnix(ts: number): string {
     return new Date(then).toLocaleDateString();
 }
 
-function formatMemory(kb: number): string {
-    if (!kb) return '-';
+function formatMemory(kb: number | string): string {
+    if (!kb && kb !== 0) return '-';
+    if (typeof kb === 'string') return kb;
     if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
     return `${kb} KB`;
 }
 
-function formatTime(ms: number): string {
+function formatTime(ms: number | string): string {
     if (!ms && ms !== 0) return '-';
+    if (typeof ms === 'string') return ms;
     return `${ms} ms`;
 }
 
 function formatVerdict(v: string): string {
-    if (v === 'OK' || v === 'Accepted') return 'Accepted';
-    if (v === 'WRONG_ANSWER') return 'Wrong Answer';
-    if (v === 'TIME_LIMIT_EXCEEDED') return 'TLE';
-    if (v === 'MEMORY_LIMIT_EXCEEDED') return 'MLE';
-    if (v === 'RUNTIME_ERROR') return 'Runtime Error';
-    if (v === 'COMPILATION_ERROR') return 'Compile Error';
+    if (!v) return 'Unknown';
+    const vUpper = v.toUpperCase();
+    if (vUpper === 'OK' || vUpper === 'ACCEPTED') return 'Accepted';
+    if (vUpper === 'WRONG_ANSWER') return 'Wrong Answer';
+    if (vUpper === 'TIME_LIMIT_EXCEEDED') return 'TLE';
+    if (vUpper === 'MEMORY_LIMIT_EXCEEDED') return 'MLE';
+    if (vUpper === 'RUNTIME_ERROR') return 'Runtime Error';
+    if (vUpper === 'COMPILATION_ERROR') return 'Compile Error';
     return v.replace(/_/g, ' ');
 }
 
 type VerdictType = 'accepted' | 'error' | 'pending';
 
 function getVerdictType(v: string): VerdictType {
+    if (!v) return 'error';
     if (v === 'Accepted' || v === 'OK') return 'accepted';
     const upper = v.toUpperCase();
-    if (upper === 'TESTING' || upper === 'PENDING' || upper === 'IN QUEUE') return 'pending';
+    if (upper === 'TESTING' || upper === 'PENDING' || upper === 'IN QUEUE' || upper.includes('WAITING') || upper.includes('PENDING')) return 'pending';
     return 'error';
 }
 
@@ -88,9 +97,11 @@ const verdictColors: Record<VerdictType, { text: string; bg: string; border: str
     pending: { text: 'text-[#ffa116]', bg: 'bg-[#ffa116]/10', border: 'border-[#ffa116]/30' },
 };
 
-/* ââ component ââ */
+/* ── component ── */
 
-export default function SubmissionsList({ submissions, loading, onViewCode, contestId, problemIndex }: SubmissionsListProps) {
+export default function SubmissionsList({ 
+    submissions, loading, onViewCode, contestId, problemIndex, urlType, groupId 
+}: SubmissionsListProps) {
     const [mode, setMode] = useState<'local' | 'global'>('local');
     const [globalSubmissions, setGlobalSubmissions] = useState<GlobalSubmission[]>([]);
     const [globalLoading, setGlobalLoading] = useState(false);
@@ -102,11 +113,19 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
         setGlobalLoading(true);
         setGlobalError(false);
         try {
-            const res = await fetch(`/api/codeforces/submissions?contestId=${contestId}&problemIndex=${problemIndex}`);
+            const params = new URLSearchParams();
+            params.set('contestId', contestId);
+            if (problemIndex) params.set('problemIndex', problemIndex);
+            if (urlType) params.set('urlType', urlType);
+            if (groupId) params.set('groupId', groupId);
+
+            const res = await fetch(`/api/codeforces/submissions?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             if (Array.isArray(data)) {
                 setGlobalSubmissions(data);
+            } else {
+                setGlobalSubmissions([]);
             }
         } catch (err) {
             console.error('Failed to fetch global submissions', err);
@@ -114,7 +133,7 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
         } finally {
             setGlobalLoading(false);
         }
-    }, [contestId, problemIndex]);
+    }, [contestId, problemIndex, urlType, groupId]);
 
     useEffect(() => {
         if (mode === 'global' && globalSubmissions.length === 0) {
@@ -124,7 +143,7 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
 
     return (
         <div className="flex flex-col h-full">
-            {/* ââ Tab Header ââ */}
+            {/* ── Tab Header ── */}
             <div className="flex items-center gap-0 border-b border-white/[0.06] mb-1">
                 <button
                     onClick={() => setMode('local')}
@@ -136,7 +155,7 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
                 >
                     Your Submissions
                     {mode === 'local' && (
-                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#E8C15A] rounded-full" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]" />
                     )}
                 </button>
                 <button
@@ -146,29 +165,16 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
                             ? 'text-white'
                             : 'text-[#666] hover:text-[#999]'
                     }`}
-                    disabled={!contestId}
-                    title={!contestId ? 'Not available for this problem' : 'View global activity'}
                 >
                     Global Feed
                     {mode === 'global' && (
-                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#E8C15A] rounded-full" />
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]" />
                     )}
                 </button>
-
-                {/* Refresh for global */}
-                {mode === 'global' && (
-                    <button
-                        onClick={fetchGlobal}
-                        className="ml-auto mr-2 p-1.5 text-[#666] hover:text-white rounded-md hover:bg-white/5 transition-colors"
-                        title="Refresh"
-                    >
-                        <RefreshCw size={13} className={globalLoading ? 'animate-spin' : ''} />
-                    </button>
-                )}
             </div>
 
-            {/* ââ Content ââ */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+            {/* ── List Content ── */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {mode === 'local' ? (
                     <LocalSubmissions
                         submissions={submissions}
@@ -178,11 +184,11 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
                         setHoveredId={setHoveredId}
                     />
                 ) : (
-                    <GlobalFeed
+                    <GlobalSubmissions
                         submissions={globalSubmissions}
                         loading={globalLoading}
                         error={globalError}
-                        onRetry={fetchGlobal}
+                        onRefresh={fetchGlobal}
                     />
                 )}
             </div>
@@ -190,59 +196,14 @@ export default function SubmissionsList({ submissions, loading, onViewCode, cont
     );
 }
 
-/* ââ Local Submissions ââ */
+/* ── Local Submissions View ── */
 
-function LocalSubmissions({
-    submissions,
-    loading,
-    onViewCode,
-    hoveredId,
-    setHoveredId,
-}: {
-    submissions: Submission[];
-    loading: boolean;
-    onViewCode: (id: number) => void;
-    hoveredId: number | null;
-    setHoveredId: (id: number | null) => void;
-}) {
+function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHoveredId }: any) {
     if (loading) {
         return (
-            <div className="py-1">
-                {/* Skeleton table header */}
-                <div className="grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 px-4 py-2 text-[10px] font-medium text-[#555] uppercase tracking-wider">
-                    <span>Status</span>
-                    <span className="text-right">Runtime</span>
-                    <span className="text-right">Memory</span>
-                    <span className="text-right">Tests</span>
-                    <span />
-                </div>
-                {/* Skeleton rows */}
-                {Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className={`grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 items-center px-4 py-2.5 ${
-                            i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
-                        }`}
-                    >
-                        <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full bg-white/[0.06] animate-pulse" />
-                                <div className="h-3.5 rounded-md bg-white/[0.06] animate-pulse" style={{ width: `${70 + (i * 13) % 40}px`, animationDelay: `${i * 100}ms` }} />
-                            </div>
-                            <div className="h-2.5 w-14 rounded-md bg-white/[0.04] animate-pulse ml-[22px]" style={{ animationDelay: `${i * 100 + 50}ms` }} />
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="h-3 w-10 rounded-md bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 100 + 100}ms` }} />
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="h-3 w-12 rounded-md bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 100 + 150}ms` }} />
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="h-3 w-8 rounded-md bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 100 + 200}ms` }} />
-                        </div>
-                        <div className="w-3.5 h-3.5 rounded-sm bg-white/[0.04] animate-pulse" style={{ animationDelay: `${i * 100 + 250}ms` }} />
-                    </div>
-                ))}
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="animate-spin text-[#E8C15A]" size={20} />
+                <span className="text-xs text-[#666]">Loading your submissions...</span>
             </div>
         );
     }
@@ -250,19 +211,16 @@ function LocalSubmissions({
     if (submissions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/[0.03] flex items-center justify-center">
-                    <History size={20} className="text-[#555]" />
-                </div>
-                <p className="text-sm text-[#555]">No submissions yet</p>
-                <p className="text-xs text-[#444]">Submit your solution to see results here</p>
+                <History className="text-[#333]" size={24} />
+                <span className="text-xs text-[#555]">No local submissions yet</span>
             </div>
         );
     }
 
     return (
-        <div className="py-1">
-            {/* ââ Table Header ââ */}
-            <div className="grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 px-4 py-2 text-[10px] font-medium text-[#555] uppercase tracking-wider">
+        <div className="flex flex-col">
+            {/* ── Headers ── */}
+            <div className="grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 px-4 py-2 text-[10px] font-bold text-[#444] uppercase tracking-wider border-b border-white/[0.03]">
                 <span>Status</span>
                 <span className="text-right">Runtime</span>
                 <span className="text-right">Memory</span>
@@ -270,8 +228,8 @@ function LocalSubmissions({
                 <span />
             </div>
 
-            {/* ââ Rows ââ */}
-            {submissions.map((sub, idx) => {
+            {/* ── Rows ── */}
+            {submissions.map((sub: any, idx: number) => {
                 const vType = getVerdictType(sub.verdict);
                 const colors = verdictColors[vType];
                 const isHovered = hoveredId === sub.id;
@@ -318,9 +276,9 @@ function LocalSubmissions({
                         {/* Tests */}
                         <span className="text-xs text-right tabular-nums">
                             <span className={vType === 'accepted' ? 'text-[#2cbb5d]' : 'text-[#999]'}>
-                                {sub.testsPassed}
+                                {sub.testCasesPassed || 0}
                             </span>
-                            <span className="text-[#444]">/{sub.totalTests}</span>
+                            <span className="text-[#444]">/{sub.totalTestCases || 0}</span>
                         </span>
 
                         {/* Arrow */}
@@ -337,73 +295,33 @@ function LocalSubmissions({
     );
 }
 
-/* ââ Global Feed ââ */
+/* ── Global Feed View ── */
 
-function GlobalFeed({
-    submissions,
-    loading,
-    error,
-    onRetry,
-}: {
-    submissions: GlobalSubmission[];
-    loading: boolean;
-    error?: boolean;
-    onRetry?: () => void;
-}) {
+function GlobalSubmissions({ submissions, loading, error, onRefresh }: any) {
     if (loading) {
         return (
-            <div className="py-1">
-                {/* Skeleton table header */}
-                <div className="grid grid-cols-[1fr_90px_72px_72px] gap-2 px-4 py-2 text-[10px] font-medium text-[#555] uppercase tracking-wider">
-                    <span>Author</span>
-                    <span>Verdict</span>
-                    <span className="text-right">Runtime</span>
-                    <span className="text-right">Memory</span>
-                </div>
-                {/* Skeleton rows */}
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className={`grid grid-cols-[1fr_90px_72px_72px] gap-2 items-center px-4 py-2.5 ${
-                            i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
-                        }`}
-                    >
-                        <div className="flex flex-col gap-1">
-                            <div className="h-3.5 rounded-md bg-white/[0.06] animate-pulse" style={{ width: `${60 + (i * 17) % 50}px`, animationDelay: `${i * 80}ms` }} />
-                            <div className="h-2.5 w-16 rounded-md bg-white/[0.04] animate-pulse" style={{ animationDelay: `${i * 80 + 40}ms` }} />
-                        </div>
-                        <div>
-                            <div className="h-5 w-16 rounded-full bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 80 + 80}ms` }} />
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="h-3 w-10 rounded-md bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 80 + 120}ms` }} />
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="h-3 w-12 rounded-md bg-white/[0.06] animate-pulse" style={{ animationDelay: `${i * 80 + 160}ms` }} />
-                        </div>
-                    </div>
-                ))}
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="animate-spin text-[#E8C15A]" size={20} />
+                <span className="text-xs text-[#666]">Scraping global activity...</span>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <AlertCircle className="w-12 h-12 text-[#555]" />
-                <div className="text-center">
-                    <p className="text-sm text-[#555]">Failed to load submissions</p>
-                    <p className="text-xs text-[#444] mt-1">Codeforces API may be unavailable</p>
+            <div className="flex flex-col items-center justify-center py-16 px-6 gap-4 text-center">
+                <AlertCircle className="text-[#ef4743]" size={24} />
+                <div className="space-y-1">
+                    <p className="text-xs text-[#888]">Failed to load global submissions</p>
+                    <p className="text-[10px] text-[#555]">CF might be rate-limiting or this is a private contest.</p>
                 </div>
-                {onRetry && (
-                    <button
-                        onClick={onRetry}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs text-[#999] transition-colors"
-                    >
-                        <RefreshCw size={12} />
-                        Try Again
-                    </button>
-                )}
+                <button 
+                    onClick={onRefresh}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs transition-colors"
+                >
+                    <RefreshCw size={14} />
+                    Try Again
+                </button>
             </div>
         );
     }
@@ -411,55 +329,48 @@ function GlobalFeed({
     if (submissions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Globe size={20} className="text-[#555]" />
-                <p className="text-sm text-[#555]">No global submissions yet</p>
+                <Globe className="text-[#333]" size={24} />
+                <span className="text-xs text-[#555]">No global submissions yet</span>
             </div>
         );
     }
 
     return (
-        <div className="py-1">
-            {/* ââ Table Header ââ */}
-            <div className="grid grid-cols-[1fr_90px_72px_72px] gap-2 px-4 py-2 text-[10px] font-medium text-[#555] uppercase tracking-wider">
-                <span>Author</span>
-                <span>Verdict</span>
-                <span className="text-right">Runtime</span>
+        <div className="flex flex-col">
+            <div className="grid grid-cols-[1fr_90px_72px_72px] gap-2 px-4 py-2 text-[10px] font-bold text-[#444] uppercase tracking-wider border-b border-white/[0.03]">
+                <span>Author & Verdict</span>
+                <span className="text-right">Time</span>
                 <span className="text-right">Memory</span>
+                <span className="text-right">Lang</span>
             </div>
 
-            {/* ââ Rows ââ */}
-            {submissions.map((sub, idx) => {
+            {submissions.map((sub: any, idx: number) => {
                 const vType = getVerdictType(sub.verdict);
                 const colors = verdictColors[vType];
 
                 return (
                     <div
                         key={sub.id}
-                        className={`grid grid-cols-[1fr_90px_72px_72px] gap-2 items-center px-4 py-2.5 ${
-                            idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
+                        className={`grid grid-cols-[1fr_90px_72px_72px] gap-2 items-center px-4 py-2.5 transition-colors ${
+                             idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
                         }`}
                     >
-                        {/* Author */}
                         <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-sm text-white truncate">{sub.author}</span>
-                            <span className="text-[10px] text-[#555]">
-                                {timeAgoUnix(sub.creationTimeSeconds)}
+                            <span className="text-xs font-bold text-[#E8C15A] truncate">
+                                {sub.author}
+                            </span>
+                            <span className={`text-[10px] font-medium ${colors.text}`}>
+                                {formatVerdict(sub.verdict)}
                             </span>
                         </div>
-
-                        {/* Verdict */}
-                        <span className={`text-xs font-medium ${colors.text}`}>
-                            {formatVerdict(sub.verdict)}
-                        </span>
-
-                        {/* Runtime */}
-                        <span className="text-xs text-[#999] text-right tabular-nums">
+                        <span className="text-[10px] text-[#888] text-right">
                             {formatTime(sub.timeConsumedMillis)}
                         </span>
-
-                        {/* Memory */}
-                        <span className="text-xs text-[#999] text-right tabular-nums">
-                            {formatMemory(Math.round(sub.memoryConsumedBytes / 1024))}
+                        <span className="text-[10px] text-[#888] text-right">
+                            {formatMemory(sub.memoryConsumedBytes / 1024)}
+                        </span>
+                        <span className="text-[10px] text-[#666] text-right truncate">
+                            {sub.language}
                         </span>
                     </div>
                 );

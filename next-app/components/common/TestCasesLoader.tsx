@@ -16,8 +16,8 @@ export function TestCasesLoader() {
     }, []);
 
     return (
-        <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center gap-4">
                 {[...Array(caseCount)].map((_, i) => {
                     // Logic: 
                     // i < activeIndex means "Passed" (Green)
@@ -36,12 +36,12 @@ export function TestCasesLoader() {
                     );
                 })}
             </div>
-            <div className="h-4">
+            <div className="h-8">
                 <motion.span
                     key={activeIndex < caseCount ? "running" : "done"}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-[10px] font-mono text-[#666] uppercase tracking-wider"
+                    className="text-xl font-mono text-[#888] uppercase tracking-widest font-bold"
                 >
                     {activeIndex < caseCount ? `Running Test ${activeIndex + 1}...` : 'Accepted'}
                 </motion.span>
@@ -71,7 +71,7 @@ function TestCaseDot({ status }: { status: 'pending' | 'running' | 'accepted' })
             animate={status}
             variants={variants}
             transition={{ duration: 0.2 }}
-            className="w-3 h-3 rounded-[2px]" // Slightly rounded square for "test case" look
+            className="w-12 h-12 rounded-md" // Slightly rounded square for "test case" look
         />
     );
 }

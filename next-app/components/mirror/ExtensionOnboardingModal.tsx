@@ -68,9 +68,9 @@ export default function ExtensionOnboardingModal() {
                     <div className="relative z-10 h-full flex flex-col justify-end p-4 pb-3">
                         <div className="flex items-center gap-1.5 mb-1">
                             <div className="w-0.5 h-3 bg-[#E8C15A] rounded-full" />
-                            <span className="text-[10px] font-medium text-[#E8C15A] uppercase tracking-wider">Extension</span>
+                            <span className="text-[10px] font-medium text-[#E8C15A] uppercase tracking-wider">Extension v2.0.0</span>
                         </div>
-                        <h2 className="text-lg font-bold text-white">Mirror Mode</h2>
+                        <h2 className="text-lg font-bold text-white">Cookie Mode (Stable)</h2>
                     </div>
                 </div>
 
@@ -78,7 +78,7 @@ export default function ExtensionOnboardingModal() {
                 <div className="p-4 space-y-3.5">
                     {/* Description */}
                     <p className="text-xs text-white/60 leading-relaxed">
-                        Unlock seamless Codeforces integration. Submit solutions and get verdicts instantly.
+                        The new Cookie-Based extension bypasses Cloudflare reliably. Submit solutions instantly without leaving ICPC HUE.
                     </p>
 
                     {/* Features - 2x2 Grid */}
@@ -89,7 +89,7 @@ export default function ExtensionOnboardingModal() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-white/80 leading-relaxed">
-                                    <span className="font-semibold text-white">One-Click Submission</span> — Submit directly to Codeforces with automatic verdict retrieval
+                                    <span className="font-semibold text-white">Full CF Bypass</span> — Uses your real session cookies to avoid Cloudflare challenges
                                 </p>
                             </div>
                         </div>
@@ -100,7 +100,7 @@ export default function ExtensionOnboardingModal() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-white/80 leading-relaxed">
-                                    <span className="font-semibold text-white">Enhanced Experience</span> — Full feature access with real-time status updates
+                                    <span className="font-semibold text-white">No Tab Popups</span> — Submissions happen entirely in the background
                                 </p>
                             </div>
                         </div>
@@ -111,7 +111,7 @@ export default function ExtensionOnboardingModal() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-white/80 leading-relaxed">
-                                    <span className="font-semibold text-white">Seamless Integration</span> — Works directly in your browser without leaving the page
+                                    <span className="font-semibold text-white">Zero Scraping</span> — Uses official API for verdicts where possible
                                 </p>
                             </div>
                         </div>
@@ -122,31 +122,32 @@ export default function ExtensionOnboardingModal() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-white/80 leading-relaxed">
-                                    <span className="font-semibold text-white">Free & Open Source</span> — No cost, no tracking, completely transparent
+                                    <span className="font-semibold text-white">Privacy First</span> — Credentials never leave your machine (only sent to your ICPC HUE server)
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Compact Alert */}
-                    <div className="flex gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <AlertTriangle size={13} className="text-red-400 shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-red-300/70 leading-relaxed">
-                            <span className="font-semibold text-red-300">Disclaimer:</span> Use responsibly. We are not responsible for rate limiting or contest policy violations.
+                    <div className="flex gap-2 p-2 rounded-lg bg-[#E8C15A]/5 border border-[#E8C15A]/20">
+                        <Download size={13} className="text-[#E8C15A] shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-white/60 leading-relaxed">
+                            <span className="font-semibold text-[#E8C15A]">Install Note:</span> Load the <code className="/extension">extension/</code> folder in <code className="text-white">chrome://extensions</code> during development.
                         </p>
                     </div>
 
                     {/* Compact Actions */}
                     <div className="space-y-2 pt-1">
-                        <a
-                            href="https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj"
-                            target="_blank"
-                            onClick={handleClose}
+                        <button
+                            onClick={() => {
+                                window.open('chrome://extensions', '_blank');
+                                handleClose();
+                            }}
                             className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[#E8C15A] hover:bg-[#d4ac4b] text-black font-semibold text-sm rounded-lg transition-all shadow-md shadow-[#E8C15A]/20 hover:shadow-[#E8C15A]/40 active:scale-[0.98]"
                         >
                             <Download size={16} />
-                            Install Extension
-                        </a>
+                            Load Local Extension
+                        </button>
                         <button
                             onClick={handleClose}
                             className="w-full py-2 text-xs text-white/50 hover:text-white/80 font-medium transition-colors"

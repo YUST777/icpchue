@@ -8,7 +8,7 @@ import { HeroSection } from '@/components/dashboard/HeroSection';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { ActivityCalendar } from '@/components/dashboard/ActivityCalendar';
 import { StatsFooter } from '@/components/dashboard/StatsFooter';
-import DashboardOnboardingTour from '@/components/DashboardOnboardingTour';
+import DashboardOnboardingTour from '@/components/onboarding/DashboardOnboardingTour';
 
 export default function DashboardHome() {
     const { user, profile } = useAuth();

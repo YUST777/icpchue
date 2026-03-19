@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements } from '@/hooks/useAchievements';
-import { AchievementRevealModal } from '@/components/AchievementRevealModal';
+import { AchievementRevealModal } from '@/components/achievements/AchievementRevealModal';
 
 const AUTH_PAGES = ['/register', '/login', '/forgot-password', '/reset-password'];
 
