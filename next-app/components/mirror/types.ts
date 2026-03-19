@@ -40,6 +40,8 @@ export interface Submission {
     source: 'judge0' | 'codeforces';
     language?: string;
     cfSubmissionId?: number | null;
+    compilationError?: string;
+    details?: string;
 }
 
 export interface TestCaseResult {
@@ -112,6 +114,7 @@ export interface CFSubmissionStatus {
     error?: string;
     isDuplicate?: boolean;
     compilationError?: string;
+    details?: string;
     failedTestCase?: number; // The test case number that failed (1-indexed for display)
     needsCaptcha?: boolean; // True if user needs to manually solve captcha
     needsLogin?: boolean; // True if user needs to login to Codeforces

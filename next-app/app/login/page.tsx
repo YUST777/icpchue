@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, Hexagon, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
-import TutorialModal from '@/components/TutorialModal';
+import TutorialModal from '@/components/onboarding/TutorialModal';
 import { InfiniteGrid } from '@/components/InfiniteGrid';
 
 // Zod validation schema

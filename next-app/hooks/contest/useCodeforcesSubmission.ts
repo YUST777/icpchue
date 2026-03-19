@@ -9,7 +9,7 @@ const FINAL_VERDICTS = new Set([
     'IDLENESS_LIMIT_EXCEEDED', 'SECURITY_VIOLATED', 'CRASHED',
     'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded',
     'Runtime Error', 'Compilation Error', 'Challenged', 'Skipped', 'Partial',
-    'Idleness Limit Exceeded',
+    'Idleness Limit Exceeded', 'Compilation error', 'Wrong answer', 'Time limit exceeded', 'Memory limit exceeded'
 ]);
 
 interface UseCodeforcesSubmissionParams {
@@ -57,7 +57,7 @@ export function useCodeforcesSubmission({
     // Reset status when problem changes
     useEffect(() => {
         setCfStatus(null);
-        activeSubIdRef.current = null; // Cancel any active polling's state updates
+        activeSubIdRef.current = null;
     }, [contestId, problemId]);
 
     const handleSubmit = async () => {
@@ -69,6 +69,7 @@ export function useCodeforcesSubmission({
         setCfStatus({ status: 'submitting' });
         activeSubIdRef.current = null;
 
+        // Check extension is installed
         if (!document.getElementById('verdict-extension-installed')) {
             window.open(codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId), '_blank');
             setCfStatus({
@@ -79,7 +80,7 @@ export function useCodeforcesSubmission({
             return;
         }
 
-        // Check login status first
+        // Check login status
         const loginStatus = await new Promise<{ loggedIn: boolean; handle?: string }>((resolve) => {
             const timeout = setTimeout(() => {
                 window.removeEventListener('message', handler);
@@ -104,7 +105,7 @@ export function useCodeforcesSubmission({
         if (!loginStatus.loggedIn) {
             setCfStatus({
                 status: 'error',
-                error: 'You must make an account in CF or login to your account in CF',
+                error: 'You must log in to Codeforces first. Open codeforces.com and sign in.',
                 needsLogin: true,
                 captchaUrl: codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId)
             });
@@ -112,9 +113,9 @@ export function useCodeforcesSubmission({
             return;
         }
 
-        // Promise to handle the submission response
+        // ── Request cookies + CSRF from extension ──
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const submitPromise = new Promise<any>((resolve) => {
+        const extResponse = await new Promise<any>((resolve) => {
             const handler = (event: MessageEvent) => {
                 if (event.data.type === 'VERDICT_SUBMISSION_RESULT') {
                     window.removeEventListener('message', handler);
@@ -122,15 +123,13 @@ export function useCodeforcesSubmission({
                 }
             };
 
-            // Set a timeout for the submission response
             setTimeout(() => {
                 window.removeEventListener('message', handler);
                 resolve({ success: false, error: 'TIMEOUT_NO_RESPONSE' });
-            }, 60000); // Increased timeout for captcha wait
+            }, 15000);
 
             window.addEventListener('message', handler);
 
-            // Send submission request
             window.postMessage({
                 type: 'VERDICT_SUBMIT',
                 payload: {
@@ -138,244 +137,84 @@ export function useCodeforcesSubmission({
                     problemIndex: problemId,
                     code,
                     language: mapLanguageToExtension(language),
-                    urlType, // contest, gym, problemset, group
+                    urlType,
                     groupId
                 }
             }, '*');
         });
 
-        // Helper to check status with timeout
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const checkStatus = (subId: string) => new Promise<any>((resolve) => {
-            const handler = (event: MessageEvent) => {
-                if (event.data.type === 'VERDICT_SUBMISSION_STATUS_RESULT') {
-                    clearTimeout(timeoutId);
-                    window.removeEventListener('message', handler);
-                    resolve(event.data);
-                }
-            };
-
-            const timeoutId = setTimeout(() => {
-                window.removeEventListener('message', handler);
-                resolve({ success: false, error: 'STATUS_CHECK_TIMEOUT' });
-            }, 10000); // 10 second timeout for status check
-
-            window.addEventListener('message', handler);
-            window.postMessage({
-                type: 'VERDICT_CHECK_SUBMISSION',
-                payload: { contestId, submissionId: subId, urlType, groupId }
-            }, '*');
-        });
-
-        try {
-            const response = await submitPromise;
-
-            // 2. Timeout Fallback
-            if (response.error === 'TIMEOUT_NO_RESPONSE') {
+        if (!extResponse.success) {
+            if (extResponse.error === 'TIMEOUT_NO_RESPONSE') {
                 window.open(codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId), '_blank');
                 setCfStatus({
                     status: 'error',
                     error: 'Extension did not respond. Opened Codeforces problem page for manual submission.'
                 });
-                return;
-            }
-
-            // 3. Handle Duplicate Submission
-            if (response.error === 'DUPLICATE_SUBMISSION') {
+            } else if (extResponse.error === 'NOT_LOGGED_IN') {
                 setCfStatus({
                     status: 'error',
-                    error: 'You have submitted exactly the same code before!',
-                    isDuplicate: true,
-                    submissionId: response.submissionId ? Number(response.submissionId) : undefined
+                    error: 'Please log in to Codeforces first',
+                    needsLogin: true,
+                    captchaUrl: 'https://codeforces.com/enter'
                 });
-                return;
-            }
-
-            // Handle Captcha/Cloudflare Challenge
-            if (response.error === 'CLOUDFLARE_CHALLENGE' || response.error === 'CAPTCHA_REQUIRED') {
-                setCfStatus({
-                    status: 'error',
-                    error: 'Captcha verification required. Please complete it manually.',
-                    needsCaptcha: true,
-                    captchaUrl: codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId)
-                });
-                return;
-            }
-
-            if (response.success) {
-                const submissionId = response.submissionId ? Number(response.submissionId) : undefined;
-                let userHandle: string | null = response.handle || null;
-
-                // If no handle from submission response, ask the extension for it
-                if (!userHandle) {
-                    try {
-                        const handleResponse = await new Promise<{ handle: string | null }>((resolve) => {
-                            const handler = (event: MessageEvent) => {
-                                if (event.data.type === 'VERDICT_HANDLE_RESPONSE') {
-                                    window.removeEventListener('message', handler);
-                                    clearTimeout(tid);
-                                    resolve({ handle: event.data.handle || null });
-                                }
-                            };
-                            const tid = setTimeout(() => {
-                                window.removeEventListener('message', handler);
-                                resolve({ handle: null });
-                            }, 3000);
-                            window.addEventListener('message', handler);
-                            window.postMessage({ type: 'VERDICT_GET_HANDLE' }, '*');
-                        });
-                        userHandle = handleResponse.handle;
-                    } catch {
-                        // ignore — handle stays null
-                    }
-                }
-
-                // Update CF status to waiting
-                setCfStatus({
-                    status: 'waiting',
-                    submissionId
-                });
-
-                // Start Polling if we have an ID
-                if (submissionId) {
-                    activeSubIdRef.current = submissionId;
-                    let attempts = 0;
-                    const maxAttempts = 120; // ~3 minutes max
-
-                    // Direct API polling function
-                    const pollCfApi = async () => {
-                        try {
-                            // Always use our API route (handles keys and signing securely on server)
-                            const handleParam = userHandle ? `&handle=${encodeURIComponent(userHandle)}` : '';
-                            const res = await fetch(`/api/codeforces/submission?contestId=${contestId}&submissionId=${submissionId}${handleParam}`);
-                            if (res.ok) {
-                                return await res.json();
-                            }
-                            return null;
-                        } catch {
-                            return null;
-                        }
-                    };
-
-                    while (attempts < maxAttempts) {
-                        // Check if this polling is still relevant (user hasn't switched problems or started new submission)
-                        if (!isMountedRef.current || activeSubIdRef.current !== submissionId) {
-                            console.log(`Polling for ${submissionId} cancelled.`);
-                            return;
-                        }
-
-                        // Fast polling - 1 second intervals
-                        await new Promise(r => setTimeout(r, 1000));
-
-                        // Try direct API first (faster)
-                        let status = await pollCfApi();
-
-                        // Fallback to extension if API failed OR returned no verdict
-                        // (user.status doesn't return group contest submissions, so extension
-                        // scraping the actual group page is the only way to get the verdict)
-                        if (!status || (status.verdict === null && status.waiting)) {
-                            const extStatus = await checkStatus(String(submissionId));
-                            // Only use extension result if it actually has something useful
-                            if (extStatus && extStatus.success !== false && extStatus.verdict) {
-                                status = extStatus;
-                            }
-                        } else if (status && (status.verdict === 'COMPILATION_ERROR' || mapVerdict(status.verdict) === 'Compilation Error') && !status.compilationError) {
-                            // The fast Codeforces API returns "COMPILATION_ERROR" but omits the actual error text.
-                            // If we hit this, explicitly fetch from the extension so it scrapes the error details.
-                            const extStatus = await checkStatus(String(submissionId));
-                            if (extStatus && extStatus.success !== false && extStatus.compilationError) {
-                                status.compilationError = extStatus.compilationError;
-                            }
-                        }
-
-                        if (status && status.success !== false) {
-                            const rawVerdict = status.verdict;
-                            const verdictText = mapVerdict(rawVerdict);
-
-                            const isFinal =
-                                rawVerdict !== null &&
-                                (FINAL_VERDICTS.has(rawVerdict) || FINAL_VERDICTS.has(verdictText));
-
-                            if (isFinal) {
-                                // Calculate failed test case (1-indexed for display)
-                                const failedTest = verdictText !== 'Accepted' && status.testNumber !== undefined
-                                    ? status.testNumber + 1
-                                    : undefined;
-
-                                setCfStatus({
-                                    status: 'done',
-                                    verdict: verdictText,
-                                    time: status.time,
-                                    memory: status.memory,
-                                    testNumber: status.testNumber,
-                                    submissionId,
-                                    compilationError: status.compilationError,
-                                    failedTestCase: failedTest
-                                });
-
-                                // Save CF submission + verdict to database (fire-and-forget, but we await it to ensure DB is updated before lists refresh)
-                                await fetchWithAuth('/api/codeforces/save-submission', {
-                                    method: 'POST',
-                                    body: JSON.stringify({
-                                        cfSubmissionId: submissionId,
-                                        contestId,
-                                        problemIndex: problemId,
-                                        sheetId: sheetId || null,
-                                        verdict: verdictText,
-                                        timeMs: status.time || 0,
-                                        memoryKb: status.memory || 0,
-                                        language,
-                                        sourceCode: code,
-                                        cfHandle: userHandle,
-                                        urlType,
-                                        groupId: groupId || null,
-                                    })
-                                }).catch(err => console.warn('Failed to save CF submission to DB:', err));
-
-                                break;
-                            }
-
-                            // Non-final states
-                            if (rawVerdict === 'TESTING' || verdictText === 'Testing') {
-                                setCfStatus({
-                                    status: 'testing',
-                                    testNumber: status.testNumber,
-                                    submissionId
-                                });
-                            } else if (!rawVerdict || verdictText === 'In queue') {
-                                setCfStatus({
-                                    status: 'waiting',
-                                    submissionId
-                                });
-                            }
-                        }
-                        attempts++;
-                    }
-
-                    if (attempts >= maxAttempts) {
-                        console.warn('Polling timeout - verdict may still be pending');
-                        setCfStatus(prev => prev ? {
-                            ...prev,
-                            status: 'error',
-                            error: 'Polling timed out. Check Codeforces directly for the result.'
-                        } : { status: 'error', error: 'Polling timed out' });
-                    }
-                }
             } else {
-                // Handle specific error types
-                let errorMessage = response.error || 'Submission failed';
-                let needsCaptcha = false;
+                setCfStatus({
+                    status: 'error',
+                    error: extResponse.error || 'Failed to get cookies from extension'
+                });
+            }
+            setSubmitting(false);
+            return;
+        }
+
+        // ── Server-side submission via our API → Scrapling bridge ──
+        const userHandle = extResponse.handle || loginStatus.handle || null;
+
+        try {
+            setCfStatus({ status: 'submitting' });
+
+            const apiRes = await fetch('/api/codeforces/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestId,
+                    problemIndex: problemId,
+                    code,
+                    language: mapLanguageToExtension(language),
+                    cookies: extResponse.cookies,
+                    csrfToken: extResponse.csrfToken,
+                    urlType,
+                    groupId: groupId || null,
+                }),
+            });
+
+            const apiData = await apiRes.json();
+
+            // Handle API errors
+            if (!apiData.success) {
+                let errorMessage = apiData.error || 'Submission failed';
                 let needsLogin = false;
 
-                if (response.error === 'NOT_LOGGED_IN') {
-                    errorMessage = 'Please log in to Codeforces first';
-                    needsLogin = true; // User needs to visit CF
-                } else if (response.error === 'RATE_LIMITED') {
+                if (apiData.error === 'DUPLICATE_SUBMISSION') {
+                    setCfStatus({
+                        status: 'error',
+                        error: 'You have submitted exactly the same code before!',
+                        isDuplicate: true,
+                        submissionId: apiData.submissionId ? Number(apiData.submissionId) : undefined
+                    });
+                    setSubmitting(false);
+                    return;
+                }
+
+                if (apiData.error === 'NOT_LOGGED_IN') {
+                    errorMessage = 'Session expired. Please log in to Codeforces again.';
+                    needsLogin = true;
+                } else if (apiData.error === 'RATE_LIMITED') {
                     errorMessage = 'Too many submissions. Please wait a moment.';
-                } else if (response.error === 'VIRTUAL_REGISTRATION_REQUIRED') {
+                } else if (apiData.error === 'VIRTUAL_REGISTRATION_REQUIRED') {
                     errorMessage = 'This is a past contest. Register for virtual participation on Codeforces first.';
                     window.open(`https://codeforces.com/contestRegistration/${contestId}/virtual/true`, '_blank');
-                } else if (response.error === 'GYM_ENTRY_REQUIRED') {
+                } else if (apiData.error === 'GYM_ENTRY_REQUIRED') {
                     errorMessage = 'You need to enter this Gym first.';
                     window.open(`https://codeforces.com/gym/${contestId}`, '_blank');
                 }
@@ -383,16 +222,131 @@ export function useCodeforcesSubmission({
                 setCfStatus({
                     status: 'error',
                     error: errorMessage,
-                    needsCaptcha: !needsLogin && needsCaptcha,
                     needsLogin,
-                    captchaUrl: (needsCaptcha || needsLogin) ? getSubmitUrl(contestId, problemId, urlType, groupId) : undefined
+                    captchaUrl: needsLogin ? 'https://codeforces.com/enter' : undefined
                 });
+                setSubmitting(false);
+                return;
             }
+
+            // ── Submission success → start polling for verdict ──
+            const submissionId = apiData.submissionId ? Number(apiData.submissionId) : undefined;
+
+            setCfStatus({
+                status: 'waiting',
+                submissionId
+            });
+
+            if (submissionId) {
+                activeSubIdRef.current = submissionId;
+                let attempts = 0;
+                const maxAttempts = 120;
+
+                const pollCfApi = async () => {
+                    try {
+                        const handleParam = userHandle ? `&handle=${encodeURIComponent(userHandle)}` : '';
+                        const cookieParam = `&cookies=${encodeURIComponent(extResponse.cookies)}`;
+                        const typeParam = `&urlType=${urlType}${groupId ? `&groupId=${groupId}` : ''}`;
+                        const res = await fetch(`/api/codeforces/submission?contestId=${contestId}&submissionId=${submissionId}${handleParam}${cookieParam}${typeParam}`);
+                        if (res.ok) {
+                            return await res.json();
+                        }
+                        return null;
+                    } catch {
+                        return null;
+                    }
+                };
+
+                while (attempts < maxAttempts) {
+                    if (!isMountedRef.current || activeSubIdRef.current !== submissionId) {
+                        console.log(`Polling for ${submissionId} cancelled.`);
+                        return;
+                    }
+
+                    await new Promise(r => setTimeout(r, 1000));
+
+                    const status = await pollCfApi();
+
+                    if (status && status.success !== false) {
+                        const rawVerdict = status.verdict;
+                        const verdictText = mapVerdict(rawVerdict);
+
+                        const isFinal =
+                            rawVerdict !== null &&
+                            (FINAL_VERDICTS.has(rawVerdict) || FINAL_VERDICTS.has(verdictText));
+
+                        if (isFinal) {
+                            const failedTest = verdictText !== 'Accepted' && status.testNumber !== undefined
+                                ? status.testNumber + 1
+                                : undefined;
+
+                            await fetchWithAuth('/api/codeforces/save-submission', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    cfSubmissionId: submissionId,
+                                    contestId,
+                                    problemIndex: problemId,
+                                    sheetId: sheetId || null,
+                                    verdict: verdictText,
+                                    timeMs: status.time || 0,
+                                    memoryKb: status.memory || 0,
+                                    language,
+                                    sourceCode: code,
+                                    cfHandle: userHandle,
+                                    urlType,
+                                    groupId: groupId || null,
+                                    compilationError: status.compilationError || null,
+                                    details: status.details || null,
+                                    testNumber: status.testNumber || null,
+                                })
+                            }).catch(err => console.warn('Failed to save CF submission to DB:', err));
+
+                            setCfStatus({
+                                status: 'done',
+                                verdict: verdictText,
+                                time: status.time,
+                                memory: status.memory,
+                                testNumber: status.testNumber,
+                                submissionId,
+                                compilationError: status.compilationError,
+                                details: status.details,
+                                failedTestCase: failedTest
+                            });
+
+                            break;
+                        }
+
+                        if (rawVerdict === 'TESTING' || verdictText === 'Testing') {
+                            setCfStatus({
+                                status: 'testing',
+                                testNumber: status.testNumber,
+                                submissionId
+                            });
+                        } else if (!rawVerdict || verdictText === 'In queue') {
+                            setCfStatus({
+                                status: 'waiting',
+                                submissionId
+                            });
+                        }
+                    }
+                    attempts++;
+                }
+
+                if (attempts >= maxAttempts) {
+                    console.warn('Polling timeout - verdict may still be pending');
+                    setCfStatus(prev => prev ? {
+                        ...prev,
+                        status: 'error',
+                        error: 'Polling timed out. Check Codeforces directly for the result.'
+                    } : { status: 'error', error: 'Polling timed out' });
+                }
+            }
+
         } catch (err) {
-            console.error('Submission error:', err);
+            console.error('Server submission error:', err);
             setCfStatus({
                 status: 'error',
-                error: 'Failed to communicate with extension. Please refresh the page.'
+                error: 'Failed to submit via server. Please try again.'
             });
         } finally {
             setSubmitting(false);
@@ -405,4 +359,3 @@ export function useCodeforcesSubmission({
         submitting
     };
 }
-

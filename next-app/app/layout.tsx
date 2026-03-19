@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 
-import ClientVersionManager from '@/components/ClientVersionManager';
+import ClientVersionManager from '@/components/core/ClientVersionManager';
 import "./globals.css";
-import Providers from "@/components/Providers";
-import InstallBanner from "@/components/InstallBanner";
-import AchievementToast from "@/components/AchievementToast";
+import Providers from "@/components/core/Providers";
+import InstallBanner from "@/components/landing/InstallBanner";
+import AchievementToast from "@/components/achievements/AchievementToast";
 
 const inter = Inter({
   subsets: ["latin"],

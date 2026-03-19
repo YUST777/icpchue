@@ -7,7 +7,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ChevronLeft, Trophy, Zap, Code, ExternalLink, Shield, Calendar, Lock, Loader2, Award } from 'lucide-react';
 
-const Badge3D = dynamic(() => import('@/components/Badge3D'), { ssr: false });
+const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
 const achievementModels: Record<string, string> = {
     welcome: '/3d/WELCOME.glb',

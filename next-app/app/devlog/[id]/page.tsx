@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic';
 import { MapExpandedProvider } from '@/context/MapExpandedContext';
 import DOMPurify from 'isomorphic-dompurify';
 
-const SecurityArchitecture = dynamic(() => import('@/components/SecurityArchitecture'), { ssr: false });
+const SecurityArchitecture = dynamic(() => import('@/components/landing/SecurityArchitecture'), { ssr: false });
 
 // Enhanced Markdown Renderer with better styling
 // Enhanced Markdown Renderer with robust parsing and custom styling

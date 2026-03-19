@@ -15,7 +15,5 @@ export async function GET(req: NextRequest) {
     const state = Math.random().toString(36).substring(7); // Simple state for now
 
     const authUrl = `https://codeforces.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&state=${state}`;
-    console.log('[Codeforces Login] Redirecting to:', authUrl);
-
     return NextResponse.redirect(authUrl);
 }

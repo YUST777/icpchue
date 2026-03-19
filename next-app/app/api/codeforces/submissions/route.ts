@@ -35,48 +35,72 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const contestId = searchParams.get('contestId');
     const problemIndex = searchParams.get('problemIndex');
+    const urlType = searchParams.get('urlType') || 'contest';
+    const groupId = searchParams.get('groupId');
 
     if (!contestId) {
         return NextResponse.json({ error: 'Missing contestId' }, { status: 400 });
     }
 
-    if (!API_KEY || !API_SECRET) {
-        return NextResponse.json({ error: 'Codeforces API keys not configured' }, { status: 503 });
+    // Phase 1: Try official Codeforces Public API
+    if (API_KEY && API_SECRET && urlType === 'contest') {
+        try {
+            const result = await cfApiCall('contest.status', {
+                contestId,
+                from: 1,
+                count: 50
+            });
+
+            if (result.status === 'OK' && result.result.length > 0) {
+                let submissions = result.result;
+                if (problemIndex) {
+                    submissions = submissions.filter((s: any) => s.problem.index === problemIndex);
+                }
+
+                return NextResponse.json(submissions.map((s: any) => ({
+                    id: s.id,
+                    creationTimeSeconds: s.creationTimeSeconds,
+                    author: s.author.members.map((m: any) => m.handle).join(', '),
+                    verdict: s.verdict,
+                    timeConsumedMillis: s.timeConsumedMillis,
+                    memoryConsumedBytes: s.memoryConsumedBytes,
+                    language: s.programmingLanguage
+                })));
+            }
+        } catch (e) {
+            console.warn('[Submissions API] Public API failed, falling back to bridge...', e);
+        }
     }
 
+    // Phase 2: Fallback to Scrapling Bridge (Scraping via user's session)
     try {
-        const result = await cfApiCall('contest.status', {
-            contestId,
-            from: 1,
-            count: 50
+        const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
+        
+        // We need cookies for the bridge to work for private/group contests
+        const cookies = req.headers.get('cookie') || '';
+
+        const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/submissions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contestId,
+                problemIndex,
+                cookies,
+                urlType,
+                groupId
+            })
         });
 
-        if (result.status !== 'OK') {
-            // contest.status doesn't work for group contests — return empty array gracefully
-            return NextResponse.json([]);
+        if (bridgeRes.ok) {
+            const data = await bridgeRes.json();
+            if (data.success) {
+                return NextResponse.json(data.submissions);
+            }
         }
-
-        let submissions = result.result;
-
-        // Filter by problem if index provided
-        if (problemIndex) {
-            submissions = submissions.filter((s: any) => s.problem.index === problemIndex);
-        }
-
-        // Map to the format expected by SubmissionsList.tsx
-        const mappedSubmissions = submissions.map((s: any) => ({
-            id: s.id,
-            creationTimeSeconds: s.creationTimeSeconds,
-            author: s.author.members.map((m: any) => m.handle).join(', '),
-            verdict: s.verdict,
-            timeConsumedMillis: s.timeConsumedMillis,
-            memoryConsumedBytes: s.memoryConsumedBytes,
-            language: s.programmingLanguage
-        }));
-
-        return NextResponse.json(mappedSubmissions);
-
     } catch (error) {
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('[Submissions API] Bridge fallback failed:', error);
     }
+
+    // Final Graceful Fallback
+    return NextResponse.json([]);
 }

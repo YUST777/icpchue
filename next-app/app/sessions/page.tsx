@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, ArrowRight, Folder } from 'lucide-react';
-import Providers from '@/components/Providers';
+import Providers from '@/components/core/Providers';
 import { camps } from '@/lib/sessionData';
 
 function SessionLibraryContent() {

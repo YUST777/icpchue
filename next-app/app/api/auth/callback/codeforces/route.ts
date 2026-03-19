@@ -39,7 +39,6 @@ export async function GET(req: NextRequest) {
         });
 
         const tokenText = await tokenRes.text();
-        console.log('[Codeforces Callback] Token status:', tokenRes.status, 'Response:', tokenText);
 
         let tokenData;
         try {
@@ -69,7 +68,6 @@ export async function GET(req: NextRequest) {
 
         // 3. Check if user is logged in
         const authUser = await verifyAuth(req);
-        console.log('[Codeforces Callback] User handle:', handle, 'Authenticated user:', authUser?.id);
 
         if (authUser) {
             // CASE A: User is already logged in -> LINK ACCOUNT
@@ -81,7 +79,6 @@ export async function GET(req: NextRequest) {
                  WHERE id = $4`,
                 [handle, tokenData.access_token, tokenData.refresh_token, authUser.id]
             );
-            console.log('[Codeforces Callback] User linked successfully');
 
             // Sync to applications table if linked
             if (authUser.applicationId) {

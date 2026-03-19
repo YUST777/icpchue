@@ -9,7 +9,7 @@ import { ChevronLeft, Trophy, Zap, Code, ExternalLink, Shield, Calendar, Lock, L
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 
-const Badge3D = dynamic(() => import('@/components/Badge3D'), { ssr: false });
+const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
 const achievementModels: Record<string, string> = {
     welcome: '/3d/WELCOME.glb',

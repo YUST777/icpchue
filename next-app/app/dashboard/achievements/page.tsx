@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Lock } from 'lucide-react';
 
-const Badge3D = dynamic(() => import('@/components/Badge3D'), { ssr: false });
+const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
 interface BadgeCardProps {
     modelPath?: string;

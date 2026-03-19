@@ -6,9 +6,9 @@ import { Hexagon, ChevronDown, Pencil } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { fetchWithCache } from '@/lib/api-cache';
 
-import AchievementsWidget from '@/components/AchievementsWidget';
+import AchievementsWidget from '@/components/achievements/AchievementsWidget';
 import CurrentSheetWidget from '@/components/dashboard/CurrentSheetWidget';
-import { AchievementRevealModal } from '@/components/AchievementRevealModal';
+import { AchievementRevealModal } from '@/components/achievements/AchievementRevealModal';
 import { UserProfile } from '@/lib/types';
 import { useAchievements } from '@/hooks/useAchievements';
 

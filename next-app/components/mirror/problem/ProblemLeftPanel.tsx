@@ -29,10 +29,13 @@ interface ProblemLeftPanelProps {
     cfHandle: string | null;
     handleLoading: boolean;
     onHandleSave: (handle: string) => void;
+    onViewCode: (id: number) => void;
     sheetSlug?: string;
     levelSlug?: string;
     statsLoading?: boolean;
     stats?: any;
+    urlType?: string;
+    groupId?: string;
 }
 
 export default function ProblemLeftPanel({
@@ -56,9 +59,12 @@ export default function ProblemLeftPanel({
     cfHandle,
     handleLoading,
     onHandleSave,
+    onViewCode,
     sheetSlug,
     levelSlug,
     statsLoading,
+    urlType,
+    groupId,
 }: ProblemLeftPanelProps) {
     const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
     const safeProblemId = (Array.isArray(problemId) ? problemId[0] : problemId).toUpperCase();
@@ -104,9 +110,11 @@ export default function ProblemLeftPanel({
                             <SubmissionsList
                                 submissions={submissions}
                                 loading={submissionsLoading}
-                                onViewCode={() => { }}
+                                onViewCode={onViewCode}
                                 contestId={safeContestId}
                                 problemIndex={safeProblemId}
+                                urlType={urlType}
+                                groupId={groupId}
                             />
                         )}
                     </div>

@@ -10,7 +10,7 @@ import { addCacheBust } from '@/lib/cache-version';
 // Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 // Dynamic import for Virtualization to avoid SSR/Build issues with react-virtualized-auto-sizer
-const VirtualLeaderboard = dynamic(() => import('@/components/VirtualLeaderboard'), {
+const VirtualLeaderboard = dynamic(() => import('@/components/common/VirtualLeaderboard'), {
     ssr: false,
     loading: () => (
         <div className="flex items-center justify-center h-full text-[#666]">

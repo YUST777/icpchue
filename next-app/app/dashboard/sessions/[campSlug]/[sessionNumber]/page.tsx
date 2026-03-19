@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Info, Eye, Loader2 } from 'lucide-react';
-import Providers from '@/components/Providers';
+import Providers from '@/components/core/Providers';
 import { useAuth } from '@/contexts/AuthContext';
 import { camps } from '@/lib/sessionData';
 

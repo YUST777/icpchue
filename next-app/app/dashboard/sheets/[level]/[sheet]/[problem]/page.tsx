@@ -9,9 +9,10 @@ import Link from 'next/link';
 // Subfolder components (Verdict structure)
 import { ProblemHeader, ProblemLeftPanel, ProblemDrawer } from '@/components/mirror/problem';
 import { CodeWorkspace } from '@/components/mirror/editor';
+import SubmissionDetailModal from '@/components/mirror/SubmissionDetailModal';
 import type { ActiveSheet, SheetProblem } from '@/components/mirror/problem/ProblemDrawer';
-import ExtensionGate from '@/components/ExtensionGate';
-import { TestCasesLoader } from '@/components/TestCasesLoader';
+import ExtensionGate from '@/components/core/ExtensionGate';
+import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 import OnboardingTour from '@/components/mirror/OnboardingTour';
 
 // Hooks
@@ -90,9 +91,6 @@ export default function ProblemPage() {
         return (
             <div className="fixed inset-0 bg-[#0B0B0C] flex flex-col items-center justify-center z-50 gap-6">
                 <TestCasesLoader />
-                <p className="text-[#555] text-[10px] font-mono uppercase tracking-[0.25em]">
-                    Loading Problem...
-                </p>
             </div>
         );
     }
@@ -208,6 +206,7 @@ function MirrorUI({
     // ─── Submissions ───
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [submissionsLoading, setSubmissionsLoading] = useState(false);
+    const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
 
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -396,8 +395,11 @@ function MirrorUI({
                         cfHandle={cfHandle}
                         handleLoading={handleLoading}
                         onHandleSave={setCfHandle}
+                        onViewCode={setSelectedSubId}
                         sheetSlug={sheetSlug}
                         levelSlug={levelSlug}
+                        urlType={urlType}
+                        groupId={groupId}
                     />
 
                     {/* Panel Resizer */}
@@ -433,6 +435,18 @@ function MirrorUI({
                         sampleTestCasesCount={sampleTestCasesCount}
                     />
                 </div>
+
+                {/* Submission Detail Modal */}
+                <SubmissionDetailModal
+                    isOpen={selectedSubId !== null}
+                    onClose={() => setSelectedSubId(null)}
+                    submissionId={selectedSubId}
+                    contestId={contestId}
+                    onRestoreCode={(newCode) => {
+                        setCode(newCode);
+                        // Optional: trigger a success toast if we had a toast system
+                    }}
+                />
             </div>
         </ExtensionGate>
     );
