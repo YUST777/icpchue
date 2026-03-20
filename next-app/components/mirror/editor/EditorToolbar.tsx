@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Play, ChevronDown, Code, Lock, AlignLeft, Bookmark, Braces, RotateCcw, Maximize2, Minimize2, Copy, Check, Maximize, ChevronUp, Share2 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
-
+import { Tooltip } from '@/components/ui/Tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface EditorToolbarProps {
@@ -20,41 +20,7 @@ interface EditorToolbarProps {
     onFormat?: () => void;
 }
 
-function ToolbarTooltip({ children, label }: { children: React.ReactNode, label: string }) {
-    const [show, setShow] = useState(false);
-    const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
-    const handleEnter = () => {
-        const id = setTimeout(() => setShow(true), 200); // Reduced delay for better feel
-        setTimeoutId(id);
-    };
-
-    const handleLeave = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        setShow(false);
-    };
-
-    return (
-        <div className="relative flex items-center justify-center h-full" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
-            {children}
-            <AnimatePresence>
-                {show && (
-                    <motion.div
-                        key={label}
-                        initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -2, scale: 0.95 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="absolute top-full mt-2 px-3 py-1.5 bg-[#171718] text-white text-[11px] font-bold rounded-lg pointer-events-none whitespace-nowrap z-[200] border border-white/10 shadow-2xl"
-                    >
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#171718] border-l border-t border-white/10 rotate-45 transform"></div>
-                        {label}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
 
 export default function EditorToolbar({
     language,
@@ -167,31 +133,31 @@ export default function EditorToolbar({
                 </div>
 
                 <div className="flex gap-4 items-center">
-                    <ToolbarTooltip label="Bookmark">
+                    <Tooltip content="Bookmark" position="bottom">
                         <Bookmark className='w-4 text-white/40 hover:text-white cursor-pointer transition-colors' />
-                    </ToolbarTooltip>
+                    </Tooltip>
                     
-                    <ToolbarTooltip label={isCopied ? 'Copied!' : 'Copy Code'}>
+                    <Tooltip content={isCopied ? 'Copied!' : 'Copy Code'} position="bottom">
                         {isCopied ? 
                             <Check className='w-4 text-green-500 transition-colors' /> : 
                             <Copy onClick={handleCopyToClipboard} className='w-4 cursor-pointer text-white/40 hover:text-white transition-colors' />
                         }
-                    </ToolbarTooltip>
+                    </Tooltip>
 
-                    <ToolbarTooltip label="Export as Image">
+                    <Tooltip content="Export as Image" position="bottom">
                         <Share2 onClick={onExport} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
-                    </ToolbarTooltip>
+                    </Tooltip>
 
-                    <ToolbarTooltip label="Format Code">
+                    <Tooltip content="Format Code" position="bottom">
                         <Braces onClick={onFormat} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
-                    </ToolbarTooltip>
+                    </Tooltip>
 
-                    <ToolbarTooltip label={isFullScreen ? 'Exit Full Screen' : 'Full screen'}>
+                    <Tooltip content={isFullScreen ? 'Exit Full Screen' : 'Full screen'} position="bottom">
                         {isFullScreen ?
                             <Minimize2 onClick={handleExitFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' /> :
                             <Maximize2 onClick={handleFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' />
                         }
-                    </ToolbarTooltip>
+                    </Tooltip>
                 </div>
             </div>
         </div>

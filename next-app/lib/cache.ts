@@ -73,3 +73,28 @@ export async function invalidateCache(key: string): Promise<void> {
         console.error(`[Cache] Invalidation error for key ${key}:`, error);
     }
 }
+
+/**
+ * Basic Get cache
+ */
+export async function getCache<T>(key: string): Promise<T | null> {
+    try {
+        const cached = await redis.get(key);
+        return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+        console.error(`[Cache] Get error:`, e);
+        return null;
+    }
+}
+
+/**
+ * Basic Set cache
+ */
+export async function setCache(key: string, data: any, ttl: number): Promise<void> {
+    try {
+        await redis.set(key, JSON.stringify(data), 'EX', ttl);
+    } catch (e) {
+        console.error(`[Cache] Set error:`, e);
+    }
+}
+

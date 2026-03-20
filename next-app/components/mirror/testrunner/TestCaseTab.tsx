@@ -194,7 +194,7 @@ export default function TestCaseTab({
                                 value={formInput}
                                 onChange={(e) => setFormInput(e.target.value)}
                                 placeholder="Enter test input..."
-                                className="w-full h-full min-h-[100px] bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10 flex-1"
+                                className="w-full h-40 bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                         <div className="flex flex-col min-h-0">
@@ -205,7 +205,7 @@ export default function TestCaseTab({
                                 value={formOutput}
                                 onChange={(e) => setFormOutput(e.target.value)}
                                 placeholder="Enter expected output..."
-                                className="w-full h-full min-h-[100px] bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10 flex-1"
+                                className="w-full h-40 bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                     </div>
@@ -244,13 +244,13 @@ export default function TestCaseTab({
                                 </button>
                             )}
                         </div>
-                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-auto scrollbar-thin scrollbar-thumb-white/10 flex-1">
+                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48">
                             {testCases[selectedTestCase].input || <span className="italic text-[#555]">Empty input</span>}
                         </div>
                     </div>
                     <div className="flex flex-col min-h-0">
                         <label className="text-[10px] md:text-xs font-medium text-[#888] mb-1.5 md:mb-2 block uppercase tracking-wider">Expected Output</label>
-                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-auto scrollbar-thin scrollbar-thumb-white/10 flex-1">
+                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48">
                             {testCases[selectedTestCase].output || testCases[selectedTestCase].expectedOutput || <span className="italic text-[#555]">No expected output</span>}
                         </div>
                     </div>
@@ -265,7 +265,7 @@ export default function TestCaseTab({
                                 </span>
                             )}
                         </div>
-                        <div className={`bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border font-mono text-xs md:text-sm whitespace-pre-wrap leading-relaxed shadow-inner overflow-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 ${result && result.results[selectedTestCase]
+                        <div className={`bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border font-mono text-xs md:text-sm whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48 ${result && result.results[selectedTestCase]
                             ? result.results[selectedTestCase].passed
                                 ? 'border-[#E8C15A]/20 text-[#d4d4d4]'
                                 : 'border-red-500/20 text-red-300'

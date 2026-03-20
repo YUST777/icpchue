@@ -26,20 +26,28 @@ function Toggle({
     onChange: (val: boolean) => void;
 }) {
     return (
-        <button
+        <div
             onClick={() => onChange(!checked)}
-            className={`w-9 h-5 rounded-full relative transition-colors ${
-                checked ? "bg-[#3B82F6]" : "bg-white/20"
+            className={`relative flex items-center cursor-pointer transition-colors duration-200 ${
+                checked ? "bg-[#3B82F6]" : "bg-[#333333]"
             }`}
+            style={{
+                width: "40px",
+                height: "20px",
+                borderRadius: "20px",
+                flexShrink: 0
+            }}
         >
-            <motion.div
-                className="w-4 h-4 bg-white rounded-full absolute top-[2px]"
-                animate={{
-                    left: checked ? "18px" : "2px",
+            <div
+                className="bg-white rounded-full transition-all duration-200 shadow-sm"
+                style={{
+                    width: "14px",
+                    height: "14px",
+                    marginLeft: checked ? "23px" : "3px",
+                    borderRadius: "50%"
                 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
-        </button>
+        </div>
     );
 }
 
@@ -114,16 +122,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative w-[800px] h-[500px] max-w-[90vw] max-h-[90vh] bg-[#2a2a2a] rounded-xl overflow-hidden flex shadow-2xl"
+                        className="relative w-[760px] h-[480px] max-w-[95vw] max-h-[90vh] bg-[#282828] rounded-2xl overflow-hidden flex shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/10"
                     >
                         {/* Sidebar */}
-                        <div className="w-[220px] bg-[#1e1e1e] flex flex-col shrink-0">
-                            <div className="p-6 pb-4">
-                                <h2 className="text-xl text-white font-medium">
+                        <div className="w-[180px] sm:w-[220px] bg-[#222222] border-r border-white/5 flex flex-col shrink-0">
+                            <div className="p-6 pb-2">
+                                <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider">
                                     Settings
                                 </h2>
                             </div>
-                            <nav className="flex-1 px-3 space-y-1">
+                            <nav className="flex-1 px-3 py-4 space-y-1">
                                 {[
                                     { name: "Code Editor", icon: Code },
                                     { name: "Shortcuts", icon: Keyboard },
@@ -134,116 +142,107 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <button
                                             key={tab.name}
                                             onClick={() => setActiveTab(tab.name as Tab)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                                                 isActive
-                                                    ? "bg-white/10 text-white font-medium"
-                                                    : "text-white/60 hover:text-white hover:bg-white/5"
+                                                    ? "bg-white/10 text-white font-medium shadow-sm"
+                                                    : "text-white/50 hover:text-white hover:bg-white/5"
                                             }`}
                                         >
-                                            <Icon size={18} />
+                                            <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
                                             <span>{tab.name}</span>
                                         </button>
                                     );
                                 })}
                             </nav>
                         </div>
-
+ 
                         {/* Content Area */}
-                        <div className="flex-1 relative bg-[#2a2a2a] flex flex-col">
-                            {/* Close Button */}
-                            <button
-                                onClick={onClose}
-                                className="absolute top-4 right-4 p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors z-10"
-                            >
-                                <X size={20} />
-                            </button>
-
-                            <div className="flex-1 overflow-y-auto p-8 pt-12 custom-scrollbar">
+                        <div className="flex-1 relative flex flex-col bg-[#282828]">
+                            {/* Header / Close */}
+                            <div className="h-14 flex items-center justify-between px-8 border-b border-white/5">
+                                <h3 className="text-sm font-medium text-white/90">
+                                    {activeTab}
+                                </h3>
+                                <button
+                                    onClick={onClose}
+                                    className="p-1 px-2 text-white/30 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+ 
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                                 {activeTab === "Code Editor" && (
-                                    <div className="space-y-6 max-w-[400px]">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Font
-                                            </span>
-                                            <Dropdown
-                                                value={font}
-                                                onChange={setFont}
-                                                options={[
-                                                    "Default",
-                                                    "JetBrains Mono",
-                                                    "Fira Code",
-                                                    "Consolas",
-                                                ]}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Font size
-                                            </span>
-                                            <Dropdown
-                                                value={fontSize}
-                                                onChange={setFontSize}
-                                                options={[
-                                                    "11px",
-                                                    "12px",
-                                                    "13px",
-                                                    "14px",
-                                                    "15px",
-                                                    "16px",
-                                                ]}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Font ligatures
-                                            </span>
-                                            <Toggle
-                                                checked={fontLigatures}
-                                                onChange={setFontLigatures}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Key binding
-                                            </span>
-                                            <Dropdown
-                                                value={keyBinding}
-                                                onChange={setKeyBinding}
-                                                options={["Standard", "Vim", "Emacs"]}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Tab size
-                                            </span>
-                                            <Dropdown
-                                                value={tabSize}
-                                                onChange={setTabSize}
-                                                options={[
-                                                    "2 spaces",
-                                                    "4 spaces",
-                                                    "8 spaces",
-                                                ]}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Word Wrap
-                                            </span>
-                                            <Toggle
-                                                checked={wordWrap}
-                                                onChange={setWordWrap}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-white/90">
-                                                Relative Line Number
-                                            </span>
-                                            <Toggle
-                                                checked={relativeLineNumber}
-                                                onChange={setRelativeLineNumber}
-                                            />
-                                        </div>
+                                    <div className="space-y-1 max-w-[480px]">
+                                        {[
+                                            { 
+                                                label: "Font", 
+                                                type: "select", 
+                                                val: font, 
+                                                set: setFont, 
+                                                opts: ["Default", "JetBrains Mono", "Fira Code", "Consolas"] 
+                                            },
+                                            { 
+                                                label: "Font size", 
+                                                type: "select", 
+                                                val: fontSize, 
+                                                set: setFontSize, 
+                                                opts: ["11px", "12px", "13px", "14px", "15px", "16px"] 
+                                            },
+                                            { 
+                                                label: "Font ligatures", 
+                                                type: "toggle", 
+                                                val: fontLigatures, 
+                                                set: setFontLigatures 
+                                            },
+                                            { 
+                                                label: "Key binding", 
+                                                type: "select", 
+                                                val: keyBinding, 
+                                                set: setKeyBinding, 
+                                                opts: ["Standard", "Vim", "Emacs"] 
+                                            },
+                                            { 
+                                                label: "Tab size", 
+                                                type: "select", 
+                                                val: tabSize, 
+                                                set: setTabSize, 
+                                                opts: ["2 spaces", "4 spaces", "8 spaces"] 
+                                            },
+                                            { 
+                                                label: "Word Wrap", 
+                                                type: "toggle", 
+                                                val: wordWrap, 
+                                                set: setWordWrap 
+                                            },
+                                            { 
+                                                label: "Relative Line Number", 
+                                                type: "toggle", 
+                                                val: relativeLineNumber, 
+                                                set: setRelativeLineNumber 
+                                            },
+                                        ].map((item, idx) => (
+                                            <div 
+                                                key={item.label}
+                                                className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                                            >
+                                                <span className="text-sm text-white/80 font-medium">
+                                                    {item.label}
+                                                </span>
+                                                {item.type === "select" ? (
+                                                    <Dropdown
+                                                        value={item.val as string}
+                                                        onChange={item.set as any}
+                                                        options={item.opts as string[]}
+                                                    />
+                                                ) : (
+                                                    <Toggle
+                                                        checked={item.val as boolean}
+                                                        onChange={item.set as any}
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
