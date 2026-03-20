@@ -78,11 +78,13 @@ export default function GradiaExportModal({
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <Share2 size={20} className="text-[#E8C15A]" />
                         Export Snippet
+                        <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/40 uppercase">Alt + G</span>
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-full transition-colors group"
                     >
+                        <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Esc</span>
                         <X size={24} />
                     </button>
                 </div>
