@@ -5,6 +5,8 @@ import {
     CloudUpload
 } from 'lucide-react';
 import { Editor, OnMount } from '@monaco-editor/react';
+import { useEditorStore } from '@/hooks/contest/useEditorStore';
+import { initVimMode } from 'monaco-vim';
 import { useEffect, useRef, useState } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from './types';
 import TestRunnerPanel from './TestRunnerPanel';
@@ -117,6 +119,29 @@ export default function CodeWorkspace({
 
     // Intercept onMount to get editor instance for manual layout
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
+    const vimModeRef = useRef<any>(null);
+    const { 
+        fontFamily, fontSize, fontLigatures, tabSize, wordWrap, lineNumbers, keyBinding 
+    } = useEditorStore();
+
+    // ─── Vim Mode Toggle ───
+    useEffect(() => {
+        if (!editorInstanceRef.current) return;
+
+        if (keyBinding === 'Vim') {
+            if (!vimModeRef.current) {
+                // Status bar element (optional, we'll keep it simple/hidden for now)
+                const statusNode = document.createElement('div');
+                vimModeRef.current = initVimMode(editorInstanceRef.current, statusNode);
+            }
+        } else {
+            if (vimModeRef.current) {
+                vimModeRef.current.dispose();
+                vimModeRef.current = null;
+            }
+        }
+    }, [keyBinding]);
+
     const onEditorMount: OnMount = (editor, monaco) => {
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monaco);
@@ -406,19 +431,20 @@ export default function CodeWorkspace({
                         onMount={onEditorMount}
                         options={{
                             minimap: { enabled: false },
-                            fontSize: isMobile ? 12 : 13,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: fontSize,
+                            fontFamily: fontFamily,
                             scrollBeyondLastLine: false,
                             automaticLayout: false, // Critical: We handle this manually for performance
                             padding: { top: 4, bottom: 4 },
-                            lineHeight: isMobile ? 20 : 22,
-                            fontLigatures: true,
-                            lineNumbers: isMobile ? 'off' : 'on',
+                            lineHeight: fontSize * 1.5,
+                            fontLigatures: fontLigatures,
+                            lineNumbers: lineNumbers,
                             renderLineHighlight: 'all',
                             glyphMargin: !isMobile,
                             folding: !isMobile,
                             lineDecorationsWidth: isMobile ? 0 : 10,
                             lineNumbersMinChars: isMobile ? 0 : 3,
+                            tabSize: tabSize,
                             suggest: {
                                 filterGraceful: false,
                                 matchOnWordStartOnly: true,
@@ -430,7 +456,7 @@ export default function CodeWorkspace({
                                 comments: false,
                                 strings: false
                             },
-                            wordWrap: isMobile ? 'on' : 'off',
+                            wordWrap: wordWrap,
                         }}
                         loading={
                             <div className="h-full bg-[#1e1e1e]" />

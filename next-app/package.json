@@ -37,6 +37,7 @@
     "isomorphic-dompurify": "^3.5.1",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.577.0",
+    "monaco-vim": "^0.4.4",
     "next": "^16.2.0",
     "nodemailer": "^8.0.3",
     "pg": "^8.20.0",
