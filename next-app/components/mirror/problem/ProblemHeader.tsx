@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import {
     ArrowLeft, ChevronLeft, ChevronRight, FileText, Code,
-    List, Shuffle, PanelLeft,
+    List, Shuffle, PanelLeft, Play,
+    CloudUpload, Sparkles
 } from "lucide-react";
 import { SidebarToggleIcon } from "@/components/ui/icons/SidebarToggleIcon";
 import { CFProblemData } from "../shared/types";
@@ -20,6 +21,9 @@ interface ProblemHeaderProps {
     onToggleSidebar: () => void;
     onOpenDrawer?: () => void;
     sheetProblems?: SheetProblem[];
+    onSubmit: () => void;
+    onRunTests: () => void;
+    submitting: boolean;
 }
 
 export default function ProblemHeader({
@@ -32,6 +36,9 @@ export default function ProblemHeader({
     onToggleSidebar,
     onOpenDrawer,
     sheetProblems,
+    onSubmit,
+    onRunTests,
+    submitting,
 }: ProblemHeaderProps) {
     const currentId = problemId || "";
 
@@ -120,19 +127,34 @@ export default function ProblemHeader({
                         </button>
                     )}
 
-                    <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                             {!onOpenDrawer && (
-                                 <button
-                                     onClick={onToggleSidebar}
-                                     className="p-1.5 -ml-1.5 text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-colors"
-                                     title="Toggle Sidebar"
-                                 >
-                                     <SidebarToggleIcon size={20} />
-                                 </button>
-                             )}
-                             {/* Title removed as requested */}
-                         </div>
+                    <div className="flex flex-col min-w-0 flex-1 items-center justify-center">
+                        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5 backdrop-blur-md shadow-2xl">
+                            <button
+                                onClick={onRunTests}
+                                disabled={submitting}
+                                className="p-2 w-10 h-10 flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white/70 hover:text-white rounded-lg transition-all border border-white/5 hover:border-white/10"
+                                title="Run Local Tests"
+                            >
+                                <Play size={18} fill="currentColor" className="ml-0.5" />
+                            </button>
+                            
+                            <button
+                                onClick={onSubmit}
+                                disabled={submitting}
+                                className="flex items-center gap-2 px-5 h-10 bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all border border-white/5 hover:border-white/10 min-w-[120px] justify-center"
+                                title="Submit to Codeforces"
+                            >
+                                <CloudUpload size={18} className="text-[#E8C15A]" />
+                                <span className="text-sm">Submit</span>
+                            </button>
+
+                            <button
+                                className="p-2 w-10 h-10 flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white/70 hover:text-white rounded-lg transition-all border border-white/5 hover:border-white/10"
+                                title="AI Assistance"
+                            >
+                                <Sparkles size={18} className="text-[#E8C15A]/80" />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex items-center shrink-0 gap-0.5 ml-2">

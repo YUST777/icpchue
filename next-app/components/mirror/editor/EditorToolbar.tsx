@@ -103,54 +103,7 @@ export default function EditorToolbar({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                <button
-                    onClick={() => {
-                        if (onRunTests) {
-                            onRunTests();
-                        } else {
-                            setIsTestPanelVisible(!isTestPanelVisible);
-                        }
-                    }}
-                    disabled={submitting}
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border transition-colors flex items-center justify-center gap-1.5 sm:gap-2 touch-manipulation min-h-[32px] ${isTestPanelVisible
-                        ? 'bg-white/10 text-white border-white/20'
-                        : 'text-[#888] border-transparent active:text-white active:bg-white/5'
-                        } ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    title="Test your code locally with sample test cases"
-                >
-                    {submitting ? (
-                        <Loader2 size={12} className="sm:w-[14px] sm:h-[14px] animate-spin" />
-                    ) : (
-                        <Play size={12} className="sm:w-[14px] sm:h-[14px]" />
-                    )}
-                    <span className="hidden xs:inline">{submitting ? 'Testing...' : 'Test Locally'}</span>
-                    <span className="xs:hidden">{submitting ? '...' : 'Test'}</span>
-                </button>
-
-                <button
-                    id="onboarding-submit-btn"
-                    onClick={handleSubmitClick}
-                    disabled={submitting || !code.trim()}
-                    className="px-3 sm:px-4 py-1.5 bg-gradient-to-r from-[#E8C15A] to-[#CFA144] active:from-[#F0D06A] active:to-[#E8C15A] disabled:from-[#333] disabled:to-[#333] disabled:text-[#666] text-black font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs touch-manipulation min-h-[32px]"
-                >
-                    {submitting ? (
-                        <>
-                            <Loader2 size={12} className="sm:w-4 sm:h-4 animate-spin" />
-                            <span className="hidden xs:inline">Running...</span>
-                            <span className="xs:hidden">...</span>
-                        </>
-                    ) : (
-                        <>
-                            <img
-                                src="https://codeforces.org/s/0/favicon-32x32.png"
-                                alt="CF"
-                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain"
-                                style={{ imageRendering: 'crisp-edges' }}
-                            />
-                            <span>Submit</span>
-                        </>
-                    )}
-                </button>
+                {/* Submit/Test buttons moved to ProblemHeader */}
             </div>
         </div>
     );
