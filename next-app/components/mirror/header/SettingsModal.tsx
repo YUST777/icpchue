@@ -247,30 +247,70 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 )}
 
                                 {activeTab === "Shortcuts" && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {[
-                                            { label: "Run Tests", key: "Ctrl + '" },
-                                            { label: "Submit", key: "Ctrl + Enter" },
-                                            { label: "Format Code", key: "Alt + Shift + F" },
-                                            { label: "Toggle Sidebar", key: "Ctrl + B" },
-                                            { label: "Quick Open", key: "Ctrl + P" },
-                                            { label: "Command Palette", key: "Ctrl + Shift + P" },
-                                        ].map((item) => (
-                                            <div
-                                                key={item.label}
-                                                className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
-                                            >
-                                                <span className="text-sm text-white/80">
-                                                    {item.label}
-                                                </span>
-                                                <div className="flex gap-1.5">
-                                                    {item.key.split(" + ").map((k) => (
-                                                        <kbd
-                                                            key={k}
-                                                            className="px-2 py-1 bg-white/10 rounded-md text-[10px] text-white/60 font-mono min-w-[30px] text-center border border-white/5 shadow-sm"
+                                            {
+                                                title: "General",
+                                                items: [
+                                                    { label: "Run Code", key: "Ctrl + '" },
+                                                    { label: "Submit to CF", key: "Ctrl + Enter" },
+                                                    { label: "Close Tab (Back)", key: "Alt + W" },
+                                                    { label: "Maximize Panel", key: "Alt + +" },
+                                                    { label: "Full Screen", key: "Alt + F" },
+                                                ]
+                                            },
+                                            {
+                                                title: "Code Editor",
+                                                items: [
+                                                    { label: "Indent / Outdent", key: "Tab / Shift+Tab" },
+                                                    { label: "Indent / Outdent (Vim)", key: "Ctrl + [ / ]" },
+                                                    { label: "Move Lines", key: "Alt + ↑/↓" },
+                                                    { label: "Delete Line", key: "Ctrl + X" },
+                                                    { label: "Comment", key: "Ctrl + /" },
+                                                    { label: "Undo / Redo", key: "Ctrl + Z / Shift+Z" },
+                                                ]
+                                            },
+                                            {
+                                                title: "Debug",
+                                                items: [
+                                                    { label: "Start Debugging", key: "Ctrl + Alt + '" },
+                                                    { label: "Stop Debugging / Cancel", key: "Esc" },
+                                                    { label: "Skip Forward", key: "F5" },
+                                                    { label: "Step Over", key: "F10" },
+                                                    { label: "Step In / Out", key: "Shift / Ctrl + F11" },
+                                                    { label: "Restart", key: "Ctrl + Shift + F5" },
+                                                ]
+                                            }
+                                        ].map((section) => (
+                                            <div key={section.title} className="space-y-2">
+                                                <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.1em] mb-3">
+                                                    {section.title}
+                                                </h4>
+                                                <div className="space-y-1">
+                                                    {section.items.map((item) => (
+                                                        <div
+                                                            key={item.label}
+                                                            className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
                                                         >
-                                                            {k}
-                                                        </kbd>
+                                                            <span className="text-sm text-white/70">
+                                                                {item.label}
+                                                            </span>
+                                                            <div className="flex gap-1.5 flex-wrap justify-end">
+                                                                {item.key.split(" / ").map((variant, vIdx) => (
+                                                                    <div key={vIdx} className="flex gap-1 items-center">
+                                                                        {vIdx > 0 && <span className="text-[10px] text-white/20">or</span>}
+                                                                        {variant.split(" + ").map((k) => (
+                                                                            <kbd
+                                                                                key={k}
+                                                                                className="px-2 py-0.5 bg-white/5 rounded border border-white/10 text-[10px] text-white/50 font-mono shadow-sm"
+                                                                            >
+                                                                                {k}
+                                                                            </kbd>
+                                                                        ))}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             </div>

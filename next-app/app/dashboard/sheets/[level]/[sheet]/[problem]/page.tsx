@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { OnMount } from '@monaco-editor/react';
 import Link from 'next/link';
@@ -316,8 +316,48 @@ function MirrorUI({
         editorRef.current = editor;
     };
 
-    // Navigation base URL for the sheet
+    const router = useRouter();
     const navigationBaseUrl = `/dashboard/sheets/${levelSlug}/${sheetSlug}`;
+
+    // ─── Global Keyboard Shortcuts ───
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            // 1. Run Tests: Ctrl + '
+            if (e.ctrlKey && e.key === "'") {
+                e.preventDefault();
+                if (!submitting) runTests();
+            }
+            // 2. Submit: Ctrl + Enter
+            else if (e.ctrlKey && e.key === "Enter") {
+                e.preventDefault();
+                if (!submitting && code.trim()) handleSubmit();
+            }
+            // 3. Close Tab (Back): Alt + W
+            else if (e.altKey && e.key.toLowerCase() === "w") {
+                e.preventDefault();
+                router.push(navigationBaseUrl);
+            }
+            // 4. Maximize / Exit Maximize Panel: Alt + +
+            else if (e.altKey && (e.key === "+" || e.key === "=")) {
+                e.preventDefault();
+                setIsTestPanelVisible(!isTestPanelVisible);
+            }
+            // 5. Full Screen: Alt + F
+            else if (e.altKey && e.key.toLowerCase() === "f") {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+        return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+    }, [submitting, code, runTests, handleSubmit, navigationBaseUrl, router, isTestPanelVisible]);
 
     // Fallback loading
     if (loading || !problem || !cfData) {
