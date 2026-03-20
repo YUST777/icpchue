@@ -29,33 +29,54 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Forward to the scrapling bridge
-        const bridgeResponse = await fetch(`${BRIDGE_URL}/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contestId,
-                problemIndex,
-                code,
-                language,
-                cookies,
-                csrfToken,
-                urlType: urlType || 'contest',
-                groupId: groupId || null,
-            }),
-        });
+        // Forward to the scrapling bridge with an explicit timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
 
-        const contentType = bridgeResponse.headers.get('content-type');
-        let data;
-        
-        if (contentType && contentType.includes('application/json')) {
-            data = await bridgeResponse.json();
-        } else {
-            const rawText = await bridgeResponse.text();
-            data = { success: false, error: 'Bridge returned invalid response format' };
+        try {
+            const bridgeResponse = await fetch(`${BRIDGE_URL}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestId,
+                    problemIndex,
+                    code,
+                    language,
+                    cookies,
+                    csrfToken,
+                    urlType: urlType || 'contest',
+                    groupId: groupId || null,
+                }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            const contentType = bridgeResponse.headers.get('content-type');
+            let data;
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await bridgeResponse.json();
+            } else {
+                const rawText = await bridgeResponse.text();
+                console.warn('[CF Submit Proxy] Bridge returned non-JSON:', rawText.substring(0, 200));
+                data = { 
+                    success: false, 
+                    error: bridgeResponse.status === 504 ? 'GATEWAY_TIMEOUT' : 'BRIDGE_ERROR',
+                    details: 'The submission bridge returned an invalid response. It might be overloaded or down.'
+                };
+            }
+
+            return NextResponse.json(data, { status: bridgeResponse.ok ? 200 : 502 });
+        } catch (fetchError: any) {
+            if (fetchError.name === 'AbortError') {
+                return NextResponse.json(
+                    { success: false, error: 'SUBMISSION_TIMEOUT', details: 'The submission took too long. Please check your standing on Codeforces directly.' },
+                    { status: 504 }
+                );
+            }
+            throw fetchError;
         }
-
-        return NextResponse.json(data, { status: bridgeResponse.ok ? 200 : 502 });
     } catch (error: any) {
         console.error('[CF Submit Proxy] Error:', error.message || error);
         return NextResponse.json(
