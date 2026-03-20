@@ -71,10 +71,7 @@ export default function ProblemHeader({ problem, mobileView, setMobileView, navi
                     <div className="h-4 w-px bg-white/10 hidden sm:block shrink-0" />
 
                     <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                        <h1 className="font-bold text-white truncate text-xs sm:text-sm md:text-base min-w-0">
-                            {showIdPrefix && <span className="text-[#E8C15A]">{problem?.id}.</span>}
-                            <span className="truncate">{title}</span>
-                        </h1>
+                        {/* Title removed as requested */}
 
                         {/* Navigation Arrows - Right after title */}
                         <div className="flex items-center shrink-0 gap-0.5">
