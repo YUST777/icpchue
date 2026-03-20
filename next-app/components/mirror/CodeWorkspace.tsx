@@ -254,7 +254,7 @@ export default function CodeWorkspace({
             } as React.CSSProperties}
         >
             {/* Editor Header */}
-            <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-white/10 shrink-0 relative z-[60]">
                 <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2 relative">
                         <span className="text-xs sm:text-sm font-medium text-white hidden xs:inline">Code</span>

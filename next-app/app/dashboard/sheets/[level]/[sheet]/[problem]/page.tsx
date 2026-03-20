@@ -433,6 +433,7 @@ function MirrorUI({
                         onDeleteTestCase={handleDeleteTestCase}
                         onUpdateTestCase={handleUpdateTestCase}
                         sampleTestCasesCount={sampleTestCasesCount}
+                        problemTitle={cfData.meta.title}
                     />
                 </div>
 

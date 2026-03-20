@@ -7,14 +7,19 @@ export default function MirrorSkeleton() {
         <div className="fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col overflow-hidden">
             {/* Header Skeleton */}
             <div className="flex flex-col gap-4 border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0">
-                <div className="flex items-center justify-between gap-4 h-9">
+                <div className="flex items-center justify-between gap-4 h-9 relative">
                     <div className="flex items-center gap-3 overflow-hidden flex-1">
                         <Skeleton className="h-8 w-8 rounded-md" /> {/* Back button */}
                         <Skeleton className="h-8 w-24 rounded-lg hidden sm:block" /> {/* Problems button */}
-                        <div className="flex flex-col gap-1.5 min-w-0 flex-1 max-w-md">
-                            <Skeleton className="h-5 w-3/4 rounded-md" />
-                        </div>
                     </div>
+                    
+                    {/* Centered Buttons Skeleton */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5">
+                        <Skeleton className="h-9 w-9 rounded-lg" />
+                        <Skeleton className="h-9 w-28 rounded-lg" />
+                        <Skeleton className="h-9 w-9 rounded-lg" />
+                    </div>
+
                     <div className="flex items-center gap-2 shrink-0">
                         <Skeleton className="h-8 w-8 rounded-full" />
                     </div>
@@ -62,14 +67,16 @@ export default function MirrorSkeleton() {
 
                 {/* Right Panel/Editor Skeleton (~60%) */}
                 <div className="flex-1 flex flex-col bg-[#121213]">
-                    {/* Editor Header */}
-                    <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-[#1a1a1b]">
-                        <div className="flex items-center gap-3">
-                            <Skeleton className="h-6 w-20 rounded" />
+                    {/* Editor Header Skeleton - Single Action Row */}
+                    <div className="flex items-center justify-between px-4 h-10 border-b border-white/5 bg-[#1a1a1b]">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="h-5 w-20 rounded" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Skeleton className="h-7 w-16 rounded-md" />
-                            <Skeleton className="h-7 w-16 rounded-md shadow-[0_0_10px_rgba(232,193,90,0.1)]" />
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-5 w-5 rounded" />
+                            <Skeleton className="h-5 w-5 rounded" />
+                            <Skeleton className="h-5 w-5 rounded" />
+                            <Skeleton className="h-5 w-5 rounded" />
                         </div>
                     </div>
 
