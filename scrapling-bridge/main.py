@@ -156,33 +156,41 @@ async def submit_code(req: SubmitRequest):
 
     async def perform_fast_submit():
         """Attempt submission via lightweight HTTP POST first."""
+        fetcher = None
         try:
-            with Fetcher(cookies=cookie_dict, timeout=15) as fetcher:
-                logger.info(f"Attempting Fast Path submission to {submit_url}...")
-                resp = fetcher.post(submit_url, data=form_data, headers={"Referer": referer})
-                content = resp.text
-                final_url = resp.url
-                
-                if resp.status_code in [200, 302]:
-                    if "cf-challenge" in content or "Just a moment..." in content:
-                        logger.info("Fast Path hit Cloudflare challenge.")
-                        return None
-                    if "/enter" in final_url or "/login" in final_url:
-                        return {"success": False, "error": "NOT_LOGGED_IN", "status": 403}
+            # Fetcher does NOT support context manager in this version
+            fetcher = Fetcher(cookies=cookie_dict, timeout=15)
+            logger.info(f"Attempting Fast Path submission to {submit_url}...")
+            resp = fetcher.post(submit_url, data=form_data, headers={"Referer": referer})
+            content = resp.text
+            final_url = resp.url
+            
+            if resp.status_code in [200, 302]:
+                if "cf-challenge" in content or "Just a moment..." in content:
+                    logger.info("Fast Path hit Cloudflare challenge.")
+                    return None
+                if "/enter" in final_url or "/login" in final_url:
+                    return {"success": False, "error": "NOT_LOGGED_IN", "status": 403}
 
-                    sub_id_match = re.search(r'data-submission-id="(\d+)"', content)
-                    if not sub_id_match: sub_id_match = re.search(r'/submission/(\d+)', final_url)
-                    
-                    if sub_id_match:
-                        logger.info(f"Fast Path successful: {sub_id_match.group(1)}")
-                        return {"success": True, "submissionId": sub_id_match.group(1), "status": 200, "url": final_url, "text": content}
-                    if "/my" in final_url or "/status" in final_url:
-                        logger.info("Fast Path redirected to status page.")
-                        return {"success": True, "submissionId": None, "status": 200, "url": final_url, "text": content}
-                return None
+                sub_id_match = re.search(r'data-submission-id="(\d+)"', content)
+                if not sub_id_match: sub_id_match = re.search(r'/submission/(\d+)', final_url)
+                
+                if sub_id_match:
+                    logger.info(f"Fast Path successful: {sub_id_match.group(1)}")
+                    return {"success": True, "submissionId": sub_id_match.group(1), "status": 200, "url": final_url, "text": content}
+                if "/my" in final_url or "/status" in final_url:
+                    logger.info("Fast Path redirected to status page.")
+                    return {"success": True, "submissionId": None, "status": 200, "url": final_url, "text": content}
+            return None
         except Exception as e:
             logger.warning(f"Fast Path error: {e}")
             return None
+        finally:
+            if fetcher:
+                try: 
+                    # If it has a close method, use it
+                    if hasattr(fetcher, 'close'): fetcher.close()
+                except: pass
 
     def perform_stealth_submit():
         # Convert dictionary to list of cookie objects for Playwright/Scrapling
