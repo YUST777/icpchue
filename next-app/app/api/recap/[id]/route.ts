@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
 
         if (!studentId) {
             return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
+        }
+
+        // Rate limit: 10 per 60s per IP
+        const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+        const ratelimit = await rateLimit(`recap_view:${ip}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         // Read from pre-calculated recap_2025 table

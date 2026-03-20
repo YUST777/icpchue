@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { createBlindIndex, decrypt } from '@/lib/encryption';
 import { getCachedData } from '@/lib/cache';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(
     req: NextRequest,
@@ -10,6 +11,13 @@ export async function GET(
     // Await params if using newer Next.js types, or just access if not.
     // Safe to await.
     const { studentId } = await params;
+    
+    // Rate limit public profile access: 15 per 60s per IP
+    const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+    const ratelimit = await rateLimit(`profile_view:${ip}`, 15, 60);
+    if (!ratelimit.success) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
     if (!studentId) {
         return NextResponse.json({ error: 'Student ID required' }, { status: 400 });

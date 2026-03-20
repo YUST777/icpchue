@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
 const API_KEY = process.env.CF_API_KEY;
@@ -56,6 +58,15 @@ export async function GET(req: NextRequest) {
 
     if (!contestId || !submissionId) {
         return NextResponse.json({ error: 'Missing contestId or submissionId' }, { status: 400 });
+    }
+
+    // Auth & Rate Limit: 30 per 60s per user (polling needs to be frequent but limited)
+    const user = await verifyAuth(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const ratelimit = await rateLimit(`cf_status_view:${user.id}`, 30, 60);
+    if (!ratelimit.success) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     try {

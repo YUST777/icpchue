@@ -141,7 +141,7 @@ export function SidebarTabs({ isOpen, onClose, currentUrl }: SidebarTabsProps) {
                     <Link href="/">
                         <div className="opacity-80 hover:opacity-100 transition-opacity cursor-pointer">
                             <Image
-                                src="/icpchue-logo.webp"
+                                src="/icons/icpchue.svg"
                                 alt="ICPC HUE"
                                 width={24}
                                 height={24}

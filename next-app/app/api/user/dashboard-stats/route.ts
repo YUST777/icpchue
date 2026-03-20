@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { getCachedData } from '@/lib/cache';
+import { rateLimit } from '@/lib/rate-limit';
 
 const TIMEOUT_MS = 20000; // 20s - avoid gateway 504 (typically 60-100s)
 
@@ -27,6 +28,12 @@ export async function GET(request: NextRequest) {
         const user = await verifyAuth(request);
         if (!user) {
             return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+        }
+
+        // Rate limit: 10 per 60s per user
+        const ratelimit = await rateLimit(`dashboard_stats:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const cacheKey = `user:${user.id}:dashboard_stats`;

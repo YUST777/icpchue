@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 // GET: Fetch current privacy settings
 export async function GET(req: NextRequest) {
@@ -15,6 +16,12 @@ export async function GET(req: NextRequest) {
              FROM users WHERE id = $1`,
             [user.id]
         );
+
+        // Rate limit: 10 per 60s per user
+        const ratelimit = await rateLimit(`privacy_view:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
 
         const row = result.rows[0] || {};
         return NextResponse.json({
@@ -38,6 +45,12 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
+
+        // Rate limit: 10 per 60s per user
+        const ratelimit = await rateLimit(`privacy_update:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
 
         // Support both old format (visibility: 'public'/'private') and new format (individual toggles)
         if (body.visibility !== undefined) {

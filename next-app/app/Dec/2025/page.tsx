@@ -15,7 +15,7 @@ export default function ReportsHub() {
                     <Link href="/" className="flex items-center gap-3 group">
                         <div className="relative w-8 h-8">
                             <Image
-                                src="/icpchue-logo.webp"
+                                src="/icons/icpchue.svg"
                                 alt="ICPC HUE"
                                 fill
                                 className="object-contain group-hover:scale-110 transition-transform"

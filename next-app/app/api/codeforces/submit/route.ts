@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 const BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
 
 export async function POST(request: NextRequest) {
     try {
+        const user = await verifyAuth(request);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate-limit to prevent spamming the bridge
+        const limitResult = await rateLimit(`cf-submit:${user.id}`, 5, 60);
+        if (!limitResult.success) {
+            return NextResponse.json({ error: 'Too many submission requests. Please wait.' }, { status: 429 });
+        }
+
         const body = await request.json();
 
         const { contestId, problemIndex, code, language, cookies, csrfToken, urlType, groupId } = body;
@@ -39,8 +52,7 @@ export async function POST(request: NextRequest) {
             data = await bridgeResponse.json();
         } else {
             const rawText = await bridgeResponse.text();
-            console.error('[CF Submit Proxy] Bridge returned non-JSON:', rawText);
-            data = { success: false, error: 'Bridge returned invalid response format', rawResponse: rawText };
+            data = { success: false, error: 'Bridge returned invalid response format' };
         }
 
         return NextResponse.json(data, { status: bridgeResponse.ok ? 200 : 502 });

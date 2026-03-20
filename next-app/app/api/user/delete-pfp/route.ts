@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 import fs from 'fs';
 import path from 'path';
 
-const PFPS_DIR = '/app/pfps';
+const PFPS_DIR = path.join(process.cwd(), 'public', 'pfps');
 
 export async function DELETE(request: NextRequest) {
     try {
@@ -15,6 +16,12 @@ export async function DELETE(request: NextRequest) {
         }
 
         const userId = authUser.id;
+
+        // Rate limit: 10 per 60s
+        const ratelimit = await rateLimit(`pfp_delete:${userId}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
 
         // Get current profile picture
         const result = await query(

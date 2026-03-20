@@ -4,7 +4,7 @@ import Redis from 'ioredis';
 const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 const REDIS_HOST = process.env.REDIS_HOST || (isBuild ? 'localhost' : 'redis');
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD || 'yourredispassword';
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
 // Use singleton pattern to avoid multiple connections in dev hot-reload
 const globalForRedis = global as unknown as { redis: Redis };

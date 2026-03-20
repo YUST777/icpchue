@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getUserStreak } from '@/lib/streaks';
 import { getCache, setCache } from '@/lib/cache';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/user/streak
@@ -12,6 +13,12 @@ export async function GET(req: NextRequest) {
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate limit: 10 per 60s per user
+        const ratelimit = await rateLimit(`streak_view:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const cacheKey = `user:${user.id}:streak`;

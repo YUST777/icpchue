@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 import { getCachedData } from '@/lib/cache';
 
 // Cache for 1 hour to handle "Low Cost" requirement
@@ -10,10 +12,19 @@ interface ProblemStats {
     solvedCount: number;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const contestId = searchParams.get('contestId');
     const index = searchParams.get('index')?.toUpperCase();
+
+    // Auth & Rate Limit: 5 per 60s
+    const user = await verifyAuth(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const ratelimit = await rateLimit(`cf_problem_stats:${user.id}`, 5, 60);
+    if (!ratelimit.success) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
     if (!contestId || !index) {
         return NextResponse.json({ error: 'Missing contestId or index' }, { status: 400 });

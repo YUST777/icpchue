@@ -18,7 +18,7 @@ export default function DecemberReportPage() {
     // Shared Header
     const Header = () => (
         <div className="flex items-center justify-between px-4 md:px-6 pt-3 md:pt-4 pb-1 md:pb-2">
-            <Image src="/icpchue-logo.webp" alt="ICPC HUE" width={24} height={24} className="w-6 h-6 md:w-7 md:h-7 object-contain" />
+            <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={24} height={24} className="w-6 h-6 md:w-7 md:h-7 object-contain" />
             <span className="text-white/90 text-xs md:text-sm font-medium italic">December 2025 Report</span>
         </div>
     );
@@ -195,7 +195,7 @@ export default function DecemberReportPage() {
                                 <Facebook size={16} className="text-blue-500" />
                                 <Linkedin size={16} className="text-blue-400" />
                                 {/* Telegram SVG */}
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-300"><path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-8.609 3.33c-2.068.8-4.133 1.598-5.724 2.21a405.15 405.15 0 0 1-2.863 1.13l-4.907 1.89c-1.167.448-1.5 1.968-.454 2.472l4.897 2.357c.725.35 1.52.733 2.19 1.056l3.87 1.864c.25.12.56.27.84.404l4.314 2.078c1.334.643 2.766-.628 2.22-1.956l-3.34-8.12C13 8.5 16 5.5 19 2.5c1-1-1-3-2-2z" /></svg>
+                                <PlayCircle size={16} className="text-blue-300 rotate-[-15deg]" />
                             </div>
                         </div>
                         <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center">

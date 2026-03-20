@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 import { getCachedData } from '@/lib/cache';
 
 // Extract first and last name, handling compound family names (Al-, Abd-, El-, etc.)
@@ -54,6 +55,12 @@ function extractUsername(profileUrl: string, platform: string): string | null {
 
 export async function GET() {
     try {
+        // Rate-limit global leaderboard access to prevent scraping
+        const limitResult = await rateLimit('leaderboard-global', 60, 60);
+        if (!limitResult.success) {
+            return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
+        }
+
         // Disable caching
         const headers = {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

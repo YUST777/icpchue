@@ -72,13 +72,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/icons/icpchue.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any', type: 'image/x-icon' },
-      { url: '/favicon-16x16.webp', sizes: '16x16', type: 'image/webp' },
-      { url: '/favicon-32x32.webp', sizes: '32x32', type: 'image/webp' },
-      { url: '/favicon-48x48.webp', sizes: '48x48', type: 'image/webp' },
-      { url: '/favicon-64x64.webp', sizes: '64x64', type: 'image/webp' },
-      { url: '/icons/icpchue.svg', sizes: '192x192', type: 'image/svg+xml' },
-      { url: '/icons/icpchue.svg', sizes: '512x512', type: 'image/svg+xml' },
     ],
     apple: [
       { url: '/apple-touch-icon.webp', sizes: '180x180', type: 'image/webp' },

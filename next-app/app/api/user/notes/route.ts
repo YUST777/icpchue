@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
     const auth = await verifyAuth(request);
@@ -9,6 +10,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const contestId = searchParams.get('contestId');
     const problemIndex = searchParams.get('problemIndex');
+
+    // Rate limit: 20 per 60s per user
+    const rateRes = await rateLimit(`notes_view:${auth.id}`, 20, 60);
+    if (!rateRes.success) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
     if (!contestId || !problemIndex) {
         return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
@@ -33,6 +40,12 @@ export async function POST(request: NextRequest) {
 
     try {
         const { contestId, problemIndex, content } = await request.json();
+
+        // Rate limit: 20 per 60s per user
+        const rateRes = await rateLimit(`notes_save:${auth.id}`, 20, 60);
+        if (!rateRes.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
 
         if (!contestId || !problemIndex) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
