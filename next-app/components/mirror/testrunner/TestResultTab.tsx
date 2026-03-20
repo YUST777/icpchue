@@ -23,7 +23,7 @@ export default function TestResultTab({ result }: TestResultTabProps) {
     }
 
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="h-full flex flex-col space-y-4 animate-fade-in">
             <div className={`flex items-center gap-3 p-4 rounded-xl border ${result.passed
                 ? 'bg-[#E8C15A]/10 border-[#E8C15A]/20 text-green-400'
                 : 'bg-red-500/10 border-red-500/20 text-red-400'

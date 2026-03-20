@@ -52,11 +52,12 @@ export default function TestRunnerPanel({
         <>
             {/* Vertical Resizer Bar */}
             <div
-                className="h-1.5 bg-[#1a1a1a] hover:bg-[#E8C15A]/50 cursor-row-resize transition-colors relative group shrink-0 border-y border-white/5 active:bg-[#E8C15A]/50 touch-none"
+                className="h-2 bg-[#1a1a1a] hover:bg-[#E8C15A]/50 cursor-row-resize transition-colors relative group shrink-0 border-y border-white/5 active:bg-[#E8C15A]/50 touch-none z-10"
                 onMouseDown={onResizeStart}
                 onTouchStart={onResizeStart}
+                style={{ marginTop: '-10px', height: '20px' }}
             >
-                <div className="absolute inset-x-0 -top-1 -bottom-1" />
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 bg-[#1a1a1a] group-hover:bg-[#E8C15A]/30 transition-colors" />
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-1 bg-white/20 rounded-full group-hover:bg-[#E8C15A]/50 transition-colors" />
             </div>
 
@@ -130,7 +131,7 @@ export default function TestRunnerPanel({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-2.5 md:p-4 space-y-3 md:space-y-4 bg-[#1e1e1e]">
+                <div className="flex-1 overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1e1e1e] flex flex-col">
                     {activeTab === 'testcase' ? (
                         <TestCaseTab
                             testCases={testCases}

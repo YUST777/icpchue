@@ -90,14 +90,14 @@ export default function CodeWorkspace({
     };
 
     // Internal ref for height to avoid re-renders
-    const lastHeight = useRef(35);
+    const lastHeight = useRef(45);
 
     // Load saved height on mount
     useEffect(() => {
         const savedHeight = localStorage.getItem('verdict-layout-test-height');
         if (savedHeight && editorContainerRef.current) {
             const height = parseFloat(savedHeight);
-            if (!isNaN(height) && height >= 15 && height <= 85) {
+            if (!isNaN(height) && height >= 15 && height <= 75) {
                 lastHeight.current = height;
                 editorContainerRef.current.style.setProperty('--test-panel-h', `${height}%`);
             }
@@ -207,7 +207,7 @@ export default function CodeWorkspace({
                 const containerRect = editorContainerRef.current.getBoundingClientRect();
                 const newHeight = ((containerRect.bottom - clientY) / containerRect.height) * 100;
 
-                if (newHeight >= 15 && newHeight <= 85) {
+                if (newHeight >= 15 && newHeight <= 75) {
                     // Update CSS variable directly
                     editorContainerRef.current.style.setProperty('--test-panel-h', `${newHeight}%`);
                     lastHeight.current = newHeight;
@@ -345,7 +345,7 @@ export default function CodeWorkspace({
             <div
                 id="onboarding-code-workspace"
                 ref={wrapperRef}
-                className="relative min-h-0"
+                className="relative min-h-[120px]"
                 style={{
                     flex: isTestPanelVisible ? `1 1 calc(100% - var(--test-panel-h))` : '1 1 100%'
                 }}

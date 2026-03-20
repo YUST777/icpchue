@@ -123,9 +123,17 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8C15A] mb-4"></div>
-                <p className="text-[#888] text-sm">Loading solution...</p>
+            <div className="flex-1 bg-[#0B0B0C] p-3 sm:p-4 md:p-5 flex flex-col items-center justify-center">
+                <div className="w-full max-w-4xl space-y-6">
+                    <div className="aspect-video w-full rounded-xl bg-white/5 animate-pulse border border-white/10" />
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1">
+                        <div className="space-y-2">
+                            <div className="h-3 w-48 rounded bg-white/5 animate-pulse" />
+                            <div className="h-3 w-32 rounded bg-white/5 animate-pulse" />
+                        </div>
+                        <div className="h-10 w-40 rounded-xl bg-white/5 animate-pulse border border-white/5" />
+                    </div>
+                </div>
             </div>
         );
     }

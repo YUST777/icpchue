@@ -5,9 +5,9 @@ import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
 
-const DEFAULT_PANEL_PERCENT = 35;
+const DEFAULT_PANEL_PERCENT = 45;
 const MIN_PANEL_PERCENT = 0;
-const MAX_PANEL_PERCENT = 85;
+const MAX_PANEL_PERCENT = 75;
 const SNAP_THRESHOLD = 5;
 const PANEL_TAB_BAR_HEIGHT = 42;
 
@@ -324,10 +324,9 @@ export default function CodeWorkspace({
                 setIsTestPanelVisible={(v) => { if (v) expandPanel(); else collapsePanel(); }}
             />
 
-            {/* Code Editor - takes remaining space above the panel */}
             <div
                 ref={wrapperRef}
-                className="relative min-h-0 flex-1"
+                className="relative min-h-[120px] flex-1"
             >
                 <div className="absolute inset-0">
                     <Editor
@@ -401,8 +400,8 @@ export default function CodeWorkspace({
                 >
                     {/* Grip pill - draggable area */}
                     <div
-                        className="flex items-center justify-center cursor-row-resize group touch-none"
-                        style={{ height: '10px' }}
+                        className="flex items-center justify-center cursor-row-resize group touch-none relative z-10"
+                        style={{ height: '20px', marginTop: '-10px' }}
                         onMouseDown={handleGripMouseDown}
                         onTouchStart={handleGripMouseDown}
                         onDoubleClick={handleGripDoubleClick}
@@ -481,7 +480,7 @@ export default function CodeWorkspace({
                     }}
                 >
                     {!isCollapsed && (
-                        <div className="h-full overflow-y-auto p-2.5 md:p-4 space-y-3 md:space-y-4 bg-[#1e1e1e]">
+                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1e1e1e] flex flex-col">
                             {testPanelTab === 'testcase' && (
                                 <TestCaseTabInline
                                     testCases={testCases}

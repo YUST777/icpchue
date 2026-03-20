@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Copy, RotateCcw, Check, ExternalLink, Clock, MemoryStick, Tag } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Submission } from './types';
 
 interface SubmissionDetailModalProps {
@@ -87,9 +88,22 @@ export default function SubmissionDetailModal({
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <div className="w-8 h-8 border-2 border-[#E8C15A]/20 border-t-[#E8C15A] rounded-full animate-spin" />
-                            <p className="text-xs text-[#888] animate-pulse">Loading Source Code...</p>
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[0, 1, 2, 3].map((i) => (
+                                    <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
+                                        <Skeleton className="h-3 w-12" />
+                                        <Skeleton className="h-4 w-16" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <Skeleton className="h-3 w-24" />
+                                    <Skeleton className="h-8 w-16 rounded-lg" />
+                                </div>
+                                <Skeleton className="h-[300px] w-full rounded-xl" />
+                            </div>
                         </div>
                     ) : submission ? (
                         <div className="space-y-6">
