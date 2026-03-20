@@ -364,6 +364,9 @@ function MirrorUI({
                     onToggleSidebar={() => setIsDrawerOpen(true)}
                     onOpenDrawer={() => setIsDrawerOpen(true)}
                     sheetProblems={sheetProblems}
+                    onSubmit={handleSubmit}
+                    onRunTests={runTests}
+                    submitting={submitting}
                 />
 
                 <div ref={containerRef} className="flex-1 flex overflow-hidden" style={{ cursor: isResizing ? 'col-resize' : 'auto' }}>
