@@ -336,8 +336,9 @@ export default function ProblemDrawer({
                         <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#E8C15A] animate-pulse" />
-                                <h2 className="text-sm font-semibold text-white/90">
+                                <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2">
                                     Problem List
+                                    <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + P</span>
                                 </h2>
                                 {sheet && (
                                     <span className="text-[10px] text-white/40 font-mono ml-1">

@@ -97,9 +97,13 @@ export default function CodeWorkspace({
         }
     };
 
-    // Initialize formatter on mount
+    // Initialize formatter on mount and listen for shortcuts
     useEffect(() => {
         init().catch(err => console.error("Formatting module failed to load:", err));
+
+        const handleToggleExport = () => setIsExportModalOpen(prev => !prev);
+        window.addEventListener('verdict:toggle-export', handleToggleExport);
+        return () => window.removeEventListener('verdict:toggle-export', handleToggleExport);
     }, []);
 
     // Load saved height on mount
@@ -348,6 +352,7 @@ export default function CodeWorkspace({
                 isTestPanelVisible={!isCollapsed}
                 setIsTestPanelVisible={(v) => { if (v) expandPanel(); else collapsePanel(); }}
                 onExport={() => setIsExportModalOpen(true)}
+                exportShortcut={["Alt", "G"]}
                 onFormat={handleFormat}
             />
 

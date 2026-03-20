@@ -17,6 +17,7 @@ interface EditorToolbarProps {
     isTestPanelVisible: boolean;
     setIsTestPanelVisible: (visible: boolean) => void;
     onExport?: () => void;
+    exportShortcut?: string[];
     onFormat?: () => void;
 }
 
@@ -33,6 +34,7 @@ export default function EditorToolbar({
     isTestPanelVisible,
     setIsTestPanelVisible,
     onExport,
+    exportShortcut,
     onFormat,
 }: EditorToolbarProps) {
     const [isLangOpen, setIsLangOpen] = useState(false);
@@ -144,7 +146,7 @@ export default function EditorToolbar({
                         }
                     </Tooltip>
 
-                    <Tooltip content="Export as Image" position="bottom">
+                    <Tooltip content="Export as Image" shortcut={exportShortcut} position="bottom">
                         <Share2 onClick={onExport} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
                     </Tooltip>
 

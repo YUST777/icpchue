@@ -130,8 +130,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         {/* Sidebar */}
                         <div className="w-[180px] sm:w-[220px] bg-[#222222] border-r border-white/5 flex flex-col shrink-0">
                             <div className="p-6 pb-2">
-                                <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider">
+                                <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
                                     Settings
+                                    <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + S</span>
                                 </h2>
                             </div>
                             <nav className="flex-1 px-3 py-4 space-y-1">

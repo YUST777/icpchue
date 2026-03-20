@@ -32,11 +32,16 @@ export function HeaderActions() {
             }
         };
         fetchStreak();
+
+        // Listen for global settings toggle shortcut (Alt + S)
+        const handleToggle = () => setIsSettingsOpen(prev => !prev);
+        window.addEventListener('verdict:toggle-settings', handleToggle);
+        return () => window.removeEventListener('verdict:toggle-settings', handleToggle);
     }, []);
 
     return (
         <div className="hidden md:flex items-center gap-1 shrink-0 text-white/60">
-            <Tooltip content="Settings" position="bottom">
+            <Tooltip content="Settings" shortcut={["Alt", "S"]} position="bottom">
                 <button
                     onClick={() => setIsSettingsOpen(true)}
                     className="w-12 h-8 flex items-center justify-center hover:bg-[#282828] rounded-md transition-colors"

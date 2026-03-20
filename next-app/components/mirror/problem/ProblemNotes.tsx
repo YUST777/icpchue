@@ -175,7 +175,10 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
             {/* Footer Tip */}
             {!isPreview && (
                 <div className="px-4 py-2 bg-[#171718] border-t border-white/5 text-[10px] text-white/30 flex justify-between items-center">
-                    <span className="opacity-40 uppercase tracking-widest font-bold">Markdown Support</span>
+                    <span className="opacity-40 uppercase tracking-widest font-bold flex items-center gap-2">
+                        Markdown Support
+                        <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + N</span>
+                    </span>
                     {lastSaved && (
                         <span className="opacity-60">Last synced at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     )}

@@ -353,6 +353,27 @@ function MirrorUI({
                     document.exitFullscreen();
                 }
             }
+            // 6. Settings: Alt + S
+            else if (e.altKey && e.key.toLowerCase() === "s") {
+                e.preventDefault();
+                // We'll use a custom event or a store to trigger this
+                window.dispatchEvent(new CustomEvent('verdict:toggle-settings'));
+            }
+            // 7. Notes: Alt + N
+            else if (e.altKey && e.key.toLowerCase() === "n") {
+                e.preventDefault();
+                setShowNotes(prev => !prev);
+            }
+            // 8. Problem List: Alt + P
+            else if (e.altKey && e.key.toLowerCase() === "p") {
+                e.preventDefault();
+                setIsDrawerOpen(prev => !prev);
+            }
+            // 9. Export Snippet: Alt + G
+            else if (e.altKey && e.key.toLowerCase() === "g") {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('verdict:toggle-export'));
+            }
         };
 
         window.addEventListener("keydown", handleGlobalKeyDown);
