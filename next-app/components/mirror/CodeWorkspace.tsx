@@ -121,8 +121,47 @@ export default function CodeWorkspace({
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monaco);
 
+        // Add Custom Keyboard Shortcuts
+        // 1. Indent: Ctrl + ]
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.BracketRight, () => {
+            editor.trigger('keyboard', 'editor.action.indentLines', null);
+        });
+
+        // 2. Outdent: Ctrl + [
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.BracketLeft, () => {
+            editor.trigger('keyboard', 'editor.action.outdentLines', null);
+        });
+
+        // 3. Debugging Placeholders (recognize the keys to provide feedback)
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.Quote, () => {
+             // Start Debugging placeholder (Future extension point)
+        });
+
+        editor.addCommand(monaco.KeyCode.Escape, () => {
+            // Stop Debugging / Close modal
+        });
+
+        editor.addCommand(monaco.KeyCode.F5, () => {
+            // Skip Forward (F5 usually refreshes, we can prevent it)
+        });
+
+        editor.addCommand(monaco.KeyCode.F10, () => {
+             // Step Over
+        });
+
+        editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.F11, () => {
+             // Step In
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.F11, () => {
+             // Step Out
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F5, () => {
+             // Restart
+        });
+
         // Force layout after mount with multiple delays to handle container sizing
-        // This fixes the blank editor issue
         requestAnimationFrame(() => {
             editor.layout();
         });
