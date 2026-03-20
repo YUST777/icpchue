@@ -42,6 +42,8 @@ export interface Submission {
     cfSubmissionId?: number | null;
     compilationError?: string;
     details?: string;
+    notes?: string;
+    noteColor?: string;
 }
 
 export interface TestCaseResult {

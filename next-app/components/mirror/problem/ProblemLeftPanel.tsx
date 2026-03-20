@@ -1,12 +1,23 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { CFProblemData, Submission } from '../shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
-import SubmissionsList from '../SubmissionsList';
-import AnalyticsView from '../AnalyticsView';
-import Whiteboard from '../Whiteboard';
 import ProblemTabs from './ProblemTabs';
 import HandleInputSection from '../HandleInputSection';
-import SolutionView from '../SolutionView';
+
+// Lazy-load heavy tab components — only loaded when user switches to that tab
+const SubmissionsList = dynamic(() => import('../SubmissionsList'), {
+    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
+});
+const AnalyticsView = dynamic(() => import('../AnalyticsView'), {
+    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
+});
+const SolutionView = dynamic(() => import('../SolutionView'), {
+    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
+});
+const Whiteboard = dynamic(() => import('../Whiteboard'), {
+    loading: () => <div className="h-20 bg-[#121212]" />,
+});
 
 interface ProblemLeftPanelProps {
     activeTab: 'description' | 'submissions' | 'analytics' | 'solution';

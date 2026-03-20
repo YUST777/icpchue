@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Play, ChevronDown } from 'lucide-react';
+import { Loader2, Play, ChevronDown, Code, Lock, AlignLeft, Bookmark, Braces, RotateCcw, Maximize2, Minimize2, Copy, Check, Maximize, ChevronUp, Share2 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
+
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface EditorToolbarProps {
     language: string;
@@ -14,6 +16,44 @@ interface EditorToolbarProps {
     onRunTests?: () => void;
     isTestPanelVisible: boolean;
     setIsTestPanelVisible: (visible: boolean) => void;
+    onExport?: () => void;
+    onFormat?: () => void;
+}
+
+function ToolbarTooltip({ children, label }: { children: React.ReactNode, label: string }) {
+    const [show, setShow] = useState(false);
+    const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+    const handleEnter = () => {
+        const id = setTimeout(() => setShow(true), 200); // Reduced delay for better feel
+        setTimeoutId(id);
+    };
+
+    const handleLeave = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        setShow(false);
+    };
+
+    return (
+        <div className="relative flex items-center justify-center h-full" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+            {children}
+            <AnimatePresence>
+                {show && (
+                    <motion.div
+                        key={label}
+                        initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -2, scale: 0.95 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        className="absolute top-full mt-2 px-3 py-1.5 bg-[#171718] text-white text-[11px] font-bold rounded-lg pointer-events-none whitespace-nowrap z-[200] border border-white/10 shadow-2xl"
+                    >
+                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#171718] border-l border-t border-white/10 rotate-45 transform"></div>
+                        {label}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
 
 export default function EditorToolbar({
@@ -26,6 +66,8 @@ export default function EditorToolbar({
     onRunTests,
     isTestPanelVisible,
     setIsTestPanelVisible,
+    onExport,
+    onFormat,
 }: EditorToolbarProps) {
     const [isLangOpen, setIsLangOpen] = useState(false);
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
@@ -40,6 +82,10 @@ export default function EditorToolbar({
         const timer = setTimeout(checkExtension, 500);
         return () => clearTimeout(timer);
     }, []);
+
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
+    const theme = "dark"; // Defaulting to dark
 
     const handleLanguageChange = (langId: string) => {
         const currentTemplate = TEMPLATES[language];
@@ -59,10 +105,30 @@ export default function EditorToolbar({
         }
     };
 
+    const handleCopyToClipboard = () => {
+        navigator.clipboard.writeText(code);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    const handleFullScreen = () => {
+        setIsFullScreen(true);
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        }
+    };
+
+    const handleExitFullScreen = () => {
+        setIsFullScreen(false);
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    };
+
     const handleSubmitClick = () => {
         if (!isExtensionInstalled) {
             alert("The ICPC HUE Helper extension is required to submit code. Please install it from the Extension page.");
-            // Open the test panel view to show the bigger warning UI we just built
             setIsTestPanelVisible(true);
             return;
         }
@@ -70,40 +136,63 @@ export default function EditorToolbar({
     };
 
     return (
-        <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-white/10 shrink-0">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2 relative">
-                    <span className="text-xs sm:text-sm font-medium text-white hidden xs:inline">Code</span>
-                    <div className="relative">
-                        <button
-                            onClick={() => setIsLangOpen(!isLangOpen)}
-                            className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs px-2 sm:px-2 py-1.5 sm:py-0.5 bg-white/10 rounded text-[#A0A0A0] active:text-white transition-colors border border-transparent active:border-white/10 touch-manipulation min-h-[32px]"
-                        >
-                            <span className="max-w-[60px] sm:max-w-none truncate">{getLanguageById(language)?.name || 'C++'}</span>
-                            <ChevronDown size={10} className="sm:w-3 sm:h-3 shrink-0" />
-                        </button>
-                        {isLangOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
-                                <div className="absolute top-full left-0 mt-1 w-40 bg-[#252526] border border-white/10 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-500">
-                                    {SUPPORTED_LANGUAGES.map(lang => (
-                                        <button
-                                            key={lang.id}
-                                            onClick={() => handleLanguageChange(lang.id)}
-                                            className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 hover:text-white transition-colors ${language === lang.id ? 'text-[#E8C15A] bg-white/5' : 'text-[#A0A0A0]'}`}
-                                        >
-                                            {lang.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
+        <div className="flex flex-col bg-[#1a1a1a] border-b border-white/10 shrink-0 select-none header relative z-[50] overflow-visible">
+            {/* Row: Language and Actions */}
+            <div className={`w-full h-10 px-3 flex items-center justify-between text-neutral-400 bg-[#1a1a1a] overflow-visible`}>
+                <div className="relative">
+                    <button
+                        onClick={() => setIsLangOpen(!isLangOpen)}
+                        className="flex items-center gap-2 outline-none transition-all duration-300 hover:bg-white/5 px-2 py-1 rounded-md cursor-pointer text-[13px] text-white/60 hover:text-white"
+                    >
+                        {getLanguageById(language)?.name || 'C++'}
+                        <ChevronUp className='w-4 rotate-180 opacity-50' />
+                    </button>
 
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                {/* Submit/Test buttons moved to ProblemHeader */}
+                    {isLangOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
+                            <div className="absolute top-full left-0 mt-1 w-44 bg-[#282828] border border-white/10 rounded shadow-2xl z-50 py-1.5 max-h-80 overflow-y-auto">
+                                {SUPPORTED_LANGUAGES.map(lang => (
+                                    <button
+                                        key={lang.id}
+                                        onClick={() => handleLanguageChange(lang.id)}
+                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 hover:text-white transition-colors ${language === lang.id ? 'text-[#E8C15A] bg-white/5' : 'text-[#A0A0A0]'}`}
+                                    >
+                                        {lang.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <div className="flex gap-4 items-center">
+                    <ToolbarTooltip label="Bookmark">
+                        <Bookmark className='w-4 text-white/40 hover:text-white cursor-pointer transition-colors' />
+                    </ToolbarTooltip>
+                    
+                    <ToolbarTooltip label={isCopied ? 'Copied!' : 'Copy Code'}>
+                        {isCopied ? 
+                            <Check className='w-4 text-green-500 transition-colors' /> : 
+                            <Copy onClick={handleCopyToClipboard} className='w-4 cursor-pointer text-white/40 hover:text-white transition-colors' />
+                        }
+                    </ToolbarTooltip>
+
+                    <ToolbarTooltip label="Export as Image">
+                        <Share2 onClick={onExport} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
+                    </ToolbarTooltip>
+
+                    <ToolbarTooltip label="Format Code">
+                        <Braces onClick={onFormat} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
+                    </ToolbarTooltip>
+
+                    <ToolbarTooltip label={isFullScreen ? 'Exit Full Screen' : 'Full screen'}>
+                        {isFullScreen ?
+                            <Minimize2 onClick={handleExitFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' /> :
+                            <Maximize2 onClick={handleFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' />
+                        }
+                    </ToolbarTooltip>
+                </div>
             </div>
         </div>
     );

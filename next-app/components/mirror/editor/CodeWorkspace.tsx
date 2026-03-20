@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
+import GradiaExportModal from '../GradiaExportModal';
+import init, { format } from "@wasm-fmt/clang-format/web";
 
 const DEFAULT_PANEL_PERCENT = 45;
 const MIN_PANEL_PERCENT = 0;
@@ -36,6 +38,7 @@ interface CodeWorkspaceProps {
     onDeleteTestCase?: (index: number) => void;
     onUpdateTestCase?: (index: number, testCase: Example) => void;
     sampleTestCasesCount?: number;
+    problemTitle?: string;
 }
 
 export default function CodeWorkspace({
@@ -61,6 +64,7 @@ export default function CodeWorkspace({
     onDeleteTestCase,
     onUpdateTestCase,
     sampleTestCasesCount,
+    problemTitle,
 }: Omit<CodeWorkspaceProps, 'testPanelHeight' | 'setTestPanelHeight'>) {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -71,6 +75,7 @@ export default function CodeWorkspace({
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
     const [isLangOpen, setIsLangOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     const testPanelTab = testPanelActiveTab ?? internalTab;
     const setTestPanelTab = setTestPanelActiveTab ?? setInternalTab;
@@ -90,6 +95,11 @@ export default function CodeWorkspace({
             setCode(TEMPLATES[langId]);
         }
     };
+
+    // Initialize formatter on mount
+    useEffect(() => {
+        init().catch(err => console.error("Formatting module failed to load:", err));
+    }, []);
 
     // Load saved height on mount
     useEffect(() => {
@@ -156,6 +166,20 @@ export default function CodeWorkspace({
             setTestPanelTab(tab);
         }
     }, [panelContentPercent, expandPanel, setTestPanelTab]);
+    
+    // Formatting handler
+    const handleFormat = useCallback(() => {
+        if (!code.trim()) return;
+        try {
+            // Default to C++ formatting for now, or match language if possible
+            const formatted = format(code, "main.cpp", "Chromium");
+            if (formatted) {
+                setCode(formatted);
+            }
+        } catch (err) {
+            console.error("Failed to format code:", err);
+        }
+    }, [code, setCode]);
 
     // Monaco resize observer
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
@@ -322,6 +346,8 @@ export default function CodeWorkspace({
                 onRunTests={onRunTests}
                 isTestPanelVisible={!isCollapsed}
                 setIsTestPanelVisible={(v) => { if (v) expandPanel(); else collapsePanel(); }}
+                onExport={() => setIsExportModalOpen(true)}
+                onFormat={handleFormat}
             />
 
             <div
@@ -507,6 +533,14 @@ export default function CodeWorkspace({
                     )}
                 </div>
             </div>
+
+            <GradiaExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                code={code}
+                language={language}
+                title={problemTitle || 'My Code'}
+            />
         </div>
     );
 }

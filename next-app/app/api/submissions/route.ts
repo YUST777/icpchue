@@ -55,7 +55,9 @@ export async function GET(req: NextRequest) {
                     NULL::bigint AS cf_submission_id,
                     ts.compile_error AS compilation_error,
                     NULL AS details,
-                    NULL::integer AS test_number
+                    NULL::integer AS test_number,
+                    ts.notes,
+                    ts.note_color
                 FROM training_submissions ts
                 WHERE ${judge0Where}
             `);
@@ -87,7 +89,9 @@ export async function GET(req: NextRequest) {
                     cf.cf_submission_id,
                     cf.compilation_error,
                     cf.details,
-                    cf.test_number
+                    cf.test_number,
+                    cf.notes,
+                    cf.note_color
                 FROM cf_submissions cf
                 WHERE cf.user_id = $1
                   AND cf.contest_id = $${pContest}
@@ -173,6 +177,8 @@ export async function GET(req: NextRequest) {
             compilationError: row.compilation_error,
             details: row.details,
             testNumber: row.test_number,
+            notes: row.notes,
+            noteColor: row.note_color,
         }));
 
         return NextResponse.json({
