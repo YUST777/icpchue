@@ -3,6 +3,7 @@ import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { invalidateCache } from '@/lib/cache';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Self-hosted Judge0 Configuration
 const JUDGE0_API_URL = process.env.JUDGE0_API_URL;
@@ -69,6 +70,12 @@ export async function POST(req: NextRequest) {
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate limit: 10 per 60s per user (primary defense)
+        const ratelimit = await rateLimit(`judge_submit:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
         }
 
         const { sheetId, problemId, sourceCode, tabSwitches = 0, pasteEvents = 0, timeToSolve }: SubmitRequest = await req.json();

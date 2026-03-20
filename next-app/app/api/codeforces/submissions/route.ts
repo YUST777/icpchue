@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
 const API_KEY = process.env.CF_API_KEY;
@@ -40,6 +42,15 @@ export async function GET(req: NextRequest) {
 
     if (!contestId) {
         return NextResponse.json({ error: 'Missing contestId' }, { status: 400 });
+    }
+
+    // Auth & Rate Limit: 10 per 60s
+    const user = await verifyAuth(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const ratelimit = await rateLimit(`cf_submissions_list:${user.id}`, 10, 60);
+    if (!ratelimit.success) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     // Phase 1: Try official Codeforces Public API

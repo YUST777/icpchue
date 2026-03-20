@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/mirror/fetch
@@ -8,6 +10,17 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(req: NextRequest) {
     try {
+        const user = await verifyAuth(req);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate-limit for fetching
+        const limitResult = await rateLimit(`mirror-fetch:${user.id}`, 15, 60);
+        if (!limitResult.success) {
+            return NextResponse.json({ error: 'Too many fetch requests. Please wait.' }, { status: 429 });
+        }
+
         const { url } = await req.json();
 
         if (!url || typeof url !== 'string') {

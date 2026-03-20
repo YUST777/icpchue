@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
@@ -17,6 +18,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
 
         if (!studentId) {
             return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
+        }
+
+        // Rate limit: 5 per 120s per IP (Python generation is expensive)
+        const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+        const ratelimit = await rateLimit(`recap_share:${ip}`, 5, 120);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         // 1. Fetch Data from Snapshot Table

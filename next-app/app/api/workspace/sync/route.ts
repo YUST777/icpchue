@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate limit: 30 per 60s (sync is frequent)
+        const ratelimit = await rateLimit(`workspace_sync_view:${user.id}`, 30, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const url = new URL(req.url);
@@ -35,6 +42,12 @@ export async function POST(req: NextRequest) {
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Rate limit: 30 per 60s
+        const ratelimit = await rateLimit(`workspace_sync_save:${user.id}`, 30, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const body = await req.json();

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Link2, Code, Zap } from 'lucide-react';
+import { Share2, Link2, Code, Zap, ChevronLeft, Download } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -72,7 +72,7 @@ export default function PublicRecapPage() {
     // Shared Header
     const Header = () => (
         <div className="flex items-center justify-between px-4 md:px-6 pt-3 md:pt-4 pb-1 md:pb-2">
-            <Image src="/icpchue-logo.webp" alt="ICPC HUE" width={24} height={24} className="w-6 h-6 md:w-7 md:h-7 object-contain" />
+            <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={24} height={24} className="w-6 h-6 md:w-7 md:h-7 object-contain" />
             <span className="text-white/90 text-xs md:text-sm font-medium italic">Rewind 2025</span>
         </div>
     );
@@ -338,7 +338,7 @@ export default function PublicRecapPage() {
                         disabled={currentSlide === 0}
                         className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/15 disabled:opacity-30 transition-all"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        <ChevronLeft size={20} />
                     </button>
                     <div className="flex gap-2">
                         {/* Copy Link Button */}
@@ -384,7 +384,7 @@ export default function PublicRecapPage() {
                             className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/15 transition-all active:scale-95"
                             title="Download Recap Image"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+                            <Download size={18} />
                         </button>
                     </div>
                 </div>

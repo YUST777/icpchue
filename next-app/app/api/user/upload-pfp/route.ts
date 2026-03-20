@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -39,6 +40,12 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = authUser.id;
+
+        // Rate limit: 3 per 5 mins (unusually frequent uploads)
+        const ratelimit = await rateLimit(`pfp_upload:${userId}`, 3, 300);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests. Please wait before uploading again.' }, { status: 429 });
+        }
 
         // Parse multipart form data
         const formData = await request.formData();

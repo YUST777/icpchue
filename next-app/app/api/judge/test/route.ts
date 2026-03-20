@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { z } from 'zod';
 
@@ -82,6 +84,16 @@ function compareOutputs(expected: string, actual: string): boolean {
 
 export async function POST(req: NextRequest) {
     try {
+        // Verify authentication (CRITICAL: prevent unauthenticated code execution)
+        const user = await verifyAuth(req);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Rate limit: 10 per 60s
+        const ratelimit = await rateLimit(`judge_test:${user.id}`, 10, 60);
+        if (!ratelimit.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
         // Parse and validate request body
         const rawBody = await req.json();
         const parseResult = RequestSchema.safeParse(rawBody);
