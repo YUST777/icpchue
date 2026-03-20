@@ -118,31 +118,58 @@ export default function CodeWorkspace({
     }, []);
 
     // Intercept onMount to get editor instance for manual layout
-    const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
+    const [editorInstance, setEditorInstance] = useState<Parameters<OnMount>[0] | null>(null);
+    const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null); // Keep ref for layout methods to avoid stale closures
     const vimModeRef = useRef<any>(null);
     const { 
         fontFamily, fontSize, fontLigatures, tabSize, wordWrap, lineNumbers, keyBinding 
     } = useEditorStore();
 
-    // ─── Vim Mode Toggle ───
+    // ─── Apply Editor Settings ───
     useEffect(() => {
-        if (!editorInstanceRef.current) return;
+        if (!editorInstance) return;
 
+        console.log('Editor: Updating settings...', { keyBinding, fontSize, wordWrap, lineNumbers, tabSize });
+
+        // 1. General Options
+        editorInstance.updateOptions({
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fontLigatures: fontLigatures,
+            lineNumbers: lineNumbers,
+            wordWrap: wordWrap,
+            lineHeight: fontSize * 1.5,
+        });
+
+        // 2. Tab Size (must be set on the model)
+        const model = editorInstance.getModel();
+        if (model) {
+            model.updateOptions({ tabSize: tabSize, insertSpaces: true });
+        }
+
+        // 3. Vim Mode
         if (keyBinding === 'Vim') {
             if (!vimModeRef.current) {
-                // Status bar element (optional, we'll keep it simple/hidden for now)
+                console.log('Editor: Enabling Vim Mode');
                 const statusNode = document.createElement('div');
-                vimModeRef.current = initVimMode(editorInstanceRef.current, statusNode);
+                vimModeRef.current = initVimMode(editorInstance, statusNode);
             }
         } else {
             if (vimModeRef.current) {
+                console.log('Editor: Disabling Vim Mode');
                 vimModeRef.current.dispose();
                 vimModeRef.current = null;
             }
         }
-    }, [keyBinding]);
+
+        // 4. Force Layout after font/wordwrap changes
+        requestAnimationFrame(() => {
+            editorInstance.layout();
+        });
+    }, [editorInstance, keyBinding, fontSize, fontFamily, fontLigatures, lineNumbers, wordWrap, tabSize]);
 
     const onEditorMount: OnMount = (editor, monaco) => {
+        setEditorInstance(editor);
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monaco);
 
