@@ -9,9 +9,12 @@ import {
     MobileViewToggle,
     useNavigationIds,
 } from "../header";
-import { Play, CloudUpload, StickyNote, Loader2 } from "lucide-react";
+import { Play, CloudUpload, StickyNote, Loader2, Search } from "lucide-react";
 import { SidebarToggleIcon } from "@/components/ui/icons/SidebarToggleIcon";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { CommandPalette } from "../header/CommandPalette";
+import { useUIStore } from "@/hooks/useUIStore";
+import { useState } from "react";
 
 interface ProblemHeaderProps {
     sheetId: string;
@@ -51,6 +54,9 @@ export default function ProblemHeader({
     const { prevId, nextId, prevProblem, nextProblem, getRandomId } =
         useNavigationIds({ problemId, sheetProblems });
 
+    const { toggleSearch } = useUIStore();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
     return (
         <div className="flex flex-col gap-4 border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0 relative z-[100]">
             <div className="h-12 sm:h-14 flex items-center justify-between px-3 sm:px-4 w-full min-h-[48px] relative">
@@ -82,7 +88,18 @@ export default function ProblemHeader({
                 {/* Center: Submit & Run Actions (Prominent) */}
                 <div className="hidden lg:flex flex-col min-w-0 flex-1 items-center justify-center absolute left-1/2 -translate-x-1/2">
                     <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.02] border border-white/5">
-                        <Tooltip content="Run Local Tests" position="bottom">
+                        <Tooltip content="Quick Search" shortcut={["Ctrl", "K"]} position="bottom">
+                            <button
+                                onClick={toggleSearch}
+                                className="p-2 w-10 h-10 flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white/40 hover:text-[#E8C15A] rounded-lg transition-all border border-white/5 hover:border-[#E8C15A]/20"
+                            >
+                                <Search size={18} />
+                            </button>
+                        </Tooltip>
+
+                        <div className="w-px h-4 bg-white/5 mx-0.5" />
+
+                        <Tooltip content="Run Local Tests" shortcut={["Ctrl", "'"]} position="bottom">
                             <button
                                 onClick={onRunTests}
                                 disabled={submitting}
@@ -92,7 +109,7 @@ export default function ProblemHeader({
                             </button>
                         </Tooltip>
 
-                        <Tooltip content="Submit to Codeforces" position="bottom">
+                        <Tooltip content="Submit to Codeforces" shortcut={["Ctrl", "Enter"]} position="bottom">
                             <button
                                 onClick={onSubmit}
                                 disabled={submitting}
@@ -117,6 +134,15 @@ export default function ProblemHeader({
                         </Tooltip>
                     </div>
                 </div>
+
+                <CommandPalette 
+                    problems={sheetProblems}
+                    onRunTests={onRunTests}
+                    onSubmit={onSubmit}
+                    onOpenSettings={() => {
+                        // We can trigger settings modal here if we expose it
+                    }}
+                />
 
                 {/* Right Side: Actions (Desktop) */}
                 <HeaderActions />

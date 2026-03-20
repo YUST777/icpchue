@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface TooltipProps {
     children: ReactNode;
     content: string;
+    shortcut?: string[]; // New: Array of keys to show in the hint
     position?: "top" | "bottom" | "left" | "right";
     className?: string;
     delay?: number;
@@ -13,6 +14,7 @@ interface TooltipProps {
 export function Tooltip({
     children,
     content,
+    shortcut,
     position = "bottom",
     className = "",
     delay = 50
@@ -126,11 +128,23 @@ export function Tooltip({
                                 position: 'absolute'
                             }}
                         >
-                            <div className="bg-[#0b0b0c]/95 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] relative">
+                            <div className="bg-[#0b0b0c]/95 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] relative flex items-center gap-2.5">
                                 <div className={`absolute w-2 h-2 bg-[#0b0b0c] border-white/10 rotate-45 ${arrowClasses[position]}`}></div>
                                 <span className="relative z-10 text-[11px] font-bold text-white/90 tracking-wide">
                                     {content}
                                 </span>
+                                {shortcut && (
+                                    <div className="flex items-center gap-1 relative z-10 ml-0.5">
+                                        {shortcut.map((key, i) => (
+                                            <React.Fragment key={key}>
+                                                <div className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center bg-white/5 border border-white/10 rounded text-[9px] font-black text-white/40 uppercase shadow-[0_1px_0_rgba(255,255,255,0.05)]">
+                                                    {key}
+                                                </div>
+                                                {i < shortcut.length - 1 && <span className="text-[10px] text-white/20 font-bold">+</span>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
