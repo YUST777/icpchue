@@ -9,6 +9,7 @@ import {
     Keyboard,
     ChevronDown,
 } from "lucide-react";
+import { useEditorStore, KeyBinding } from "@/hooks/contest/useEditorStore";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -85,14 +86,16 @@ function Dropdown({
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [activeTab, setActiveTab] = useState<Tab>("Code Editor");
 
-    // Stub state for Code Editor tab
-    const [font, setFont] = useState("Default");
-    const [fontSize, setFontSize] = useState("13px");
-    const [fontLigatures, setFontLigatures] = useState(false);
-    const [keyBinding, setKeyBinding] = useState("Standard");
-    const [tabSize, setTabSize] = useState("4 spaces");
-    const [wordWrap, setWordWrap] = useState(true);
-    const [relativeLineNumber, setRelativeLineNumber] = useState(false);
+    const {
+        fontFamily,
+        fontSize,
+        fontLigatures,
+        keyBinding,
+        tabSize,
+        wordWrap,
+        lineNumbers,
+        setSetting
+    } = useEditorStore();
 
     // Close on esc
     useEffect(() => {
@@ -178,48 +181,48 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             { 
                                                 label: "Font", 
                                                 type: "select", 
-                                                val: font, 
-                                                set: setFont, 
+                                                val: fontFamily.split(',')[0].replace(/'/g, ""), 
+                                                set: (v: string) => setSetting("fontFamily", v === "Default" ? "'JetBrains Mono', monospace" : `'${v}', monospace`), 
                                                 opts: ["Default", "JetBrains Mono", "Fira Code", "Consolas"] 
                                             },
                                             { 
                                                 label: "Font size", 
                                                 type: "select", 
-                                                val: fontSize, 
-                                                set: setFontSize, 
+                                                val: `${fontSize}px`, 
+                                                set: (v: string) => setSetting("fontSize", parseInt(v)), 
                                                 opts: ["11px", "12px", "13px", "14px", "15px", "16px"] 
                                             },
                                             { 
                                                 label: "Font ligatures", 
                                                 type: "toggle", 
                                                 val: fontLigatures, 
-                                                set: setFontLigatures 
+                                                set: (v: boolean) => setSetting("fontLigatures", v) 
                                             },
                                             { 
                                                 label: "Key binding", 
                                                 type: "select", 
                                                 val: keyBinding, 
-                                                set: setKeyBinding, 
-                                                opts: ["Standard", "Vim", "Emacs"] 
+                                                set: (v: string) => setSetting("keyBinding", v as KeyBinding), 
+                                                opts: ["Standard", "Vim"] 
                                             },
                                             { 
                                                 label: "Tab size", 
                                                 type: "select", 
-                                                val: tabSize, 
-                                                set: setTabSize, 
+                                                val: `${tabSize} spaces`, 
+                                                set: (v: string) => setSetting("tabSize", parseInt(v)), 
                                                 opts: ["2 spaces", "4 spaces", "8 spaces"] 
                                             },
                                             { 
                                                 label: "Word Wrap", 
                                                 type: "toggle", 
-                                                val: wordWrap, 
-                                                set: setWordWrap 
+                                                val: wordWrap === "on", 
+                                                set: (v: boolean) => setSetting("wordWrap", v ? "on" : "off") 
                                             },
                                             { 
                                                 label: "Relative Line Number", 
                                                 type: "toggle", 
-                                                val: relativeLineNumber, 
-                                                set: setRelativeLineNumber 
+                                                val: lineNumbers === "relative", 
+                                                set: (v: boolean) => setSetting("lineNumbers", v ? "relative" : "on") 
                                             },
                                         ].map((item, idx) => (
                                             <div 
