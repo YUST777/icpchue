@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, History, Globe, Clock, MemoryStick, RefreshCw, ChevronRight, CheckCircle2, XCircle, AlertCircle, Timer } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Submission } from './types';
 
 interface SubmissionsListProps {
@@ -201,9 +202,28 @@ export default function SubmissionsList({
 function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHoveredId }: any) {
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={20} />
-                <span className="text-xs text-[#666]">Loading your submissions...</span>
+            <div className="flex flex-col space-y-1 p-1">
+                <div className="grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 px-3 py-2 border-b border-white/[0.03]">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                    <Skeleton className="h-3 w-10 ml-auto" />
+                </div>
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_80px_80px_72px_28px] gap-2 px-3 py-3 items-center">
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-4 rounded-full" />
+                            <div className="space-y-1">
+                                <Skeleton className="h-3 w-24" />
+                                <Skeleton className="h-2 w-12" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-3 w-12 ml-auto" />
+                        <Skeleton className="h-3 w-12 ml-auto" />
+                        <Skeleton className="h-3 w-8 ml-auto" />
+                        <Skeleton className="h-4 w-4 rounded ml-auto" />
+                    </div>
+                ))}
             </div>
         );
     }
@@ -300,9 +320,24 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
 function GlobalSubmissions({ submissions, loading, error, onRefresh }: any) {
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={20} />
-                <span className="text-xs text-[#666]">Scraping global activity...</span>
+            <div className="flex flex-col space-y-1 p-1">
+                <div className="grid grid-cols-[1fr_90px_72px_72px] gap-2 px-3 py-2 border-b border-white/[0.03]">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                </div>
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_90px_72px_72px] gap-2 px-3 py-3 items-center">
+                        <div className="space-y-1">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-2 w-16" />
+                        </div>
+                        <Skeleton className="h-3 w-12 ml-auto" />
+                        <Skeleton className="h-3 w-12 ml-auto" />
+                        <Skeleton className="h-3 w-10 ml-auto" />
+                    </div>
+                ))}
             </div>
         );
     }

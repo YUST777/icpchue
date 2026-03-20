@@ -14,6 +14,7 @@ import type { ActiveSheet, SheetProblem } from '@/components/mirror/problem/Prob
 import ExtensionGate from '@/components/core/ExtensionGate';
 import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 import OnboardingTour from '@/components/mirror/OnboardingTour';
+import MirrorSkeleton from '@/components/mirror/MirrorSkeleton';
 
 // Hooks
 import { useProblemData } from '@/hooks/contest/useProblemData';
@@ -319,11 +320,7 @@ function MirrorUI({
 
     // Fallback loading
     if (loading || !problem || !cfData) {
-        return (
-            <div className="fixed inset-0 bg-[#0B0B0C] flex flex-col items-center justify-center z-50 gap-6">
-                <TestCasesLoader />
-            </div>
-        );
+        return <MirrorSkeleton />;
     }
 
     if (error) {

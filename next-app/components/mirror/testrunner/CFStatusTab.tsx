@@ -76,7 +76,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     const statusBg = getCFStatusBg(cfStatus);
 
     return (
-        <div className="space-y-4 animate-fade-in">
+        <div className="h-full flex flex-col space-y-4 animate-fade-in">
             {/* Login/Captcha Required Warning */}
             {(cfStatus.needsCaptcha || cfStatus.needsLogin) && (
                 <div className="flex flex-col gap-3 p-4 rounded-xl border bg-orange-500/10 border-orange-500/20 text-orange-400">
