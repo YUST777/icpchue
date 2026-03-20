@@ -189,6 +189,7 @@ function MirrorUI({
 
     // ─── Tab & UI State ───
     const [activeTab, setActiveTab] = useState<'description' | 'submissions' | 'analytics' | 'solution'>('description');
+    const [showNotes, setShowNotes] = useState(false);
     const isWhiteboardExpanded = useWhiteboardStore(state => state.isExpanded);
     const toggleExpanded = useWhiteboardStore(state => state.toggleExpanded);
     const [mobileView, setMobileView] = useState<'problem' | 'code'>('problem');
@@ -367,6 +368,10 @@ function MirrorUI({
                     onSubmit={handleSubmit}
                     onRunTests={runTests}
                     submitting={submitting}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    showNotes={showNotes}
+                    setShowNotes={setShowNotes}
                 />
 
                 <div ref={containerRef} className="flex-1 flex overflow-hidden" style={{ cursor: isResizing ? 'col-resize' : 'auto' }}>
@@ -400,6 +405,8 @@ function MirrorUI({
                         levelSlug={levelSlug}
                         urlType={urlType}
                         groupId={groupId}
+                        showNotes={showNotes}
+                        setShowNotes={setShowNotes}
                     />
 
                     {/* Panel Resizer */}

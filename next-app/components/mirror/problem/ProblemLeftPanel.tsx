@@ -4,6 +4,7 @@ import { CFProblemData, Submission } from '../shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
 import ProblemTabs from './ProblemTabs';
 import HandleInputSection from '../HandleInputSection';
+import ProblemNotes from './ProblemNotes';
 
 // Lazy-load heavy tab components — only loaded when user switches to that tab
 const SubmissionsList = dynamic(() => import('../SubmissionsList'), {
@@ -43,10 +44,12 @@ interface ProblemLeftPanelProps {
     onViewCode: (id: number) => void;
     sheetSlug?: string;
     levelSlug?: string;
-    statsLoading?: boolean;
-    stats?: any;
-    urlType?: string;
+    urlType: 'contest' | 'group';
     groupId?: string;
+    stats?: any | null;
+    statsLoading?: boolean;
+    showNotes: boolean;
+    setShowNotes: (show: boolean) => void;
 }
 
 export default function ProblemLeftPanel({
@@ -73,18 +76,21 @@ export default function ProblemLeftPanel({
     onViewCode,
     sheetSlug,
     levelSlug,
-    statsLoading,
     urlType,
     groupId,
+    stats,
+    statsLoading,
+    showNotes,
+    setShowNotes
 }: ProblemLeftPanelProps) {
-    const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
-    const safeProblemId = (Array.isArray(problemId) ? problemId[0] : problemId).toUpperCase();
+    const safeContestId = contestId || '0';
+    const safeProblemId = problemId || 'A';
 
     return (
         <div
             ref={leftPanelRef}
             id="onboarding-left-panel"
-            className={`problem-panel flex flex-col bg-[#121212] ${mobileView === 'code' ? 'hidden md:flex md:w-0 md:flex-none' : 'flex w-full md:w-[var(--panel-width)] md:flex-none'} min-w-0 h-full overflow-hidden`}
+            className={`problem-panel flex flex-col bg-[#0B0B0C] border-r border-white/5 relative ${mobileView === 'code' ? 'hidden md:flex md:w-0 md:flex-none' : 'flex w-full md:w-[var(--panel-width)] md:flex-none'} min-w-0 h-full overflow-hidden`}
             data-lenis-prevent="true"
             style={{
                 '--panel-width': `${lastWidth.current}%`,
@@ -99,7 +105,8 @@ export default function ProblemLeftPanel({
                 setIsWhiteboardExpanded={setIsWhiteboardExpanded}
             />
 
-            <div className="flex-1 min-h-0 flex flex-col relative">
+            <div className="flex-1 min-h-0 relative bg-[#0B0B0C]">
+                {/* Content Area with Tabs */}
                 {activeTab === 'description' && (
                     <div
                         className="absolute inset-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar"
@@ -113,45 +120,52 @@ export default function ProblemLeftPanel({
                         className="absolute inset-0 overflow-hidden flex flex-col"
                         data-lenis-prevent="true"
                     >
-                        {!handleLoading && !cfHandle ? (
-                            <div className="flex items-center justify-center py-12 px-4">
-                                <HandleInputSection onSave={onHandleSave} compact />
-                            </div>
-                        ) : (
-                            <SubmissionsList
-                                submissions={submissions}
-                                loading={submissionsLoading}
-                                onViewCode={onViewCode}
-                                contestId={safeContestId}
-                                problemIndex={safeProblemId}
-                                urlType={urlType}
-                                groupId={groupId}
-                            />
-                        )}
+                        <SubmissionsList
+                            submissions={submissions}
+                            loading={submissionsLoading}
+                            onViewCode={onViewCode}
+                            contestId={safeContestId}
+                            problemIndex={safeProblemId}
+                            urlType={urlType}
+                            groupId={groupId}
+                        />
                     </div>
                 )}
                 {activeTab === 'analytics' && (
                     <div
-                        className="absolute inset-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar"
+                        className="absolute inset-0 overflow-y-auto p-4 sm:p-6 custom-scrollbar"
                         data-lenis-prevent="true"
                     >
                         <AnalyticsView
                             submissions={submissions}
                             cfStats={cfStats}
-                            loading={statsLoading !== undefined ? statsLoading : submissionsLoading}
+                            loading={!!statsLoading}
                         />
                     </div>
                 )}
                 {activeTab === 'solution' && (
                     <div
-                        className="absolute inset-0 flex flex-col"
+                        className="absolute inset-0 overflow-hidden"
                         data-lenis-prevent="true"
                     >
                         <SolutionView
-                            contestId={safeContestId}
-                            problemId={safeProblemId}
+                            problemId={problemId}
+                            contestId={contestId}
                             sheetSlug={sheetSlug}
                             levelSlug={levelSlug}
+                        />
+                    </div>
+                )}
+
+                {/* Notes Overlay — Covers EVERYTHING in the content area when open */}
+                {showNotes && (
+                    <div
+                        className="absolute inset-0 z-50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-left-2 duration-300 bg-[#121212]"
+                        data-lenis-prevent="true"
+                    >
+                        <ProblemNotes 
+                            contestId={safeContestId} 
+                            problemIndex={safeProblemId} 
                         />
                     </div>
                 )}

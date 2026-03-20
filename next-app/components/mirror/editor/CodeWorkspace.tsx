@@ -6,6 +6,7 @@ import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
 import GradiaExportModal from '../GradiaExportModal';
 import init, { format } from "@wasm-fmt/clang-format/web";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_PANEL_PERCENT = 45;
 const MIN_PANEL_PERCENT = 0;
@@ -166,7 +167,7 @@ export default function CodeWorkspace({
             setTestPanelTab(tab);
         }
     }, [panelContentPercent, expandPanel, setTestPanelTab]);
-    
+
     // Formatting handler
     const handleFormat = useCallback(() => {
         if (!code.trim()) return;
@@ -412,8 +413,8 @@ export default function CodeWorkspace({
                 id="onboarding-test-panel"
                 className="shrink-0 flex flex-col bg-[#1a1a1a]"
                 style={{
-                    height: isCollapsed
-                        ? `${PANEL_TAB_BAR_HEIGHT}px`
+                    height: isCollapsed 
+                        ? `${PANEL_TAB_BAR_HEIGHT}px` 
                         : `calc(${panelContentPercent}% + ${PANEL_TAB_BAR_HEIGHT}px)`,
                     maxHeight: `${MAX_PANEL_PERCENT + 5}%`,
                     transition: isAnimating && !isResizingVertical ? 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -533,6 +534,7 @@ export default function CodeWorkspace({
                     )}
                 </div>
             </div>
+
 
             <GradiaExportModal
                 isOpen={isExportModalOpen}

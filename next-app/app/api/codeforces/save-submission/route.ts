@@ -122,8 +122,13 @@ export async function POST(req: NextRequest) {
         ]);
 
         if (status === 'SOLVED') {
+            // Update daily streak and solve counts
+            const { updateStreakOnSolve } = await import('@/lib/streaks');
+            await updateStreakOnSolve(user.id);
+
             await invalidateCache(`user:${user.id}:dashboard_stats`);
             await invalidateCache(`user:${user.id}:roadmap`);
+            await invalidateCache(`user:${user.id}:streak`); // Also invalidate streak cache
             await invalidateCache(`user:${user.id}:achievements`);
             await invalidateCache(`user:${user.id}:curriculum_progress`);
             await invalidateCache('leaderboard:sheets:public');
