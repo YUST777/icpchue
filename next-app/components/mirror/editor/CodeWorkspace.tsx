@@ -480,7 +480,7 @@ export default function CodeWorkspace({
                     }}
                 >
                     {!isCollapsed && (
-                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#2d2d2d] flex flex-col">
+                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1e1e1e] flex flex-col">
                             {testPanelTab === 'testcase' && (
                                 <TestCaseTabInline
                                     testCases={testCases}
