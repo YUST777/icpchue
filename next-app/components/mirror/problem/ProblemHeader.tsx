@@ -122,24 +122,17 @@ export default function ProblemHeader({
 
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
-                            {!onOpenDrawer && (
-                                <button
-                                    onClick={onToggleSidebar}
-                                    className="p-1.5 -ml-1.5 text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-colors"
-                                    title="Toggle Sidebar"
-                                >
-                                    <SidebarToggleIcon size={20} />
-                                </button>
-                            )}
-                            <h1 className="text-sm font-semibold text-white/90 truncate flex items-center gap-2">
-                                {showIdPrefix && (
-                                    <span className="text-xs font-mono text-[#E8C15A]/80 bg-[#E8C15A]/10 px-1.5 py-0.5 rounded border border-[#E8C15A]/20">
-                                        {problemId}
-                                    </span>
-                                )}
-                                <span className="truncate">{title}</span>
-                            </h1>
-                        </div>
+                             {!onOpenDrawer && (
+                                 <button
+                                     onClick={onToggleSidebar}
+                                     className="p-1.5 -ml-1.5 text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-colors"
+                                     title="Toggle Sidebar"
+                                 >
+                                     <SidebarToggleIcon size={20} />
+                                 </button>
+                             )}
+                             {/* Title removed as requested */}
+                         </div>
                     </div>
 
                     <div className="flex items-center shrink-0 gap-0.5 ml-2">
