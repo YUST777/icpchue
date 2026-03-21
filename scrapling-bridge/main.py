@@ -339,14 +339,22 @@ async def _run_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
 
     def do():
         t0 = time.monotonic()
-        MAX_TOTAL = 100  # hard cap — API timeout is 120s
-        with StealthySession(headless=True, solve_cloudflare=True, timeout=60000, cookies=cookies) as s:
+        MAX_TOTAL = 150  # hard cap
+        with StealthySession(headless=True, solve_cloudflare=True, timeout=90000, cookies=cookies) as s:
             page = s.context.new_page()
             try:
                 # 1. Navigate to submit page (with retry for Cloudflare)
-                for nav_attempt in range(3):
+                for nav_attempt in range(4):
                     logger.info(f"→ {submit_pg}" + (f" (retry {nav_attempt})" if nav_attempt else ""))
-                    page.goto(submit_pg, wait_until="domcontentloaded", timeout=30000)
+                    try:
+                        page.goto(submit_pg, wait_until="domcontentloaded", timeout=45000)
+                    except Exception as nav_err:
+                        logger.warning(f"  nav attempt {nav_attempt} failed: {nav_err}")
+                        if nav_attempt < 3:
+                            page.wait_for_timeout(3000)
+                            continue
+                        else:
+                            return {"success": False, "error": f"Could not reach Codeforces (timeout). Try again."}
                     
                     # Wait a bit for any JS redirects
                     page.wait_for_timeout(1000)
