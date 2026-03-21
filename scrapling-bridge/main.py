@@ -535,29 +535,43 @@ async def check_status(req: StatusRequest):
                 else:
                     # Try fetching via /data/judgeProtocol (CF's AJAX endpoint)
                     try:
+                        import json
+                        import urllib.request
+                        import urllib.parse
+
                         # Extract CSRF token from the page
-                        csrf_match = re.search(r'X-Csrf-Token["\s:]+content="([^"]+)"', html)
-                        csrf = csrf_match.group(1) if csrf_match else None
+                        csrf = None
+                        csrf_match = re.search(r'name="X-Csrf-Token"\s+content="([^"]+)"', html)
+                        if csrf_match:
+                            csrf = csrf_match.group(1)
                         if not csrf:
-                            csrf_match = re.search(r'csrf_token\s*[:=]\s*["\']([^"\']+)', html)
-                            csrf = csrf_match.group(1) if csrf_match else None
+                            csrf_match = re.search(r'csrf_token\s*[=:]\s*["\']([a-f0-9]+)', html)
+                            if csrf_match:
+                                csrf = csrf_match.group(1)
 
-                        headers = {}
-                        if csrf:
-                            headers["X-Csrf-Token"] = csrf
+                        logger.info(f"[JudgeProtocol] Fetching for {req.submissionId}, csrf={'yes' if csrf else 'no'}")
 
-                        proto_resp = Fetcher.post(
+                        # Build the request manually with urllib
+                        post_data = urllib.parse.urlencode({"submissionId": req.submissionId}).encode()
+                        proto_req = urllib.request.Request(
                             "https://codeforces.com/data/judgeProtocol",
-                            data={"submissionId": req.submissionId},
-                            cookies=cookie_dict,
-                            headers=headers,
-                            timeout=10,
-                            follow_redirects=True
+                            data=post_data,
+                            headers={
+                                "Content-Type": "application/x-www-form-urlencoded",
+                                "Cookie": req.cookies,
+                                "X-Requested-With": "XMLHttpRequest",
+                                "Referer": my,
+                            }
                         )
-                        proto_body = proto_resp.body.decode("utf-8", errors="replace") if isinstance(proto_resp.body, bytes) else str(proto_resp.body)
+                        if csrf:
+                            proto_req.add_header("X-Csrf-Token", csrf)
+
+                        with urllib.request.urlopen(proto_req, timeout=10) as proto_resp:
+                            proto_body = proto_resp.read().decode("utf-8", errors="replace")
+
+                        logger.info(f"[JudgeProtocol] Response length={len(proto_body)}, starts={proto_body[:80]}")
 
                         if proto_body and not proto_body.startswith("<!DOCTYPE"):
-                            import json
                             try:
                                 proto_data = json.loads(proto_body)
                                 # proto_data is typically a list of test results or a string
@@ -603,10 +617,9 @@ async def check_status(req: StatusRequest):
                                         "compilationError": result.get("compilationError"),
                                         "details": result.get("details"),
                                     }
-                                    logger.info(f"[JudgeProtocol] Got details for {req.submissionId} via HTTP")
+                                    logger.info(f"[JudgeProtocol] Cached for {req.submissionId}")
                             except json.JSONDecodeError:
-                                # Not JSON — might be HTML error page
-                                logger.warning(f"[JudgeProtocol] Non-JSON response for {req.submissionId}: {proto_body[:100]}")
+                                logger.warning(f"[JudgeProtocol] Non-JSON response for {req.submissionId}: {proto_body[:200]}")
                     except Exception as e:
                         logger.warning(f"[JudgeProtocol] HTTP fetch failed for {req.submissionId}: {e}")
 
