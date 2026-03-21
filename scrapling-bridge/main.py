@@ -281,11 +281,28 @@ async def submit_code(req: SubmitRequest):
                 if "/enter" in page.url or "/login" in page.url:
                     return {"success": False, "error": "NOT_LOGGED_IN"}
 
+                # 1b. Handle Cloudflare challenge if present
+                try:
+                    content = page.content()
+                    if "Just a moment" in content or "cf-challenge" in content or "challenge-platform" in content:
+                        logger.info("  Cloudflare challenge detected, solving...")
+                        s._cloudflare_solver(page)
+                        page.wait_for_timeout(2000)
+                except Exception as cf_err:
+                    logger.warning(f"  Cloudflare solver: {cf_err}")
+
+                # Re-check login after potential CF solve
+                if "/enter" in page.url or "/login" in page.url:
+                    return {"success": False, "error": "NOT_LOGGED_IN"}
+
                 # 2. Wait for form
                 try:
-                    page.wait_for_selector("#sourceCodeTextarea", timeout=12000)
+                    page.wait_for_selector("#sourceCodeTextarea", timeout=15000)
                 except Exception:
                     err = page.evaluate(JS_ERR)
+                    page_url = page.url
+                    page_title = page.title()
+                    logger.warning(f"  form not found — url={page_url}, title={page_title}")
                     return {"success": False, "error": err or "FORM_NOT_FOUND"}
 
                 logger.info(f"  form ready ({time.monotonic()-t0:.1f}s)")
