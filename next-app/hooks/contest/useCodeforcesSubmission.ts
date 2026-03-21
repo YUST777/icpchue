@@ -195,7 +195,8 @@ export function useCodeforcesSubmission({
 
             setCfStatus({ status: 'submitting', substatus: phases[0].msg, progress: phases[0].pct });
 
-            const apiRes = await fetch('/api/codeforces/submit', {
+            // Step 1: Start the submission job (returns immediately with jobId)
+            const startRes = await fetch('/api/codeforces/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -210,45 +211,98 @@ export function useCodeforcesSubmission({
                 }),
             });
 
-            let apiData;
-            const contentType = apiRes.headers.get('content-type');
-
-            // Stop phase timers
-            submissionDone = true;
-            phaseTimers.forEach(t => clearTimeout(t));
-
-            if (contentType && contentType.includes('application/json')) {
-                apiData = await apiRes.json();
+            let startData;
+            const ct = startRes.headers.get('content-type');
+            if (ct && ct.includes('application/json')) {
+                startData = await startRes.json();
             } else {
-                // Non-JSON response (e.g. Cloudflare 504 HTML page)
-                apiData = { success: false, error: `Server error (${apiRes.status}). The submission may have gone through — check Codeforces.` };
+                startData = { error: `Server error (${startRes.status})` };
+            }
+
+            if (!startData.jobId) {
+                // Old-style direct response or error
+                submissionDone = true;
+                phaseTimers.forEach(t => clearTimeout(t));
+                // Handle as direct result (backward compat or immediate error)
+                const apiData = startData;
+                if (apiData.success !== undefined) {
+                    // Direct result from bridge — handle below
+                } else {
+                    setCfStatus({ status: 'error', error: startData.error || 'Failed to start submission' });
+                    setSubmitting(false);
+                    return;
+                }
+                // Fall through to handle apiData
+                if (!apiData.success) {
+                    setCfStatus({ status: 'error', error: apiData.error || 'Submission failed' });
+                    setSubmitting(false);
+                    return;
+                }
+            }
+
+            // Step 2: Poll for result
+            const jobId = startData.jobId;
+            let apiData: { success?: boolean; error?: string; submissionId?: string; [key: string]: unknown } | null = null;
+
+            if (jobId) {
+                const maxPolls = 60; // 60 * 2s = 120s
+                for (let i = 0; i < maxPolls; i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+
+                    if (!isMountedRef.current) return;
+
+                    try {
+                        const pollRes = await fetch(`/api/codeforces/submit-result?jobId=${jobId}`);
+                        if (!pollRes.ok) continue;
+                        const job = await pollRes.json();
+                        if (job.status === 'done' && job.result) {
+                            apiData = job.result;
+                            break;
+                        }
+                    } catch {
+                        // Network error — keep polling
+                    }
+                }
+
+                submissionDone = true;
+                phaseTimers.forEach(t => clearTimeout(t));
+
+                if (!apiData) {
+                    setCfStatus({
+                        status: 'error',
+                        error: 'Submission timed out. Check Codeforces directly for the result.'
+                    });
+                    setSubmitting(false);
+                    return;
+                }
             }
 
             // Handle API errors
-            if (!apiData.success) {
-                let errorMessage = apiData.error || 'Submission failed';
+            if (!apiData || !apiData.success) {
+                const errorData = apiData || { error: 'No response from bridge' };
+                let errorMessage = (errorData.error as string) || 'Submission failed';
                 let needsLogin = false;
 
-                if (apiData.error === 'DUPLICATE_SUBMISSION') {
+                if (errorData.error === 'DUPLICATE_SUBMISSION') {
                     setCfStatus({
                         status: 'error',
                         error: 'You have submitted exactly the same code before!',
                         isDuplicate: true,
-                        submissionId: apiData.submissionId ? Number(apiData.submissionId) : undefined
+                        submissionId: errorData.submissionId ? Number(errorData.submissionId) : undefined
                     });
                     setSubmitting(false);
                     return;
                 }
 
-                if (apiData.error === 'NOT_LOGGED_IN') {
+                if (errorData.error === 'NOT_LOGGED_IN') {
                     errorMessage = 'Session expired. Please log in to Codeforces again.';
                     needsLogin = true;
-                } else if (apiData.error === 'RATE_LIMITED') {
+                } else if (errorData.error === 'RATE_LIMITED') {
                     errorMessage = 'Too many submissions. Please wait a moment.';
-                } else if (apiData.error === 'VIRTUAL_REGISTRATION_REQUIRED') {
+                } else if (errorData.error === 'VIRTUAL_REGISTRATION_REQUIRED') {
                     errorMessage = 'This is a past contest. Register for virtual participation on Codeforces first.';
                     window.open(`https://codeforces.com/contestRegistration/${contestId}/virtual/true`, '_blank');
-                } else if (apiData.error === 'GYM_ENTRY_REQUIRED') {
+                } else if (errorData.error === 'GYM_ENTRY_REQUIRED') {
                     errorMessage = 'You need to enter this Gym first.';
                     window.open(`https://codeforces.com/gym/${contestId}`, '_blank');
                 }
