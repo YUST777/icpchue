@@ -181,7 +181,7 @@ function MirrorUI({
     const testCases = [...sampleTestCases, ...customTestCases];
 
     // Layout Hooks
-    const { containerRef, leftPanelRef, isResizing, handleMouseDown, lastWidth } = useResizableLayout();
+    const { containerRef, leftPanelRef, handleMouseDown, lastWidth } = useResizableLayout();
     const { whiteboardHeight, handleResizeStart: handleWhiteboardResizeStart } = useWhiteboardResize();
 
     // Codeforces Handle
@@ -192,6 +192,9 @@ function MirrorUI({
     const [showNotes, setShowNotes] = useState(false);
     const isWhiteboardExpanded = useWhiteboardStore(state => state.isExpanded);
     const toggleExpanded = useWhiteboardStore(state => state.toggleExpanded);
+    const handleSetWhiteboardExpanded = useCallback((expanded: boolean) => {
+        if (expanded !== isWhiteboardExpanded) toggleExpanded();
+    }, [isWhiteboardExpanded, toggleExpanded]);
     const [mobileView, setMobileView] = useState<'problem' | 'code'>('problem');
     const [isTestPanelVisible, setIsTestPanelVisible] = useState(true);
     const [testPanelActiveTab, setTestPanelActiveTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
@@ -398,13 +401,20 @@ function MirrorUI({
         );
     }
 
+    // ─── Stable callbacks for memoized children ───
+    const noopAnalyze = useCallback(() => {}, []);
+    const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
+    const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+    const closeModal = useCallback(() => setSelectedSubId(null), []);
+    const restoreCode = useCallback((newCode: string) => setCode(newCode), [setCode]);
+
     return (
         <ExtensionGate>
-            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col">
+            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col" style={{ zoom: 0.85 }}>
                 {/* ProblemDrawer — slides from left */}
                 <ProblemDrawer
                     isOpen={isDrawerOpen}
-                    onClose={() => setIsDrawerOpen(false)}
+                    onClose={closeDrawer}
                     currentContestId={contestId}
                     currentProblemId={problemId}
                     urlType={urlType}
@@ -423,8 +433,8 @@ function MirrorUI({
                     setMobileView={setMobileView}
                     navigationBaseUrl={navigationBaseUrl}
                     problemId={problemId}
-                    onToggleSidebar={() => setIsDrawerOpen(true)}
-                    onOpenDrawer={() => setIsDrawerOpen(true)}
+                    onToggleSidebar={openDrawer}
+                    onOpenDrawer={openDrawer}
                     sheetProblems={sheetProblems}
                     onSubmit={handleSubmit}
                     onRunTests={runTests}
@@ -435,14 +445,12 @@ function MirrorUI({
                     setShowNotes={setShowNotes}
                 />
 
-                <div ref={containerRef} className="flex-1 flex overflow-hidden" style={{ cursor: isResizing ? 'col-resize' : 'auto' }}>
+                <div ref={containerRef} className="flex-1 flex overflow-hidden">
                     <ProblemLeftPanel
                         activeTab={activeTab}
                         setActiveTab={setActiveTab}
                         isWhiteboardExpanded={isWhiteboardExpanded}
-                        setIsWhiteboardExpanded={(expanded: boolean) => {
-                            if (expanded !== isWhiteboardExpanded) toggleExpanded();
-                        }}
+                        setIsWhiteboardExpanded={handleSetWhiteboardExpanded}
                         cfData={cfData}
                         submissions={submissions}
                         submissionsLoading={submissionsLoading}
@@ -453,7 +461,7 @@ function MirrorUI({
                         problemId={problemId}
                         whiteboardHeight={whiteboardHeight}
                         handleWhiteboardResizeStart={handleWhiteboardResizeStart}
-                        analyzeComplexity={() => { }}
+                        analyzeComplexity={noopAnalyze}
                         complexityLoading={false}
                         leftPanelRef={leftPanelRef}
                         lastWidth={lastWidth}
@@ -508,13 +516,10 @@ function MirrorUI({
                 {/* Submission Detail Modal */}
                 <SubmissionDetailModal
                     isOpen={selectedSubId !== null}
-                    onClose={() => setSelectedSubId(null)}
+                    onClose={closeModal}
                     submissionId={selectedSubId}
                     contestId={contestId}
-                    onRestoreCode={(newCode) => {
-                        setCode(newCode);
-                        // Optional: trigger a success toast if we had a toast system
-                    }}
+                    onRestoreCode={restoreCode}
                 />
             </div>
         </ExtensionGate>
