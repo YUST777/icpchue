@@ -276,7 +276,8 @@ export function useCodeforcesSubmission({
                             (FINAL_VERDICTS.has(rawVerdict) || FINAL_VERDICTS.has(verdictText));
 
                         if (isFinal) {
-                            const failedTest = verdictText !== 'Accepted' && status.testNumber !== undefined
+                            const isCompilationError = verdictText === 'Compilation Error' || rawVerdict === 'COMPILATION_ERROR';
+                            const failedTest = !isCompilationError && verdictText !== 'Accepted' && status.testNumber !== undefined
                                 ? status.testNumber + 1
                                 : undefined;
 

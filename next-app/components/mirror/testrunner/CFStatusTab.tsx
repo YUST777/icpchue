@@ -171,8 +171,8 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 </div>
             )}
 
-            {/* Failed Test Case Info */}
-            {cfStatus.status === 'done' && !!cfStatus.failedTestCase && cfStatus.verdict !== 'Accepted' && (
+            {/* Failed Test Case Info — hide for Compilation Error */}
+            {cfStatus.status === 'done' && !!cfStatus.failedTestCase && cfStatus.verdict !== 'Accepted' && cfStatus.verdict !== 'Compilation Error' && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                     <div className="flex items-center gap-2 text-red-400 mb-2">
                         <XCircle size={16} />
@@ -196,25 +196,25 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 </div>
             )}
 
-            {/* Compilation Error Details */}
+            {/* Judgement Protocol — Compilation Error */}
             {cfStatus.compilationError && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl overflow-hidden">
-                    <div className="px-3 py-2 text-orange-400 text-xs font-medium border-b border-orange-500/20">
-                        Compilation Error
+                    <div className="px-3 py-2 text-orange-400 text-sm font-semibold border-b border-orange-500/20">
+                        Judgement protocol
                     </div>
-                    <pre className="p-3 text-[10px] text-orange-300 max-h-40 overflow-auto whitespace-pre-wrap font-mono">
+                    <pre className="p-3 text-xs text-orange-300 max-h-60 overflow-auto whitespace-pre-wrap font-mono leading-relaxed">
                         {cfStatus.compilationError}
                     </pre>
                 </div>
             )}
 
-            {/* Other Details (e.g. Failed Test Case Info) */}
+            {/* Judgement Protocol — Test Details (WA, TLE, RE, etc.) */}
             {cfStatus.details && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl overflow-hidden">
-                    <div className="px-3 py-2 text-blue-400 text-xs font-medium border-b border-blue-500/20">
-                        Detailed Information
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl overflow-hidden">
+                    <div className="px-3 py-2 text-orange-400 text-sm font-semibold border-b border-orange-500/20">
+                        Judgement protocol
                     </div>
-                    <pre className="p-3 text-[10px] text-blue-300 max-h-60 overflow-auto whitespace-pre-wrap font-mono">
+                    <pre className="p-3 text-xs text-orange-300 max-h-60 overflow-auto whitespace-pre-wrap font-mono leading-relaxed">
                         {cfStatus.details}
                     </pre>
                 </div>

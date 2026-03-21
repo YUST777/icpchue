@@ -270,28 +270,54 @@ async def submit_code(req: SubmitRequest):
 
     def do():
         t0 = time.monotonic()
-        MAX_TOTAL = 80  # hard cap — must finish within this
+        MAX_TOTAL = 100  # hard cap — API timeout is 120s
         with StealthySession(headless=True, solve_cloudflare=True, timeout=60000, cookies=cookies) as s:
             page = s.context.new_page()
             try:
-                # 1. Navigate to submit page
-                logger.info(f"→ {submit_pg}")
-                page.goto(submit_pg, wait_until="domcontentloaded")
+                # 1. Navigate to submit page (with retry for Cloudflare)
+                for nav_attempt in range(3):
+                    logger.info(f"→ {submit_pg}" + (f" (retry {nav_attempt})" if nav_attempt else ""))
+                    page.goto(submit_pg, wait_until="domcontentloaded", timeout=30000)
+                    
+                    # Wait a bit for any JS redirects
+                    page.wait_for_timeout(1000)
 
-                if "/enter" in page.url or "/login" in page.url:
-                    return {"success": False, "error": "NOT_LOGGED_IN"}
+                    if "/enter" in page.url or "/login" in page.url:
+                        return {"success": False, "error": "NOT_LOGGED_IN"}
 
-                # 1b. Handle Cloudflare challenge if present
-                try:
+                    # Check for Cloudflare challenge
                     content = page.content()
-                    if "Just a moment" in content or "cf-challenge" in content or "challenge-platform" in content:
+                    has_challenge = ("Just a moment" in content or "cf-challenge" in content 
+                                    or "challenge-platform" in content or "Checking your browser" in content)
+                    
+                    if has_challenge:
                         logger.info("  Cloudflare challenge detected, solving...")
-                        s._cloudflare_solver(page)
-                        page.wait_for_timeout(2000)
-                except Exception as cf_err:
-                    logger.warning(f"  Cloudflare solver: {cf_err}")
+                        try:
+                            s._cloudflare_solver(page)
+                            page.wait_for_timeout(2000)
+                            # After solving CF challenge, reload the submit page
+                            # so we get a fresh Turnstile widget for the form
+                            if "/submit" not in page.url:
+                                logger.info("  CF solved but redirected, will retry nav...")
+                            else:
+                                logger.info("  CF solved, reloading for fresh turnstile...")
+                                page.goto(submit_pg, wait_until="domcontentloaded", timeout=20000)
+                                page.wait_for_timeout(1000)
+                        except Exception as cf_err:
+                            logger.warning(f"  Cloudflare solver: {cf_err}")
+                    
+                    # Check if we ended up on the right page
+                    current_url = page.url
+                    if "/submit" in current_url or f"contest/{req.contestId}" in current_url:
+                        break  # We're on the submit page
+                    
+                    logger.warning(f"  redirected to {current_url}, retrying...")
+                    page.wait_for_timeout(2000)
+                else:
+                    # All retries exhausted
+                    logger.error(f"  could not reach submit page after 3 attempts, ended at {page.url}")
 
-                # Re-check login after potential CF solve
+                # Re-check login after navigation
                 if "/enter" in page.url or "/login" in page.url:
                     return {"success": False, "error": "NOT_LOGGED_IN"}
 
@@ -445,16 +471,29 @@ async def check_status(req: StatusRequest):
                 if not data or "error" in data:
                     return data
                 vl = (data.get("verdict") or "").lower()
-                if data.get("hasDetails") and "compilation error" in vl:
+                # Fetch Judgement Protocol for any verdict that has details
+                # (compilation error, wrong answer, runtime error, etc.)
+                is_final_fail = data.get("hasDetails") and "testing" not in vl and "accepted" not in vl and "happy new year" not in vl
+                if is_final_fail:
                     try:
                         page.evaluate("""(subId) => {
                             const r = document.querySelector('tr[data-submission-id="' + subId + '"]');
                             if (r) { const a = r.querySelector('a.information-box-link'); if (a) a.click(); }
                         }""", str(req.submissionId))
-                        page.wait_for_selector("#facebox .content", timeout=4000)
-                        data["compilationError"] = page.locator("#facebox .content pre").inner_text()
-                    except Exception:
-                        pass
+                        page.wait_for_selector("#facebox .content", timeout=5000)
+                        detail_text = page.locator("#facebox .content").inner_text()
+                        if "compilation error" in vl:
+                            # For CE, put it in compilationError for backward compat
+                            pre_text = ""
+                            try:
+                                pre_text = page.locator("#facebox .content pre").inner_text()
+                            except Exception:
+                                pre_text = detail_text
+                            data["compilationError"] = pre_text
+                        else:
+                            data["details"] = detail_text
+                    except Exception as e:
+                        logger.warning(f"  detail fetch: {e}")
                 return data
             except Exception as e:
                 logger.error(f"Stealth status: {e}")
@@ -466,7 +505,8 @@ async def check_status(req: StatusRequest):
         res = await anyio.to_thread.run_sync(fast)
         if res and "error" not in res:
             vl = (res.get("verdict") or "").lower()
-            if res.get("hasDetails") and "compilation error" in vl:
+            # Fall back to stealth if there are details to fetch (any non-accepted verdict)
+            if res.get("hasDetails") and "accepted" not in vl and "happy new year" not in vl and "testing" not in vl:
                 res = None
         if not res or "error" in res:
             for _ in range(2):
@@ -494,6 +534,7 @@ async def check_status(req: StatusRequest):
             success=True, verdict=normalize_verdict(res.get("verdict") or ""),
             time=time_ms, memory=memory_kb, testNumber=test_num,
             compilationError=res.get("compilationError"),
+            details=res.get("details"),
         )
     except Exception as e:
         logger.exception(f"Status error: {e}")
