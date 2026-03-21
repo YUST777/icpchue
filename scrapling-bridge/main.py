@@ -31,11 +31,23 @@ app.add_middleware(
 # Jobs expire after 5 minutes
 jobs: Dict[str, dict] = {}
 
+# ── Details cache: submissionId → {compilationError, details, fetched_at} ──
+# Avoids re-launching stealth on every poll
+details_cache: Dict[str, dict] = {}
+# Track which submissions have a stealth fetch in progress
+details_fetching: set = set()
+
 def cleanup_old_jobs():
     now = time.time()
     expired = [k for k, v in jobs.items() if now - v.get("created", 0) > 300]
     for k in expired:
         del jobs[k]
+    # Also clean old details cache entries (10 min)
+    expired_details = [k for k, v in details_cache.items() if now - v.get("fetched_at", 0) > 600]
+    for k in expired_details:
+        del details_cache[k]
+    # Clean stale fetching flags (5 min safety)
+    # (handled implicitly — if fetch finishes, it removes from set)
 
 # ── Language IDs ─────────────────────────────────────────────────────
 LANG = {
@@ -489,7 +501,8 @@ async def check_status(req: StatusRequest):
             logger.warning(f"Fast check: {e}")
             return None
 
-    def stealth():
+    def stealth_fetch_details():
+        """Open a headless browser to click the details link and get Judgement Protocol."""
         with StealthySession(headless=True, solve_cloudflare=True, timeout=45000, cookies=cookie_list) as s:
             page = s.context.new_page()
             try:
@@ -513,8 +526,6 @@ async def check_status(req: StatusRequest):
                 if not data or "error" in data:
                     return data
                 vl = (data.get("verdict") or "").lower()
-                # Fetch Judgement Protocol for any verdict that has details
-                # (compilation error, wrong answer, runtime error, etc.)
                 is_final_fail = data.get("hasDetails") and "testing" not in vl and "accepted" not in vl and "happy new year" not in vl
                 if is_final_fail:
                     try:
@@ -525,7 +536,6 @@ async def check_status(req: StatusRequest):
                         page.wait_for_selector("#facebox .content", timeout=5000)
                         detail_text = page.locator("#facebox .content").inner_text()
                         if "compilation error" in vl:
-                            # For CE, put it in compilationError for backward compat
                             pre_text = ""
                             try:
                                 pre_text = page.locator("#facebox .content pre").inner_text()
@@ -543,19 +553,57 @@ async def check_status(req: StatusRequest):
             finally:
                 page.close()
 
+    async def _background_fetch_details(sub_id: str):
+        """Background task: fetch details via stealth and cache them."""
+        try:
+            logger.info(f"[Details] Starting stealth fetch for {sub_id}")
+            res = await anyio.to_thread.run_sync(stealth_fetch_details)
+            if res and "error" not in res:
+                cached = {"fetched_at": time.time()}
+                if res.get("compilationError"):
+                    cached["compilationError"] = res["compilationError"]
+                if res.get("details"):
+                    cached["details"] = res["details"]
+                details_cache[sub_id] = cached
+                logger.info(f"[Details] Cached for {sub_id}: CE={bool(res.get('compilationError'))}, details={bool(res.get('details'))}")
+            else:
+                # Cache empty result so we don't retry forever
+                details_cache[sub_id] = {"fetched_at": time.time()}
+                logger.warning(f"[Details] Stealth failed for {sub_id}: {res}")
+        except Exception as e:
+            logger.exception(f"[Details] Error fetching for {sub_id}: {e}")
+            details_cache[sub_id] = {"fetched_at": time.time()}
+        finally:
+            details_fetching.discard(sub_id)
+
     try:
+        # Check if we already have cached details for this submission
+        cached = details_cache.get(req.submissionId)
+
         res = await anyio.to_thread.run_sync(fast)
         if res and "error" not in res:
             vl = (res.get("verdict") or "").lower()
-            # Fall back to stealth if there are details to fetch (any non-accepted verdict)
-            if res.get("hasDetails") and "accepted" not in vl and "happy new year" not in vl and "testing" not in vl:
-                res = None
-        if not res or "error" in res:
+            needs_details = res.get("hasDetails") and "accepted" not in vl and "happy new year" not in vl and "testing" not in vl
+
+            if needs_details:
+                # Merge cached details if available
+                if cached:
+                    if cached.get("compilationError"):
+                        res["compilationError"] = cached["compilationError"]
+                    if cached.get("details"):
+                        res["details"] = cached["details"]
+                elif req.submissionId not in details_fetching:
+                    # Kick off background stealth fetch (only once)
+                    details_fetching.add(req.submissionId)
+                    asyncio.get_event_loop().create_task(_background_fetch_details(req.submissionId))
+        elif not res or "error" in res:
+            # Fast path failed entirely — try stealth directly
             for _ in range(2):
-                res = await anyio.to_thread.run_sync(stealth)
+                res = await anyio.to_thread.run_sync(stealth_fetch_details)
                 if res and "error" not in res:
                     break
                 await anyio.sleep(1)
+
         if not res or "error" in res:
             return StatusResponse(success=False, error="SUBMISSION_NOT_FOUND")
 
