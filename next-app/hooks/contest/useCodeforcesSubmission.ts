@@ -369,28 +369,6 @@ export function useCodeforcesSubmission({
                                 ? status.testNumber + 1
                                 : undefined;
 
-                            const hasDetails = !!(status.compilationError || status.details);
-                            const expectsDetails = verdictText !== 'Accepted' && !hasDetails;
-
-                            // If we expect details but don't have them yet, keep polling
-                            // for up to 30 more seconds (15 polls × 2s) to let the bridge
-                            // background stealth fetch complete
-                            if (expectsDetails && attempts < maxAttempts - 15) {
-                                // Show the verdict immediately while waiting for details
-                                setCfStatus({
-                                    status: 'done',
-                                    verdict: verdictText,
-                                    time: status.time,
-                                    memory: status.memory,
-                                    testNumber: status.testNumber,
-                                    submissionId,
-                                    failedTestCase: failedTest,
-                                    substatus: 'Fetching judgement protocol...'
-                                });
-                                attempts++;
-                                continue;
-                            }
-
                             await fetchWithAuth('/api/codeforces/save-submission', {
                                 method: 'POST',
                                 body: JSON.stringify({

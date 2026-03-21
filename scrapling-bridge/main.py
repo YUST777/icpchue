@@ -32,10 +32,7 @@ app.add_middleware(
 jobs: Dict[str, dict] = {}
 
 # ── Details cache: submissionId → {compilationError, details, fetched_at} ──
-# Avoids re-launching stealth on every poll
 details_cache: Dict[str, dict] = {}
-# Track which submissions have a stealth fetch in progress
-details_fetching: set = set()
 
 def cleanup_old_jobs():
     now = time.time()
@@ -517,15 +514,109 @@ async def check_status(req: StatusRequest):
             if len(cells) < 6:
                 return {"error": "malformed"}
             clean = lambda h: ' '.join(re.sub(r'<.*?>', ' ', h).split())
-            return {"verdict": clean(cells[5]), "time": clean(cells[6]) if len(cells) > 6 else None,
-                    "memory": clean(cells[7]) if len(cells) > 7 else None,
-                    "hasDetails": "information-box-link" in cells[5]}
+            verdict_raw = clean(cells[5])
+            result = {"verdict": verdict_raw,
+                    "time": clean(cells[6]) if len(cells) > 6 else None,
+                    "memory": clean(cells[7]) if len(cells) > 7 else None}
+
+            # For final non-accepted verdicts, fetch Judgement Protocol via HTTP
+            vl = verdict_raw.lower()
+            is_final_fail = ("testing" not in vl and "queue" not in vl and
+                           "accepted" not in vl and "happy new year" not in vl and
+                           verdict_raw and verdict_raw != "null")
+            if is_final_fail:
+                # Check cache first
+                cached = details_cache.get(req.submissionId)
+                if cached:
+                    if cached.get("compilationError"):
+                        result["compilationError"] = cached["compilationError"]
+                    if cached.get("details"):
+                        result["details"] = cached["details"]
+                else:
+                    # Try fetching via /data/judgeProtocol (CF's AJAX endpoint)
+                    try:
+                        # Extract CSRF token from the page
+                        csrf_match = re.search(r'X-Csrf-Token["\s:]+content="([^"]+)"', html)
+                        csrf = csrf_match.group(1) if csrf_match else None
+                        if not csrf:
+                            csrf_match = re.search(r'csrf_token\s*[:=]\s*["\']([^"\']+)', html)
+                            csrf = csrf_match.group(1) if csrf_match else None
+
+                        headers = {}
+                        if csrf:
+                            headers["X-Csrf-Token"] = csrf
+
+                        proto_resp = Fetcher.post(
+                            "https://codeforces.com/data/judgeProtocol",
+                            data={"submissionId": req.submissionId},
+                            cookies=cookie_dict,
+                            headers=headers,
+                            timeout=10,
+                            follow_redirects=True
+                        )
+                        proto_body = proto_resp.body.decode("utf-8", errors="replace") if isinstance(proto_resp.body, bytes) else str(proto_resp.body)
+
+                        if proto_body and not proto_body.startswith("<!DOCTYPE"):
+                            import json
+                            try:
+                                proto_data = json.loads(proto_body)
+                                # proto_data is typically a list of test results or a string
+                                if isinstance(proto_data, str):
+                                    detail_text = proto_data
+                                elif isinstance(proto_data, list):
+                                    # Format test results
+                                    parts = []
+                                    for item in proto_data:
+                                        if isinstance(item, dict):
+                                            parts.append(
+                                                f"Test: #{item.get('testNumber', '?')}, "
+                                                f"time: {item.get('timeConsumed', '?')} ms., "
+                                                f"memory: {item.get('memoryConsumed', '?')} KB, "
+                                                f"exit code: {item.get('exitCode', '?')}, "
+                                                f"checker exit code: {item.get('checkerExitCode', '?')}, "
+                                                f"verdict: {item.get('verdict', '?')}"
+                                            )
+                                            if item.get("input"):
+                                                parts.append(f"Input\n{item['input']}")
+                                            if item.get("output"):
+                                                parts.append(f"Output\n{item['output']}")
+                                            if item.get("answer"):
+                                                parts.append(f"Answer\n{item['answer']}")
+                                            if item.get("checkerLog"):
+                                                parts.append(f"Checker Log\n{item['checkerLog']}")
+                                        elif isinstance(item, str):
+                                            parts.append(item)
+                                    detail_text = "\n".join(parts)
+                                elif isinstance(proto_data, dict):
+                                    detail_text = json.dumps(proto_data, indent=2)
+                                else:
+                                    detail_text = str(proto_data)
+
+                                if detail_text:
+                                    if "compilation error" in vl:
+                                        result["compilationError"] = detail_text
+                                    else:
+                                        result["details"] = detail_text
+                                    # Cache it
+                                    details_cache[req.submissionId] = {
+                                        "fetched_at": time.time(),
+                                        "compilationError": result.get("compilationError"),
+                                        "details": result.get("details"),
+                                    }
+                                    logger.info(f"[JudgeProtocol] Got details for {req.submissionId} via HTTP")
+                            except json.JSONDecodeError:
+                                # Not JSON — might be HTML error page
+                                logger.warning(f"[JudgeProtocol] Non-JSON response for {req.submissionId}: {proto_body[:100]}")
+                    except Exception as e:
+                        logger.warning(f"[JudgeProtocol] HTTP fetch failed for {req.submissionId}: {e}")
+
+            return result
         except Exception as e:
             logger.warning(f"Fast check: {e}")
             return None
 
-    def stealth_fetch_details():
-        """Open a headless browser to click the details link and get Judgement Protocol."""
+    def stealth_fetch_verdict():
+        """Stealth browser fallback — only used when fast path can't reach the page (CF block)."""
         with StealthySession(headless=True, solve_cloudflare=True, timeout=45000, cookies=cookie_list) as s:
             page = s.context.new_page()
             try:
@@ -543,32 +634,8 @@ async def check_status(req: StatusRequest):
                         verdict: vc ? vc.innerText.trim() : null,
                         time: c[6] ? c[6].innerText.trim() : null,
                         memory: c[7] ? c[7].innerText.trim() : null,
-                        hasDetails: !!row.querySelector('a.information-box-link')
                     };
                 }""", str(req.submissionId))
-                if not data or "error" in data:
-                    return data
-                vl = (data.get("verdict") or "").lower()
-                is_final_fail = data.get("hasDetails") and "testing" not in vl and "accepted" not in vl and "happy new year" not in vl
-                if is_final_fail:
-                    try:
-                        page.evaluate("""(subId) => {
-                            const r = document.querySelector('tr[data-submission-id="' + subId + '"]');
-                            if (r) { const a = r.querySelector('a.information-box-link'); if (a) a.click(); }
-                        }""", str(req.submissionId))
-                        page.wait_for_selector("#facebox .content", timeout=5000)
-                        detail_text = page.locator("#facebox .content").inner_text()
-                        if "compilation error" in vl:
-                            pre_text = ""
-                            try:
-                                pre_text = page.locator("#facebox .content pre").inner_text()
-                            except Exception:
-                                pre_text = detail_text
-                            data["compilationError"] = pre_text
-                        else:
-                            data["details"] = detail_text
-                    except Exception as e:
-                        logger.warning(f"  detail fetch: {e}")
                 return data
             except Exception as e:
                 logger.error(f"Stealth status: {e}")
@@ -576,53 +643,12 @@ async def check_status(req: StatusRequest):
             finally:
                 page.close()
 
-    async def _background_fetch_details(sub_id: str):
-        """Background task: fetch details via stealth and cache them."""
-        try:
-            logger.info(f"[Details] Starting stealth fetch for {sub_id}")
-            res = await anyio.to_thread.run_sync(stealth_fetch_details)
-            if res and "error" not in res:
-                cached = {"fetched_at": time.time()}
-                if res.get("compilationError"):
-                    cached["compilationError"] = res["compilationError"]
-                if res.get("details"):
-                    cached["details"] = res["details"]
-                details_cache[sub_id] = cached
-                logger.info(f"[Details] Cached for {sub_id}: CE={bool(res.get('compilationError'))}, details={bool(res.get('details'))}")
-            else:
-                # Cache empty result so we don't retry forever
-                details_cache[sub_id] = {"fetched_at": time.time()}
-                logger.warning(f"[Details] Stealth failed for {sub_id}: {res}")
-        except Exception as e:
-            logger.exception(f"[Details] Error fetching for {sub_id}: {e}")
-            details_cache[sub_id] = {"fetched_at": time.time()}
-        finally:
-            details_fetching.discard(sub_id)
-
     try:
-        # Check if we already have cached details for this submission
-        cached = details_cache.get(req.submissionId)
-
         res = await anyio.to_thread.run_sync(fast)
-        if res and "error" not in res:
-            vl = (res.get("verdict") or "").lower()
-            needs_details = res.get("hasDetails") and "accepted" not in vl and "happy new year" not in vl and "testing" not in vl
-
-            if needs_details:
-                # Merge cached details if available
-                if cached:
-                    if cached.get("compilationError"):
-                        res["compilationError"] = cached["compilationError"]
-                    if cached.get("details"):
-                        res["details"] = cached["details"]
-                elif req.submissionId not in details_fetching:
-                    # Kick off background stealth fetch (only once)
-                    details_fetching.add(req.submissionId)
-                    asyncio.get_event_loop().create_task(_background_fetch_details(req.submissionId))
-        elif not res or "error" in res:
-            # Fast path failed entirely — try stealth directly
+        if not res or "error" in res:
+            # Fast path failed (CF block or not found) — try stealth
             for _ in range(2):
-                res = await anyio.to_thread.run_sync(stealth_fetch_details)
+                res = await anyio.to_thread.run_sync(stealth_fetch_verdict)
                 if res and "error" not in res:
                     break
                 await anyio.sleep(1)
