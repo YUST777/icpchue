@@ -1,20 +1,22 @@
 """
-ICPC HUE — Scrapling Bridge v5
-Fresh browser context per submission (required for Turnstile).
-Handles embedded Turnstile manually — does NOT rely on _cloudflare_solver for it.
+ICPC HUE — Scrapling Bridge v6
+Async job-based submission: POST /submit returns immediately with a jobId,
+frontend polls GET /submit-result/{jobId} for the result.
 """
 
 import re
 import time
 import logging
+import uuid
+import asyncio
 import anyio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict
 from scrapling.fetchers import StealthySession, Fetcher
 
-app = FastAPI(title="ICPC HUE Scrapling Bridge", version="5.0.0")
+app = FastAPI(title="ICPC HUE Scrapling Bridge", version="6.0.0")
 logger = logging.getLogger("scrapling-bridge")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -24,6 +26,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── In-memory job store ──────────────────────────────────────────────
+# Jobs expire after 5 minutes
+jobs: Dict[str, dict] = {}
+
+def cleanup_old_jobs():
+    now = time.time()
+    expired = [k for k, v in jobs.items() if now - v.get("created", 0) > 300]
+    for k in expired:
+        del jobs[k]
 
 # ── Language IDs ─────────────────────────────────────────────────────
 LANG = {
@@ -258,12 +270,44 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
     return False
 
 
-@app.post("/submit", response_model=SubmitResponse)
+class SubmitJobResponse(BaseModel):
+    jobId: str
+
+class SubmitJobResult(BaseModel):
+    status: str  # "pending", "done", "error"
+    result: Optional[SubmitResponse] = None
+
+
+@app.post("/submit", response_model=SubmitJobResponse)
 async def submit_code(req: SubmitRequest):
+    """Start a submission job and return immediately with a jobId."""
     lang_id = LANG.get(req.language)
     if lang_id is None:
         raise HTTPException(400, f"Unsupported language: {req.language}")
 
+    cleanup_old_jobs()
+    
+    job_id = str(uuid.uuid4())[:8]
+    jobs[job_id] = {"status": "pending", "result": None, "created": time.time()}
+    
+    # Fire and forget — run submission in background
+    asyncio.get_event_loop().create_task(_run_submit_job(job_id, req, lang_id))
+    
+    logger.info(f"[Submit] job={job_id} {req.contestId}/{req.problemIndex} via {req.urlType}")
+    return SubmitJobResponse(jobId=job_id)
+
+
+@app.get("/submit-result/{job_id}")
+async def get_submit_result(job_id: str):
+    """Poll for submission result."""
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found or expired")
+    return {"status": job["status"], "result": job.get("result")}
+
+
+async def _run_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
+    """Background task that performs the actual submission."""
     _, cookies = parse_cookies(req.cookies)
     submit_pg = build_url(req.contestId, req.urlType, req.groupId, f"submit?problemIndex={req.problemIndex}")
     my_pg = build_url(req.contestId, req.urlType, req.groupId, "my")
@@ -392,10 +436,11 @@ async def submit_code(req: SubmitRequest):
                 page.close()
 
     try:
-        logger.info(f"[Submit] {req.contestId}/{req.problemIndex} via {req.urlType}")
-        return SubmitResponse(**(await anyio.to_thread.run_sync(do)))
+        result = await anyio.to_thread.run_sync(do)
+        jobs[job_id] = {"status": "done", "result": result, "created": jobs[job_id]["created"]}
     except Exception as e:
         logger.exception(f"Submit error: {e}")
+        jobs[job_id] = {"status": "done", "result": {"success": False, "error": str(e)}, "created": jobs[job_id]["created"]}
         return SubmitResponse(success=False, error=str(e))
 
 
