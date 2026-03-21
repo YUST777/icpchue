@@ -106,7 +106,7 @@ export default function TestCaseTab({
     return (
         <>
             {/* Case Tabs with Add Button */}
-            <div className="flex items-center gap-2 flex-wrap mb-4">
+            <div className="flex items-center gap-1.5 flex-wrap mb-2">
                 {testCases.map((tc, index) => (
                     <div key={index} className="relative group">
                         <button
@@ -115,8 +115,8 @@ export default function TestCaseTab({
                                 cancelEditing();
                             }}
                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-2 ${selectedTestCase === index
-                                ? 'bg-[#2d2d2d] text-white shadow-sm'
-                                : 'text-[#666] hover:text-[#A0A0A0] hover:bg-[#2d2d2d]/50'
+                                ? 'bg-[#252526] text-white shadow-sm'
+                                : 'text-[#666] hover:text-[#A0A0A0] hover:bg-[#252526]/50'
                                 } ${tc.isCustom ? 'pr-7' : ''}`}
                         >
                             {result && result.results[index] && (
@@ -166,7 +166,7 @@ export default function TestCaseTab({
 
             {/* Add/Edit Form */}
             {(showAddForm || editingIndex !== null) && (
-                <div className="bg-[#252526] rounded-xl p-4 border border-white/10 space-y-4 animate-fade-in flex flex-col min-h-0">
+                <div className="bg-[#252526] rounded-xl p-3 border border-white/10 space-y-3 animate-fade-in flex flex-col min-h-0">
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-medium text-white">
                             {editingIndex !== null ? `Edit Test Case ${editingIndex + 1}` : 'Add Custom Test Case'}
@@ -194,7 +194,7 @@ export default function TestCaseTab({
                                 value={formInput}
                                 onChange={(e) => setFormInput(e.target.value)}
                                 placeholder="Enter test input..."
-                                className="w-full h-40 bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
+                                className="w-full h-40 bg-[#252526] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                         <div className="flex flex-col min-h-0">
@@ -205,7 +205,7 @@ export default function TestCaseTab({
                                 value={formOutput}
                                 onChange={(e) => setFormOutput(e.target.value)}
                                 placeholder="Enter expected output..."
-                                className="w-full h-40 bg-[#1e1e1e] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
+                                className="w-full h-40 bg-[#252526] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                     </div>
@@ -230,10 +230,10 @@ export default function TestCaseTab({
 
             {/* Selected Test Case Details */}
             {!showAddForm && editingIndex === null && testCases[selectedTestCase] && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 flex-1 min-h-0">
                     <div className="flex flex-col min-h-0">
-                        <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                            <label className="text-[10px] md:text-xs font-medium text-[#888] uppercase tracking-wider">Input</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-medium text-[#888] uppercase tracking-wider">Input</label>
                             {isCustomTestCase(selectedTestCase) && onUpdateTestCase && (
                                 <button
                                     onClick={() => startEditing(selectedTestCase)}
@@ -244,28 +244,28 @@ export default function TestCaseTab({
                                 </button>
                             )}
                         </div>
-                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48">
+                        <div className="bg-[#252526] rounded-lg p-2 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-[60px]">
                             {testCases[selectedTestCase].input || <span className="italic text-[#555]">Empty input</span>}
                         </div>
                     </div>
                     <div className="flex flex-col min-h-0">
-                        <label className="text-[10px] md:text-xs font-medium text-[#888] mb-1.5 md:mb-2 block uppercase tracking-wider">Expected Output</label>
-                        <div className="bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border border-white/5 font-mono text-xs md:text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48">
+                        <label className="text-[10px] font-medium text-[#888] mb-1 block uppercase tracking-wider">Expected Output</label>
+                        <div className="bg-[#252526] rounded-lg p-2 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-[60px]">
                             {testCases[selectedTestCase].output || testCases[selectedTestCase].expectedOutput || <span className="italic text-[#555]">No expected output</span>}
                         </div>
                     </div>
 
                     {/* Actual Output */}
                     <div className="flex flex-col min-h-0">
-                        <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                            <label className="text-[10px] md:text-xs font-medium text-[#888] block uppercase tracking-wider">Actual Output</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-medium text-[#888] block uppercase tracking-wider">Actual Output</label>
                             {result && result.results[selectedTestCase] && (
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${result.results[selectedTestCase].passed ? 'bg-[#E8C15A]/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                     {result.results[selectedTestCase].verdict}
                                 </span>
                             )}
                         </div>
-                        <div className={`bg-[#2d2d2d] rounded-lg p-2.5 md:p-3 border font-mono text-xs md:text-sm whitespace-pre-wrap leading-relaxed shadow-inner overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-48 ${result && result.results[selectedTestCase]
+                        <div className={`bg-[#252526] rounded-lg p-2 border font-mono text-xs whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-[60px] ${result && result.results[selectedTestCase]
                             ? result.results[selectedTestCase].passed
                                 ? 'border-[#E8C15A]/20 text-[#d4d4d4]'
                                 : 'border-red-500/20 text-red-300'
