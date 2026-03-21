@@ -536,8 +536,6 @@ async def check_status(req: StatusRequest):
                     # Try fetching via /data/judgeProtocol (CF's AJAX endpoint)
                     try:
                         import json
-                        import urllib.request
-                        import urllib.parse
 
                         # Extract CSRF token from the page
                         csrf = None
@@ -551,23 +549,23 @@ async def check_status(req: StatusRequest):
 
                         logger.info(f"[JudgeProtocol] Fetching for {req.submissionId}, csrf={'yes' if csrf else 'no'}")
 
-                        # Build the request manually with urllib
-                        post_data = urllib.parse.urlencode({"submissionId": req.submissionId}).encode()
-                        proto_req = urllib.request.Request(
-                            "https://codeforces.com/data/judgeProtocol",
-                            data=post_data,
-                            headers={
-                                "Content-Type": "application/x-www-form-urlencoded",
-                                "Cookie": req.cookies,
-                                "X-Requested-With": "XMLHttpRequest",
-                                "Referer": my,
-                            }
-                        )
+                        # Use Fetcher.post (curl_cffi) — handles anti-bot headers/TLS fingerprint
+                        proto_headers = {
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Referer": my,
+                        }
                         if csrf:
-                            proto_req.add_header("X-Csrf-Token", csrf)
+                            proto_headers["X-Csrf-Token"] = csrf
 
-                        with urllib.request.urlopen(proto_req, timeout=10) as proto_resp:
-                            proto_body = proto_resp.read().decode("utf-8", errors="replace")
+                        proto_resp = Fetcher.post(
+                            "https://codeforces.com/data/judgeProtocol",
+                            data={"submissionId": req.submissionId},
+                            cookies=cookie_dict,
+                            headers=proto_headers,
+                            timeout=10,
+                            follow_redirects=True,
+                        )
+                        proto_body = proto_resp.body.decode("utf-8", errors="replace") if isinstance(proto_resp.body, bytes) else str(proto_resp.body)
 
                         logger.info(f"[JudgeProtocol] Response length={len(proto_body)}, starts={proto_body[:80]}")
 
