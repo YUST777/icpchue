@@ -186,66 +186,21 @@ export default function CodeWorkspace({
         }
     }, [code, setCode]);
 
-    // Monaco resize observer
+    // Monaco editor ref
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
-
-    useEffect(() => {
-        if (typeof window === 'undefined' || !wrapperRef.current) return;
-        const observer = new ResizeObserver(() => {
-            if (editorInstanceRef.current) {
-                editorInstanceRef.current.layout();
-            }
-        });
-        observer.observe(wrapperRef.current);
-        return () => observer.disconnect();
-    }, []);
-
     const onEditorMount: OnMount = (editor, monacoEditor) => {
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monacoEditor);
 
-        requestAnimationFrame(() => editor.layout());
-        setTimeout(() => editor.layout(), 100);
-        setTimeout(() => editor.layout(), 500);
+        // Scroll to top so content doesnt float in the middle under CSS zoom
+        editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
+        editor.revealLine(1);
     };
 
-    // Layout observer
+    // Clean up editor ref on unmount
     useEffect(() => {
-        if (!wrapperRef.current) return;
-        const observer = new ResizeObserver((entries) => {
-            const entry = entries[0];
-            if (entry && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-                if (editorInstanceRef.current) {
-                    editorInstanceRef.current.layout();
-                }
-            }
-        });
-        observer.observe(wrapperRef.current);
-        if (editorContainerRef.current) {
-            observer.observe(editorContainerRef.current);
-        }
-        return () => {
-            observer.disconnect();
-            editorInstanceRef.current = null;
-        };
+        return () => { editorInstanceRef.current = null; };
     }, []);
-
-    // Force layout on panel height change
-    useEffect(() => {
-        if (editorInstanceRef.current) {
-            requestAnimationFrame(() => {
-                editorInstanceRef.current?.layout();
-            });
-            setTimeout(() => {
-                editorInstanceRef.current?.layout();
-            }, 100);
-            if (isAnimating) {
-                setTimeout(() => {
-                    editorInstanceRef.current?.layout();
-                }, 350);
-            }
-        }
-    }, [panelContentPercent, isAnimating]);
 
     // Auto-switch to result tab when result arrives
     useEffect(() => {
@@ -376,8 +331,8 @@ export default function CodeWorkspace({
                             fontSize: 13,
                             fontFamily: "'JetBrains Mono', monospace",
                             scrollBeyondLastLine: false,
-                            automaticLayout: false,
-                            padding: { top: 4, bottom: 4 },
+                            automaticLayout: true,
+                            padding: { top: 0, bottom: 0 },
                             lineHeight: 22,
                             fontLigatures: true,
                             lineNumbers: 'on',
