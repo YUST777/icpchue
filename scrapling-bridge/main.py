@@ -190,13 +190,9 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
     
     Strategy:
     1. Wait for the Turnstile iframe to load
-    2. Let it auto-solve first (some embedded Turnstiles auto-complete)
-    3. If no token after 8s, click the checkbox via _cloudflare_solver
+    2. Let it auto-solve first (some Turnstiles auto-complete)
+    3. Try multiple approaches: JS API execute, _cloudflare_solver, manual click
     4. Poll for the token for up to timeout_s total
-    
-    The key insight: _cloudflare_solver clicks and returns immediately for
-    embedded type. The actual token callback fires 5-35s AFTER the click.
-    We must keep polling, not give up after 6s.
     """
     from random import randint
     
@@ -222,38 +218,58 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
     
     logger.info(f"  turnstile iframe loaded ({time.monotonic()-t0:.1f}s)")
     
-    # Phase 1: Wait a few seconds for auto-solve (some Turnstiles auto-complete)
-    for _ in range(8):  # 4 seconds
+    # Phase 1: Wait a few seconds for auto-solve
+    for _ in range(6):  # 3 seconds
         token = page.evaluate(JS_GET_TOKEN)
         if token:
             logger.info(f"  ✓ turnstile auto-solved ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
             return True
         page.wait_for_timeout(500)
     
-    # Phase 2: Click the Turnstile checkbox manually
-    # Find the iframe bounding box and click the checkbox area
+    # Phase 2: Try Scrapling's _cloudflare_solver first — it knows how to handle Turnstile
+    logger.info(f"  trying _cloudflare_solver ({time.monotonic()-t0:.1f}s)")
+    try:
+        session._cloudflare_solver(page)
+    except Exception as e:
+        logger.warning(f"  _cloudflare_solver: {e}")
+    
+    # Check if solver got the token
+    for _ in range(10):  # 5 seconds
+        token = page.evaluate(JS_GET_TOKEN)
+        if token:
+            logger.info(f"  ✓ turnstile token via solver ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
+            return True
+        page.wait_for_timeout(500)
+    
+    # Phase 3: Try JS API — turnstile.execute() or turnstile.reset() + wait
+    logger.info(f"  trying JS turnstile API ({time.monotonic()-t0:.1f}s)")
+    page.evaluate("""() => {
+        if (window.turnstile) {
+            try { turnstile.reset(); } catch(e) {}
+            try { turnstile.execute(); } catch(e) {}
+        }
+    }""")
+    
+    for _ in range(10):  # 5 seconds
+        token = page.evaluate(JS_GET_TOKEN)
+        if token:
+            logger.info(f"  ✓ turnstile token via JS API ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
+            return True
+        page.wait_for_timeout(500)
+    
+    # Phase 4: Manual click on the iframe checkbox
     try:
         iframe_el = ts_iframe.frame_element()
         box = iframe_el.bounding_box()
         if box:
-            # The checkbox is at roughly (26-28, 25-27) inside the iframe
             click_x = box["x"] + randint(26, 28)
             click_y = box["y"] + randint(25, 27)
-            logger.info(f"  clicking turnstile checkbox at ({click_x:.0f}, {click_y:.0f})")
+            logger.info(f"  clicking turnstile checkbox at ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
             page.mouse.click(click_x, click_y, delay=randint(100, 200), button="left")
-        else:
-            # Fallback: use _cloudflare_solver
-            logger.info("  no bounding box, using _cloudflare_solver")
-            session._cloudflare_solver(page)
     except Exception as e:
-        logger.warning(f"  turnstile click error: {e}, trying _cloudflare_solver")
-        try:
-            session._cloudflare_solver(page)
-        except Exception:
-            pass
+        logger.warning(f"  turnstile click error: {e}")
     
-    # Phase 3: Poll for the token — this is the critical part
-    # The token can take 5-35 seconds to appear after clicking
+    # Phase 5: Final polling — wait for token
     elapsed = time.monotonic() - t0
     remaining = timeout_s - elapsed
     polls = int(remaining / 0.5)
@@ -265,8 +281,8 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
             return True
         page.wait_for_timeout(500)
         
-        # Every 10s, try clicking again in case the first click didn't register
-        if i > 0 and i % 20 == 0:
+        # Every 8s, try clicking again
+        if i > 0 and i % 16 == 0:
             try:
                 iframe_el = ts_iframe.frame_element()
                 box = iframe_el.bounding_box()
@@ -390,9 +406,16 @@ async def _run_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 page.evaluate(JS_FILL, {"prob": req.problemIndex, "lang": str(lang_id), "code": req.code})
                 logger.info(f"  form filled ({time.monotonic()-t0:.1f}s)")
 
-                # 4. Solve Turnstile (our custom handler, NOT _cloudflare_solver)
+                # 4. Solve Turnstile
+                # First scroll the turnstile widget into view to trigger rendering
+                page.evaluate("""() => {
+                    const ts = document.querySelector('.cf-turnstile');
+                    if (ts) ts.scrollIntoView({behavior: 'instant', block: 'center'});
+                }""")
+                page.wait_for_timeout(500)
+                
                 elapsed_so_far = time.monotonic() - t0
-                ts_budget = max(15, int(MAX_TOTAL - elapsed_so_far - 20))  # reserve 20s for submit+nav
+                ts_budget = max(20, int(MAX_TOTAL - elapsed_so_far - 15))  # reserve 15s for submit+nav
                 got_token = _wait_for_turnstile_token(page, s, timeout_s=ts_budget)
                 
                 if not got_token:
