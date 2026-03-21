@@ -328,7 +328,7 @@ export function useCodeforcesSubmission({
             if (submissionId) {
                 activeSubIdRef.current = submissionId;
                 let attempts = 0;
-                const maxAttempts = 120;
+                const maxAttempts = 60;
 
                 const pollCfApi = async () => {
                     try {
@@ -351,7 +351,7 @@ export function useCodeforcesSubmission({
                         return;
                     }
 
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise(r => setTimeout(r, 2000));
 
                     const status = await pollCfApi();
 

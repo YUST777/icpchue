@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     // Phase 2: Fallback to Scrapling Bridge (Scraping via user's session)
     try {
-        const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
+        const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
         
         // We need cookies for the bridge to work for private/group contests
         const cookies = req.headers.get('cookie') || '';

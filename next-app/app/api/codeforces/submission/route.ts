@@ -5,6 +5,7 @@ import crypto from 'crypto';
 
 const API_KEY = process.env.CF_API_KEY;
 const API_SECRET = process.env.CF_API_SECRET;
+const BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
 
 async function cfApiCall(method: string, params: Record<string, any> = {}) {
     if (!API_KEY || !API_SECRET) return { status: 'FAILED', comment: 'Keys not configured' };
@@ -60,11 +61,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Missing contestId or submissionId' }, { status: 400 });
     }
 
-    // Auth & Rate Limit: 30 per 60s per user (polling needs to be frequent but limited)
+    // Auth & Rate Limit: 120 per 60s per user (verdict polling hits this every 1-2s)
     const user = await verifyAuth(req);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const ratelimit = await rateLimit(`cf_status_view:${user.id}`, 30, 60);
+    const ratelimit = await rateLimit(`cf_status_view:${user.id}`, 120, 60);
     if (!ratelimit.success) {
         return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
@@ -76,8 +77,7 @@ export async function GET(req: NextRequest) {
         // 1. For Restricted contests (Group/Gym), use the Bridge FIRST
         if (isRestricted && cookies) {
             try {
-                const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
-                const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/status`, {
+                const bridgeRes = await fetch(`${BRIDGE_URL}/status`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
@@ -142,8 +142,7 @@ export async function GET(req: NextRequest) {
         // 3. Fallback to Bridge for public contests if official APIs failed to find it
         if (!isRestricted && cookies) {
             try {
-                const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://localhost:8787';
-                const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/status`, {
+                const bridgeRes = await fetch(`${BRIDGE_URL}/status`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
