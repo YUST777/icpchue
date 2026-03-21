@@ -153,20 +153,31 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     </div>
                     <div className="flex-1">
                         <div className="font-bold text-lg">
-                            {cfStatus.status === 'submitting' && 'Submitting to Codeforces...'}
+                            {cfStatus.status === 'submitting' && (cfStatus.substatus || 'Submitting to Codeforces...')}
                             {cfStatus.status === 'waiting' && 'In Queue...'}
                             {cfStatus.status === 'testing' && `Testing on test ${!!cfStatus.testNumber ? cfStatus.testNumber : '?'}...`}
                             {cfStatus.status === 'done' && (cfStatus.verdict || 'Done')}
                             {cfStatus.status === 'error' && (cfStatus.error || 'Submission Failed')}
                         </div>
                         <div className="text-xs opacity-70 mt-0.5 font-mono">
-                            {cfStatus.status === 'done' && cfStatus.time !== undefined && cfStatus.memory !== undefined && (
+                            {cfStatus.status === 'done' && cfStatus.verdict === 'Submitted' && cfStatus.substatus && (
+                                <span className="font-sans">{cfStatus.substatus}</span>
+                            )}
+                            {cfStatus.status === 'done' && cfStatus.verdict !== 'Submitted' && cfStatus.time !== undefined && cfStatus.memory !== undefined && (
                                 <>{cfStatus.time} ms • {cfStatus.memory} KB</>
                             )}
                             {cfStatus.status === 'testing' && cfStatus.testNumber && (
                                 <>Running test {cfStatus.testNumber}...</>
                             )}
                         </div>
+                        {cfStatus.status === 'submitting' && cfStatus.progress !== undefined && (
+                            <div className="mt-2 w-full bg-[#333] rounded-full h-1.5 overflow-hidden">
+                                <div
+                                    className="h-full bg-[#E8C15A] rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${cfStatus.progress}%` }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

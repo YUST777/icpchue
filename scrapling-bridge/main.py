@@ -285,26 +285,23 @@ async def submit_code(req: SubmitRequest):
                     if "/enter" in page.url or "/login" in page.url:
                         return {"success": False, "error": "NOT_LOGGED_IN"}
 
-                    # Check for Cloudflare challenge
+                    # Check for Cloudflare interstitial (full-page block, NOT embedded turnstile)
                     content = page.content()
-                    has_challenge = ("Just a moment" in content or "cf-challenge" in content 
-                                    or "challenge-platform" in content or "Checking your browser" in content)
+                    is_full_block = "<title>Just a moment</title>" in content or "Checking your browser" in content
+                    has_form = "#sourceCodeTextarea" in content or "submittedProblemIndex" in content
                     
-                    if has_challenge:
-                        logger.info("  Cloudflare challenge detected, solving...")
+                    if is_full_block and not has_form:
+                        # Full-page Cloudflare block — need solver
+                        logger.info("  Cloudflare full-page block, solving...")
                         try:
                             s._cloudflare_solver(page)
                             page.wait_for_timeout(2000)
-                            # After solving CF challenge, reload the submit page
-                            # so we get a fresh Turnstile widget for the form
-                            if "/submit" not in page.url:
-                                logger.info("  CF solved but redirected, will retry nav...")
-                            else:
-                                logger.info("  CF solved, reloading for fresh turnstile...")
-                                page.goto(submit_pg, wait_until="domcontentloaded", timeout=20000)
-                                page.wait_for_timeout(1000)
                         except Exception as cf_err:
                             logger.warning(f"  Cloudflare solver: {cf_err}")
+                    elif has_form:
+                        # Form is visible — embedded turnstile will be handled later
+                        logger.info("  form visible, skipping CF solver (turnstile handled later)")
+                        break
                     
                     # Check if we ended up on the right page
                     current_url = page.url

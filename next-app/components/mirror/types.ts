@@ -109,6 +109,8 @@ export interface CFProblemData {
 export interface CFSubmissionStatus {
     status: 'idle' | 'submitting' | 'waiting' | 'testing' | 'done' | 'error';
     verdict?: string;
+    substatus?: string;
+    progress?: number;
     testNumber?: number;
     time?: number; // ms
     memory?: number; // KB

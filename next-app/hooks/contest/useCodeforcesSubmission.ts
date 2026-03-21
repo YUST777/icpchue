@@ -171,7 +171,29 @@ export function useCodeforcesSubmission({
         const userHandle = extResponse.handle || loginStatus.handle || null;
 
         try {
-            setCfStatus({ status: 'submitting' });
+            // Phased progress: show what's happening during the ~20-60s browser submission
+            const phases = [
+                { delay: 0,     msg: 'Connecting to Codeforces...', pct: 5 },
+                { delay: 3000,  msg: 'Opening submission page...', pct: 15 },
+                { delay: 8000,  msg: 'Solving Cloudflare challenge...', pct: 30 },
+                { delay: 15000, msg: 'Still solving challenge...', pct: 45 },
+                { delay: 25000, msg: 'Filling submission form...', pct: 60 },
+                { delay: 35000, msg: 'Submitting code...', pct: 75 },
+                { delay: 50000, msg: 'Waiting for Codeforces response...', pct: 90 },
+            ];
+            const phaseTimers: ReturnType<typeof setTimeout>[] = [];
+            let submissionDone = false;
+
+            for (const phase of phases) {
+                const t = setTimeout(() => {
+                    if (!submissionDone) {
+                        setCfStatus({ status: 'submitting', substatus: phase.msg, progress: phase.pct });
+                    }
+                }, phase.delay);
+                phaseTimers.push(t);
+            }
+
+            setCfStatus({ status: 'submitting', substatus: phases[0].msg, progress: phases[0].pct });
 
             const apiRes = await fetch('/api/codeforces/submit', {
                 method: 'POST',
@@ -188,7 +210,19 @@ export function useCodeforcesSubmission({
                 }),
             });
 
-            const apiData = await apiRes.json();
+            let apiData;
+            const contentType = apiRes.headers.get('content-type');
+
+            // Stop phase timers
+            submissionDone = true;
+            phaseTimers.forEach(t => clearTimeout(t));
+
+            if (contentType && contentType.includes('application/json')) {
+                apiData = await apiRes.json();
+            } else {
+                // Non-JSON response (e.g. Cloudflare 504 HTML page)
+                apiData = { success: false, error: `Server error (${apiRes.status}). The submission may have gone through — check Codeforces.` };
+            }
 
             // Handle API errors
             if (!apiData.success) {
