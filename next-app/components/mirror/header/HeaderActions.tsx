@@ -5,16 +5,12 @@ import {
     Settings,
     Flame,
     UserPlus,
-    User,
 } from "lucide-react";
 import { TimerDropdown } from "./TimerDropdown";
 import { SettingsModal } from "./SettingsModal";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import Image from "next/image";
 
 export function HeaderActions() {
-    const { user } = useAuth();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [streak, setStreak] = useState<number | null>(null);
 
@@ -82,23 +78,6 @@ export function HeaderActions() {
                         <UserPlus size={18} />
                     </button>
                 </Tooltip>
-            </div>
-
-            <div className="ml-1.5 w-8 h-8 rounded-full bg-[#60A5FA] flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-white/20 transition-all overflow-hidden shrink-0 relative group">
-                {user?.profile_picture && (user.profile_picture.startsWith('http') || user.profile_picture.startsWith('/')) ? (
-                    <Image 
-                        src={user.profile_picture} 
-                        alt="Profile" 
-                        fill
-                        className="object-cover"
-                    />
-                ) : (
-                    <User
-                        size={20}
-                        className="text-white mt-1.5"
-                        strokeWidth={2.5}
-                    />
-                )}
             </div>
         </div>
     );

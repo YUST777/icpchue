@@ -156,7 +156,7 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
             <div className="flex-1 min-h-0 relative">
                 {isPreview ? (
                     <div className="absolute inset-0 overflow-y-auto p-6 sm:p-8 prose prose-invert prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap font-sans text-white/80 leading-relaxed">
+                        <div className="whitespace-pre-wrap font-sans text-white/80 leading-relaxed" dir="auto">
                             {content || <span className="opacity-30 italic">No notes yet...</span>}
                         </div>
                     </div>
@@ -168,6 +168,7 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                         placeholder="Type your notes here... Supports Markdown."
                         className="absolute inset-0 w-full h-full bg-transparent p-6 sm:p-8 text-sm text-white/90 outline-none resize-none font-mono leading-relaxed placeholder:text-white/10"
                         spellCheck={false}
+                        dir="auto"
                     />
                 )}
             </div>
