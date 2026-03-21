@@ -14,7 +14,7 @@ export default function TestResultTab({ result }: TestResultTabProps) {
     if (!result) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-[#666] gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#2d2d2d] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#252526] flex items-center justify-center">
                     <CloudUpload size={24} className="opacity-50" />
                 </div>
                 <p className="text-sm font-medium">Run your code to see results</p>
@@ -23,8 +23,8 @@ export default function TestResultTab({ result }: TestResultTabProps) {
     }
 
     return (
-        <div className="h-full flex flex-col space-y-4 animate-fade-in">
-            <div className={`flex items-center gap-3 p-4 rounded-xl border ${result.passed
+        <div className="h-full flex flex-col space-y-2 animate-fade-in">
+            <div className={`flex items-center gap-3 p-3 rounded-xl border ${result.passed
                 ? 'bg-[#E8C15A]/10 border-[#E8C15A]/20 text-green-400'
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
                 }`}>
@@ -61,7 +61,7 @@ export default function TestResultTab({ result }: TestResultTabProps) {
 
             <div className="bg-[#252526] rounded-xl border border-white/5 overflow-hidden">
                 {result.results.map((r) => (
-                    <div key={r.testCase} className={`flex items-center justify-between p-3 text-xs border-b border-white/5 last:border-[#E8C15A] hover:bg-[#2d2d2d] transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
+                    <div key={r.testCase} className={`flex items-center justify-between p-3 text-xs border-b border-white/5 last:border-[#E8C15A] hover:bg-[#252526] transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
                         <div className="flex items-center gap-3">
                             {r.passed ? <CheckCircle2 size={16} className="text-[#E8C15A]" /> : <XCircle size={16} className="text-red-500" />}
                             <span className="font-medium text-[#d4d4d4]">Test Case {r.testCase}</span>

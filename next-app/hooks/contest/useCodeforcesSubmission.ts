@@ -71,10 +71,10 @@ export function useCodeforcesSubmission({
 
         // Check extension is installed
         if (!document.getElementById('verdict-extension-installed')) {
-            window.open(codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId), '_blank');
+            window.open('https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj', '_blank');
             setCfStatus({
                 status: 'error',
-                error: 'Extension not detected. Opened Codeforces problem page in a new tab.'
+                error: 'Extension not detected. Install the Verdict Helper extension to submit directly.'
             });
             setSubmitting(false);
             return;
@@ -145,10 +145,10 @@ export function useCodeforcesSubmission({
 
         if (!extResponse.success) {
             if (extResponse.error === 'TIMEOUT_NO_RESPONSE') {
-                window.open(codeforcesUrl || getProblemDescriptionUrl(contestId, problemId, urlType, groupId), '_blank');
+                window.open('https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj', '_blank');
                 setCfStatus({
                     status: 'error',
-                    error: 'Extension did not respond. Opened Codeforces problem page for manual submission.'
+                    error: 'Extension did not respond. Please install or update the Verdict Helper extension.'
                 });
             } else if (extResponse.error === 'NOT_LOGGED_IN') {
                 setCfStatus({
@@ -327,8 +327,8 @@ export function useCodeforcesSubmission({
 
             if (submissionId) {
                 activeSubIdRef.current = submissionId;
-                let attempts = 0;
-                const maxAttempts = 60;
+                const startTime = Date.now();
+                const MAX_POLL_MS = 5 * 60 * 1000; // 5 minutes total
 
                 const pollCfApi = async () => {
                     try {
@@ -345,13 +345,18 @@ export function useCodeforcesSubmission({
                     }
                 };
 
-                while (attempts < maxAttempts) {
+                while (true) {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed > MAX_POLL_MS) break;
+
                     if (!isMountedRef.current || activeSubIdRef.current !== submissionId) {
                         console.log(`Polling for ${submissionId} cancelled.`);
                         return;
                     }
 
-                    await new Promise(r => setTimeout(r, 2000));
+                    // Adaptive interval: 2s for first 30s, 3s after
+                    const interval = elapsed < 30000 ? 2000 : 3000;
+                    await new Promise(r => setTimeout(r, interval));
 
                     const status = await pollCfApi();
 
@@ -405,6 +410,7 @@ export function useCodeforcesSubmission({
                             break;
                         }
 
+                        const elapsedSec = Math.round(elapsed / 1000);
                         if (rawVerdict === 'TESTING' || verdictText === 'Testing') {
                             setCfStatus({
                                 status: 'testing',
@@ -414,19 +420,24 @@ export function useCodeforcesSubmission({
                         } else if (!rawVerdict || verdictText === 'In queue') {
                             setCfStatus({
                                 status: 'waiting',
-                                submissionId
+                                submissionId,
+                                substatus: elapsedSec > 15 ? `In queue for ${elapsedSec}s...` : undefined
                             });
                         }
+
+                        // If we got a final verdict, the break above handles it
+                        if (isFinal) break;
                     }
-                    attempts++;
                 }
 
-                if (attempts >= maxAttempts) {
-                    console.warn('Polling timeout - verdict may still be pending');
+                // Check if we exited the loop without a final verdict
+                const finalStatus = cfStatus;
+                if (Date.now() - startTime >= MAX_POLL_MS) {
+                    console.warn('Polling timeout after 5 minutes');
                     setCfStatus(prev => prev ? {
                         ...prev,
                         status: 'error',
-                        error: 'Polling timed out. Check Codeforces directly for the result.'
+                        error: 'Polling timed out after 5 minutes. Check Codeforces directly for the result.'
                     } : { status: 'error', error: 'Polling timed out' });
                 }
             }

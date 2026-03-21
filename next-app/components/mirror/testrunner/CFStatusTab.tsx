@@ -59,7 +59,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
         return (
             <div className="flex flex-col items-center justify-center h-full text-[#666] gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#2d2d2d] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#252526] flex items-center justify-center">
                     <img
                         src="https://codeforces.org/s/0/favicon-32x32.png"
                         alt="CF"
@@ -76,7 +76,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     const statusBg = getCFStatusBg(cfStatus);
 
     return (
-        <div className="h-full flex flex-col space-y-4 animate-fade-in">
+        <div className="h-full flex flex-col space-y-2 animate-fade-in">
             {/* Login/Captcha Required Warning */}
             {(cfStatus.needsCaptcha || cfStatus.needsLogin) && (
                 <div className="flex flex-col gap-3 p-4 rounded-xl border bg-orange-500/10 border-orange-500/20 text-orange-400">
@@ -154,7 +154,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     <div className="flex-1">
                         <div className="font-bold text-lg">
                             {cfStatus.status === 'submitting' && (cfStatus.substatus || 'Submitting to Codeforces...')}
-                            {cfStatus.status === 'waiting' && 'In Queue...'}
+                            {cfStatus.status === 'waiting' && (cfStatus.substatus || 'In Queue...')}
                             {cfStatus.status === 'testing' && `Testing on test ${!!cfStatus.testNumber ? cfStatus.testNumber : '?'}...`}
                             {cfStatus.status === 'done' && (cfStatus.verdict || 'Done')}
                             {cfStatus.status === 'error' && (cfStatus.error || 'Submission Failed')}
