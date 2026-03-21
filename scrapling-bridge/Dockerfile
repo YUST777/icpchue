@@ -1,4 +1,6 @@
-FROM python:3.11-slim
+FROM pyd4vinci/scrapling:latest
+
+ENTRYPOINT []
 
 WORKDIR /app
 
