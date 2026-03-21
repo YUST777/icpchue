@@ -52,7 +52,7 @@ interface ProblemLeftPanelProps {
     setShowNotes: (show: boolean) => void;
 }
 
-export default function ProblemLeftPanel({
+function ProblemLeftPanel({
     activeTab,
     setActiveTab,
     isWhiteboardExpanded,
@@ -179,3 +179,5 @@ export default function ProblemLeftPanel({
         </div>
     );
 }
+
+export default React.memo(ProblemLeftPanel);
