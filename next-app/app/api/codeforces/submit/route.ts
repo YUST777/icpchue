@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
         // Forward to the scrapling bridge with an explicit timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
 
         try {
             const bridgeResponse = await fetch(`${BRIDGE_URL}/submit`, {
