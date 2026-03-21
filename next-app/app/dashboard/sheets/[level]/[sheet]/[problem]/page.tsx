@@ -410,7 +410,7 @@ function MirrorUI({
 
     return (
         <ExtensionGate>
-            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col" style={{ zoom: 0.85 }}>
+            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col" style={{ zoom: 0.8 }}>
                 {/* ProblemDrawer — slides from left */}
                 <ProblemDrawer
                     isOpen={isDrawerOpen}
