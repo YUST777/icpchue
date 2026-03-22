@@ -620,6 +620,11 @@ export default function Register() {
                                 Sign in
                             </Link>
                         </p>
+
+                        <p className="text-white/20 text-[9px]">
+                            By signing up, you agree to our{' '}
+                            <Link href="/terms" className="underline hover:text-[#E8C15A]/60 transition-colors">Terms of Service</Link>
+                        </p>
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
