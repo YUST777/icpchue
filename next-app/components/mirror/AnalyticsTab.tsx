@@ -1,22 +1,22 @@
-import { Submission } from './types';
 import AnalyticsView from './AnalyticsView';
+import type { AnalyticsStats } from './shared/types';
 
 interface AnalyticsTabProps {
-    submissions: Submission[];
-    cfStats: { rating?: number; solvedCount: number } | null;
-    submissionsLoading: boolean;
+    stats: AnalyticsStats | null;
+    cfStats?: { rating?: number; solvedCount: number; tags?: string[] } | null;
+    statsLoading: boolean;
 }
 
 export default function AnalyticsTab({
-    submissions,
+    stats,
     cfStats,
-    submissionsLoading
+    statsLoading
 }: AnalyticsTabProps) {
     return (
         <AnalyticsView
-            submissions={submissions}
+            stats={stats}
             cfStats={cfStats}
-            loading={submissionsLoading}
+            loading={statsLoading}
         />
     );
 }

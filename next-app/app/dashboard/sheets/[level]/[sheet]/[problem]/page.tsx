@@ -207,6 +207,105 @@ function MirrorUI({
     // ─── Analytics Stats ───
     const [stats, setStats] = useState<AnalyticsStats | null>(null);
     const [statsLoading, setStatsLoading] = useState(false);
+    const dataFetchedRef = useRef(false);
+
+    // Fetch analytics data from CF API (global distribution + user submissions)
+    const fetchAnalyticsData = useCallback(async (force = false) => {
+        if (!contestId || !problemId) return;
+        if (handleLoading) return;
+        if (!cfHandle) {
+            setStatsLoading(false);
+            return;
+        }
+        if (dataFetchedRef.current && !force) return;
+        dataFetchedRef.current = true;
+
+        const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
+        const safeProblemId = (Array.isArray(problemId) ? problemId[0] : problemId).toUpperCase();
+
+        setStatsLoading(true);
+
+        const userPromise = fetch(
+            `/api/codeforces/user-submissions?handle=${encodeURIComponent(cfHandle)}&contestId=${safeContestId}&problemIndex=${safeProblemId}`
+        ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+        const globalPromise = fetch(
+            `/api/codeforces/distribution?contestId=${safeContestId}&problemIndex=${safeProblemId}`
+        ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+        let rawSubmissions: { id: number; verdict: string; timeConsumedMillis: number; memoryConsumedBytes: number; creationTimeSeconds: number; passedTestCount?: number }[] = [];
+        try {
+            const userData = await userPromise;
+            if (userData?.success && Array.isArray(userData.submissions)) {
+                rawSubmissions = userData.submissions;
+            }
+        } catch { /* non-critical */ }
+
+        try {
+            const globalData = await globalPromise;
+            const accepted = rawSubmissions.filter(s => s.verdict === 'Accepted');
+
+            if (globalData?.success && globalData.totalAccepted > 0) {
+                const runtimeDist = globalData.runtimeDistribution.map((b: { label: string; count: number; rangeStart: number; rangeEnd: number }) => {
+                    const userBestTime = accepted.length > 0 ? Math.min(...accepted.map(s => s.timeConsumedMillis)) : null;
+                    return { label: b.label, count: b.count, isUser: userBestTime !== null && userBestTime >= b.rangeStart && userBestTime < b.rangeEnd };
+                });
+                const memoryDist = globalData.memoryDistribution.map((b: { label: string; count: number; rangeStart: number; rangeEnd: number }) => {
+                    const userBestMem = accepted.length > 0 ? Math.min(...accepted.map(s => s.memoryConsumedBytes / 1024)) : null;
+                    return { label: b.label, count: b.count, isUser: userBestMem !== null && userBestMem >= b.rangeStart && userBestMem < b.rangeEnd };
+                });
+
+                let userStats: AnalyticsStats['userStats'] = null;
+                if (accepted.length > 0) {
+                    const userBestTime = Math.min(...accepted.map(s => s.timeConsumedMillis));
+                    const userBestMem = Math.min(...accepted.map(s => s.memoryConsumedBytes / 1024));
+                    let slowerCount = 0, moreMemCount = 0;
+                    for (const b of globalData.runtimeDistribution) {
+                        if (b.rangeStart > userBestTime) slowerCount += b.count;
+                        else if (b.rangeStart <= userBestTime && b.rangeEnd > userBestTime) slowerCount += Math.round(b.count * 0.5);
+                    }
+                    for (const b of globalData.memoryDistribution) {
+                        if (b.rangeStart > userBestMem) moreMemCount += b.count;
+                        else if (b.rangeStart <= userBestMem && b.rangeEnd > userBestMem) moreMemCount += Math.round(b.count * 0.5);
+                    }
+                    userStats = {
+                        runtime: { value: userBestTime, percentile: Math.min(99, Math.round((slowerCount / globalData.totalAccepted) * 100)) },
+                        memory: { value: userBestMem, percentile: Math.min(99, Math.round((moreMemCount / globalData.totalAccepted) * 100)) },
+                    };
+                }
+
+                setStats({ totalSubmissions: globalData.totalAccepted, runtimeDistribution: runtimeDist, memoryDistribution: memoryDist, userStats });
+            } else if (accepted.length > 0) {
+                const times = accepted.map(s => s.timeConsumedMillis).sort((a: number, b: number) => a - b);
+                const mems = accepted.map(s => s.memoryConsumedBytes / 1024).sort((a: number, b: number) => a - b);
+                const minTime = times[0]; const maxTime = times[times.length - 1];
+                const timeStep = Math.max(1, Math.ceil((maxTime - minTime) / 10));
+                const runtimeDist = Array.from({ length: 10 }, (_, i) => {
+                    const start = minTime + i * timeStep; const end = start + timeStep;
+                    return { label: `${start}-${end}ms`, count: times.filter((t: number) => t >= start && t < end).length, isUser: true };
+                });
+                const minMem = mems[0]; const maxMem = mems[mems.length - 1];
+                const memStep = Math.max(1, Math.ceil((maxMem - minMem) / 10));
+                const memoryDist = Array.from({ length: 10 }, (_, i) => {
+                    const start = minMem + i * memStep; const end = start + memStep;
+                    return { label: `${Math.round(start)}-${Math.round(end)}KB`, count: mems.filter((m: number) => m >= start && m < end).length, isUser: true };
+                });
+                setStats({ totalSubmissions: accepted.length, runtimeDistribution: runtimeDist, memoryDistribution: memoryDist, userStats: null });
+            } else {
+                setStats(null);
+            }
+        } catch {
+            setStats(null);
+        }
+        setStatsLoading(false);
+    }, [contestId, problemId, cfHandle, handleLoading]);
+
+    // Background prefetch analytics when CF handle is available
+    useEffect(() => {
+        if (!handleLoading && cfHandle) {
+            fetchAnalyticsData();
+        }
+    }, [cfHandle, handleLoading, fetchAnalyticsData]);
 
     // ─── Submissions ───
     const [submissions, setSubmissions] = useState<any[]>([]);
@@ -280,6 +379,7 @@ function MirrorUI({
         setTestPanelActiveTab('testcase');
         setSubmissions([]);
         setStats(null);
+        dataFetchedRef.current = false;
     }, [contestId, problemId]);
 
     const { cfStatus, handleSubmit, submitting: cfSubmitting } = useCodeforcesSubmission({
@@ -299,8 +399,9 @@ function MirrorUI({
     useEffect(() => {
         if (cfStatus?.status === 'done') {
             fetchSubmissions();
+            fetchAnalyticsData(true);
         }
-    }, [cfStatus?.status, fetchSubmissions]);
+    }, [cfStatus?.status, fetchSubmissions, fetchAnalyticsData]);
 
     const { result, runTests, submitting: testSubmitting } = useLocalTestRunner({
         code,

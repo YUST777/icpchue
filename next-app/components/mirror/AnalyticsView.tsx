@@ -10,12 +10,14 @@ import {
 } from 'recharts';
 
 interface AnalyticsViewProps {
-    submissions: any[];
+    stats: AnalyticsStats | null;
     cfStats?: { rating?: number; solvedCount: number; tags?: string[] } | null;
     loading: boolean;
+    analyzeComplexity?: () => void;
+    complexityLoading?: boolean;
 }
 
-/* ââ helpers ââ */
+/* ── helpers ── */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
@@ -69,63 +71,9 @@ function formatMemoryUnit(kb: number): string {
     return kb >= 1024 ? 'MB' : 'KB';
 }
 
-/* ââ Compute stats from submissions ââ */
-function computeStats(submissions: any[]): AnalyticsStats | null {
-    if (!submissions || submissions.length === 0) return null;
+/* ── component ── */
 
-    const acceptedSubs = submissions.filter(s => s.verdict === 'Accepted' || s.verdict === 'OK');
-    if (acceptedSubs.length === 0) return null;
-
-    // Runtime distribution
-    const runtimeBuckets: Record<string, number> = {};
-    acceptedSubs.forEach(s => {
-        const time = s.timeMs || 0;
-        const bucket = Math.floor(time / 100) * 100;
-        const label = `${bucket}ms`;
-        runtimeBuckets[label] = (runtimeBuckets[label] || 0) + 1;
-    });
-
-    const runtimeDistribution = Object.entries(runtimeBuckets)
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => parseInt(a.label) - parseInt(b.label));
-
-    // Memory distribution
-    const memoryBuckets: Record<string, number> = {};
-    acceptedSubs.forEach(s => {
-        const mem = s.memoryKb || 0;
-        const bucket = Math.floor(mem / 1024) * 1024;
-        const label = `${Math.round(bucket / 1024)}MB`;
-        memoryBuckets[label] = (memoryBuckets[label] || 0) + 1;
-    });
-
-    const memoryDistribution = Object.entries(memoryBuckets)
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => parseInt(a.label) - parseInt(b.label));
-
-    // User stats (latest accepted submission)
-    const latestAccepted = acceptedSubs[0];
-    const userRuntime = latestAccepted?.timeMs || 0;
-    const userMemory = latestAccepted?.memoryKb || 0;
-
-    // Calculate percentiles (simplified)
-    const runtimePercentile = 75; // Placeholder
-    const memoryPercentile = 70; // Placeholder
-
-    return {
-        runtimeDistribution,
-        memoryDistribution,
-        totalSubmissions: acceptedSubs.length,
-        userStats: {
-            runtime: { value: userRuntime, percentile: runtimePercentile },
-            memory: { value: userMemory, percentile: memoryPercentile }
-        }
-    };
-}
-
-/* ââ component ââ */
-
-export default function AnalyticsView({ submissions, cfStats, loading }: AnalyticsViewProps) {
-    const stats = computeStats(submissions);
+export default function AnalyticsView({ stats, cfStats, loading, analyzeComplexity, complexityLoading }: AnalyticsViewProps) {
     const showLocalStats = stats && stats.totalSubmissions > 0;
 
     if (!loading && !showLocalStats && !cfStats) {
@@ -143,16 +91,13 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
     return (
         <div className="space-y-3 pb-4">
 
-            {/* ââ Problem Info Card ââ */}
+            {/* ── Problem Info Card ── */}
             {cfStats && (
                 <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl overflow-hidden">
-                    {/* Header */}
                     <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]">
                         <Trophy size={14} className="text-[#666]" />
                         <span className="text-xs font-medium text-[#999]">Problem Info</span>
                     </div>
-
-                    {/* Stats Row */}
                     <div className="grid grid-cols-2 divide-x divide-white/[0.06]">
                         <div className="px-4 py-3.5">
                             <p className="text-[10px] text-[#555] uppercase tracking-wider mb-1.5">Difficulty</p>
@@ -181,8 +126,6 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                             </div>
                         </div>
                     </div>
-
-                    {/* Tags */}
                     {cfStats.tags && cfStats.tags.length > 0 && (
                         <div className="px-4 py-3 border-t border-white/[0.06]">
                             <div className="flex items-center gap-1.5 mb-2">
@@ -191,10 +134,7 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                                 {cfStats.tags.map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="px-2 py-0.5 text-[10px] rounded-md bg-white/[0.04] text-[#888] border border-white/[0.06]"
-                                    >
+                                    <span key={tag} className="px-2 py-0.5 text-[10px] rounded-md bg-white/[0.04] text-[#888] border border-white/[0.06]">
                                         {tag}
                                     </span>
                                 ))}
@@ -204,10 +144,9 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                 </div>
             )}
 
-            {/* ââ Skeleton: Performance Cards ââ */}
+            {/* ── Skeleton ── */}
             {loading && !showLocalStats && (
                 <>
-                    {/* Skeleton performance cards */}
                     <div className="grid grid-cols-2 gap-3">
                         {[0, 1].map((i) => (
                             <div key={i} className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl px-4 py-3.5">
@@ -223,8 +162,6 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                             </div>
                         ))}
                     </div>
-
-                    {/* Skeleton distribution chart */}
                     {[0, 1].map((chartIdx) => (
                         <div key={chartIdx} className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
@@ -235,23 +172,14 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                                 <div className="h-2.5 w-16 rounded-md bg-white/[0.04] animate-pulse" style={{ animationDelay: `${chartIdx * 200 + 100}ms` }} />
                             </div>
                             <div className="px-4 pt-4 pb-3">
-                                {/* Skeleton bar chart */}
                                 <div className="h-32 flex items-end gap-1.5 px-2">
                                     {Array.from({ length: 12 }).map((_, i) => {
                                         const heights = [35, 55, 70, 85, 95, 80, 60, 45, 30, 20, 15, 10];
                                         return (
-                                            <div
-                                                key={i}
-                                                className="flex-1 rounded-t-sm bg-white/[0.04] animate-pulse"
-                                                style={{
-                                                    height: `${heights[i % 12]}%`,
-                                                    animationDelay: `${chartIdx * 200 + i * 60}ms`,
-                                                }}
-                                            />
+                                            <div key={i} className="flex-1 rounded-t-sm bg-white/[0.04] animate-pulse" style={{ height: `${heights[i % 12]}%`, animationDelay: `${chartIdx * 200 + i * 60}ms` }} />
                                         );
                                     })}
                                 </div>
-                                {/* Skeleton x-axis labels */}
                                 <div className="flex justify-between mt-2 px-1">
                                     {Array.from({ length: 4 }).map((_, i) => (
                                         <div key={i} className="h-2 w-8 rounded-sm bg-white/[0.04] animate-pulse" style={{ animationDelay: `${chartIdx * 200 + i * 80}ms` }} />
@@ -263,66 +191,47 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                 </>
             )}
 
-            {/* ââ Performance Cards (Runtime + Memory side by side) ââ */}
+            {/* ── Performance Cards ── */}
             {showLocalStats && stats!.userStats && (
                 <div className="grid grid-cols-2 gap-3">
-                    {/* Runtime Card */}
                     <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl px-4 py-3.5">
                         <div className="flex items-center gap-1.5 mb-3">
                             <Clock size={12} className="text-[#E8C15A]" />
                             <span className="text-[10px] text-[#555] uppercase tracking-wider font-medium">Runtime</span>
                         </div>
                         <div className="flex items-baseline gap-1 mb-1">
-                            <span className="text-2xl font-bold text-white tabular-nums">
-                                {stats!.userStats!.runtime.value}
-                            </span>
+                            <span className="text-2xl font-bold text-white tabular-nums">{stats!.userStats!.runtime.value}</span>
                             <span className="text-xs text-[#555]">ms</span>
                         </div>
                         <div className="flex items-center gap-1.5 mb-3">
                             <TrendingUp size={10} className="text-[#E8C15A]" />
-                            <span className="text-xs text-[#E8C15A] font-medium">
-                                Beats {stats!.userStats!.runtime.percentile}%
-                            </span>
+                            <span className="text-xs text-[#E8C15A] font-medium">Beats {stats!.userStats!.runtime.percentile}%</span>
                         </div>
-                        {/* Mini progress bar */}
                         <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-[#E8C15A] rounded-full transition-all duration-700"
-                                style={{ width: `${stats!.userStats!.runtime.percentile}%` }}
-                            />
+                            <div className="h-full bg-[#E8C15A] rounded-full transition-all duration-700" style={{ width: `${stats!.userStats!.runtime.percentile}%` }} />
                         </div>
                     </div>
-
-                    {/* Memory Card */}
                     <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl px-4 py-3.5">
                         <div className="flex items-center gap-1.5 mb-3">
                             <HardDrive size={12} className="text-[#5b8ff9]" />
                             <span className="text-[10px] text-[#555] uppercase tracking-wider font-medium">Memory</span>
                         </div>
                         <div className="flex items-baseline gap-1 mb-1">
-                            <span className="text-2xl font-bold text-white tabular-nums">
-                                {formatMemoryValue(stats!.userStats!.memory.value)}
-                            </span>
+                            <span className="text-2xl font-bold text-white tabular-nums">{formatMemoryValue(stats!.userStats!.memory.value)}</span>
                             <span className="text-xs text-[#555]">{formatMemoryUnit(stats!.userStats!.memory.value)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 mb-3">
                             <TrendingUp size={10} className="text-[#5b8ff9]" />
-                            <span className="text-xs text-[#5b8ff9] font-medium">
-                                Beats {stats!.userStats!.memory.percentile}%
-                            </span>
+                            <span className="text-xs text-[#5b8ff9] font-medium">Beats {stats!.userStats!.memory.percentile}%</span>
                         </div>
-                        {/* Mini progress bar */}
                         <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-[#5b8ff9] rounded-full transition-all duration-700"
-                                style={{ width: `${stats!.userStats!.memory.percentile}%` }}
-                            />
+                            <div className="h-full bg-[#5b8ff9] rounded-full transition-all duration-700" style={{ width: `${stats!.userStats!.memory.percentile}%` }} />
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ââ Runtime Distribution Chart ââ */}
+            {/* ── Runtime Distribution Chart ── */}
             {showLocalStats && (
                 <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
@@ -336,32 +245,16 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                         <div className="w-full" style={{ height: 128 }}>
                             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <BarChart data={stats!.runtimeDistribution} margin={{ top: 4, right: 8, bottom: 16, left: -24 }}>
-                                    <XAxis
-                                        dataKey="label"
-                                        stroke="#333"
-                                        fontSize={8}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        interval="preserveStartEnd"
-                                        angle={-20}
-                                        dy={8}
-                                    />
+                                    <XAxis dataKey="label" stroke="#333" fontSize={8} tickLine={false} axisLine={false} interval="preserveStartEnd" angle={-20} dy={8} />
                                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                                     <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                                         {stats!.runtimeDistribution.map((entry, index) => (
-                                            <Cell
-                                                key={`rt-${index}`}
-                                                fill={'#E8C15A'}
-                                                fillOpacity={entry.isUser ? 1 : 0.15}
-                                                stroke={entry.isUser ? '#E8C15A' : 'transparent'}
-                                                strokeWidth={entry.isUser ? 1.5 : 0}
-                                            />
+                                            <Cell key={`rt-${index}`} fill={'#E8C15A'} fillOpacity={entry.isUser ? 1 : 0.15} stroke={entry.isUser ? '#E8C15A' : 'transparent'} strokeWidth={entry.isUser ? 1.5 : 0} />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        {/* Legend */}
                         {stats!.userStats && (
                             <div className="flex items-center gap-4 justify-center pb-1">
                                 <div className="flex items-center gap-1.5">
@@ -378,7 +271,7 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                 </div>
             )}
 
-            {/* ââ Memory Distribution Chart ââ */}
+            {/* ── Memory Distribution Chart ── */}
             {showLocalStats && (
                 <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
@@ -392,32 +285,16 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                         <div className="w-full" style={{ height: 128 }}>
                             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <BarChart data={stats!.memoryDistribution} margin={{ top: 4, right: 8, bottom: 16, left: -24 }}>
-                                    <XAxis
-                                        dataKey="label"
-                                        stroke="#333"
-                                        fontSize={8}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        interval="preserveStartEnd"
-                                        angle={-20}
-                                        dy={8}
-                                    />
+                                    <XAxis dataKey="label" stroke="#333" fontSize={8} tickLine={false} axisLine={false} interval="preserveStartEnd" angle={-20} dy={8} />
                                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                                     <Bar dataKey="count" radius={[2, 2, 0, 0]}>
                                         {stats!.memoryDistribution.map((entry, index) => (
-                                            <Cell
-                                                key={`mem-${index}`}
-                                                fill={'#5b8ff9'}
-                                                fillOpacity={entry.isUser ? 1 : 0.15}
-                                                stroke={entry.isUser ? '#5b8ff9' : 'transparent'}
-                                                strokeWidth={entry.isUser ? 1.5 : 0}
-                                            />
+                                            <Cell key={`mem-${index}`} fill={'#5b8ff9'} fillOpacity={entry.isUser ? 1 : 0.15} stroke={entry.isUser ? '#5b8ff9' : 'transparent'} strokeWidth={entry.isUser ? 1.5 : 0} />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        {/* Legend */}
                         {stats!.userStats && (
                             <div className="flex items-center gap-4 justify-center pb-1">
                                 <div className="flex items-center gap-1.5">
@@ -434,7 +311,30 @@ export default function AnalyticsView({ submissions, cfStats, loading }: Analyti
                 </div>
             )}
 
-            {/* ââ No local submissions prompt ââ */}
+            {/* ── Analyze Complexity ── */}
+            {showLocalStats && analyzeComplexity && (
+                <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <Zap size={14} className="text-[#E8C15A]" />
+                            <div>
+                                <p className="text-xs font-medium text-[#999]">Complexity Analysis</p>
+                                <p className="text-[10px] text-[#555]">AI-powered time & space analysis</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={analyzeComplexity}
+                            disabled={!!complexityLoading}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8C15A]/10 hover:bg-[#E8C15A]/15 border border-[#E8C15A]/20 rounded-lg text-[11px] font-medium text-[#E8C15A] transition-colors disabled:opacity-40"
+                        >
+                            {complexityLoading ? <Loader2 size={11} className="animate-spin" /> : <BarChart2 size={11} />}
+                            Analyze
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── No local submissions prompt ── */}
             {!showLocalStats && cfStats && (
                 <div className="bg-[#1a1a1a] border border-dashed border-white/[0.08] rounded-xl px-4 py-8 text-center">
                     <p className="text-sm text-[#666]">Submit your solution to see performance data</p>
