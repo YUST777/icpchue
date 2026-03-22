@@ -196,15 +196,32 @@ async def health():
 # ═════════════════════════════════════════════════════════════════════
 # SUBMIT — fresh StealthySession per request
 # ═════════════════════════════════════════════════════════════════════
-def _xdotool_click(x, y):
+def _xdotool_click(page, viewport_x, viewport_y):
     """
     Perform an OS-level mouse click via xdotool on the Xvfb display.
-    This produces real screenX/screenY coordinates that pass Cloudflare's
-    CDP detection (which checks if coordinates are relative to iframe vs main frame).
+    
+    Playwright's bounding_box() returns coordinates relative to the viewport.
+    We need to translate these to screen coordinates by finding the browser
+    window position and adding the viewport offset within the window.
     """
     try:
-        # Move mouse with slight human-like jitter
-        subprocess.run(["xdotool", "mousemove", "--", str(int(x)), str(int(y))],
+        # Get the browser window's screen position using JS
+        # window.screenX/screenY gives the window position on the display
+        # window.outerWidth - window.innerWidth gives the chrome border width
+        offsets = page.evaluate("""() => ({
+            winX: window.screenX,
+            winY: window.screenY,
+            chromeTop: window.outerHeight - window.innerHeight,
+            chromeLeft: window.outerWidth - window.innerWidth
+        })""")
+        
+        screen_x = int(offsets["winX"] + offsets["chromeLeft"] + viewport_x)
+        screen_y = int(offsets["winY"] + offsets["chromeTop"] + viewport_y)
+        
+        logger.info(f"    xdotool: viewport({viewport_x:.0f},{viewport_y:.0f}) + window({offsets['winX']},{offsets['winY']}) + chrome(l={offsets['chromeLeft']},t={offsets['chromeTop']}) = screen({screen_x},{screen_y})")
+        
+        # Move mouse then click with slight human-like timing
+        subprocess.run(["xdotool", "mousemove", "--", str(screen_x), str(screen_y)],
                        timeout=3, capture_output=True)
         time.sleep(0.05 + (time.monotonic() % 0.1))  # tiny random pause
         subprocess.run(["xdotool", "click", "1"],
@@ -300,8 +317,8 @@ def _wait_for_turnstile_token(page, session, timeout_s=45):
                 # The checkbox is at roughly (27, 26) inside the iframe
                 click_x = box["x"] + randint(24, 30)
                 click_y = box["y"] + randint(23, 29)
-                logger.info(f"  xdotool clicking turnstile at ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
-                _xdotool_click(click_x, click_y)
+                logger.info(f"  xdotool clicking turnstile at viewport ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
+                _xdotool_click(page, click_x, click_y)
                 return True
         except Exception as e:
             logger.warning(f"  xdotool turnstile click error: {e}")
