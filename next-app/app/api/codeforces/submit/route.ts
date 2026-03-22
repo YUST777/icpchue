@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { contestId, problemIndex, code, language, cookies, csrfToken, urlType, groupId } = body;
 
-        if (!contestId || !problemIndex || !code || !language || !cookies || !csrfToken) {
+        if (!contestId || !problemIndex || !code || !language || !cookies) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 

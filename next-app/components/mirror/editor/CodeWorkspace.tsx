@@ -1,6 +1,6 @@
 import { CheckCircle2, Play, XCircle, Loader2, GripHorizontal } from 'lucide-react';
 import { Editor, OnMount } from '@monaco-editor/react';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
@@ -8,9 +8,9 @@ import GradiaExportModal from '../GradiaExportModal';
 import init, { format } from "@wasm-fmt/clang-format/web";
 import { motion, AnimatePresence } from 'framer-motion';
 
-const DEFAULT_PANEL_PERCENT = 45;
+const DEFAULT_PANEL_PERCENT = 55;
 const MIN_PANEL_PERCENT = 0;
-const MAX_PANEL_PERCENT = 75;
+const MAX_PANEL_PERCENT = 80;
 const SNAP_THRESHOLD = 5;
 const PANEL_TAB_BAR_HEIGHT = 42;
 
@@ -42,7 +42,7 @@ interface CodeWorkspaceProps {
     problemTitle?: string;
 }
 
-export default function CodeWorkspace({
+function CodeWorkspace({
     code,
     setCode,
     submitting,
@@ -188,101 +188,33 @@ export default function CodeWorkspace({
 
     // Monaco editor ref
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
+
     const onEditorMount: OnMount = (editor, monacoEditor) => {
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monacoEditor);
 
-        // Scroll to top so content doesnt float in the middle under CSS zoom
+        // Scroll to top so content doesn't float in the middle under CSS zoom
         editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
         editor.revealLine(1);
-    };
-
+    };  document.body.style.userSelect = 'none';
+    }, []);
     // Clean up editor ref on unmount
     useEffect(() => {
         return () => { editorInstanceRef.current = null; };
     }, []);
 
-    // Auto-switch to result tab when result arrives
-    useEffect(() => {
-        if (result && panelContentPercent > 0) {
-            setTestPanelTab('result');
-        }
-    }, [result, panelContentPercent, setTestPanelTab]);
-
-    // --- DRAG RESIZE LOGIC ---
-    const handleGripMouseDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-        if (e.cancelable) e.preventDefault();
-        setIsResizingVertical(true);
-        setIsAnimating(false);
-        document.body.style.cursor = 'row-resize';
-        document.body.style.userSelect = 'none';
-    }, []);
-
-    useEffect(() => {
-        let animationFrameId: number;
-
-        const handleVerticalMove = (e: MouseEvent | TouchEvent) => {
-            if (!isResizingVertical || !editorContainerRef.current) return;
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-            animationFrameId = requestAnimationFrame(() => {
-                if (!editorContainerRef.current) return;
-                let clientY: number;
-                if (typeof TouchEvent !== 'undefined' && e instanceof TouchEvent) {
-                    clientY = e.touches[0].clientY;
-                } else {
-                    clientY = (e as MouseEvent).clientY;
-                }
-
-                const containerRect = editorContainerRef.current.getBoundingClientRect();
-                const totalHeight = containerRect.height;
-                const distFromBottom = containerRect.bottom - clientY;
-                const tabBarFraction = (PANEL_TAB_BAR_HEIGHT / totalHeight) * 100;
-                const newPercent = ((distFromBottom / totalHeight) * 100) - tabBarFraction;
+    // Force layout on panel height changeromBottom / totalHeight) * 100) - tabBarFraction;
 
                 if (newPercent <= SNAP_THRESHOLD) {
                     setPanelContentPercent(0);
                 } else if (newPercent >= MAX_PANEL_PERCENT) {
                     setPanelContentPercent(MAX_PANEL_PERCENT);
-                } else {
-                    setPanelContentPercent(newPercent);
-                }
-            });
-        };
+    // Clean up editor ref on unmount
+    useEffect(() => {
+        return () => { editorInstanceRef.current = null; };
+    }, []);
 
-        const handleVerticalEnd = () => {
-            setIsResizingVertical(false);
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
-
-            if (panelContentPercent > 0) {
-                savedHeightRef.current = panelContentPercent;
-                localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
-            }
-
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        };
-
-        if (isResizingVertical) {
-            document.addEventListener('mousemove', handleVerticalMove);
-            document.addEventListener('mouseup', handleVerticalEnd);
-            document.addEventListener('touchmove', handleVerticalMove, { passive: false });
-            document.addEventListener('touchend', handleVerticalEnd);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleVerticalMove);
-            document.removeEventListener('mouseup', handleVerticalEnd);
-            document.removeEventListener('touchmove', handleVerticalMove);
-            document.removeEventListener('touchend', handleVerticalEnd);
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        };
-    }, [isResizingVertical, panelContentPercent]);
-
-    // Double-click grip to toggle
-    const handleGripDoubleClick = useCallback(() => {
-        togglePanel();
-    }, [togglePanel]);
+    // Force layout on panel height change
 
     const isCollapsed = panelContentPercent === 0;
 
@@ -298,24 +230,7 @@ export default function CodeWorkspace({
             {/* Editor Header */}
             <EditorToolbar
                 language={language}
-                setLanguage={setLanguage}
-                code={code}
-                setCode={setCode}
-                submitting={submitting}
-                onSubmit={onSubmit}
-                onRunTests={onRunTests}
-                isTestPanelVisible={!isCollapsed}
-                setIsTestPanelVisible={(v) => { if (v) expandPanel(); else collapsePanel(); }}
-                onExport={() => setIsExportModalOpen(true)}
-                exportShortcut={["Alt", "G"]}
-                onFormat={handleFormat}
-            />
-
-            <div
-                ref={wrapperRef}
-                className="relative min-h-[120px] flex-1"
-            >
-                <div className="absolute inset-0">
+    // Auto-switch to result tab when result arrives
                     <Editor
                         height="100%"
                         defaultLanguage="cpp"
@@ -332,7 +247,7 @@ export default function CodeWorkspace({
                             fontFamily: "'JetBrains Mono', monospace",
                             scrollBeyondLastLine: false,
                             automaticLayout: true,
-                            padding: { top: 0, bottom: 0 },
+                            padding: { top: 4, bottom: 4 },
                             lineHeight: 22,
                             fontLigatures: true,
                             lineNumbers: 'on',
@@ -372,9 +287,9 @@ export default function CodeWorkspace({
             <div
                 id="onboarding-test-panel"
                 className="shrink-0 flex flex-col bg-[#1a1a1a]"
-                style={{
-                    height: isCollapsed 
-                        ? `${PANEL_TAB_BAR_HEIGHT}px` 
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            padding: { top: 0, bottom: 0 },
                         : `calc(${panelContentPercent}% + ${PANEL_TAB_BAR_HEIGHT}px)`,
                     maxHeight: `${MAX_PANEL_PERCENT + 5}%`,
                     transition: isAnimating && !isResizingVertical ? 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -416,9 +331,9 @@ export default function CodeWorkspace({
                             className={`flex items-center gap-2 px-4 h-full text-[13px] font-medium transition-colors relative ${testPanelTab === 'result'
                                 ? 'text-white'
                                 : 'text-[#808080] hover:text-[#b0b0b0]'
-                                }`}
-                        >
-                            <Play size={14} />
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            padding: { top: 0, bottom: 0 },
                             Test Result
                             {testPanelTab === 'result' && (
                                 <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
@@ -467,7 +382,7 @@ export default function CodeWorkspace({
                     }}
                 >
                     {!isCollapsed && (
-                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1a1a1a] flex flex-col">
+                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1e1e1e] flex flex-col">
                             {testPanelTab === 'testcase' && (
                                 <TestCaseTabInline
                                     testCases={testCases}
@@ -507,7 +422,11 @@ export default function CodeWorkspace({
     );
 }
 
+export default React.memo(CodeWorkspace);
+
 // Import the actual tab components from testrunner/
 import TestCaseTabInline from '../testrunner/TestCaseTab';
 import TestResultTabInline from '../testrunner/TestResultTab';
 import CFStatusTabInline from '../testrunner/CFStatusTab';
+                    {!isCollapsed && (
+                        <div className="h-full overflow-y-auto px-2 md:px-3 py-1.5 md:py-2 bg-[#1e1e1e] flex flex-col">                        <div className="h-full overflow-y-auto px-2.5 md:px-4 py-3 md:py-4 bg-[#1a1a1a] flex flex-col">

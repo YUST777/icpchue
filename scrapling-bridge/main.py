@@ -59,7 +59,7 @@ class SubmitRequest(BaseModel):
     code: str
     language: str
     cookies: str = Field(..., description="Cookie header string")
-    csrfToken: str = Field(..., description="CSRF token")
+    csrfToken: str = Field("", description="CSRF token (unused — bridge gets its own from page)")
     urlType: str = "contest"
     groupId: Optional[str] = None
 
