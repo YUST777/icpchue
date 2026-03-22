@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 interface TrackPayload {
     action: string;
@@ -19,19 +19,17 @@ export function useTrack() {
     const flush = useCallback(() => {
         const batch = queueRef.current.splice(0);
         if (batch.length === 0) return;
-        // Send each event (could batch later if needed)
         for (const payload of batch) {
             fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
-                keepalive: true, // survives page unload
+                keepalive: true,
             }).catch(() => {});
         }
     }, []);
 
     const track = useCallback((payload: TrackPayload) => {
-        // Debounce: skip if same action+context sent recently
         const key = `${payload.action}:${payload.contestId || ''}:${payload.problemId || ''}`;
         const now = Date.now();
         const last = lastSent.get(key);
@@ -39,10 +37,15 @@ export function useTrack() {
         lastSent.set(key, now);
 
         queueRef.current.push(payload);
-
-        // Micro-batch: flush after 500ms idle
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(flush, 500);
+    }, [flush]);
+
+    // Flush on page unload
+    useEffect(() => {
+        const handleUnload = () => flush();
+        window.addEventListener('beforeunload', handleUnload);
+        return () => window.removeEventListener('beforeunload', handleUnload);
     }, [flush]);
 
     return track;

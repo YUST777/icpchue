@@ -28,6 +28,7 @@ import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
 import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
 import { fetchWithCache } from '@/lib/api-cache';
 import { useTrack } from '@/hooks/useTrack';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
 import type { CFProblemData, AnalyticsStats } from '@/components/mirror/shared/types';
 
@@ -212,6 +213,9 @@ function MirrorUI({
     useEffect(() => {
         track({ action: 'problem_view', contestId, problemId, sheetId, metadata: { levelSlug, sheetSlug } });
     }, [contestId, problemId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Comprehensive behavior tracking for cheating detection & analytics
+    useBehaviorTracking({ track, contestId, problemId, sheetId });
 
     // Track tab switches
     const trackedSetActiveTab = useCallback((tab: 'description' | 'submissions' | 'analytics' | 'solution') => {

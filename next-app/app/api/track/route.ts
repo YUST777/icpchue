@@ -10,6 +10,10 @@ const VALID_ACTIONS = new Set([
     'drawer_open', 'handle_save', 'code_copy', 'code_paste',
     'fullscreen_toggle', 'keyboard_shortcut', 'analytics_view',
     'test_add', 'test_delete', 'export_snippet', 'page_leave',
+    // Behavior / cheating detection events
+    'tab_hidden', 'tab_visible', 'window_blur', 'window_focus',
+    'text_copy', 'user_idle', 'heartbeat', 'problem_leave',
+    'context_menu',
 ]);
 
 export async function POST(req: NextRequest) {
@@ -21,7 +25,16 @@ export async function POST(req: NextRequest) {
         const rl = await rateLimit(`track:${user.id}`, 60, 60);
         if (!rl.success) return NextResponse.json({ ok: false }, { status: 429 });
 
-        const body = await req.json();
+        // Handle both JSON and sendBeacon (text/plain) content types
+        let body;
+        const contentType = req.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            body = await req.json();
+        } else {
+            // sendBeacon sends as text/plain
+            const text = await req.text();
+            body = JSON.parse(text);
+        }
         const { action, contestId, problemId, sheetId, metadata } = body;
 
         if (!action || !VALID_ACTIONS.has(action)) {

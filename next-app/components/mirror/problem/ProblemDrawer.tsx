@@ -91,6 +91,8 @@ export default function ProblemDrawer({
 
     // Track which contestId we've already loaded to prevent re-fetches
     const loadedContestRef = useRef<string | null>(null);
+    const onSheetLoadedRef = useRef(onSheetLoaded);
+    onSheetLoadedRef.current = onSheetLoaded;
 
     // Sync external sheet
     useEffect(() => {
@@ -128,7 +130,7 @@ export default function ProblemDrawer({
                                     }))
                                 };
                                 setSheet(cachedSheet);
-                                onSheetLoaded?.(cachedSheet);
+                                onSheetLoadedRef.current?.(cachedSheet);
                                 loadedContestRef.current = currentContestId;
                                 setLoadingPersisted(false);
                             }
@@ -148,7 +150,7 @@ export default function ProblemDrawer({
                             if (!cancelled) {
                                 const cachedSheet = data.data as ActiveSheet;
                                 setSheet(cachedSheet);
-                                onSheetLoaded?.(cachedSheet);
+                                onSheetLoadedRef.current?.(cachedSheet);
                                 loadedContestRef.current = currentContestId;
                                 setLoadingPersisted(false);
                             }
@@ -172,7 +174,7 @@ export default function ProblemDrawer({
 
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentContestId, user]);
+    }, [currentContestId, user, sheetId]);
 
     // Fetch solved problems for the current sheet/contest
     useEffect(() => {
@@ -242,7 +244,7 @@ export default function ProblemDrawer({
                     lastAccessedAt: new Date().toISOString(),
                 };
                 setSheet(newSheet);
-                onSheetLoaded?.(newSheet);
+                onSheetLoadedRef.current?.(newSheet);
 
                 // Persist to DB cache
                 if (user) {
@@ -258,7 +260,7 @@ export default function ProblemDrawer({
         } finally {
             setLoadingSheet(false);
         }
-    }, [user, onSheetLoaded]);
+    }, [user]);
 
     /* ─── URL submit handler ─── */
     const handleUrlSubmit = async (e: React.FormEvent) => {

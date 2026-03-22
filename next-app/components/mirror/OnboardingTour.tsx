@@ -46,6 +46,22 @@ export default function OnboardingTour({
         onComplete?.();
     }, [onComplete]);
 
+    // Safety: clean up any leftover driver.js overlays on unmount or re-render
+    useEffect(() => {
+        return () => {
+            // Remove any stale driver.js overlay elements that might block clicks
+            document.querySelectorAll('.driver-overlay, .driver-popover, .driver-active-element').forEach(el => el.remove());
+            document.querySelectorAll('[class*="driver-"]').forEach(el => {
+                if (el.classList.contains('driver-overlay') || el.classList.contains('driver-popover-wrapper')) {
+                    el.remove();
+                }
+            });
+            // Remove driver.js body class that might block pointer events
+            document.body.classList.remove('driver-active');
+            document.documentElement.style.removeProperty('pointer-events');
+        };
+    }, []);
+
     const startTour = useCallback(() => {
         const steps: DriveStep[] = [
             // Step 1: Welcome — left panel
@@ -129,8 +145,17 @@ export default function OnboardingTour({
             progressText: '{{current}} من {{total}}',
             popoverClass: 'icpchue-tour-popover',
             steps,
+            onDestroyStarted: () => {
+                // Ensure overlay is removed immediately
+                driverInstance.destroy();
+            },
             onDestroyed: () => {
                 markCompleted();
+                // Force cleanup any leftover DOM elements
+                setTimeout(() => {
+                    document.querySelectorAll('.driver-overlay, .driver-popover, .driver-active-element').forEach(el => el.remove());
+                    document.body.classList.remove('driver-active');
+                }, 100);
             },
         });
 

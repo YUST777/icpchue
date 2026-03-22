@@ -1,15 +1,14 @@
-import { CheckCircle2, Play, XCircle, Loader2, GripHorizontal } from 'lucide-react';
+import { CheckCircle2, Play, XCircle, Loader2 } from 'lucide-react';
 import { Editor, OnMount } from '@monaco-editor/react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
-import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
+import { SUPPORTED_LANGUAGES, TEMPLATES } from './EditorConstants';
 import GradiaExportModal from '../GradiaExportModal';
+// @ts-ignore — wasm module may not have type declarations
 import init, { format } from "@wasm-fmt/clang-format/web";
-import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_PANEL_PERCENT = 45;
-const MIN_PANEL_PERCENT = 0;
 const MAX_PANEL_PERCENT = 75;
 const SNAP_THRESHOLD = 5;
 const PANEL_TAB_BAR_HEIGHT = 42;
@@ -75,31 +74,14 @@ export default function CodeWorkspace({
     const savedHeightRef = useRef(DEFAULT_PANEL_PERCENT);
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
-    const [isLangOpen, setIsLangOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     const testPanelTab = testPanelActiveTab ?? internalTab;
     const setTestPanelTab = setTestPanelActiveTab ?? setInternalTab;
 
-    const handleLanguageChange = (langId: string) => {
-        const currentTemplate = TEMPLATES[language];
-        const isModified = code.trim() && (!currentTemplate || code.trim() !== currentTemplate.trim());
-        if (isModified) {
-            if (!window.confirm('Switching language will replace your current code. Continue?')) {
-                setIsLangOpen(false);
-                return;
-            }
-        }
-        setLanguage(langId);
-        setIsLangOpen(false);
-        if (TEMPLATES[langId]) {
-            setCode(TEMPLATES[langId]);
-        }
-    };
-
     // Initialize formatter on mount and listen for shortcuts
     useEffect(() => {
-        init().catch(err => console.error("Formatting module failed to load:", err));
+        init().catch((err: Error) => console.error("Formatting module failed to load:", err));
 
         const handleToggleExport = () => setIsExportModalOpen(prev => !prev);
         window.addEventListener('verdict:toggle-export', handleToggleExport);
@@ -124,7 +106,7 @@ export default function CodeWorkspace({
             setPanelContentPercent(savedHeightRef.current);
             setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [isTestPanelVisible]);
+    }, [isTestPanelVisible, panelContentPercent]);
 
     // Keep isTestPanelVisible in sync
     useEffect(() => {
@@ -133,7 +115,7 @@ export default function CodeWorkspace({
         } else if (panelContentPercent === 0 && isTestPanelVisible) {
             setIsTestPanelVisible(false);
         }
-    }, [panelContentPercent]);
+    }, [panelContentPercent, isTestPanelVisible, setIsTestPanelVisible]);
 
     // Expand/collapse helpers
     const expandPanel = useCallback((tab?: 'testcase' | 'result' | 'codeforces') => {

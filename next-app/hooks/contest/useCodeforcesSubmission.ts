@@ -170,20 +170,20 @@ export function useCodeforcesSubmission({
         // ── Server-side submission via our API → Scrapling bridge ──
         const userHandle = extResponse.handle || loginStatus.handle || null;
 
-        try {
-            // Phased progress: show what's happening during the ~20-60s browser submission
-            const phases = [
-                { delay: 0,     msg: 'Connecting to Codeforces...', pct: 5 },
-                { delay: 3000,  msg: 'Opening submission page...', pct: 15 },
-                { delay: 8000,  msg: 'Solving Cloudflare challenge...', pct: 30 },
-                { delay: 15000, msg: 'Still solving challenge...', pct: 45 },
-                { delay: 25000, msg: 'Filling submission form...', pct: 60 },
-                { delay: 35000, msg: 'Submitting code...', pct: 75 },
-                { delay: 50000, msg: 'Waiting for Codeforces response...', pct: 90 },
-            ];
-            const phaseTimers: ReturnType<typeof setTimeout>[] = [];
-            let submissionDone = false;
+        // Phased progress timers — declared outside try so catch/finally can access
+        const phases = [
+            { delay: 0,     msg: 'Connecting to Codeforces...', pct: 5 },
+            { delay: 3000,  msg: 'Opening submission page...', pct: 15 },
+            { delay: 8000,  msg: 'Solving Cloudflare challenge...', pct: 30 },
+            { delay: 15000, msg: 'Still solving challenge...', pct: 45 },
+            { delay: 25000, msg: 'Filling submission form...', pct: 60 },
+            { delay: 35000, msg: 'Submitting code...', pct: 75 },
+            { delay: 50000, msg: 'Waiting for Codeforces response...', pct: 90 },
+        ];
+        const phaseTimers: ReturnType<typeof setTimeout>[] = [];
+        let submissionDone = false;
 
+        try {
             for (const phase of phases) {
                 const t = setTimeout(() => {
                     if (!submissionDone) {
@@ -459,7 +459,7 @@ export function useCodeforcesSubmission({
 
         } catch (err) {
             submissionDone = true;
-            phaseTimers.forEach(t => clearTimeout(t));
+            phaseTimers.forEach((t: ReturnType<typeof setTimeout>) => clearTimeout(t));
             console.error('Server submission error:', err);
             setCfStatus({
                 status: 'error',
