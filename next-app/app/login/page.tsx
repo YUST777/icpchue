@@ -283,6 +283,11 @@ export default function Login() {
                         >
                             Help: How to login?
                         </button>
+
+                        <p className="text-white/20 text-[9px]">
+                            By signing in, you agree to our{' '}
+                            <Link href="/terms" className="underline hover:text-[#E8C15A]/60 transition-colors">Terms of Service</Link>
+                        </p>
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
