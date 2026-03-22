@@ -1,4 +1,5 @@
 import { CFProblemData, Submission } from './types';
+import type { AnalyticsStats } from './shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
 import SubmissionsList from './SubmissionsList';
 import AnalyticsView from './AnalyticsView';
@@ -10,7 +11,9 @@ interface ProblemContentProps {
     cfData: CFProblemData | null;
     submissions: Submission[];
     submissionsLoading: boolean;
-    cfStats: { rating?: number; solvedCount: number } | null;
+    cfStats?: { rating?: number; solvedCount: number; tags?: string[] } | null;
+    stats?: AnalyticsStats | null;
+    statsLoading?: boolean;
     contestId: string | string[];
     problemId: string | string[];
     cfHandle: string | null;
@@ -31,6 +34,8 @@ export default function ProblemContent({
     submissions,
     submissionsLoading,
     cfStats,
+    stats,
+    statsLoading,
     contestId,
     problemId,
     cfHandle,
@@ -62,9 +67,9 @@ export default function ProblemContent({
 
             {activeTab === 'analytics' && (
                 <AnalyticsTab
-                    submissions={submissions}
+                    stats={stats ?? null}
                     cfStats={cfStats}
-                    submissionsLoading={submissionsLoading}
+                    statsLoading={!!statsLoading}
                 />
             )}
 
