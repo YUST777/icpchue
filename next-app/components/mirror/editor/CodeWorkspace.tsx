@@ -306,6 +306,8 @@ export default function CodeWorkspace({
                         value={code}
                         onChange={(value) => {
                             setCode(value || '');
+                            // Dispatch for behavior tracking
+                            window.dispatchEvent(new Event('icpchue:code-change'));
                         }}
                         onMount={onEditorMount}
                         options={{
