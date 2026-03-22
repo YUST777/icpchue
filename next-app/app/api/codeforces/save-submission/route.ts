@@ -61,6 +61,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Non-final verdict rejected: ${verdict}` }, { status: 400 });
         }
 
+        // Verify cfSubmissionId is a valid positive integer (CF IDs are sequential)
+        const submissionIdNum = parseInt(cfSubmissionId, 10);
+        if (isNaN(submissionIdNum) || submissionIdNum <= 0 || String(submissionIdNum) !== String(cfSubmissionId)) {
+            return NextResponse.json({ error: 'Invalid cfSubmissionId' }, { status: 400 });
+        }
+
+        // Verify the user's CF handle matches the submission's cfHandle
+        if (cfHandle) {
+            const userResult = await query(
+                'SELECT codeforces_handle FROM users WHERE id = $1',
+                [user.id]
+            );
+            const userHandle = userResult.rows[0]?.codeforces_handle;
+            if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
+                return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
+            }
+        }
+
         // 1. Save to cf_submissions (upsert on cf_submission_id to prevent duplicates)
         const insertResult = await query(
             `INSERT INTO cf_submissions (

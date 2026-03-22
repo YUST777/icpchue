@@ -83,14 +83,8 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         ? '' // Cheaters see everyone (including other cheaters)
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)'; // Normal users don't see cheaters
 
-    // Unified leaderboard: counts problems solved via BOTH Judge0 (training_submissions)
-    // and Codeforces (cf_submissions). A problem is "solved" if EITHER source has Accepted.
-
-    // Explanation of problem key collision handling:
-    // Judge0 uses "sheetId-problemId"
-    // Codeforces uses "contestId-problemIndex" or "sheetId-problemIndex"
-    // We assume minimal collision since sheet IDs are integers and contest IDs are integers but separate domains usually.
-    // Ideally we should unify problem IDs better in schema.
+    // Leaderboard: counts problems solved via Codeforces (cf_submissions) only.
+    // A problem is "solved" if it has an Accepted verdict in cf_submissions.
 
     const queryStr = `
         WITH all_solves AS (

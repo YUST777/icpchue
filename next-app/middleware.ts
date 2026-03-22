@@ -55,11 +55,12 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // Refresh session ONLY for protected pages to avoid stalling Next.js SSR on public routes
+    // Refresh session for protected pages AND API routes to prevent 401 on /api/auth/me etc.
     const urlPath = request.nextUrl.pathname;
     const isProtectedRoute = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
+    const isApiRoute = urlPath.startsWith('/api/');
     
-    if (isProtectedRoute) {
+    if (isProtectedRoute || isApiRoute) {
         await supabase.auth.getUser();
     }
 
