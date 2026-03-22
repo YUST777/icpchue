@@ -1,11 +1,12 @@
 """
-ICPC HUE — Scrapling Bridge v7
+ICPC HUE — Scrapling Bridge v8
 Async job-based submission: POST /submit returns immediately with a jobId,
 frontend polls GET /submit-result/{jobId} for the result.
 
-v7: Uses Xvfb + xdotool for OS-level Turnstile checkbox clicks.
-     Browser runs headed on virtual display :99 so Cloudflare's CDP
-     screenX/screenY detection is bypassed.
+v8: Uses Camoufox (Firefox-based) for submissions to bypass Turnstile.
+     Firefox doesn't have Chrome's CDP screenX/screenY bug, so normal
+     Playwright clicks work on Turnstile iframes.
+     Scrapling still used for status/feed (no Turnstile needed).
 """
 
 import re
@@ -14,7 +15,6 @@ import logging
 import uuid
 import asyncio
 import anyio
-import subprocess
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,10 +22,10 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict
 from scrapling.fetchers import StealthySession, Fetcher
 
-# Ensure DISPLAY is set for xdotool
+# Ensure DISPLAY is set for virtual display
 os.environ.setdefault("DISPLAY", ":99")
 
-app = FastAPI(title="ICPC HUE Scrapling Bridge", version="7.0.0")
+app = FastAPI(title="ICPC HUE Scrapling Bridge", version="8.0.0")
 logger = logging.getLogger("scrapling-bridge")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -37,16 +37,9 @@ app.add_middleware(
 )
 
 # ── In-memory job store ──────────────────────────────────────────────
-# Jobs expire after 5 minutes
 jobs: Dict[str, dict] = {}
-
-# ── Details cache: submissionId → {compilationError, details, fetched_at} ──
 details_cache: Dict[str, dict] = {}
-
-# ── Submission semaphore: max 2 concurrent headless browsers ─────────
 submit_semaphore = asyncio.Semaphore(2)
-
-# ── Status response cache ────────────────────────────────────────────
 status_response_cache: Dict[str, dict] = {}
 
 def cleanup_old_jobs():
@@ -54,12 +47,9 @@ def cleanup_old_jobs():
     expired = [k for k, v in jobs.items() if now - v.get("created", 0) > 300]
     for k in expired:
         del jobs[k]
-    # Also clean old details cache entries (10 min)
     expired_details = [k for k, v in details_cache.items() if now - v.get("fetched_at", 0) > 600]
     for k in expired_details:
         del details_cache[k]
-    # Clean stale fetching flags (5 min safety)
-    # (handled implicitly — if fetch finishes, it removes from set)
 
 # ── Language IDs ─────────────────────────────────────────────────────
 LANG = {
@@ -129,7 +119,6 @@ def build_url(cid: str, typ: str, gid: Optional[str], path: str) -> str:
         return f"https://codeforces.com/group/{gid}/contest/{cid}/{path}"
     return f"https://codeforces.com/contest/{cid}/{path}"
 
-
 # ── JS constants ─────────────────────────────────────────────────────
 JS_FILL = """(p) => {
     const ps = document.querySelector('select[name="submittedProblemIndex"]');
@@ -145,6 +134,7 @@ JS_FILL = """(p) => {
 }"""
 
 JS_ERR = """() => {
+    if (!document.body) return null;
     const t = document.body.innerText;
     if (t.includes('You have submitted exactly the same code before')) return 'DUPLICATE';
     if (t.includes('You are not allowed') || t.includes('Please register')) return 'VIRTUAL_REGISTRATION_REQUIRED';
@@ -165,26 +155,15 @@ JS_DUP_ID = """() => {
     return m ? m[1] : null;
 }"""
 
-# JS to read the Turnstile token from form fields or the Turnstile API
 JS_GET_TOKEN = """() => {
-    // Check form hidden fields first
     const a = document.querySelector('[name="cf-turnstile-response"]');
     if (a && a.value) return a.value;
     const b = document.querySelector('[name="turnstileToken"]');
     if (b && b.value) return b.value;
-    // Try Turnstile JS API
     if (window.turnstile && window.turnstile.getResponse) {
         try { return window.turnstile.getResponse() || ''; } catch(e) {}
     }
     return '';
-}"""
-
-# JS to inject token into form fields if we got it from the API
-JS_INJECT_TOKEN = """(t) => {
-    const a = document.querySelector('[name="cf-turnstile-response"]');
-    if (a) a.value = t;
-    const b = document.querySelector('[name="turnstileToken"]');
-    if (b) b.value = t;
 }"""
 
 
@@ -192,57 +171,17 @@ JS_INJECT_TOKEN = """(t) => {
 async def health():
     return {"status": "ok"}
 
-
 # ═════════════════════════════════════════════════════════════════════
-# SUBMIT — fresh StealthySession per request
+# SUBMIT — uses Camoufox (Firefox) to bypass Turnstile
 # ═════════════════════════════════════════════════════════════════════
-def _xdotool_click(page, viewport_x, viewport_y):
-    """
-    Perform an OS-level mouse click via xdotool on the Xvfb display.
-    
-    Playwright's bounding_box() returns coordinates relative to the viewport.
-    We need to translate these to screen coordinates by finding the browser
-    window position and adding the viewport offset within the window.
-    """
-    try:
-        # Get the browser window's screen position using JS
-        # window.screenX/screenY gives the window position on the display
-        # window.outerWidth - window.innerWidth gives the chrome border width
-        offsets = page.evaluate("""() => ({
-            winX: window.screenX,
-            winY: window.screenY,
-            chromeTop: window.outerHeight - window.innerHeight,
-            chromeLeft: window.outerWidth - window.innerWidth
-        })""")
-        
-        screen_x = int(offsets["winX"] + offsets["chromeLeft"] + viewport_x)
-        screen_y = int(offsets["winY"] + offsets["chromeTop"] + viewport_y)
-        
-        logger.info(f"    xdotool: viewport({viewport_x:.0f},{viewport_y:.0f}) + window({offsets['winX']},{offsets['winY']}) + chrome(l={offsets['chromeLeft']},t={offsets['chromeTop']}) = screen({screen_x},{screen_y})")
-        
-        # Move mouse then click with slight human-like timing
-        subprocess.run(["xdotool", "mousemove", "--", str(screen_x), str(screen_y)],
-                       timeout=3, capture_output=True)
-        time.sleep(0.05 + (time.monotonic() % 0.1))  # tiny random pause
-        subprocess.run(["xdotool", "click", "1"],
-                       timeout=3, capture_output=True)
-        return True
-    except Exception as e:
-        logger.warning(f"  xdotool click failed: {e}")
-        return False
 
-
-def _wait_for_turnstile_token(page, session, timeout_s=45):
+def _wait_for_turnstile_token(page, timeout_s=60):
     """
-    Wait for the embedded Turnstile to produce a token.
+    Wait for the embedded Turnstile to produce a token using Camoufox.
     
-    v7 Strategy — uses xdotool for OS-level clicks:
-    1. Wait for the Turnstile iframe to load
-    2. Let it auto-solve first (some Turnstiles auto-complete)
-    3. Try Scrapling's _cloudflare_solver
-    4. Try JS API reset/execute
-    5. Use xdotool for real OS-level click on the checkbox
-    6. Poll for the token
+    v8 Strategy — Camoufox (Firefox) + disable_coop:
+    Firefox doesn't have Chrome's CDP screenX/screenY bug, so normal
+    Playwright mouse.click() works on cross-origin Turnstile iframes.
     """
     from random import randint
     
@@ -269,47 +208,16 @@ def _wait_for_turnstile_token(page, session, timeout_s=45):
     logger.info(f"  turnstile iframe loaded ({time.monotonic()-t0:.1f}s)")
     
     # Phase 1: Wait a few seconds for auto-solve
-    for _ in range(6):  # 3 seconds
+    for _ in range(8):  # 4 seconds
         token = page.evaluate(JS_GET_TOKEN)
         if token:
             logger.info(f"  ✓ turnstile auto-solved ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
             return True
         page.wait_for_timeout(500)
     
-    # Phase 2: Try Scrapling's _cloudflare_solver first
-    logger.info(f"  trying _cloudflare_solver ({time.monotonic()-t0:.1f}s)")
-    try:
-        session._cloudflare_solver(page)
-    except Exception as e:
-        logger.warning(f"  _cloudflare_solver: {e}")
-    
-    # Check if solver got the token
-    for _ in range(10):  # 5 seconds
-        token = page.evaluate(JS_GET_TOKEN)
-        if token:
-            logger.info(f"  ✓ turnstile token via solver ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
-            return True
-        page.wait_for_timeout(500)
-    
-    # Phase 3: Try JS API — turnstile.reset() + turnstile.execute()
-    logger.info(f"  trying JS turnstile API ({time.monotonic()-t0:.1f}s)")
-    page.evaluate("""() => {
-        if (window.turnstile) {
-            try { turnstile.reset(); } catch(e) {}
-            try { turnstile.execute(); } catch(e) {}
-        }
-    }""")
-    
-    for _ in range(10):  # 5 seconds
-        token = page.evaluate(JS_GET_TOKEN)
-        if token:
-            logger.info(f"  ✓ turnstile token via JS API ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
-            return True
-        page.wait_for_timeout(500)
-    
-    # Phase 4: xdotool OS-level click on the Turnstile checkbox
-    # This bypasses Cloudflare's CDP screenX/screenY detection
-    def _do_xdotool_click():
+    # Phase 2: Click the Turnstile checkbox using Playwright mouse
+    # With disable_coop=True, we can click cross-origin iframe elements
+    def _click_turnstile():
         try:
             iframe_el = ts_iframe.frame_element()
             box = iframe_el.bounding_box()
@@ -317,16 +225,16 @@ def _wait_for_turnstile_token(page, session, timeout_s=45):
                 # The checkbox is at roughly (27, 26) inside the iframe
                 click_x = box["x"] + randint(24, 30)
                 click_y = box["y"] + randint(23, 29)
-                logger.info(f"  xdotool clicking turnstile at viewport ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
-                _xdotool_click(page, click_x, click_y)
+                logger.info(f"  clicking turnstile at ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
+                page.mouse.click(click_x, click_y, delay=randint(50, 150))
                 return True
         except Exception as e:
-            logger.warning(f"  xdotool turnstile click error: {e}")
+            logger.warning(f"  turnstile click error: {e}")
         return False
     
-    _do_xdotool_click()
+    _click_turnstile()
     
-    # Phase 5: Poll for token after xdotool click, with re-clicks every 8s
+    # Phase 3: Poll for token, re-click every 8s
     elapsed = time.monotonic() - t0
     remaining = timeout_s - elapsed
     polls = int(remaining / 0.5)
@@ -334,33 +242,22 @@ def _wait_for_turnstile_token(page, session, timeout_s=45):
     for i in range(max(polls, 1)):
         token = page.evaluate(JS_GET_TOKEN)
         if token:
-            logger.info(f"  ✓ turnstile token via xdotool ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
+            logger.info(f"  ✓ turnstile token ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
             return True
         page.wait_for_timeout(500)
         
-        # Every 8s, try clicking again
+        # Re-click every 8s
         if i > 0 and i % 16 == 0:
-            logger.info(f"  re-clicking turnstile via xdotool ({time.monotonic()-t0:.1f}s)")
-            _do_xdotool_click()
-    
-    # Phase 6: Last resort — try CDP click (fallback if xdotool somehow fails)
-    logger.warning(f"  xdotool didn't work, trying CDP click as fallback ({time.monotonic()-t0:.1f}s)")
-    try:
-        iframe_el = ts_iframe.frame_element()
-        box = iframe_el.bounding_box()
-        if box:
-            click_x = box["x"] + randint(26, 28)
-            click_y = box["y"] + randint(25, 27)
-            page.mouse.click(click_x, click_y, delay=randint(100, 200), button="left")
-    except Exception:
-        pass
-    
-    for _ in range(10):
-        token = page.evaluate(JS_GET_TOKEN)
-        if token:
-            logger.info(f"  ✓ turnstile token via CDP fallback ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
-            return True
-        page.wait_for_timeout(500)
+            logger.info(f"  re-clicking turnstile ({time.monotonic()-t0:.1f}s)")
+            # Try JS reset first
+            page.evaluate("""() => {
+                if (window.turnstile) {
+                    try { turnstile.reset(); } catch(e) {}
+                    try { turnstile.execute(); } catch(e) {}
+                }
+            }""")
+            page.wait_for_timeout(1000)
+            _click_turnstile()
     
     logger.warning(f"  ✗ turnstile token empty after {time.monotonic()-t0:.1f}s")
     return False
@@ -386,7 +283,6 @@ async def submit_code(req: SubmitRequest):
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "pending", "result": None, "created": time.time()}
     
-    # Fire and forget — run submission in background
     asyncio.get_event_loop().create_task(_run_submit_job(job_id, req, lang_id))
     
     logger.info(f"[Submit] job={job_id} {req.contestId}/{req.problemIndex} via {req.urlType}")
@@ -407,88 +303,90 @@ async def _run_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
     async with submit_semaphore:
         await _do_submit_job(job_id, req, lang_id)
 
-
 async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
-    """Actual submission logic (runs under semaphore)."""
-    _, cookies = parse_cookies(req.cookies)
+    """Actual submission logic using Camoufox (Firefox)."""
+    cookie_dict, cookies = parse_cookies(req.cookies)
     submit_pg = build_url(req.contestId, req.urlType, req.groupId, f"submit?problemIndex={req.problemIndex}")
     my_pg = build_url(req.contestId, req.urlType, req.groupId, "my")
 
     def do():
+        from camoufox.sync_api import Camoufox
+        
         t0 = time.monotonic()
-        MAX_TOTAL = 150  # hard cap
-        with StealthySession(headless=False, solve_cloudflare=True, timeout=90000, cookies=cookies) as s:
-            page = s.context.new_page()
+        MAX_TOTAL = 120  # hard cap seconds
+        
+        with Camoufox(
+            headless="virtual",
+            humanize=True,
+            disable_coop=True,
+            os="linux",
+            window=(1280, 720),
+        ) as browser:
+            context = browser.new_context()
+            # Add cookies to context
+            context.add_cookies(cookies)
+            page = context.new_page()
+            
             try:
-                # 1. Navigate to submit page (with retry for Cloudflare)
-                for nav_attempt in range(4):
+                # 1. Navigate to submit page
+                for nav_attempt in range(3):
                     logger.info(f"→ {submit_pg}" + (f" (retry {nav_attempt})" if nav_attempt else ""))
                     try:
                         page.goto(submit_pg, wait_until="domcontentloaded", timeout=45000)
                     except Exception as nav_err:
                         logger.warning(f"  nav attempt {nav_attempt} failed: {nav_err}")
-                        if nav_attempt < 3:
+                        if nav_attempt < 2:
                             page.wait_for_timeout(3000)
                             continue
                         else:
                             return {"success": False, "error": f"Could not reach Codeforces (timeout). Try again."}
                     
-                    # Wait a bit for any JS redirects
-                    page.wait_for_timeout(1000)
+                    page.wait_for_timeout(1500)
 
                     if "/enter" in page.url or "/login" in page.url:
                         return {"success": False, "error": "NOT_LOGGED_IN"}
 
-                    # Check for Cloudflare interstitial (full-page block, NOT embedded turnstile)
                     content = page.content()
                     is_full_block = "<title>Just a moment</title>" in content or "Checking your browser" in content
                     has_form = "#sourceCodeTextarea" in content or "submittedProblemIndex" in content
                     
                     if is_full_block and not has_form:
-                        # Full-page Cloudflare block — need solver
-                        logger.info("  Cloudflare full-page block, solving...")
-                        try:
-                            s._cloudflare_solver(page)
-                            page.wait_for_timeout(2000)
-                        except Exception as cf_err:
-                            logger.warning(f"  Cloudflare solver: {cf_err}")
+                        logger.info("  Cloudflare full-page block, waiting...")
+                        # Camoufox should handle this automatically — just wait
+                        page.wait_for_timeout(5000)
+                        # Check again
+                        content = page.content()
+                        has_form = "#sourceCodeTextarea" in content or "submittedProblemIndex" in content
+                        if has_form:
+                            break
                     elif has_form:
-                        # Form is visible — embedded turnstile will be handled later
-                        logger.info("  form visible, skipping CF solver (turnstile handled later)")
+                        logger.info("  form visible")
                         break
                     
-                    # Check if we ended up on the right page
-                    current_url = page.url
-                    if "/submit" in current_url or f"contest/{req.contestId}" in current_url:
-                        break  # We're on the submit page
+                    if "/submit" in page.url or f"contest/{req.contestId}" in page.url:
+                        break
                     
-                    logger.warning(f"  redirected to {current_url}, retrying...")
+                    logger.warning(f"  redirected to {page.url}, retrying...")
                     page.wait_for_timeout(2000)
-                else:
-                    # All retries exhausted
-                    logger.error(f"  could not reach submit page after 3 attempts, ended at {page.url}")
 
-                # Re-check login after navigation
+                # Re-check login
                 if "/enter" in page.url or "/login" in page.url:
                     return {"success": False, "error": "NOT_LOGGED_IN"}
 
-                # 2. Wait for form (may take a while if Turnstile is loading in background)
+                # 2. Wait for form
                 form_found = False
                 for form_attempt in range(3):
                     try:
-                        page.wait_for_selector("#sourceCodeTextarea", timeout=30000)
+                        page.wait_for_selector("#sourceCodeTextarea", timeout=20000)
                         form_found = True
                         break
                     except Exception:
                         if form_attempt < 2:
-                            logger.warning(f"  form not visible yet (attempt {form_attempt+1}), waiting...")
-                            # Scroll to trigger lazy rendering, then wait
+                            logger.warning(f"  form not visible yet (attempt {form_attempt+1})")
                             page.evaluate("() => window.scrollTo(0, 0)")
                             page.wait_for_timeout(3000)
-                            # Check if we got redirected
                             if "/enter" in page.url or "/login" in page.url:
                                 return {"success": False, "error": "NOT_LOGGED_IN"}
-                            # Try reloading if form still missing
                             if form_attempt == 1:
                                 logger.info(f"  reloading submit page...")
                                 try:
@@ -499,9 +397,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
 
                 if not form_found:
                     err = page.evaluate(JS_ERR)
-                    page_url = page.url
-                    page_title = page.title()
-                    logger.warning(f"  form not found — url={page_url}, title={page_title}")
+                    logger.warning(f"  form not found — url={page.url}, title={page.title()}")
                     return {"success": False, "error": err or "FORM_NOT_FOUND"}
 
                 logger.info(f"  form ready ({time.monotonic()-t0:.1f}s)")
@@ -511,7 +407,6 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 logger.info(f"  form filled ({time.monotonic()-t0:.1f}s)")
 
                 # 4. Solve Turnstile
-                # First scroll the turnstile widget into view to trigger rendering
                 page.evaluate("""() => {
                     const ts = document.querySelector('.cf-turnstile');
                     if (ts) ts.scrollIntoView({behavior: 'instant', block: 'center'});
@@ -519,16 +414,15 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 page.wait_for_timeout(500)
                 
                 elapsed_so_far = time.monotonic() - t0
-                ts_budget = max(20, int(MAX_TOTAL - elapsed_so_far - 15))  # reserve 15s for submit+nav
-                got_token = _wait_for_turnstile_token(page, s, timeout_s=ts_budget)
+                ts_budget = max(20, int(MAX_TOTAL - elapsed_so_far - 15))
+                got_token = _wait_for_turnstile_token(page, timeout_s=ts_budget)
                 
                 if not got_token:
-                    # Last resort: submit anyway — CF might accept without token sometimes
                     logger.warning("  submitting without turnstile token (will likely fail)")
 
                 logger.info(f"  clicking submit ({time.monotonic()-t0:.1f}s)")
 
-                # 5. Submit — click and wait for navigation
+                # 5. Submit
                 try:
                     page.wait_for_selector("#singlePageSubmitButton", state="visible", timeout=5000)
                     with page.expect_navigation(timeout=15000, wait_until="domcontentloaded"):
@@ -551,16 +445,15 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 if err:
                     return {"success": False, "error": err}
 
-                # 7. If we redirected to /my or /status, get submission ID
+                # 7. Get submission ID
                 sub_id = page.evaluate(JS_SUB_ID)
                 if sub_id:
                     logger.info(f"  ✓ id={sub_id} ({time.monotonic()-t0:.1f}s)")
                     return {"success": True, "submissionId": sub_id}
 
-                # 8. Still on submit page = submission failed (no token)
+                # 8. Still on submit page — navigate to /my
                 if "/submit" in page.url:
-                    logger.warning(f"  still on submit page after submit — token was likely rejected")
-                    # Navigate to /my to check if it actually went through
+                    logger.warning(f"  still on submit page — checking /my")
                     page.goto(my_pg, wait_until="domcontentloaded")
                     try:
                         page.wait_for_selector("tr[data-submission-id]", timeout=8000)
@@ -573,6 +466,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 return {"success": True, "submissionId": sub_id}
             finally:
                 page.close()
+                context.close()
 
     try:
         result = await anyio.to_thread.run_sync(do)
@@ -580,11 +474,9 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
     except Exception as e:
         logger.exception(f"Submit error: {e}")
         jobs[job_id] = {"status": "done", "result": {"success": False, "error": str(e)}, "created": jobs[job_id]["created"]}
-        return SubmitResponse(success=False, error=str(e))
-
 
 # ═════════════════════════════════════════════════════════════════════
-# STATUS — fast HTTP first, stealth fallback
+# STATUS — fast HTTP first, stealth fallback (Scrapling, no Turnstile)
 # ═════════════════════════════════════════════════════════════════════
 VERDICT_MAP = {
     "accepted": "OK", "happy new year": "OK",
@@ -608,7 +500,7 @@ async def check_status(req: StatusRequest):
     my = build_url(req.contestId, req.urlType, req.groupId, "my")
     cookie_dict, cookie_list = parse_cookies(req.cookies)
 
-    # ── Check status cache (2s for pending, 30s for final) ────────────
+    # ── Check status cache ────────────────────────────────────────────
     cache_key = f"{req.contestId}:{req.submissionId}"
     cached = status_response_cache.get(cache_key)
     if cached:
@@ -645,25 +537,21 @@ async def check_status(req: StatusRequest):
                     "time": clean(cells[6]) if len(cells) > 6 else None,
                     "memory": clean(cells[7]) if len(cells) > 7 else None}
 
-            # For final non-accepted verdicts, fetch Judgement Protocol via HTTP
+            # For final non-accepted verdicts, fetch Judgement Protocol
             vl = verdict_raw.lower()
             is_final_fail = ("testing" not in vl and "queue" not in vl and
                            "accepted" not in vl and "happy new year" not in vl and
                            verdict_raw and verdict_raw != "null")
             if is_final_fail:
-                # Check cache first
-                cached = details_cache.get(req.submissionId)
-                if cached:
-                    if cached.get("compilationError"):
-                        result["compilationError"] = cached["compilationError"]
-                    if cached.get("details"):
-                        result["details"] = cached["details"]
+                cached_detail = details_cache.get(req.submissionId)
+                if cached_detail:
+                    if cached_detail.get("compilationError"):
+                        result["compilationError"] = cached_detail["compilationError"]
+                    if cached_detail.get("details"):
+                        result["details"] = cached_detail["details"]
                 else:
-                    # Try fetching via /data/judgeProtocol (CF's AJAX endpoint)
                     try:
                         import json
-
-                        # Extract CSRF token from the page
                         csrf = None
                         csrf_match = re.search(r'name="X-Csrf-Token"\s+content="([^"]+)"', html)
                         if csrf_match:
@@ -673,9 +561,6 @@ async def check_status(req: StatusRequest):
                             if csrf_match:
                                 csrf = csrf_match.group(1)
 
-                        logger.info(f"[JudgeProtocol] Fetching for {req.submissionId}, csrf={'yes' if csrf else 'no'}")
-
-                        # Use Fetcher.post (curl_cffi) — handles anti-bot headers/TLS fingerprint
                         proto_headers = {
                             "X-Requested-With": "XMLHttpRequest",
                             "Referer": my,
@@ -693,16 +578,12 @@ async def check_status(req: StatusRequest):
                         )
                         proto_body = proto_resp.body.decode("utf-8", errors="replace") if isinstance(proto_resp.body, bytes) else str(proto_resp.body)
 
-                        logger.info(f"[JudgeProtocol] Response length={len(proto_body)}, starts={proto_body[:80]}")
-
                         if proto_body and not proto_body.startswith("<!DOCTYPE"):
                             try:
                                 proto_data = json.loads(proto_body)
-                                # proto_data is typically a list of test results or a string
                                 if isinstance(proto_data, str):
                                     detail_text = proto_data
                                 elif isinstance(proto_data, list):
-                                    # Format test results
                                     parts = []
                                     for item in proto_data:
                                         if isinstance(item, dict):
@@ -735,17 +616,15 @@ async def check_status(req: StatusRequest):
                                         result["compilationError"] = detail_text
                                     else:
                                         result["details"] = detail_text
-                                    # Cache it
                                     details_cache[req.submissionId] = {
                                         "fetched_at": time.time(),
                                         "compilationError": result.get("compilationError"),
                                         "details": result.get("details"),
                                     }
-                                    logger.info(f"[JudgeProtocol] Cached for {req.submissionId}")
                             except json.JSONDecodeError:
-                                logger.warning(f"[JudgeProtocol] Non-JSON response for {req.submissionId}: {proto_body[:200]}")
+                                pass
                     except Exception as e:
-                        logger.warning(f"[JudgeProtocol] HTTP fetch failed for {req.submissionId}: {e}")
+                        logger.warning(f"[JudgeProtocol] fetch failed: {e}")
 
             return result
         except Exception as e:
@@ -753,7 +632,6 @@ async def check_status(req: StatusRequest):
             return None
 
     def stealth_fetch_verdict():
-        """Stealth browser fallback — only used when fast path can't reach the page (CF block)."""
         with StealthySession(headless=True, solve_cloudflare=True, timeout=45000, cookies=cookie_list) as s:
             page = s.context.new_page()
             try:
@@ -783,7 +661,6 @@ async def check_status(req: StatusRequest):
     try:
         res = await anyio.to_thread.run_sync(fast)
         if not res or "error" in res:
-            # Fast path failed (CF block or not found) — try stealth
             for _ in range(2):
                 res = await anyio.to_thread.run_sync(stealth_fetch_verdict)
                 if res and "error" not in res:
@@ -806,7 +683,6 @@ async def check_status(req: StatusRequest):
         if m:
             test_num = int(m.group(1))
 
-        # Cache the result
         cache_data = {
             "verdict": normalize_verdict(res.get("verdict") or ""),
             "time": time_ms, "memory": memory_kb, "testNumber": test_num,
@@ -828,7 +704,6 @@ async def check_status(req: StatusRequest):
     except Exception as e:
         logger.exception(f"Status error: {e}")
         return StatusResponse(success=False, error=str(e))
-
 
 # ═════════════════════════════════════════════════════════════════════
 # GLOBAL SUBMISSIONS FEED

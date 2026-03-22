@@ -4,14 +4,16 @@ ENTRYPOINT []
 
 WORKDIR /app
 
-# Install Xvfb (virtual display) and xdotool (OS-level mouse clicks)
+# Install Xvfb (virtual display) for Camoufox headless="virtual" mode
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
-    xdotool \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Camoufox browser binary
+RUN python -m camoufox fetch
 
 COPY main.py .
 COPY entrypoint.sh .
