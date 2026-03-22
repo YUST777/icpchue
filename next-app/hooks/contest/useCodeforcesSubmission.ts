@@ -374,26 +374,42 @@ export function useCodeforcesSubmission({
                                 ? status.testNumber + 1
                                 : undefined;
 
-                            await fetchWithAuth('/api/codeforces/save-submission', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                    cfSubmissionId: submissionId,
-                                    contestId,
-                                    problemIndex: problemId,
-                                    sheetId: sheetId || null,
-                                    verdict: verdictText,
-                                    timeMs: status.time || 0,
-                                    memoryKb: status.memory || 0,
-                                    language,
-                                    sourceCode: code,
-                                    cfHandle: userHandle,
-                                    urlType,
-                                    groupId: groupId || null,
-                                    compilationError: status.compilationError || null,
-                                    details: status.details || null,
-                                    testNumber: status.testNumber || null,
-                                })
-                            }).catch(err => console.warn('Failed to save CF submission to DB:', err));
+                            // Save to DB with retry (3 attempts, exponential backoff)
+                            const savePayload = {
+                                cfSubmissionId: submissionId,
+                                contestId,
+                                problemIndex: problemId,
+                                sheetId: sheetId || null,
+                                verdict: verdictText,
+                                timeMs: status.time || 0,
+                                memoryKb: status.memory || 0,
+                                language,
+                                sourceCode: code,
+                                cfHandle: userHandle,
+                                urlType,
+                                groupId: groupId || null,
+                                compilationError: status.compilationError || null,
+                                details: status.details || null,
+                                testNumber: status.testNumber || null,
+                            };
+
+                            let saved = false;
+                            for (let attempt = 0; attempt < 3; attempt++) {
+                                try {
+                                    const saveRes: any = await fetchWithAuth('/api/codeforces/save-submission', {
+                                        method: 'POST',
+                                        body: JSON.stringify(savePayload)
+                                    });
+                                    if (saveRes && !saveRes.error) {
+                                        saved = true;
+                                        break;
+                                    }
+                                } catch (err) {
+                                    console.warn(`Save attempt ${attempt + 1}/3 failed:`, err);
+                                }
+                                if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                            }
+                            if (!saved) console.error('All 3 save attempts failed for submission', submissionId);
 
                             setCfStatus({
                                 status: 'done',
