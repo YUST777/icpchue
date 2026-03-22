@@ -34,6 +34,12 @@ jobs: Dict[str, dict] = {}
 # ── Details cache: submissionId → {compilationError, details, fetched_at} ──
 details_cache: Dict[str, dict] = {}
 
+# ── Submission semaphore: max 2 concurrent headless browsers ─────────
+submit_semaphore = asyncio.Semaphore(2)
+
+# ── Status response cache ────────────────────────────────────────────
+status_response_cache: Dict[str, dict] = {}
+
 def cleanup_old_jobs():
     now = time.time()
     expired = [k for k, v in jobs.items() if now - v.get("created", 0) > 300]
@@ -333,6 +339,12 @@ async def get_submit_result(job_id: str):
 
 async def _run_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
     """Background task that performs the actual submission."""
+    async with submit_semaphore:
+        await _do_submit_job(job_id, req, lang_id)
+
+
+async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
+    """Actual submission logic (runs under semaphore)."""
     _, cookies = parse_cookies(req.cookies)
     submit_pg = build_url(req.contestId, req.urlType, req.groupId, f"submit?problemIndex={req.problemIndex}")
     my_pg = build_url(req.contestId, req.urlType, req.groupId, "my")
@@ -508,6 +520,25 @@ def normalize_verdict(raw: str) -> str:
 async def check_status(req: StatusRequest):
     my = build_url(req.contestId, req.urlType, req.groupId, "my")
     cookie_dict, cookie_list = parse_cookies(req.cookies)
+
+    # ── Check status cache (2s for pending, 30s for final) ────────────
+    cache_key = f"{req.contestId}:{req.submissionId}"
+    cached = status_response_cache.get(cache_key)
+    if cached:
+        age = time.time() - cached["ts"]
+        verdict_str = (cached["data"].get("verdict") or "").lower()
+        is_final = verdict_str and "testing" not in verdict_str and "queue" not in verdict_str
+        ttl = 30 if is_final else 2
+        if age < ttl:
+            logger.info(f"[Status] cache hit for {req.submissionId} (age={age:.1f}s)")
+            d = cached["data"]
+            return StatusResponse(
+                success=True, verdict=d.get("verdict"),
+                time=d.get("time", 0), memory=d.get("memory", 0),
+                testNumber=d.get("testNumber"),
+                compilationError=d.get("compilationError"),
+                details=d.get("details"),
+            )
 
     def fast():
         try:
@@ -688,8 +719,21 @@ async def check_status(req: StatusRequest):
         if m:
             test_num = int(m.group(1))
 
+        # Cache the result
+        cache_data = {
+            "verdict": normalize_verdict(res.get("verdict") or ""),
+            "time": time_ms, "memory": memory_kb, "testNumber": test_num,
+            "compilationError": res.get("compilationError"),
+            "details": res.get("details"),
+        }
+        status_response_cache[cache_key] = {"data": cache_data, "ts": time.time()}
+        now = time.time()
+        expired = [k for k, v in status_response_cache.items() if now - v["ts"] > 60]
+        for k in expired:
+            del status_response_cache[k]
+
         return StatusResponse(
-            success=True, verdict=normalize_verdict(res.get("verdict") or ""),
+            success=True, verdict=cache_data["verdict"],
             time=time_ms, memory=memory_kb, testNumber=test_num,
             compilationError=res.get("compilationError"),
             details=res.get("details"),
