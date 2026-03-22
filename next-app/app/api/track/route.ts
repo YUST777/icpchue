@@ -1,0 +1,45 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+
+const VALID_ACTIONS = new Set([
+    'problem_view', 'tab_switch', 'code_run', 'code_submit',
+    'submission_view', 'solution_view', 'notes_open', 'notes_save',
+    'whiteboard_open', 'settings_open', 'language_change',
+    'drawer_open', 'handle_save', 'code_copy', 'code_paste',
+    'fullscreen_toggle', 'keyboard_shortcut', 'analytics_view',
+    'test_add', 'test_delete', 'export_snippet', 'page_leave',
+]);
+
+export async function POST(req: NextRequest) {
+    try {
+        const user = await verifyAuth(req);
+        if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+
+        // 60 events per minute per user — generous but prevents abuse
+        const rl = await rateLimit(`track:${user.id}`, 60, 60);
+        if (!rl.success) return NextResponse.json({ ok: false }, { status: 429 });
+
+        const body = await req.json();
+        const { action, contestId, problemId, sheetId, metadata } = body;
+
+        if (!action || !VALID_ACTIONS.has(action)) {
+            return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
+        }
+
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+        const ua = req.headers.get('user-agent') || null;
+
+        // Fire and forget — don't block the response
+        query(
+            `INSERT INTO user_activity (user_id, action, contest_id, problem_id, sheet_id, metadata, ip_address, user_agent)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [user.id, action, contestId || null, problemId || null, sheetId || null, JSON.stringify(metadata || {}), ip, ua]
+        ).catch(() => {});
+
+        return NextResponse.json({ ok: true });
+    } catch {
+        return NextResponse.json({ ok: false }, { status: 500 });
+    }
+}
