@@ -61,9 +61,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Non-final verdict rejected: ${verdict}` }, { status: 400 });
         }
 
-        // Verify cfSubmissionId is a valid positive integer (CF IDs are sequential)
+        // Verify cfSubmissionId is a valid integer (positive for real CF, negative for migrated Judge0)
         const submissionIdNum = parseInt(cfSubmissionId, 10);
-        if (isNaN(submissionIdNum) || submissionIdNum <= 0 || String(submissionIdNum) !== String(cfSubmissionId)) {
+        if (isNaN(submissionIdNum) || String(submissionIdNum) !== String(cfSubmissionId)) {
             return NextResponse.json({ error: 'Invalid cfSubmissionId' }, { status: 400 });
         }
 
@@ -209,12 +209,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, duplicate: true });
         }
 
-        // If it's a general DB connection error, don't crash the proxy response
-        // because the submission actually succeeded on Codeforces!
+        // DB failure — tell the client so it can retry
+        console.error('[API Save Submission] Database error:', error.message);
         return NextResponse.json({ 
-            success: true, 
-            warning: 'Submission succeeded on CF but failed to save to local database',
-            error: 'DATABASE_UNAVAILABLE'
-        });
+            success: false, 
+            error: 'DATABASE_UNAVAILABLE',
+            message: 'Failed to save submission to database'
+        }, { status: 503 });
     }
 }
