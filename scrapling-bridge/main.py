@@ -407,10 +407,32 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 if "/enter" in page.url or "/login" in page.url:
                     return {"success": False, "error": "NOT_LOGGED_IN"}
 
-                # 2. Wait for form
-                try:
-                    page.wait_for_selector("#sourceCodeTextarea", timeout=15000)
-                except Exception:
+                # 2. Wait for form (may take a while if Turnstile is loading in background)
+                form_found = False
+                for form_attempt in range(3):
+                    try:
+                        page.wait_for_selector("#sourceCodeTextarea", timeout=30000)
+                        form_found = True
+                        break
+                    except Exception:
+                        if form_attempt < 2:
+                            logger.warning(f"  form not visible yet (attempt {form_attempt+1}), waiting...")
+                            # Scroll to trigger lazy rendering, then wait
+                            page.evaluate("() => window.scrollTo(0, 0)")
+                            page.wait_for_timeout(3000)
+                            # Check if we got redirected
+                            if "/enter" in page.url or "/login" in page.url:
+                                return {"success": False, "error": "NOT_LOGGED_IN"}
+                            # Try reloading if form still missing
+                            if form_attempt == 1:
+                                logger.info(f"  reloading submit page...")
+                                try:
+                                    page.reload(wait_until="domcontentloaded", timeout=30000)
+                                    page.wait_for_timeout(2000)
+                                except Exception:
+                                    pass
+
+                if not form_found:
                     err = page.evaluate(JS_ERR)
                     page_url = page.url
                     page_title = page.title()
