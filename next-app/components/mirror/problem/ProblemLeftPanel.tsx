@@ -137,7 +137,7 @@ function ProblemLeftPanel({
                         data-lenis-prevent="true"
                     >
                         <AnalyticsView
-                            submissions={submissions}
+                            stats={stats}
                             cfStats={cfStats}
                             loading={!!statsLoading}
                         />
