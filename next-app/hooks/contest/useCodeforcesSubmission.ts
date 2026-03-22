@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
-import { mapLanguageToExtension, getSubmitUrl, getProblemDescriptionUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
+import { mapLanguageToExtension, getProblemDescriptionUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
 import { fetchWithAuth } from '@/lib/api';
 
 const FINAL_VERDICTS = new Set([
@@ -447,7 +447,6 @@ export function useCodeforcesSubmission({
                 }
 
                 // Check if we exited the loop without a final verdict
-                const finalStatus = cfStatus;
                 if (Date.now() - startTime >= MAX_POLL_MS) {
                     console.warn('Polling timeout after 5 minutes');
                     setCfStatus(prev => prev ? {
@@ -459,6 +458,8 @@ export function useCodeforcesSubmission({
             }
 
         } catch (err) {
+            submissionDone = true;
+            phaseTimers.forEach(t => clearTimeout(t));
             console.error('Server submission error:', err);
             setCfStatus({
                 status: 'error',

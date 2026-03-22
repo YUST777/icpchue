@@ -7,6 +7,27 @@ const API_KEY = process.env.CF_API_KEY;
 const API_SECRET = process.env.CF_API_SECRET;
 const BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
 
+// ── Server-side status cache ────────────────────────────────────────
+// Prevents hammering CF API when frontend polls every 2-3s
+const statusCache = new Map<string, { data: Record<string, unknown>; ts: number }>();
+const CACHE_TTL_PENDING = 2000;
+const CACHE_TTL_FINAL = 60000;
+
+function isFinalVerdict(verdict: string | null): boolean {
+    if (!verdict) return false;
+    const v = verdict.toUpperCase();
+    return !['TESTING', 'RUNNING', ''].includes(v) &&
+           !v.includes('QUEUE') && !v.includes('WAITING');
+}
+
+// Clean up old cache entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, val] of statusCache) {
+        if (now - val.ts > CACHE_TTL_FINAL) statusCache.delete(key);
+    }
+}, 30000);
+
 async function cfApiCall(method: string, params: Record<string, any> = {}) {
     if (!API_KEY || !API_SECRET) return { status: 'FAILED', comment: 'Keys not configured' };
 
@@ -37,6 +58,13 @@ async function cfApiCall(method: string, params: Record<string, any> = {}) {
 }
 
 async function cfPublicApiCall(method: string, params: Record<string, string> = {}) {
+    // Rate limit: CF allows 1 API call per 2 seconds
+    const now = Date.now();
+    if (now - lastCfApiCall < 2100) {
+        return { status: 'FAILED', comment: 'Rate limited (internal)' };
+    }
+    lastCfApiCall = now;
+
     const queryStr = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
     const url = `https://codeforces.com/api/${method}?${queryStr}`;
 
@@ -47,6 +75,8 @@ async function cfPublicApiCall(method: string, params: Record<string, string> = 
         return { status: 'FAILED', comment: e.message };
     }
 }
+
+let lastCfApiCall = 0;
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -71,6 +101,17 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        // ── Check server-side cache first ──
+        const cacheKey = `${contestId}:${submissionId}`;
+        const cached = statusCache.get(cacheKey);
+        if (cached) {
+            const age = Date.now() - cached.ts;
+            const ttl = isFinalVerdict(cached.data.verdict as string | null) ? CACHE_TTL_FINAL : CACHE_TTL_PENDING;
+            if (age < ttl) {
+                return NextResponse.json(cached.data);
+            }
+        }
+
         let result;
         const isRestricted = urlType === 'group' || urlType === 'gym';
 
@@ -86,7 +127,7 @@ export async function GET(req: NextRequest) {
                 if (bridgeRes.ok) {
                     const bridgeData = await bridgeRes.json();
                     if (bridgeData.success && bridgeData.verdict) {
-                        return NextResponse.json({
+                        const response = {
                             success: true,
                             verdict: bridgeData.verdict,
                             testNumber: bridgeData.testNumber || 0,
@@ -96,7 +137,9 @@ export async function GET(req: NextRequest) {
                             details: bridgeData.details || null,
                             waiting: !bridgeData.verdict || 
                                      ['queue', 'testing'].some(s => bridgeData.verdict.toLowerCase().includes(s))
-                        });
+                        };
+                        statusCache.set(cacheKey, { data: response, ts: Date.now() });
+                        return NextResponse.json(response);
                     }
                 }
             } catch (err: any) {
@@ -110,14 +153,16 @@ export async function GET(req: NextRequest) {
             if (result.status === 'OK') {
                 const sub = result.result.find((s: any) => s.id === parseInt(submissionId));
                 if (sub) {
-                    return NextResponse.json({
+                    const response = {
                         success: true,
                         verdict: sub.verdict || null,
                         testNumber: sub.passedTestCount,
                         time: sub.timeConsumedMillis,
                         memory: Math.round(sub.memoryConsumedBytes / 1024),
                         waiting: !sub.verdict || sub.verdict === 'TESTING'
-                    });
+                    };
+                    statusCache.set(cacheKey, { data: response, ts: Date.now() });
+                    return NextResponse.json(response);
                 }
             }
         }
@@ -127,14 +172,16 @@ export async function GET(req: NextRequest) {
             if (result.status === 'OK') {
                 const sub = result.result.find((s: any) => s.id === parseInt(submissionId));
                 if (sub) {
-                    return NextResponse.json({
+                    const response = {
                         success: true,
                         verdict: sub.verdict || null,
                         testNumber: sub.passedTestCount,
                         time: sub.timeConsumedMillis,
                         memory: Math.round(sub.memoryConsumedBytes / 1024),
                         waiting: !sub.verdict || sub.verdict === 'TESTING'
-                    });
+                    };
+                    statusCache.set(cacheKey, { data: response, ts: Date.now() });
+                    return NextResponse.json(response);
                 }
             }
         }
@@ -151,7 +198,7 @@ export async function GET(req: NextRequest) {
                 if (bridgeRes.ok) {
                     const bridgeData = await bridgeRes.json();
                     if (bridgeData.success && bridgeData.verdict) {
-                        return NextResponse.json({
+                        const response = {
                             success: true,
                             verdict: bridgeData.verdict,
                             testNumber: bridgeData.testNumber || 0,
@@ -161,7 +208,9 @@ export async function GET(req: NextRequest) {
                             details: bridgeData.details || null,
                             waiting: !bridgeData.verdict || 
                                      ['queue', 'testing'].some(s => bridgeData.verdict.toLowerCase().includes(s))
-                        });
+                        };
+                        statusCache.set(cacheKey, { data: response, ts: Date.now() });
+                        return NextResponse.json(response);
                     }
                 }
             } catch (err: any) {
@@ -178,6 +227,7 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error: any) {
-        return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+        console.error('[CF Submission Status] Error:', error.message);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

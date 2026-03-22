@@ -124,7 +124,7 @@ export async function syncRank1Achievement(triggerType: string) {
                 LEFT JOIN sub_counts sc ON u.id = sc.user_id
                 WHERE (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)
                   AND (u.show_on_sheets_leaderboard = TRUE OR u.show_on_sheets_leaderboard IS NULL OR u.is_shadow_banned = TRUE)
-                ORDER BY us.solved_count DESC, COALESCE(sc.total_submissions, 0) ASC, us.last_solve_at ASC
+                ORDER BY us.solved_count DESC, COALESCE(sc.total_submissions, 0) ASC, us.first_solve_at ASC
                 LIMIT 1
             `);
 

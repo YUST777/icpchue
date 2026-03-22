@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('[CF Submit Proxy] Error:', error.message || error);
         return NextResponse.json(
-            { success: false, error: 'Internal proxy error', details: error.message },
+            { success: false, error: 'Internal proxy error' },
             { status: 500 }
         );
     }
