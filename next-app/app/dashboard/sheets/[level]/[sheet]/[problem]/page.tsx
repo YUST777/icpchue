@@ -27,6 +27,7 @@ import { useLocalTestRunner } from '@/hooks/contest/useLocalTestRunner';
 import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
 import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
 import { fetchWithCache } from '@/lib/api-cache';
+import { useTrack } from '@/hooks/useTrack';
 
 import type { CFProblemData, AnalyticsStats } from '@/components/mirror/shared/types';
 
@@ -204,19 +205,28 @@ function MirrorUI({
     const [activeSheet, setActiveSheet] = useState<ActiveSheet | null>(null);
     const sheetProblems = activeSheet?.problems ?? [];
 
+    // ─── Activity Tracking ───
+    const track = useTrack();
+
+    // Track problem view on mount
+    useEffect(() => {
+        track({ action: 'problem_view', contestId, problemId, sheetId, metadata: { levelSlug, sheetSlug } });
+    }, [contestId, problemId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Track tab switches
+    const trackedSetActiveTab = useCallback((tab: 'description' | 'submissions' | 'analytics' | 'solution') => {
+        setActiveTab(tab);
+        track({ action: 'tab_switch', contestId, problemId, sheetId, metadata: { tab } });
+    }, [contestId, problemId, sheetId, track]);
+
     // ─── Analytics Stats ───
     const [stats, setStats] = useState<AnalyticsStats | null>(null);
     const [statsLoading, setStatsLoading] = useState(false);
     const dataFetchedRef = useRef(false);
 
-    // Fetch analytics data from CF API (global distribution + user submissions)
+    // Fetch analytics data — DB-based stats (always works) + CF global distribution (enhancement)
     const fetchAnalyticsData = useCallback(async (force = false) => {
         if (!contestId || !problemId) return;
-        if (handleLoading) return;
-        if (!cfHandle) {
-            setStatsLoading(false);
-            return;
-        }
         if (dataFetchedRef.current && !force) return;
         dataFetchedRef.current = true;
 
@@ -225,87 +235,72 @@ function MirrorUI({
 
         setStatsLoading(true);
 
-        const userPromise = fetch(
-            `/api/codeforces/user-submissions?handle=${encodeURIComponent(cfHandle)}&contestId=${safeContestId}&problemIndex=${safeProblemId}`
-        ).then(r => r.ok ? r.json() : null).catch(() => null);
-
-        const globalPromise = fetch(
-            `/api/codeforces/distribution?contestId=${safeContestId}&problemIndex=${safeProblemId}`
-        ).then(r => r.ok ? r.json() : null).catch(() => null);
-
-        let rawSubmissions: { id: number; verdict: string; timeConsumedMillis: number; memoryConsumedBytes: number; creationTimeSeconds: number; passedTestCount?: number }[] = [];
         try {
-            const userData = await userPromise;
-            if (userData?.success && Array.isArray(userData.submissions)) {
-                rawSubmissions = userData.submissions;
-            }
-        } catch { /* non-critical */ }
+            // Primary: our own DB stats (works for all contests including groups)
+            const dbStats = await fetch(
+                `/api/analytics/problem-stats?contestId=${safeContestId}&problemIndex=${safeProblemId}`
+            ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-        try {
-            const globalData = await globalPromise;
-            const accepted = rawSubmissions.filter(s => s.verdict === 'Accepted');
-
-            if (globalData?.success && globalData.totalAccepted > 0) {
-                const runtimeDist = globalData.runtimeDistribution.map((b: { label: string; count: number; rangeStart: number; rangeEnd: number }) => {
-                    const userBestTime = accepted.length > 0 ? Math.min(...accepted.map(s => s.timeConsumedMillis)) : null;
-                    return { label: b.label, count: b.count, isUser: userBestTime !== null && userBestTime >= b.rangeStart && userBestTime < b.rangeEnd };
+            if (dbStats?.success && dbStats.totalAccepted > 0) {
+                setStats({
+                    totalSubmissions: dbStats.totalAccepted,
+                    runtimeDistribution: dbStats.runtimeDistribution,
+                    memoryDistribution: dbStats.memoryDistribution,
+                    userStats: dbStats.userStats || null,
                 });
-                const memoryDist = globalData.memoryDistribution.map((b: { label: string; count: number; rangeStart: number; rangeEnd: number }) => {
-                    const userBestMem = accepted.length > 0 ? Math.min(...accepted.map(s => s.memoryConsumedBytes / 1024)) : null;
-                    return { label: b.label, count: b.count, isUser: userBestMem !== null && userBestMem >= b.rangeStart && userBestMem < b.rangeEnd };
-                });
+                setStatsLoading(false);
 
-                let userStats: AnalyticsStats['userStats'] = null;
-                if (accepted.length > 0) {
-                    const userBestTime = Math.min(...accepted.map(s => s.timeConsumedMillis));
-                    const userBestMem = Math.min(...accepted.map(s => s.memoryConsumedBytes / 1024));
-                    let slowerCount = 0, moreMemCount = 0;
-                    for (const b of globalData.runtimeDistribution) {
-                        if (b.rangeStart > userBestTime) slowerCount += b.count;
-                        else if (b.rangeStart <= userBestTime && b.rangeEnd > userBestTime) slowerCount += Math.round(b.count * 0.5);
+                // Enhancement: try CF global distribution for richer data (more submissions)
+                const cfDist = await fetch(
+                    `/api/codeforces/distribution?contestId=${safeContestId}&problemIndex=${safeProblemId}`
+                ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+                if (cfDist?.success && cfDist.totalAccepted > dbStats.totalAccepted) {
+                    // CF has more data — use it but keep user stats from DB
+                    const userBestTime = dbStats.userStats?.runtime?.value;
+                    const userBestMem = dbStats.userStats?.memory?.value;
+
+                    const runtimeDist = cfDist.runtimeDistribution.map((b: any) => ({
+                        ...b, isUser: userBestTime != null && userBestTime >= b.rangeStart && userBestTime < b.rangeEnd
+                    }));
+                    const memoryDist = cfDist.memoryDistribution.map((b: any) => ({
+                        ...b, isUser: userBestMem != null && userBestMem >= b.rangeStart && userBestMem < b.rangeEnd
+                    }));
+
+                    let userStats: AnalyticsStats['userStats'] = null;
+                    if (userBestTime != null && userBestMem != null) {
+                        let slowerCount = 0, moreMemCount = 0;
+                        for (const b of cfDist.runtimeDistribution) {
+                            if (b.rangeStart > userBestTime) slowerCount += b.count;
+                            else if (b.rangeStart <= userBestTime && b.rangeEnd > userBestTime) slowerCount += Math.round(b.count * 0.5);
+                        }
+                        for (const b of cfDist.memoryDistribution) {
+                            if (b.rangeStart > userBestMem) moreMemCount += b.count;
+                            else if (b.rangeStart <= userBestMem && b.rangeEnd > userBestMem) moreMemCount += Math.round(b.count * 0.5);
+                        }
+                        userStats = {
+                            runtime: { value: userBestTime, percentile: Math.min(99, Math.round((slowerCount / cfDist.totalAccepted) * 100)) },
+                            memory: { value: userBestMem, percentile: Math.min(99, Math.round((moreMemCount / cfDist.totalAccepted) * 100)) },
+                        };
                     }
-                    for (const b of globalData.memoryDistribution) {
-                        if (b.rangeStart > userBestMem) moreMemCount += b.count;
-                        else if (b.rangeStart <= userBestMem && b.rangeEnd > userBestMem) moreMemCount += Math.round(b.count * 0.5);
-                    }
-                    userStats = {
-                        runtime: { value: userBestTime, percentile: Math.min(99, Math.round((slowerCount / globalData.totalAccepted) * 100)) },
-                        memory: { value: userBestMem, percentile: Math.min(99, Math.round((moreMemCount / globalData.totalAccepted) * 100)) },
-                    };
+
+                    setStats({ totalSubmissions: cfDist.totalAccepted, runtimeDistribution: runtimeDist, memoryDistribution: memoryDist, userStats });
                 }
-
-                setStats({ totalSubmissions: globalData.totalAccepted, runtimeDistribution: runtimeDist, memoryDistribution: memoryDist, userStats });
-            } else if (accepted.length > 0) {
-                const times = accepted.map(s => s.timeConsumedMillis).sort((a: number, b: number) => a - b);
-                const mems = accepted.map(s => s.memoryConsumedBytes / 1024).sort((a: number, b: number) => a - b);
-                const minTime = times[0]; const maxTime = times[times.length - 1];
-                const timeStep = Math.max(1, Math.ceil((maxTime - minTime) / 10));
-                const runtimeDist = Array.from({ length: 10 }, (_, i) => {
-                    const start = minTime + i * timeStep; const end = start + timeStep;
-                    return { label: `${start}-${end}ms`, count: times.filter((t: number) => t >= start && t < end).length, isUser: true };
-                });
-                const minMem = mems[0]; const maxMem = mems[mems.length - 1];
-                const memStep = Math.max(1, Math.ceil((maxMem - minMem) / 10));
-                const memoryDist = Array.from({ length: 10 }, (_, i) => {
-                    const start = minMem + i * memStep; const end = start + memStep;
-                    return { label: `${Math.round(start)}-${Math.round(end)}KB`, count: mems.filter((m: number) => m >= start && m < end).length, isUser: true };
-                });
-                setStats({ totalSubmissions: accepted.length, runtimeDistribution: runtimeDist, memoryDistribution: memoryDist, userStats: null });
-            } else {
-                setStats(null);
+                return;
             }
+
+            // Fallback: no DB data either
+            setStats(null);
         } catch {
             setStats(null);
         }
         setStatsLoading(false);
-    }, [contestId, problemId, cfHandle, handleLoading]);
+    }, [contestId, problemId]);
 
-    // Background prefetch analytics when CF handle is available
+    // Background prefetch analytics
     useEffect(() => {
-        if (!handleLoading && cfHandle) {
-            fetchAnalyticsData();
-        }
-    }, [cfHandle, handleLoading, fetchAnalyticsData]);
+        fetchAnalyticsData();
+    }, [fetchAnalyticsData]);
 
     // ─── Submissions ───
     const [submissions, setSubmissions] = useState<any[]>([]);
@@ -429,16 +424,23 @@ function MirrorUI({
             // 1. Run Tests: Ctrl + '
             if (e.ctrlKey && e.key === "'") {
                 e.preventDefault();
-                if (!submitting) runTests();
+                if (!submitting) {
+                    track({ action: 'code_run', contestId, problemId, sheetId, metadata: { trigger: 'keyboard', language } });
+                    runTests();
+                }
             }
             // 2. Submit: Ctrl + Enter
             else if (e.ctrlKey && e.key === "Enter") {
                 e.preventDefault();
-                if (!submitting && code.trim()) handleSubmit();
+                if (!submitting && code.trim()) {
+                    track({ action: 'code_submit', contestId, problemId, sheetId, metadata: { trigger: 'keyboard', language, codeLength: code.length } });
+                    handleSubmit();
+                }
             }
             // 3. Close Tab (Back): Alt + W
             else if (e.altKey && e.key.toLowerCase() === "w") {
                 e.preventDefault();
+                track({ action: 'page_leave', contestId, problemId, sheetId });
                 router.push(navigationBaseUrl);
             }
             // 4. Maximize / Exit Maximize Panel: Alt + +
@@ -449,6 +451,7 @@ function MirrorUI({
             // 5. Full Screen: Alt + F
             else if (e.altKey && e.key.toLowerCase() === "f") {
                 e.preventDefault();
+                track({ action: 'fullscreen_toggle', contestId, problemId });
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().catch(err => {
                         console.error(`Error attempting to enable full-screen mode: ${err.message}`);
@@ -460,29 +463,32 @@ function MirrorUI({
             // 6. Settings: Alt + S
             else if (e.altKey && e.key.toLowerCase() === "s") {
                 e.preventDefault();
-                // We'll use a custom event or a store to trigger this
+                track({ action: 'settings_open', contestId, problemId });
                 window.dispatchEvent(new CustomEvent('verdict:toggle-settings'));
             }
             // 7. Notes: Alt + N
             else if (e.altKey && e.key.toLowerCase() === "n") {
                 e.preventDefault();
+                track({ action: 'notes_open', contestId, problemId, sheetId });
                 setShowNotes(prev => !prev);
             }
             // 8. Problem List: Alt + P
             else if (e.altKey && e.key.toLowerCase() === "p") {
                 e.preventDefault();
+                track({ action: 'drawer_open', contestId, problemId, sheetId });
                 setIsDrawerOpen(prev => !prev);
             }
             // 9. Export Snippet: Alt + G
             else if (e.altKey && e.key.toLowerCase() === "g") {
                 e.preventDefault();
+                track({ action: 'export_snippet', contestId, problemId });
                 window.dispatchEvent(new CustomEvent('verdict:toggle-export'));
             }
         };
 
         window.addEventListener("keydown", handleGlobalKeyDown);
         return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-    }, [submitting, code, runTests, handleSubmit, navigationBaseUrl, router, isTestPanelVisible]);
+    }, [submitting, code, runTests, handleSubmit, navigationBaseUrl, router, isTestPanelVisible, track, contestId, problemId, sheetId, language]);
 
     // Fallback loading
     if (loading || !problem || !cfData) {
@@ -504,10 +510,37 @@ function MirrorUI({
 
     // ─── Stable callbacks for memoized children ───
     const noopAnalyze = useCallback(() => {}, []);
-    const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
+    const openDrawer = useCallback(() => {
+        track({ action: 'drawer_open', contestId, problemId, sheetId });
+        setIsDrawerOpen(true);
+    }, [track, contestId, problemId, sheetId]);
     const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
     const closeModal = useCallback(() => setSelectedSubId(null), []);
     const restoreCode = useCallback((newCode: string) => setCode(newCode), [setCode]);
+    const trackedSetShowNotes = useCallback((show: boolean) => {
+        if (show) track({ action: 'notes_open', contestId, problemId, sheetId });
+        setShowNotes(show);
+    }, [track, contestId, problemId, sheetId]);
+    const trackedOnViewCode = useCallback((id: number) => {
+        track({ action: 'submission_view', contestId, problemId, sheetId, metadata: { submissionId: id } });
+        setSelectedSubId(id);
+    }, [track, contestId, problemId, sheetId]);
+    const trackedSetLanguage = useCallback((lang: string) => {
+        track({ action: 'language_change', contestId, problemId, metadata: { from: language, to: lang } });
+        setLanguage(lang);
+    }, [track, contestId, problemId, language, setLanguage]);
+    const trackedOnSubmit = useCallback(() => {
+        track({ action: 'code_submit', contestId, problemId, sheetId, metadata: { trigger: 'button', language, codeLength: code.length } });
+        handleSubmit();
+    }, [track, contestId, problemId, sheetId, language, code.length, handleSubmit]);
+    const trackedOnRunTests = useCallback(() => {
+        track({ action: 'code_run', contestId, problemId, sheetId, metadata: { trigger: 'button', language } });
+        runTests();
+    }, [track, contestId, problemId, sheetId, language, runTests]);
+    const trackedOnHandleSave = useCallback((handle: string) => {
+        track({ action: 'handle_save', contestId, problemId, metadata: { handle } });
+        setCfHandle(handle);
+    }, [track, contestId, problemId, setCfHandle]);
 
     return (
         <ExtensionGate>
@@ -537,19 +570,19 @@ function MirrorUI({
                     onToggleSidebar={openDrawer}
                     onOpenDrawer={openDrawer}
                     sheetProblems={sheetProblems}
-                    onSubmit={handleSubmit}
-                    onRunTests={runTests}
+                    onSubmit={trackedOnSubmit}
+                    onRunTests={trackedOnRunTests}
                     submitting={submitting}
                     activeTab={activeTab}
-                    setActiveTab={setActiveTab}
+                    setActiveTab={trackedSetActiveTab}
                     showNotes={showNotes}
-                    setShowNotes={setShowNotes}
+                    setShowNotes={trackedSetShowNotes}
                 />
 
                 <div ref={containerRef} className="flex-1 flex overflow-hidden">
                     <ProblemLeftPanel
                         activeTab={activeTab}
-                        setActiveTab={setActiveTab}
+                        setActiveTab={trackedSetActiveTab}
                         isWhiteboardExpanded={isWhiteboardExpanded}
                         setIsWhiteboardExpanded={handleSetWhiteboardExpanded}
                         cfData={cfData}
@@ -569,14 +602,14 @@ function MirrorUI({
                         mobileView={mobileView}
                         cfHandle={cfHandle}
                         handleLoading={handleLoading}
-                        onHandleSave={setCfHandle}
-                        onViewCode={setSelectedSubId}
+                        onHandleSave={trackedOnHandleSave}
+                        onViewCode={trackedOnViewCode}
                         sheetSlug={sheetSlug}
                         levelSlug={levelSlug}
                         urlType={urlType}
                         groupId={groupId}
                         showNotes={showNotes}
-                        setShowNotes={setShowNotes}
+                        setShowNotes={trackedSetShowNotes}
                     />
 
                     {/* Panel Resizer */}
@@ -591,8 +624,8 @@ function MirrorUI({
                         code={code}
                         setCode={setCode}
                         submitting={submitting}
-                        onSubmit={handleSubmit}
-                        onRunTests={runTests}
+                        onSubmit={trackedOnSubmit}
+                        onRunTests={trackedOnRunTests}
                         handleEditorDidMount={handleEditorDidMount}
                         isTestPanelVisible={isTestPanelVisible}
                         setIsTestPanelVisible={setIsTestPanelVisible}
@@ -601,7 +634,7 @@ function MirrorUI({
                         cfStatus={cfStatus}
                         mobileView={mobileView}
                         language={language}
-                        setLanguage={setLanguage}
+                        setLanguage={trackedSetLanguage}
                         contestId={contestId}
                         problemId={problemId}
                         testPanelActiveTab={testPanelActiveTab}
