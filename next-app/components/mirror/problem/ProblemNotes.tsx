@@ -39,11 +39,13 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
         fetchNotes();
     }, [contestId, problemIndex]);
 
-    // Auto-save logic (debounced)
+    // Auto-save logic (debounced) — uses abort flag to prevent cross-problem saves
     useEffect(() => {
         if (isLoading) return;
+        let cancelled = false;
 
         const timer = setTimeout(async () => {
+            if (cancelled) return;
             setIsSaving(true);
             try {
                 const res = await fetch('/api/user/notes', {
@@ -51,17 +53,17 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contestId, problemIndex, content })
                 });
-                if (res.ok) {
+                if (!cancelled && res.ok) {
                     setLastSaved(new Date());
                 }
             } catch (error) {
                 console.error('Auto-save failed:', error);
             } finally {
-                setTimeout(() => setIsSaving(false), 500);
+                if (!cancelled) setTimeout(() => setIsSaving(false), 500);
             }
         }, 1500);
 
-        return () => clearTimeout(timer);
+        return () => { cancelled = true; clearTimeout(timer); };
     }, [content, contestId, problemIndex, isLoading]);
 
     const handleToolbarAction = (type: string) => {
