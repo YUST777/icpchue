@@ -1,7 +1,11 @@
 """
-ICPC HUE — Scrapling Bridge v6
+ICPC HUE — Scrapling Bridge v7
 Async job-based submission: POST /submit returns immediately with a jobId,
 frontend polls GET /submit-result/{jobId} for the result.
+
+v7: Uses Xvfb + xdotool for OS-level Turnstile checkbox clicks.
+     Browser runs headed on virtual display :99 so Cloudflare's CDP
+     screenX/screenY detection is bypassed.
 """
 
 import re
@@ -10,13 +14,18 @@ import logging
 import uuid
 import asyncio
 import anyio
+import subprocess
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 from scrapling.fetchers import StealthySession, Fetcher
 
-app = FastAPI(title="ICPC HUE Scrapling Bridge", version="6.0.0")
+# Ensure DISPLAY is set for xdotool
+os.environ.setdefault("DISPLAY", ":99")
+
+app = FastAPI(title="ICPC HUE Scrapling Bridge", version="7.0.0")
 logger = logging.getLogger("scrapling-bridge")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -187,15 +196,36 @@ async def health():
 # ═════════════════════════════════════════════════════════════════════
 # SUBMIT — fresh StealthySession per request
 # ═════════════════════════════════════════════════════════════════════
-def _wait_for_turnstile_token(page, session, timeout_s=35):
+def _xdotool_click(x, y):
+    """
+    Perform an OS-level mouse click via xdotool on the Xvfb display.
+    This produces real screenX/screenY coordinates that pass Cloudflare's
+    CDP detection (which checks if coordinates are relative to iframe vs main frame).
+    """
+    try:
+        # Move mouse with slight human-like jitter
+        subprocess.run(["xdotool", "mousemove", "--", str(int(x)), str(int(y))],
+                       timeout=3, capture_output=True)
+        time.sleep(0.05 + (time.monotonic() % 0.1))  # tiny random pause
+        subprocess.run(["xdotool", "click", "1"],
+                       timeout=3, capture_output=True)
+        return True
+    except Exception as e:
+        logger.warning(f"  xdotool click failed: {e}")
+        return False
+
+
+def _wait_for_turnstile_token(page, session, timeout_s=45):
     """
     Wait for the embedded Turnstile to produce a token.
     
-    Strategy:
+    v7 Strategy — uses xdotool for OS-level clicks:
     1. Wait for the Turnstile iframe to load
     2. Let it auto-solve first (some Turnstiles auto-complete)
-    3. Try multiple approaches: JS API execute, _cloudflare_solver, manual click
-    4. Poll for the token for up to timeout_s total
+    3. Try Scrapling's _cloudflare_solver
+    4. Try JS API reset/execute
+    5. Use xdotool for real OS-level click on the checkbox
+    6. Poll for the token
     """
     from random import randint
     
@@ -229,7 +259,7 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
             return True
         page.wait_for_timeout(500)
     
-    # Phase 2: Try Scrapling's _cloudflare_solver first — it knows how to handle Turnstile
+    # Phase 2: Try Scrapling's _cloudflare_solver first
     logger.info(f"  trying _cloudflare_solver ({time.monotonic()-t0:.1f}s)")
     try:
         session._cloudflare_solver(page)
@@ -244,7 +274,7 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
             return True
         page.wait_for_timeout(500)
     
-    # Phase 3: Try JS API — turnstile.execute() or turnstile.reset() + wait
+    # Phase 3: Try JS API — turnstile.reset() + turnstile.execute()
     logger.info(f"  trying JS turnstile API ({time.monotonic()-t0:.1f}s)")
     page.evaluate("""() => {
         if (window.turnstile) {
@@ -260,19 +290,26 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
             return True
         page.wait_for_timeout(500)
     
-    # Phase 4: Manual click on the iframe checkbox
-    try:
-        iframe_el = ts_iframe.frame_element()
-        box = iframe_el.bounding_box()
-        if box:
-            click_x = box["x"] + randint(26, 28)
-            click_y = box["y"] + randint(25, 27)
-            logger.info(f"  clicking turnstile checkbox at ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
-            page.mouse.click(click_x, click_y, delay=randint(100, 200), button="left")
-    except Exception as e:
-        logger.warning(f"  turnstile click error: {e}")
+    # Phase 4: xdotool OS-level click on the Turnstile checkbox
+    # This bypasses Cloudflare's CDP screenX/screenY detection
+    def _do_xdotool_click():
+        try:
+            iframe_el = ts_iframe.frame_element()
+            box = iframe_el.bounding_box()
+            if box:
+                # The checkbox is at roughly (27, 26) inside the iframe
+                click_x = box["x"] + randint(24, 30)
+                click_y = box["y"] + randint(23, 29)
+                logger.info(f"  xdotool clicking turnstile at ({click_x:.0f}, {click_y:.0f}) ({time.monotonic()-t0:.1f}s)")
+                _xdotool_click(click_x, click_y)
+                return True
+        except Exception as e:
+            logger.warning(f"  xdotool turnstile click error: {e}")
+        return False
     
-    # Phase 5: Final polling — wait for token
+    _do_xdotool_click()
+    
+    # Phase 5: Poll for token after xdotool click, with re-clicks every 8s
     elapsed = time.monotonic() - t0
     remaining = timeout_s - elapsed
     polls = int(remaining / 0.5)
@@ -280,22 +317,33 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
     for i in range(max(polls, 1)):
         token = page.evaluate(JS_GET_TOKEN)
         if token:
-            logger.info(f"  ✓ turnstile token ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
+            logger.info(f"  ✓ turnstile token via xdotool ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
             return True
         page.wait_for_timeout(500)
         
         # Every 8s, try clicking again
         if i > 0 and i % 16 == 0:
-            try:
-                iframe_el = ts_iframe.frame_element()
-                box = iframe_el.bounding_box()
-                if box:
-                    click_x = box["x"] + randint(26, 28)
-                    click_y = box["y"] + randint(25, 27)
-                    logger.info(f"  re-clicking turnstile ({time.monotonic()-t0:.1f}s)")
-                    page.mouse.click(click_x, click_y, delay=randint(100, 200), button="left")
-            except Exception:
-                pass
+            logger.info(f"  re-clicking turnstile via xdotool ({time.monotonic()-t0:.1f}s)")
+            _do_xdotool_click()
+    
+    # Phase 6: Last resort — try CDP click (fallback if xdotool somehow fails)
+    logger.warning(f"  xdotool didn't work, trying CDP click as fallback ({time.monotonic()-t0:.1f}s)")
+    try:
+        iframe_el = ts_iframe.frame_element()
+        box = iframe_el.bounding_box()
+        if box:
+            click_x = box["x"] + randint(26, 28)
+            click_y = box["y"] + randint(25, 27)
+            page.mouse.click(click_x, click_y, delay=randint(100, 200), button="left")
+    except Exception:
+        pass
+    
+    for _ in range(10):
+        token = page.evaluate(JS_GET_TOKEN)
+        if token:
+            logger.info(f"  ✓ turnstile token via CDP fallback ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
+            return True
+        page.wait_for_timeout(500)
     
     logger.warning(f"  ✗ turnstile token empty after {time.monotonic()-t0:.1f}s")
     return False
@@ -352,7 +400,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
     def do():
         t0 = time.monotonic()
         MAX_TOTAL = 150  # hard cap
-        with StealthySession(headless=True, solve_cloudflare=True, timeout=90000, cookies=cookies) as s:
+        with StealthySession(headless=False, solve_cloudflare=True, timeout=90000, cookies=cookies) as s:
             page = s.context.new_page()
             try:
                 # 1. Navigate to submit page (with retry for Cloudflare)
