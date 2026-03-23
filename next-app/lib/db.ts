@@ -24,6 +24,7 @@ export function getPool(): pg.Pool {
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 10000,
+            query_timeout: 15000, // Important to prevent "stuck in animation" if TCP drops
         });
     }
     return pool;

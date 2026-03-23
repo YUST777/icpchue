@@ -30,6 +30,22 @@ export function useVerticalResize({
                 containerRef.current.style.setProperty('--test-panel-h', `${height}%`);
             }
         }
+        // Async: fetch from DB (cross-device sync)
+        fetch(`/api/user/preferences?keys=${storageKey}`, { credentials: 'include' })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.prefs?.[storageKey]) {
+                    const h = parseFloat(data.prefs[storageKey]);
+                    if (!isNaN(h) && h >= minHeight && h <= maxHeight) {
+                        lastHeight.current = h;
+                        if (containerRef.current) {
+                            containerRef.current.style.setProperty('--test-panel-h', `${h}%`);
+                        }
+                        localStorage.setItem(storageKey, String(h));
+                    }
+                }
+            })
+            .catch(() => {});
     }, [containerRef, minHeight, maxHeight, storageKey]);
 
     const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -70,6 +86,13 @@ export function useVerticalResize({
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
             localStorage.setItem(storageKey, lastHeight.current.toString());
+            // Fire-and-forget DB save
+            fetch('/api/user/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ prefs: { [storageKey]: lastHeight.current.toString() } }),
+            }).catch(() => {});
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
 

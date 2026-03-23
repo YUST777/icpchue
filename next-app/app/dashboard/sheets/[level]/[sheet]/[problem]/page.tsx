@@ -583,7 +583,7 @@ function MirrorUI({
                     setShowNotes={trackedSetShowNotes}
                 />
 
-                <div ref={containerRef} className="flex-1 flex overflow-hidden">
+                <div ref={containerRef} className="relative flex-1 flex overflow-hidden">
                     <ProblemLeftPanel
                         activeTab={activeTab}
                         setActiveTab={trackedSetActiveTab}
