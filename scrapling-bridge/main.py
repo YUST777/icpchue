@@ -221,8 +221,8 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
     
     logger.info(f"  turnstile iframe loaded ({time.monotonic()-t0:.1f}s)")
     
-    # Phase 1: Wait a few seconds for auto-solve
-    for _ in range(6):  # 3 seconds
+    # Phase 1: Wait briefly for auto-solve
+    for _ in range(3):  # 1.5 seconds
         token = page.evaluate(JS_GET_TOKEN)
         if token:
             logger.info(f"  ✓ turnstile auto-solved ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
@@ -237,7 +237,7 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
         logger.warning(f"  _cloudflare_solver: {e}")
     
     # Check if solver got the token
-    for _ in range(10):  # 5 seconds
+    for _ in range(6):  # 3 seconds
         token = page.evaluate(JS_GET_TOKEN)
         if token:
             logger.info(f"  ✓ turnstile token via solver ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
@@ -253,7 +253,7 @@ def _wait_for_turnstile_token(page, session, timeout_s=35):
         }
     }""")
     
-    for _ in range(10):  # 5 seconds
+    for _ in range(6):  # 3 seconds
         token = page.evaluate(JS_GET_TOKEN)
         if token:
             logger.info(f"  ✓ turnstile token via JS API ({len(token)} chars, {time.monotonic()-t0:.1f}s)")
@@ -351,25 +351,25 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
 
     def do():
         t0 = time.monotonic()
-        MAX_TOTAL = 150  # hard cap
-        with StealthySession(headless=True, solve_cloudflare=True, timeout=90000, cookies=cookies) as s:
+        MAX_TOTAL = 90  # hard cap
+        with StealthySession(headless=True, solve_cloudflare=True, timeout=60000, cookies=cookies) as s:
             page = s.context.new_page()
             try:
                 # 1. Navigate to submit page (with retry for Cloudflare)
                 for nav_attempt in range(4):
                     logger.info(f"→ {submit_pg}" + (f" (retry {nav_attempt})" if nav_attempt else ""))
                     try:
-                        page.goto(submit_pg, wait_until="domcontentloaded", timeout=45000)
+                        page.goto(submit_pg, wait_until="domcontentloaded", timeout=30000)
                     except Exception as nav_err:
                         logger.warning(f"  nav attempt {nav_attempt} failed: {nav_err}")
                         if nav_attempt < 3:
-                            page.wait_for_timeout(3000)
+                            page.wait_for_timeout(1500)
                             continue
                         else:
                             return {"success": False, "error": f"Could not reach Codeforces (timeout). Try again."}
                     
-                    # Wait a bit for any JS redirects
-                    page.wait_for_timeout(1000)
+                    # Quick check for JS redirects
+                    page.wait_for_timeout(300)
 
                     if "/enter" in page.url or "/login" in page.url:
                         return {"success": False, "error": "NOT_LOGGED_IN"}
@@ -384,7 +384,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                         logger.info("  Cloudflare full-page block, solving...")
                         try:
                             s._cloudflare_solver(page)
-                            page.wait_for_timeout(2000)
+                            page.wait_for_timeout(1000)
                         except Exception as cf_err:
                             logger.warning(f"  Cloudflare solver: {cf_err}")
                     elif has_form:
@@ -398,7 +398,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                         break  # We're on the submit page
                     
                     logger.warning(f"  redirected to {current_url}, retrying...")
-                    page.wait_for_timeout(2000)
+                    page.wait_for_timeout(1000)
                 else:
                     # All retries exhausted
                     logger.error(f"  could not reach submit page after 3 attempts, ended at {page.url}")
@@ -417,7 +417,7 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 form_found = False
                 for form_attempt in range(3):
                     try:
-                        page.wait_for_selector("#sourceCodeTextarea", timeout=30000)
+                        page.wait_for_selector("#sourceCodeTextarea", timeout=15000)
                         form_found = True
                         break
                     except Exception:
@@ -487,6 +487,32 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 post_url = page.url
                 logger.info(f"  post-submit url: {post_url}")
 
+                # 5b. Handle the adcd1e secondary bot check
+                if "adcd1e=" in post_url or "csrf_token=" in post_url:
+                    logger.info("  detected CF secondary bot challenge (adcd1e / csrf_token redirect). Form is cleared but anti-bot cookie is now set.")
+                    logger.info("  refilling and re-submitting form immediately...")
+                    
+                    page.wait_for_timeout(500)
+                    page.evaluate(JS_FILL, {"prob": req.problemIndex, "lang": str(lang_id), "code": req.code})
+                    
+                    # We usually don't need a NEW turnstile token if the challenge just passed, but solving again doesn't hurt if required.
+                    # By empirical testing, just a click is enough.
+                    try:
+                        with page.expect_navigation(timeout=15000, wait_until="domcontentloaded"):
+                            page.evaluate("""() => {
+                                const btn = document.querySelector("#singlePageSubmitButton");
+                                if (btn) btn.click();
+                                else {
+                                    const f = document.querySelector('form.submit-form');
+                                    if (f) f.submit();
+                                }
+                            }""")
+                    except Exception as re_err:
+                        logger.warning(f"  resubmit nav err: {re_err}")
+                    
+                    post_url = page.url
+                    logger.info(f"  post-resubmit url: {post_url}")
+
                 # 6. Check for errors
                 err = page.evaluate(JS_ERR)
                 if err == "DUPLICATE":
@@ -501,15 +527,15 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                     return {"success": True, "submissionId": sub_id}
 
                 # 8. Still on submit page = submission failed (no token)
-                if "/submit" in page.url:
+                if "/submit" in page.url or "sourceCodeTextarea" in page.content():
                     logger.warning(f"  still on submit page after submit — token was likely rejected")
-                    # Navigate to /my to check if it actually went through
-                    page.goto(my_pg, wait_until="domcontentloaded")
+                    # Navigate to /my with a very short timeout to un-stick the browser
                     try:
-                        page.wait_for_selector("tr[data-submission-id]", timeout=8000)
+                        page.goto(my_pg, wait_until="domcontentloaded", timeout=10000)
+                        page.wait_for_selector("tr[data-submission-id]", timeout=5000)
                         sub_id = page.evaluate(JS_SUB_ID)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"  fallback check for /my failed: {e}")
 
                 elapsed = time.monotonic() - t0
                 logger.info(f"  done id={sub_id} ({elapsed:.1f}s)")

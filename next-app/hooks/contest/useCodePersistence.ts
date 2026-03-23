@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TEMPLATES } from '@/lib/utils/codeTemplates';
 
 const DEFAULT_LANG = 'cpp';
+const DB_SAVE_DEBOUNCE = 2000; // save to DB every 2s of inactivity
 
 interface UseCodePersistenceParams {
     contestId: string;
@@ -16,82 +17,152 @@ interface UseCodePersistenceReturn {
 }
 
 export function useCodePersistence({ contestId, problemId }: UseCodePersistenceParams): UseCodePersistenceReturn {
-    // Initial state (will be hydrated from storage)
     const [code, setCode] = useState(TEMPLATES[DEFAULT_LANG]);
     const [language, setLanguage] = useState(DEFAULT_LANG);
     const [isHydrated, setIsHydrated] = useState(false);
+    const dbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSavedRef = useRef<string>('');
+    // In-memory cache of code per language (for fast language switching within a session)
+    const codeByLangRef = useRef<Record<string, string>>({});
 
-    // Helper to get safe keys based on IDs
-    const getKeys = useCallback((lang: string) => {
-        const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
-        const safeProblemId = Array.isArray(problemId) ? problemId[0] : problemId;
-        return {
-            codeKey: `verdict-code-${safeContestId}-${safeProblemId}-${lang}`,
-            langKey: `verdict-lang-${safeContestId}-${safeProblemId}`
-        };
+    // Save code to DB (debounced, non-blocking)
+    const saveToDb = useCallback((codeVal: string, lang: string) => {
+        if (!contestId || !problemId) return;
+        const key = `${contestId}:${problemId}:${lang}:${codeVal}`;
+        if (key === lastSavedRef.current) return;
+        lastSavedRef.current = key;
+
+        fetch('/api/user/code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                contestId,
+                problemId,
+                language: lang,
+                code: codeVal,
+                activeLanguage: lang,
+            }),
+            keepalive: true,
+        }).catch(() => {});
     }, [contestId, problemId]);
 
-    // Hydrate state on mount
+    // Schedule a debounced DB save
+    const scheduleSave = useCallback((codeVal: string, lang: string) => {
+        if (dbTimerRef.current) clearTimeout(dbTimerRef.current);
+        dbTimerRef.current = setTimeout(() => saveToDb(codeVal, lang), DB_SAVE_DEBOUNCE);
+    }, [saveToDb]);
+
+    // Hydrate from DB only — no localStorage
     useEffect(() => {
         if (!contestId || !problemId) return;
 
-        const { langKey } = getKeys(DEFAULT_LANG);
-        const savedLang = localStorage.getItem(langKey) || DEFAULT_LANG;
-        const { codeKey } = getKeys(savedLang);
-        const savedCode = localStorage.getItem(codeKey);
+        setIsHydrated(false);
+        codeByLangRef.current = {};
 
-        setLanguage(savedLang);
-        setCode(savedCode || TEMPLATES[savedLang] || '');
-        setIsHydrated(true);
-    }, [contestId, problemId, getKeys]);
+        // Migrate: clean up old localStorage keys for this problem
+        try {
+            const keys = Object.keys(localStorage);
+            const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
+            const safeProblemId = Array.isArray(problemId) ? problemId[0] : problemId;
+            for (const key of keys) {
+                if (
+                    key.startsWith(`verdict-code-${safeContestId}-${safeProblemId}-`) ||
+                    key === `verdict-lang-${safeContestId}-${safeProblemId}`
+                ) {
+                    localStorage.removeItem(key);
+                }
+            }
+        } catch { /* ignore */ }
 
-    // Save code whenever it changes (debounced by React effect cycle, could be optimized)
+        // Fetch from DB
+        fetch(`/api/user/code?contestId=${contestId}&problemId=${problemId}`, {
+            credentials: 'include',
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) {
+                    setIsHydrated(true);
+                    return;
+                }
+
+                const dbLang = data.activeLanguage || DEFAULT_LANG;
+
+                // Populate in-memory cache from all DB entries
+                if (data.codeByLang) {
+                    for (const [lang, entry] of Object.entries(data.codeByLang)) {
+                        const e = entry as { code: string; updatedAt: string };
+                        if (e.code) codeByLangRef.current[lang] = e.code;
+                    }
+                }
+
+                const dbCode = codeByLangRef.current[dbLang];
+                setLanguage(dbLang);
+                setCode(dbCode || TEMPLATES[dbLang] || '');
+                setIsHydrated(true);
+            })
+            .catch(() => {
+                setIsHydrated(true);
+            });
+    }, [contestId, problemId]);
+
+    // Schedule DB save on code changes
     useEffect(() => {
         if (!isHydrated || !contestId || !problemId) return;
+        // Update in-memory cache
+        codeByLangRef.current[language] = code;
+        scheduleSave(code, language);
+    }, [code, language, contestId, problemId, isHydrated, scheduleSave]);
 
-        const { codeKey } = getKeys(language);
-        localStorage.setItem(codeKey, code);
-    }, [code, language, contestId, problemId, isHydrated, getKeys]);
-
-    // Save active language whenever it changes
+    // Flush to DB on unmount
     useEffect(() => {
-        if (!isHydrated || !contestId || !problemId) return;
+        return () => {
+            if (dbTimerRef.current) {
+                clearTimeout(dbTimerRef.current);
+                dbTimerRef.current = null;
+            }
+        };
+    }, []);
 
-        const { langKey } = getKeys(language);
-        localStorage.setItem(langKey, language);
-    }, [language, contestId, problemId, isHydrated, getKeys]);
+    // Flush on beforeunload via sendBeacon
+    useEffect(() => {
+        const handleUnload = () => {
+            if (dbTimerRef.current) {
+                clearTimeout(dbTimerRef.current);
+            }
+            if (contestId && problemId) {
+                try {
+                    const blob = new Blob(
+                        [JSON.stringify({ contestId, problemId, language, code, activeLanguage: language })],
+                        { type: 'application/json' }
+                    );
+                    navigator.sendBeacon('/api/user/code', blob);
+                } catch {
+                    fetch('/api/user/code', {
+                        method: 'POST',
+                        body: JSON.stringify({ contestId, problemId, language, code, activeLanguage: language }),
+                        keepalive: true,
+                        headers: { 'Content-Type': 'application/json' },
+                    }).catch(() => {});
+                }
+            }
+        };
+        window.addEventListener('beforeunload', handleUnload);
+        return () => window.removeEventListener('beforeunload', handleUnload);
+    }, [contestId, problemId, language, code]);
 
-    // Custom setLanguage that handles code switching
+    // Language switch: load from in-memory cache or DB cache, fall back to template
     const handleSetLanguage = useCallback((newLang: string) => {
         if (newLang === language) return;
-
-        // 1. Save current code (handled by effect, but let's ensure immediate consistency if needed)
-        // Actually, the effect will run on unmount/re-render, so "current" code state is what we have.
-        // But we are switching state now.
-        // We need to load the *new* language's code.
-
-        const { codeKey } = getKeys(newLang);
-        const savedCode = localStorage.getItem(codeKey);
-
-        // 2. Set new code -> stored code or template
-        // 3. Set new language
-
-        // Important: Order matters. If we set language first, the effect [code, language] might run with OLD code and NEW language?
-        // No, multiple state updates in event handler are batched in React 18.
-        // But to be safe against race conditions in effects:
-        // The effect [code, language] has `code` and `language` as dependencies.
-        // If we change both, it runs once with new values.
-        // So we are safe.
-
-        setCode(savedCode || TEMPLATES[newLang] || '');
+        // Save current code to in-memory cache before switching
+        codeByLangRef.current[language] = code;
+        // Flush current language's code to DB immediately
+        saveToDb(code, language);
+        // Load new language's code from in-memory cache
+        const cachedCode = codeByLangRef.current[newLang];
+        setCode(cachedCode || TEMPLATES[newLang] || '');
         setLanguage(newLang);
-    }, [language, getKeys]);
+    }, [language, code, saveToDb]);
 
-    return {
-        code,
-        setCode,
-        language,
-        setLanguage: handleSetLanguage
-    };
+    return { code, setCode, language, setLanguage: handleSetLanguage };
 }
-

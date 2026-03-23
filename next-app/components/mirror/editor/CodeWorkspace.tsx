@@ -4,9 +4,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES, TEMPLATES } from './EditorConstants';
-import GradiaExportModal from '../GradiaExportModal';
+import dynamic from 'next/dynamic';
 // @ts-ignore — wasm module may not have type declarations
 import init, { format } from "@wasm-fmt/clang-format/web";
+
+const GradiaExportModal = dynamic(() => import('../GradiaExportModal'), {
+    ssr: false,
+});
 
 const DEFAULT_PANEL_PERCENT = 45;
 const MAX_PANEL_PERCENT = 75;
@@ -198,10 +202,41 @@ export default function CodeWorkspace({
         setIsAnimating(false);
         document.body.style.cursor = 'row-resize';
         document.body.style.userSelect = 'none';
-    }, []);
+        
+        // Add a transparent overlay to prevent Monaco from stealing pointer events
+        const overlay = document.createElement('div');
+        overlay.id = 'resize-vertical-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;cursor:row-resize;';
+        document.body.appendChild(overlay);
+
+        // Create the ghost resizer line
+        if (editorContainerRef.current) {
+            const ghost = document.createElement('div');
+            ghost.id = 'ghost-vertical-resizer';
+            
+            // Calculate current height percentage for initial ghost position
+            const currentHeightPct = panelContentPercent === 0 
+                ? (PANEL_TAB_BAR_HEIGHT / editorContainerRef.current.getBoundingClientRect().height) * 100
+                : panelContentPercent + (PANEL_TAB_BAR_HEIGHT / editorContainerRef.current.getBoundingClientRect().height) * 100;
+                
+            ghost.style.cssText = `
+                position: absolute;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background-color: #E8C15A;
+                z-index: 9999;
+                transform: translateY(50%);
+                bottom: ${currentHeightPct}%;
+            `;
+            editorContainerRef.current.appendChild(ghost);
+        }
+    }, [panelContentPercent]);
 
     useEffect(() => {
         let animationFrameId: number;
+        let ghostLine: HTMLDivElement | null = null;
+        let finalPercent: number | null = null;
 
         const handleVerticalMove = (e: MouseEvent | TouchEvent) => {
             if (!isResizingVertical || !editorContainerRef.current) return;
@@ -209,6 +244,11 @@ export default function CodeWorkspace({
 
             animationFrameId = requestAnimationFrame(() => {
                 if (!editorContainerRef.current) return;
+                
+                if (!ghostLine) {
+                    ghostLine = document.getElementById('ghost-vertical-resizer') as HTMLDivElement;
+                }
+                
                 let clientY: number;
                 if (typeof TouchEvent !== 'undefined' && e instanceof TouchEvent) {
                     clientY = e.touches[0].clientY;
@@ -220,14 +260,21 @@ export default function CodeWorkspace({
                 const totalHeight = containerRect.height;
                 const distFromBottom = containerRect.bottom - clientY;
                 const tabBarFraction = (PANEL_TAB_BAR_HEIGHT / totalHeight) * 100;
-                const newPercent = ((distFromBottom / totalHeight) * 100) - tabBarFraction;
+                let newPercent = ((distFromBottom / totalHeight) * 100) - tabBarFraction;
 
                 if (newPercent <= SNAP_THRESHOLD) {
-                    setPanelContentPercent(0);
+                    newPercent = 0;
                 } else if (newPercent >= MAX_PANEL_PERCENT) {
-                    setPanelContentPercent(MAX_PANEL_PERCENT);
-                } else {
-                    setPanelContentPercent(newPercent);
+                    newPercent = MAX_PANEL_PERCENT;
+                }
+                
+                finalPercent = newPercent;
+                
+                if (ghostLine) {
+                    const visualBottom = newPercent === 0 
+                        ? tabBarFraction 
+                        : newPercent + tabBarFraction;
+                    ghostLine.style.bottom = `${visualBottom}%`;
                 }
             });
         };
@@ -236,10 +283,26 @@ export default function CodeWorkspace({
             setIsResizingVertical(false);
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
+            
+            const overlay = document.getElementById('resize-vertical-overlay');
+            if (overlay) overlay.remove();
+            
+            if (ghostLine) {
+                ghostLine.remove();
+                ghostLine = null;
+            } else {
+                const existingGhost = document.getElementById('ghost-vertical-resizer');
+                if (existingGhost) existingGhost.remove();
+            }
 
-            if (panelContentPercent > 0) {
-                savedHeightRef.current = panelContentPercent;
-                localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
+            // Apply the state only ONCE at the end of the drag to avoid expensive React reflows
+            if (finalPercent !== null) {
+                setPanelContentPercent(finalPercent);
+                if (finalPercent > 0) {
+                    savedHeightRef.current = finalPercent;
+                    localStorage.setItem('icpchue-layout-test-height', finalPercent.toString());
+                }
+                finalPercent = null;
             }
 
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -258,8 +321,10 @@ export default function CodeWorkspace({
             document.removeEventListener('touchmove', handleVerticalMove);
             document.removeEventListener('touchend', handleVerticalEnd);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            const existingGhost = document.getElementById('ghost-vertical-resizer');
+            if (existingGhost) existingGhost.remove();
         };
-    }, [isResizingVertical, panelContentPercent]);
+    }, [isResizingVertical]);
 
     // Double-click grip to toggle
     const handleGripDoubleClick = useCallback(() => {

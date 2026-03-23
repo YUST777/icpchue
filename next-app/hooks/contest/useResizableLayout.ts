@@ -23,25 +23,52 @@ export function useResizableLayout(): UseResizableLayoutReturn {
                 leftPanelRef.current.style.setProperty('--panel-width', `${width}%`);
             }
         }
+        // Async: fetch from DB (cross-device sync)
+        fetch('/api/user/preferences?keys=verdict-layout-width', { credentials: 'include' })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.prefs?.['verdict-layout-width']) {
+                    const w = parseFloat(data.prefs['verdict-layout-width']);
+                    if (!isNaN(w) && w >= 20 && w <= 80) {
+                        lastWidth.current = w;
+                        if (leftPanelRef.current) {
+                            leftPanelRef.current.style.setProperty('--panel-width', `${w}%`);
+                        }
+                        localStorage.setItem('verdict-layout-width', String(w));
+                    }
+                }
+            })
+            .catch(() => {});
     }, []);
 
-    // Single persistent listener approach — no state, no re-renders
+    // Ghost Resizer approach — zero layout reflow during drag
     useEffect(() => {
         let animationFrameId: number;
+        let ghostLine: HTMLDivElement | null = null;
 
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizingRef.current || !containerRef.current || !leftPanelRef.current) return;
+            if (!isResizingRef.current || !containerRef.current) return;
 
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             animationFrameId = requestAnimationFrame(() => {
-                if (!containerRef.current || !leftPanelRef.current) return;
-                const containerRect = containerRef.current.getBoundingClientRect();
-                const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-
-                if (newWidth >= 20 && newWidth <= 80) {
+                if (!containerRef.current) return;
+                
+                // Keep ghost line synced with mouse
+                if (!ghostLine) {
+                    ghostLine = document.getElementById('ghost-resizer') as HTMLDivElement;
+                }
+                
+                if (ghostLine) {
+                    const containerRect = containerRef.current.getBoundingClientRect();
+                    let newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+                    
+                    // Clamp widths
+                    if (newWidth < 20) newWidth = 20;
+                    if (newWidth > 80) newWidth = 80;
+                    
+                    ghostLine.style.left = `${newWidth}%`;
                     lastWidth.current = newWidth;
-                    leftPanelRef.current.style.setProperty('--panel-width', `${newWidth}%`);
                 }
             });
         };
@@ -49,12 +76,39 @@ export function useResizableLayout(): UseResizableLayoutReturn {
         const handleMouseUp = () => {
             if (!isResizingRef.current) return;
             isResizingRef.current = false;
+            
+            // Clean up global styles
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
-            // Remove the overlay that prevents iframe/editor stealing pointer events
+            
+            // Remove overlay and ghost line
             const overlay = document.getElementById('resize-overlay');
             if (overlay) overlay.remove();
+            
+            if (ghostLine) {
+                ghostLine.remove();
+                ghostLine = null;
+            } else {
+                const existingGhost = document.getElementById('ghost-resizer');
+                if (existingGhost) existingGhost.remove();
+            }
+
+            // Apply final width ONLY on mouseup (no reflow during drag!)
+            if (leftPanelRef.current) {
+                leftPanelRef.current.style.setProperty('--panel-width', `${lastWidth.current}%`);
+            }
+            
+            // Save state
             localStorage.setItem('verdict-layout-width', lastWidth.current.toString());
+            
+            // Fire-and-forget DB save
+            fetch('/api/user/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ prefs: { 'verdict-layout-width': lastWidth.current.toString() } }),
+            }).catch(() => {});
+            
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
         };
 
@@ -65,6 +119,10 @@ export function useResizableLayout(): UseResizableLayoutReturn {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            // Ensure cleanup
+            const existingGhost = document.getElementById('ghost-resizer');
+            if (existingGhost) existingGhost.remove();
         };
     }, []);
 
@@ -73,11 +131,29 @@ export function useResizableLayout(): UseResizableLayoutReturn {
         isResizingRef.current = true;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
+        
         // Add a transparent overlay to prevent Monaco editor / iframes from stealing mouse events
         const overlay = document.createElement('div');
         overlay.id = 'resize-overlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:col-resize;';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;cursor:col-resize;';
         document.body.appendChild(overlay);
+
+        // Create the ghost resizer line
+        if (containerRef.current) {
+            const ghost = document.createElement('div');
+            ghost.id = 'ghost-resizer';
+            ghost.style.cssText = `
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background-color: #E8C15A;
+                z-index: 9999;
+                transform: translateX(-50%);
+                left: ${lastWidth.current}%;
+            `;
+            containerRef.current.appendChild(ghost);
+        }
     }, []);
 
     return {

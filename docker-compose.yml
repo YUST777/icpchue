@@ -182,11 +182,14 @@ services:
       start_period: 60s
 
   # ===========================================
-  # NETDATA (Monitoring)
+  # NETDATA (Monitoring) — disabled to save ~11% CPU + 467MB RAM
+  # To re-enable: docker compose --profile monitoring up -d netdata
   # ===========================================
   netdata:
     image: netdata/netdata:stable
     container_name: icpchue-netdata
+    profiles:
+      - monitoring
     pid: host
     network_mode: host
     restart: unless-stopped
@@ -245,6 +248,11 @@ services:
       - icpchue-network
     restart: always
     logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     depends_on:
       - judge0-db
       - judge0-redis
@@ -287,7 +295,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '1.0'
           memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/health')\" || exit 1"]
