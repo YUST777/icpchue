@@ -40,7 +40,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useMapExpanded } from '@/context/MapExpandedContext'
 
 // --- Custom Node Component ---
-const IconNode = ({ data }: { data: { label: string; icon?: React.ComponentType<{ size?: number }> } }) => {
+const IconNode = ({ data }: { data: { label: string; title?: string; subline?: string; highlight?: boolean; icon?: React.ReactElement } }) => {
     return (
         <div className={`
             relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300
@@ -57,13 +57,13 @@ const IconNode = ({ data }: { data: { label: string; icon?: React.ComponentType<
                 p-2 rounded-lg
                 ${data.highlight ? 'bg-[#E8C15A] text-black' : 'bg-zinc-800 text-zinc-400'}
             `}>
-                {React.cloneElement(data.icon, { size: 18 })}
+                {data.icon && React.cloneElement(data.icon, { size: 18 } as Record<string, unknown>)}
             </div>
 
             {/* Text Content */}
             <div>
                 <div className={`text-xs font-bold ${data.highlight ? 'text-[#E8C15A]' : 'text-zinc-200'}`}>
-                    {data.title}
+                    {data.title || data.label}
                 </div>
                 <div className="text-[10px] text-zinc-500 font-medium tracking-wide uppercase">
                     {data.subline}

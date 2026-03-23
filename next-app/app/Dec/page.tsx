@@ -177,7 +177,7 @@ const SlideTech = ({ slide }: { slide: Slide }) => (
         <div className="text-[#A0A0A0] mb-8">{slide.subtitle}</div>
 
         <div className="space-y-4">
-            {slide.features.map((feat: string, idx: number) => (
+            {slide.features?.map((feat: string, idx: number) => (
                 <motion.div
                     key={idx}
                     initial={{ opacity: 0, y: 20 }}

@@ -5,7 +5,7 @@ import { StatsGrid } from "./StatsGrid";
 import { getDisplayName } from "@/lib/utils";
 
 interface IdentityCardProps {
-    user: { id?: number; email?: string; student_id?: string };
+    user?: { id?: number; email?: string; student_id?: string; role?: string };
     profile: UserProfile;
     profilePicture: string | null;
     uploadingPfp: boolean;

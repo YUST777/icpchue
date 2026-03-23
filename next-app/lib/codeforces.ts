@@ -113,7 +113,7 @@ function getSignedUrl(method: string, params: Record<string, string | number>): 
     const keys = Object.keys(allParams).sort();
 
     // Construct sorted query string
-    const sortedParams = keys.map(key => `${key}=${allParams[key]}`).join('&');
+    const sortedParams = keys.map(key => `${key}=${(allParams as Record<string, string | number>)[key]}`).join('&');
 
     // Signature Base: rand/methodName?param1=value1...#secret
     const signatureText = `${rand}/${method}?${sortedParams}#${API_SECRET}`;
