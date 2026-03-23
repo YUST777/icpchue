@@ -320,6 +320,21 @@ export function useCodeforcesSubmission({
             // ── Submission success → start polling for verdict ──
             const submissionId = apiData.submissionId ? Number(apiData.submissionId) : undefined;
 
+            // Save submitted code snapshot to DB for cheating detection
+            fetch('/api/user/code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    contestId,
+                    problemId,
+                    language: mapLanguageToExtension(language),
+                    code,
+                    isSubmitted: true,
+                }),
+                keepalive: true,
+            }).catch(() => {}); // fire and forget
+
             setCfStatus({
                 status: 'waiting',
                 submissionId
