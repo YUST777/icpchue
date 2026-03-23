@@ -130,7 +130,9 @@ export async function GET(req: NextRequest) {
                         cf.cf_submission_id,
                         cf.compilation_error,
                         cf.details,
-                        cf.test_number
+                        cf.test_number,
+                        cf.notes,
+                        cf.note_color
                     FROM cf_submissions cf
                     WHERE cf.user_id = $1
                       AND (${problemFilters})

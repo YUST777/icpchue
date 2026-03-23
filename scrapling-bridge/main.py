@@ -402,6 +402,12 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                 else:
                     # All retries exhausted
                     logger.error(f"  could not reach submit page after 3 attempts, ended at {page.url}")
+                    final_url = page.url
+                    if "/enter" in final_url or "/login" in final_url:
+                        return {"success": False, "error": "NOT_LOGGED_IN"}
+                    if final_url.rstrip("/") == "https://codeforces.com" or "/problemset" in final_url:
+                        return {"success": False, "error": "NOT_LOGGED_IN"}
+                    return {"success": False, "error": f"Could not reach submit page. Codeforces redirected to: {final_url}"}
 
                 # Re-check login after navigation
                 if "/enter" in page.url or "/login" in page.url:
@@ -437,6 +443,8 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                     page_url = page.url
                     page_title = page.title()
                     logger.warning(f"  form not found — url={page_url}, title={page_title}")
+                    if page_url.rstrip("/") == "https://codeforces.com" or page_title == "Codeforces":
+                        return {"success": False, "error": "NOT_LOGGED_IN"}
                     return {"success": False, "error": err or "FORM_NOT_FOUND"}
 
                 logger.info(f"  form ready ({time.monotonic()-t0:.1f}s)")
