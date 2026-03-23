@@ -1,8 +1,8 @@
 import { useRef, useEffect, useCallback } from 'react';
 
 interface UseResizableLayoutReturn {
-    containerRef: React.RefObject<HTMLDivElement>;
-    leftPanelRef: React.RefObject<HTMLDivElement>;
+    containerRef: React.RefObject<HTMLDivElement | null>;
+    leftPanelRef: React.RefObject<HTMLDivElement | null>;
     handleMouseDown: (e: React.MouseEvent) => void;
     lastWidth: React.MutableRefObject<number>;
 }

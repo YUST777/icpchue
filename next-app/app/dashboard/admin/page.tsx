@@ -136,7 +136,7 @@ function MetricChart({ title, value, data, color, unit }: {
                             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px' }}
                             labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}
                             itemStyle={{ color: c.stroke, fontWeight: 700, fontSize: 13 }}
-                            formatter={(v: number) => [v, title]}
+                            formatter={(v: unknown) => [Number(v), title]}
                         />
                         <Area type="monotone" dataKey="count" stroke={c.stroke} strokeWidth={2} fill={`url(#${gradientId})`} />
                     </AreaChart>
@@ -420,7 +420,7 @@ export default function AdminPage() {
                                                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip formatter={(v: number, name: string) => [`${v} (${((v / verdictTotal) * 100).toFixed(1)}%)`, name]} />
+                                                <Tooltip formatter={(v: unknown, name: unknown) => [`${Number(v)} (${((Number(v) / verdictTotal) * 100).toFixed(1)}%)`, String(name)]} />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>

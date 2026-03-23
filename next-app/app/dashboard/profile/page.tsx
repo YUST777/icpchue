@@ -264,7 +264,7 @@ export default function ProfilePage() {
                     {/* Top Row: Identity + Status */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <IdentityCard
-                            user={user}
+                            user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
                             profile={profile}
                             profilePicture={profilePicture}
                             uploadingPfp={uploadingPfp}
@@ -290,7 +290,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="w-full">
-                            <AchievementsWidget profile={profile} user={user} />
+                            <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>
                 </div>

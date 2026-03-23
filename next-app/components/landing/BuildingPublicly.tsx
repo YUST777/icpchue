@@ -32,7 +32,7 @@ import { useMapExpanded } from '@/context/MapExpandedContext'
 import 'reactflow/dist/style.css'
 
 // --- Custom Node Component ---
-const IconNode = memo(({ data }: { data: { label: string; icon?: React.ComponentType<{ size?: number }> } }) => {
+const IconNode = memo(({ data }: { data: { label: string; title?: string; subline?: string; icon?: React.ReactNode } }) => {
     return (
         <div className="flex flex-col items-center justify-center w-full h-full px-2 text-center">
             <Handle type="target" position={Position.Top} className="!bg-white/20 !w-1 !h-1" />
@@ -42,7 +42,7 @@ const IconNode = memo(({ data }: { data: { label: string; icon?: React.Component
             </div>
 
             <div className="text-[9px] font-bold text-white/90 uppercase tracking-wider mb-0.5">
-                {data.title}
+                {data.title || data.label}
             </div>
 
             {data.subline && (

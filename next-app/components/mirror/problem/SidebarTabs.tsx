@@ -174,7 +174,8 @@ export function SidebarTabs({ isOpen, onClose, currentUrl }: SidebarTabsProps) {
 
                             const iconLetter = tab.id.split('-').pop()?.[0]?.toUpperCase() || 'A';
                             const colorClass = getColorForTitle(tab.id);
-                            const IconComponent = (LETTER_ICONS[iconLetter] || FileCode2) as React.ElementType;
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        const IconComponent = (LETTER_ICONS[iconLetter] || FileCode2) as any;
 
                             return (
                                 <div key={tab.id} className="relative group w-full flex justify-center">
