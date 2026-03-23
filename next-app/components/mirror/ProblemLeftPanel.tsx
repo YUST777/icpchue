@@ -19,7 +19,7 @@ interface ProblemLeftPanelProps {
     problemId: string;
     handleWhiteboardResizeStart: (e: React.MouseEvent | React.TouchEvent) => void;
     whiteboardHeight: number;
-    leftPanelRef: React.RefObject<HTMLDivElement>;
+    leftPanelRef: React.RefObject<HTMLDivElement | null>;
     lastWidth: React.MutableRefObject<number>;
     mobileView: 'problem' | 'code';
     cfHandle: string | null;

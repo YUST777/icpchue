@@ -35,7 +35,7 @@ interface ProblemLeftPanelProps {
     handleWhiteboardResizeStart: (e: React.MouseEvent) => void;
     analyzeComplexity: () => void;
     complexityLoading: boolean;
-    leftPanelRef: React.RefObject<HTMLDivElement>;
+    leftPanelRef: React.RefObject<HTMLDivElement | null>;
     lastWidth: React.MutableRefObject<number>;
     mobileView: 'problem' | 'code';
     cfHandle: string | null;

@@ -19,9 +19,11 @@ interface OnboardingTourProps {
 }
 
 const renderIcon = (IconComponent: React.ElementType) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Icon = IconComponent as any;
     return renderToString(
         <span className="inline-flex items-center justify-center bg-white/10 rounded-lg p-1.5 ml-2 -mt-1 shadow-sm border border-white/5 text-[#E8C15A]">
-            <IconComponent size={20} strokeWidth={2} />
+            <Icon size={20} strokeWidth={2} />
         </span>
     );
 };
