@@ -1,5 +1,6 @@
 
 export const TEMPLATES: Record<string, string> = {
+    c: `#include <stdio.h>\n\nint main() {\n    \n    return 0;\n}`,
     cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(0); cin.tie(0);\n    \n    return 0;\n}`,
     java: `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}`,
     python: `import sys\n\ndef main():\n    pass\n\nif __name__ == '__main__':\n    main()`,
@@ -11,6 +12,7 @@ export const TEMPLATES: Record<string, string> = {
 };
 
 export const SUPPORTED_LANGUAGES = [
+    { id: 'c', name: 'C', monaco: 'c' },
     { id: 'cpp', name: 'C++', monaco: 'cpp' },
     { id: 'java', name: 'Java', monaco: 'java' },
     { id: 'python', name: 'Python', monaco: 'python' },

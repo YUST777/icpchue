@@ -109,9 +109,17 @@ export async function GET(req: NextRequest) {
             );
 
             if (problemsRes.rows.length > 0) {
-                const problemFilters = problemsRes.rows.map((row: any) => 
-                    `(cf.contest_id = '${row.contest_id}' AND cf.problem_index = '${row.problem_letter.toUpperCase()}')`
-                ).join(' OR ');
+                // Build parameterized filters for each problem
+                const problemFilterParts: string[] = [];
+                for (const row of problemsRes.rows) {
+                    p++;
+                    const pCid = p;
+                    p++;
+                    const pIdx = p;
+                    params.push(row.contest_id, row.problem_letter.toUpperCase());
+                    problemFilterParts.push(`(cf.contest_id = $${pCid} AND cf.problem_index = $${pIdx})`);
+                }
+                const problemFilters = problemFilterParts.join(' OR ');
 
                 parts.push(`
                     SELECT

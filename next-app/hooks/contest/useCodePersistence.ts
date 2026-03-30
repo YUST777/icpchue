@@ -67,7 +67,8 @@ export function useCodePersistence({ contestId, problemId }: UseCodePersistenceP
         setCode(savedCode || TEMPLATES[savedLang] || '');
         setIsHydrated(true);
 
-        // 2. Fetch from DB in background — override if DB has data
+        // 2. Fetch from DB in background — override ONLY if user hasn't typed yet
+        const localCodeAtFetch = savedCode || '';
         fetch(`/api/user/code?contestId=${contestId}&problemId=${problemId}`, {
             credentials: 'include',
         })
@@ -77,14 +78,22 @@ export function useCodePersistence({ contestId, problemId }: UseCodePersistenceP
                 const dbLang = data.activeLanguage || savedLang;
                 const dbEntry = data.codeByLang?.[dbLang];
 
-                if (dbEntry?.code) {
-                    // DB has code — use it (source of truth for cross-device)
-                    setCode(dbEntry.code);
-                    setLanguage(dbLang);
-                    // Sync localStorage
-                    const keys = getKeys(dbLang);
-                    localStorage.setItem(keys.codeKey, dbEntry.code);
-                    localStorage.setItem(keys.langKey, dbLang);
+                if (dbEntry?.code && dbEntry.code !== localCodeAtFetch) {
+                    // Only override if the current code is still the same as what we loaded from localStorage
+                    // (i.e., user hasn't started typing yet)
+                    setCode(prev => {
+                        const template = TEMPLATES[savedLang] || '';
+                        if (prev === localCodeAtFetch || prev === template) {
+                            // User hasn't modified — safe to override with DB version
+                            const keys = getKeys(dbLang);
+                            localStorage.setItem(keys.codeKey, dbEntry.code);
+                            localStorage.setItem(keys.langKey, dbLang);
+                            setLanguage(dbLang);
+                            return dbEntry.code;
+                        }
+                        // User already typed — don't override
+                        return prev;
+                    });
                 } else if (!savedCode && data.activeLanguage) {
                     setLanguage(data.activeLanguage);
                 }
