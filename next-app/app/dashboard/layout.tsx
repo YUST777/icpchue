@@ -163,12 +163,33 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchNotifications();
-            // Poll for new notifications every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
-        }
+        if (!isAuthenticated) return;
+
+        fetchNotifications();
+
+        // Poll every 30s, but only when tab is visible
+        let interval: ReturnType<typeof setInterval> | null = null;
+
+        const startPolling = () => {
+            if (interval) return;
+            interval = setInterval(fetchNotifications, 30000);
+        };
+        const stopPolling = () => {
+            if (interval) { clearInterval(interval); interval = null; }
+        };
+
+        const handleVisibility = () => {
+            if (document.hidden) stopPolling();
+            else { fetchNotifications(); startPolling(); }
+        };
+
+        startPolling();
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            stopPolling();
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, [isAuthenticated]);
 
     const markAllAsRead = async () => {

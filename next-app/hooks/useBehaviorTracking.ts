@@ -119,9 +119,10 @@ export function useBehaviorTracking({
         return () => document.removeEventListener('keydown', handler);
     }, []);
 
-    // 6. Idle detection (>60s)
+    // 6. Idle detection (>60s) — skip when tab is hidden
     useEffect(() => {
         const check = () => {
+            if (document.hidden) return; // Don't report idle when tab is hidden
             const idleMs = Date.now() - lastActivityRef.current;
             if (idleMs > 60000) {
                 track({ action: 'user_idle', ...ctx(), metadata: { idleMs, timeMs: Date.now() - enterTimeRef.current } });
@@ -131,9 +132,10 @@ export function useBehaviorTracking({
         return () => { if (idleTimerRef.current) clearInterval(idleTimerRef.current); };
     }, [track, ctx]);
 
-    // 7. Heartbeat — periodic snapshot every 60s
+    // 7. Heartbeat — periodic snapshot every 60s (skip when tab hidden)
     useEffect(() => {
         heartbeatRef.current = setInterval(() => {
+            if (document.hidden) return;
             track({
                 action: 'heartbeat', ...ctx(),
                 metadata: {

@@ -55,12 +55,11 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // Refresh session for protected pages AND API routes to prevent 401 on /api/auth/me etc.
+    // Refresh session for protected pages (NOT API routes — they handle auth themselves via verifyAuth which has its own cache)
     const urlPath = request.nextUrl.pathname;
-    const isProtectedRoute = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
-    const isApiRoute = urlPath.startsWith('/api/');
+    const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
     
-    if (isProtectedRoute || isApiRoute) {
+    if (isProtectedPage) {
         await supabase.auth.getUser();
     }
 
