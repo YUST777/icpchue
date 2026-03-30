@@ -78,6 +78,18 @@ export default function CodeWorkspace({
     const savedHeightRef = useRef(DEFAULT_PANEL_PERCENT);
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
+
+    // Reset selected test case when problem changes
+    useEffect(() => {
+        setSelectedTestCase(0);
+    }, [contestId, problemId]);
+
+    // Clamp selected test case if test cases shrink (e.g., after deleting a custom test)
+    useEffect(() => {
+        if (testCases.length > 0 && selectedTestCase >= testCases.length) {
+            setSelectedTestCase(testCases.length - 1);
+        }
+    }, [testCases.length, selectedTestCase]);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     const testPanelTab = testPanelActiveTab ?? internalTab;
@@ -162,15 +174,25 @@ export default function CodeWorkspace({
     const handleFormat = useCallback(() => {
         if (!code.trim()) return;
         try {
-            // Default to C++ formatting for now, or match language if possible
-            const formatted = format(code, "main.cpp", "Chromium");
+            // Map language to clang-format filename for correct formatting rules
+            const langFileMap: Record<string, string> = {
+                c: 'main.c',
+                cpp: 'main.cpp',
+                java: 'Main.java',
+                javascript: 'main.js',
+                csharp: 'Main.cs',
+            };
+            const filename = langFileMap[language] || 'main.cpp';
+            // clang-format only supports C/C++/Java/JS/C# — skip for others
+            if (!langFileMap[language]) return;
+            const formatted = format(code, filename, "Chromium");
             if (formatted) {
                 setCode(formatted);
             }
         } catch (err) {
             console.error("Failed to format code:", err);
         }
-    }, [code, setCode]);
+    }, [code, setCode, language]);
 
     // Monaco editor ref
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
