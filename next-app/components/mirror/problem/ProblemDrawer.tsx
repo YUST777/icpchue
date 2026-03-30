@@ -194,7 +194,7 @@ export default function ProblemDrawer({
                         const solved = new Set<string>();
                         data.submissions.forEach((s: any) => {
                             if (s.verdict === 'Accepted' || s.verdict === 'OK') {
-                                solved.add(`${s.contestId}-${s.problemId}`);
+                                solved.add(`${s.contestId || sheet.contestId}-${s.problemId}`);
                             }
                         });
                         setSolvedSet(solved);

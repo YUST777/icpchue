@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { OnMount } from '@monaco-editor/react';
@@ -9,12 +9,15 @@ import Link from 'next/link';
 // Subfolder components (Verdict structure)
 import { ProblemHeader, ProblemLeftPanel, ProblemDrawer } from '@/components/mirror/problem';
 import { CodeWorkspace } from '@/components/mirror/editor';
-import SubmissionDetailModal from '@/components/mirror/SubmissionDetailModal';
 import type { ActiveSheet, SheetProblem } from '@/components/mirror/problem/ProblemDrawer';
 import ExtensionGate from '@/components/core/ExtensionGate';
 import { TestCasesLoader } from '@/components/common/TestCasesLoader';
-import OnboardingTour from '@/components/mirror/OnboardingTour';
 import MirrorSkeleton from '@/components/mirror/MirrorSkeleton';
+import dynamic from 'next/dynamic';
+
+// Lazy-load heavy components that aren't needed on initial render
+const OnboardingTour = dynamic(() => import('@/components/mirror/OnboardingTour'), { ssr: false });
+const SubmissionDetailModal = dynamic(() => import('@/components/mirror/SubmissionDetailModal'), { ssr: false });
 
 // Hooks
 import { useProblemData } from '@/hooks/contest/useProblemData';
@@ -179,8 +182,8 @@ function MirrorUI({
         sampleTestCasesCount
     });
 
-    // Combined test cases
-    const testCases = [...sampleTestCases, ...customTestCases];
+    // Combined test cases (memoized to avoid new array on every keystroke)
+    const testCases = useMemo(() => [...sampleTestCases, ...customTestCases], [sampleTestCases, customTestCases]);
 
     // Layout Hooks
     const { containerRef, leftPanelRef, handleMouseDown, lastWidth } = useResizableLayout();
