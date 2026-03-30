@@ -113,14 +113,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to save profile picture' }, { status: 500 });
         }
 
-        // Delete old profile picture if exists
+        // Delete old profile picture if exists (with path traversal protection)
         if (oldPfp && oldPfp !== finalFilename) {
-            const oldPath = path.join(PFPS_DIR, oldPfp);
-            try {
-                if (fs.existsSync(oldPath)) {
-                    fs.unlinkSync(oldPath);
+            const oldFilename = path.basename(oldPfp);
+            const oldPath = path.join(PFPS_DIR, oldFilename);
+            if (oldPath.startsWith(PFPS_DIR)) {
+                try {
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
+                } catch {
                 }
-            } catch {
             }
         }
 

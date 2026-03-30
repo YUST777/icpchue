@@ -35,8 +35,13 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'No profile picture to delete' }, { status: 404 });
         }
 
-        // Delete file from disk
-        const filePath = path.join(PFPS_DIR, currentPfp);
+        // Delete file from disk (with path traversal protection)
+        const filename = path.basename(currentPfp); // Strip any directory components
+        const filePath = path.join(PFPS_DIR, filename);
+        // Verify the resolved path is still inside PFPS_DIR
+        if (!filePath.startsWith(PFPS_DIR)) {
+            return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+        }
         try {
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);

@@ -27,6 +27,7 @@
     "clsx": "^2.1.1",
     "cross-env": "^10.1.0",
     "crypto-js": "^4.2.0",
+    "cryptr": "^6.4.0",
     "dagre": "^0.8.5",
     "dotenv": "^17.3.1",
     "driver.js": "^1.4.0",
@@ -59,6 +60,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
     "@types/crypto-js": "^4.2.2",
+    "@types/cryptr": "^4.0.3",
     "@types/dagre": "^0.7.54",
     "@types/dompurify": "^3.2.0",
     "@types/node": "^25.5.0",

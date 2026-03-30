@@ -1,15 +1,14 @@
+import Cryptr from 'cryptr';
 import crypto from 'crypto';
 import speakeasy from 'speakeasy';
 
 /**
- * Application-level encryption using Node.js built-in crypto.
+ * Application-level field encryption using `cryptr` (AES-256-GCM + PBKDF2).
+ * https://github.com/MauriceButler/cryptr
  *
- * NEW data: AES-256-GCM (authenticated encryption, no CryptoJS dependency)
- * OLD data: Legacy CryptoJS AES-CBC format (U2FsdGVkX1...) is still decryptable
+ * NEW data: cryptr format (hex-encoded salt + iv + authTag + ciphertext)
+ * OLD data: Legacy CryptoJS AES-CBC format (U2FsdGVkX1...) still decryptable
  *           for backward compatibility until a full data migration is done.
- *
- * Format of new ciphertext: base64( iv[12] + authTag[16] + ciphertext )
- * Prefix: "aes256gcm:" to distinguish from legacy format.
  */
 
 const ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY;
@@ -21,126 +20,107 @@ const BLIND_INDEX_SALT = process.env.BLIND_INDEX_SALT || ENCRYPTION_KEY;
 if (!BLIND_INDEX_SALT) {
     console.warn('⚠️ WARNING: BLIND_INDEX_SALT not set. Blind index lookups will fail.');
 }
+
 const TOTP_SECRET = process.env.TOTP_SECRET;
 
-// Derive a 32-byte key from the passphrase (consistent, deterministic)
-let derivedKey: Buffer | null = null;
-function getKey(): Buffer | null {
-    if (!ENCRYPTION_KEY) return null;
-    if (!derivedKey) {
-        derivedKey = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
-    }
-    return derivedKey;
-}
+// cryptr instance — handles AES-256-GCM with PBKDF2 key derivation
+const cryptr = ENCRYPTION_KEY ? new Cryptr(ENCRYPTION_KEY) : null;
 
-// ─── NEW: AES-256-GCM encrypt ───────────────────────────────────────
+// ─── Encrypt (via cryptr) ───────────────────────────────────────────
 
 export const encrypt = (text: string | null | undefined): string | null => {
-    if (!text) return null;
-    const key = getKey();
-    if (!key) return null;
-
-    const iv = crypto.randomBytes(12); // 96-bit IV for GCM
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-
-    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
-    const authTag = cipher.getAuthTag(); // 16 bytes
-
-    // Pack: iv(12) + authTag(16) + ciphertext
-    const packed = Buffer.concat([iv, authTag, encrypted]);
-    return 'aes256gcm:' + packed.toString('base64');
-};
-
-// ─── Decrypt: new format first, legacy CryptoJS fallback ────────────
-
-export const decrypt = (encryptedText: string | null | undefined): string | null => {
-    if (!encryptedText) return null;
-    const key = getKey();
-    if (!key) return null;
-
+    if (!text || !cryptr) return null;
     try {
-        // New format: "aes256gcm:<base64>"
-        if (encryptedText.startsWith('aes256gcm:')) {
-            const packed = Buffer.from(encryptedText.slice(10), 'base64');
-            if (packed.length < 28) return null; // iv(12) + tag(16) = 28 minimum
-
-            const iv = packed.subarray(0, 12);
-            const authTag = packed.subarray(12, 28);
-            const ciphertext = packed.subarray(28);
-
-            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-            decipher.setAuthTag(authTag);
-
-            const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-            return decrypted.toString('utf8');
-        }
-
-        // Legacy format: CryptoJS AES-CBC (starts with "U2FsdGVkX1")
-        if (encryptedText.startsWith('U2FsdGVkX1')) {
-            return decryptLegacyCryptoJS(encryptedText);
-        }
-
-        // Unknown format
-        console.warn('Decrypt: unrecognized ciphertext format');
-        return null;
-    } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Decryption error:', msg);
+        return cryptr.encrypt(text);
+    } catch (err) {
+        console.error('[encrypt] Failed:', err);
         return null;
     }
 };
 
-/**
- * Decrypt legacy CryptoJS AES-CBC ciphertext.
- * CryptoJS format: base64("Salted__" + salt[8] + ciphertext)
- * Key derivation: EVP_BytesToKey (MD5-based) from passphrase + salt → key + iv
- */
+// ─── Decrypt: cryptr first, legacy CryptoJS fallback ────────────────
+
+export const decrypt = (ciphertext: string | null | undefined): string | null => {
+    if (!ciphertext) return null;
+
+    // Legacy CryptoJS format starts with "U2FsdGVkX1" (base64 of "Salted__")
+    if (ciphertext.startsWith('U2FsdGVkX1')) {
+        return decryptLegacyCryptoJS(ciphertext);
+    }
+
+    // Legacy hand-rolled AES-256-GCM format from previous code
+    if (ciphertext.startsWith('aes256gcm:')) {
+        return decryptLegacyGCM(ciphertext);
+    }
+
+    // Current format: cryptr (hex string)
+    if (!cryptr) return null;
+    try {
+        return cryptr.decrypt(ciphertext);
+    } catch (err) {
+        console.error('[decrypt] Failed:', err);
+        return null;
+    }
+};
+
+// ─── Legacy: CryptoJS AES-CBC decrypt (read-only, for old DB data) ──
+
 function decryptLegacyCryptoJS(b64: string): string | null {
     if (!ENCRYPTION_KEY) return null;
+    try {
+        const raw = Buffer.from(b64, 'base64');
+        if (raw.subarray(0, 8).toString('utf8') !== 'Salted__') return null;
 
-    const raw = Buffer.from(b64, 'base64');
-    // First 8 bytes: "Salted__", next 8: salt, rest: ciphertext
-    const magic = raw.subarray(0, 8).toString('utf8');
-    if (magic !== 'Salted__') return null;
+        const salt = raw.subarray(8, 16);
+        const ct = raw.subarray(16);
+        const derived = evpBytesToKey(Buffer.from(ENCRYPTION_KEY, 'utf8'), salt, 32, 16);
 
-    const salt = raw.subarray(8, 16);
-    const ciphertext = raw.subarray(16);
-
-    // EVP_BytesToKey: derive 32-byte key + 16-byte IV from passphrase + salt using MD5
-    const passphrase = Buffer.from(ENCRYPTION_KEY, 'utf8');
-    const derived = evpBytesToKey(passphrase, salt, 32, 16);
-
-    const decipher = crypto.createDecipheriv('aes-256-cbc', derived.key, derived.iv);
-    decipher.setAutoPadding(true);
-
-    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    const result = decrypted.toString('utf8');
-    return result || null;
+        const decipher = crypto.createDecipheriv('aes-256-cbc', derived.key, derived.iv);
+        decipher.setAutoPadding(true);
+        const decrypted = Buffer.concat([decipher.update(ct), decipher.final()]);
+        return decrypted.toString('utf8') || null;
+    } catch (err) {
+        console.error('[decryptLegacyCryptoJS] Failed:', err);
+        return null;
+    }
 }
 
-/** Replicate OpenSSL EVP_BytesToKey (MD5-based KDF used by CryptoJS) */
-function evpBytesToKey(password: Buffer, salt: Buffer, keyLen: number, ivLen: number): { key: Buffer; iv: Buffer } {
-    const totalLen = keyLen + ivLen;
+/** OpenSSL EVP_BytesToKey — needed to read old CryptoJS data */
+function evpBytesToKey(password: Buffer, salt: Buffer, keyLen: number, ivLen: number) {
     const blocks: Buffer[] = [];
     let prev = Buffer.alloc(0);
-
-    while (Buffer.concat(blocks).length < totalLen) {
-        const hash = crypto.createHash('md5');
-        hash.update(prev);
-        hash.update(password);
-        hash.update(salt);
-        prev = hash.digest();
+    while (Buffer.concat(blocks).length < keyLen + ivLen) {
+        prev = crypto.createHash('md5').update(prev).update(password).update(salt).digest();
         blocks.push(prev);
     }
-
-    const derived = Buffer.concat(blocks);
-    return {
-        key: derived.subarray(0, keyLen),
-        iv: derived.subarray(keyLen, keyLen + ivLen),
-    };
+    const d = Buffer.concat(blocks);
+    return { key: d.subarray(0, keyLen), iv: d.subarray(keyLen, keyLen + ivLen) };
 }
 
-// ─── Blind index (HMAC-SHA256, unchanged) ───────────────────────────
+// ─── Legacy: hand-rolled AES-256-GCM decrypt (from previous refactor) ──
+
+function decryptLegacyGCM(ciphertext: string): string | null {
+    if (!ENCRYPTION_KEY) return null;
+    try {
+        const packed = Buffer.from(ciphertext.slice(10), 'base64');
+        if (packed.length < 28) return null;
+
+        const iv = packed.subarray(0, 12);
+        const authTag = packed.subarray(12, 28);
+        const ct = packed.subarray(28);
+        const key = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
+
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag);
+        const decrypted = Buffer.concat([decipher.update(ct), decipher.final()]);
+        return decrypted.toString('utf8');
+    } catch (err) {
+        console.error('[decryptLegacyGCM] Failed:', err);
+        return null;
+    }
+}
+
+// ─── Blind index (HMAC-SHA256 via Node crypto — standard, not custom) ──
 
 export const createBlindIndex = (value: string | null | undefined): string | null => {
     if (!value || !BLIND_INDEX_SALT) return null;
@@ -148,7 +128,7 @@ export const createBlindIndex = (value: string | null | undefined): string | nul
     return crypto.createHmac('sha256', BLIND_INDEX_SALT).update(normalized).digest('hex');
 };
 
-// ─── TOTP verification (unchanged) ──────────────────────────────────
+// ─── TOTP verification (via speakeasy — established lib) ────────────
 
 export const verifyTOTP = (token: string): boolean => {
     if (!TOTP_SECRET) {
@@ -159,7 +139,7 @@ export const verifyTOTP = (token: string): boolean => {
         return speakeasy.totp.verify({
             secret: TOTP_SECRET,
             encoding: 'base32',
-            token: token,
+            token,
             window: 2,
         });
     } catch (error) {
