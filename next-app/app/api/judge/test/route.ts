@@ -36,6 +36,7 @@ const JUDGE0_LANGUAGE_MAP: Record<string, number> = {
 };
 
 const COMPILER_OPTIONS: Record<number, string> = {
+    50: '-O2',             // C optimization
     54: '-std=c++17 -O2',  // Match Codeforces C++17 settings
     52: '-std=c++17 -O2',
     53: '-std=c++17 -O2',
