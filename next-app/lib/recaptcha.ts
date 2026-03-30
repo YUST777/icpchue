@@ -9,7 +9,7 @@ declare global {
     }
 }
 
-const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LdBYRQsAAAAAOsYGXNhnrklR_iS6hQN_OalQ2NF';
+const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
 
 export const executeRecaptcha = async (action = 'submit'): Promise<string> => {
     return new Promise((resolve, reject) => {

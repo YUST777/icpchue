@@ -7,7 +7,7 @@ import { flushEvents } from '@/lib/track-buffer';
  */
 export async function POST(req: NextRequest) {
     const secret = req.headers.get('x-flush-secret');
-    if (secret !== (process.env.TRACK_FLUSH_SECRET || 'icpchue-flush-2026')) {
+    if (!process.env.TRACK_FLUSH_SECRET || secret !== process.env.TRACK_FLUSH_SECRET) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

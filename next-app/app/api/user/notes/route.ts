@@ -51,6 +51,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
         }
 
+        // Limit note size to 100KB
+        if (typeof content === 'string' && content.length > 100 * 1024) {
+            return NextResponse.json({ error: 'Note too large (max 100KB)' }, { status: 400 });
+        }
+
         await query(
             `INSERT INTO user_notes (user_id, contest_id, problem_index, content, updated_at)
              VALUES ($1, $2, $3, $4, NOW())

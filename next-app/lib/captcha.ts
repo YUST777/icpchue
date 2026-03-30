@@ -24,8 +24,8 @@ export async function verifyCaptcha(
     minScore: number = 0.3
 ): Promise<CaptchaResult> {
     if (!RECAPTCHA_SECRET) {
-        console.warn('RECAPTCHA_SECRET_KEY not configured — skipping verification');
-        return { success: true, score: 1.0 }; // Fail open if not configured
+        console.error('RECAPTCHA_SECRET_KEY not configured — blocking request');
+        return { success: false, error: 'Captcha service not configured' };
     }
 
     if (!token) {
@@ -58,6 +58,6 @@ export async function verifyCaptcha(
         return { success: true, score: data.score, action: data.action };
     } catch (err) {
         console.error('reCAPTCHA verification error:', err);
-        return { success: true }; // Fail open on network error
+        return { success: false, error: 'Captcha verification failed (network error)' };
     }
 }

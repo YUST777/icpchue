@@ -80,6 +80,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Limit code size to 512KB
+        if (typeof code === 'string' && code.length > 512 * 1024) {
+            return NextResponse.json({ error: 'Code too large (max 512KB)' }, { status: 400 });
+        }
+
         const pid = (problemId as string).toUpperCase();
 
         if (isSubmitted) {
