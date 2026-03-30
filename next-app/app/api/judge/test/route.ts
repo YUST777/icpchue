@@ -21,6 +21,7 @@ const RequestSchema = z.object({
 });
 
 const JUDGE0_LANGUAGE_MAP: Record<string, number> = {
+    'c': 50,          // C (GCC 9.2.0)
     'cpp': 54,        // C++ (GCC 9.2.0)
     'cpp17': 54,
     'java': 62,       // Java (OpenJDK 13.0.1)
@@ -42,8 +43,9 @@ const COMPILER_OPTIONS: Record<number, string> = {
 
 // Helper Comparison Function (Codeforces Style)
 function compareOutputs(expected: string, actual: string): boolean {
-    if (!expected && !actual) return true;
-    if (!expected || !actual) return false;
+    // If no expected output provided, we can't judge — return true (no comparison)
+    if (!expected.trim()) return true;
+    if (!actual) return false;
 
     // Normalize: split by whitespace to handle different spacing/newlines
     const tokensExp = expected.trim().split(/\s+/);

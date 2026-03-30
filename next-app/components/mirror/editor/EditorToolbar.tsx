@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Play, ChevronDown, Code, Lock, AlignLeft, Bookmark, Braces, RotateCcw, Maximize2, Minimize2, Copy, Check, Maximize, ChevronUp, Share2 } from 'lucide-react';
-import { SUPPORTED_LANGUAGES, TEMPLATES, getLanguageById } from './EditorConstants';
+import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2 } from 'lucide-react';
+import { SUPPORTED_LANGUAGES, getLanguageById } from './EditorConstants';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface EditorToolbarProps {
     language: string;
@@ -56,21 +55,9 @@ export default function EditorToolbar({
     const theme = "dark"; // Defaulting to dark
 
     const handleLanguageChange = (langId: string) => {
-        const currentTemplate = TEMPLATES[language];
-        const isModified = code.trim() && (!currentTemplate || code.trim() !== currentTemplate.trim());
-
-        if (isModified) {
-            if (!window.confirm('Switching language will replace your current code. Continue?')) {
-                setIsLangOpen(false);
-                return;
-            }
-        }
-
+        // useCodePersistence.handleSetLanguage handles loading saved code / template
         setLanguage(langId);
         setIsLangOpen(false);
-        if (TEMPLATES[langId]) {
-            setCode(TEMPLATES[langId]);
-        }
     };
 
     const handleCopyToClipboard = () => {

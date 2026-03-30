@@ -39,6 +39,10 @@ export interface Submission {
     source: 'judge0' | 'codeforces';
     language?: string;
     cfSubmissionId?: number | null;
+    compilationError?: string;
+    details?: string;
+    notes?: string;
+    noteColor?: string;
 }
 
 export interface TestCaseResult {
@@ -105,6 +109,8 @@ export interface CFProblemData {
 export interface CFSubmissionStatus {
     status: 'idle' | 'submitting' | 'waiting' | 'testing' | 'done' | 'error';
     verdict?: string;
+    substatus?: string;
+    progress?: number;
     testNumber?: number;
     time?: number;
     memory?: number;
@@ -112,8 +118,10 @@ export interface CFSubmissionStatus {
     error?: string;
     isDuplicate?: boolean;
     compilationError?: string;
+    details?: string;
     failedTestCase?: number;
     needsCaptcha?: boolean;
+    needsLogin?: boolean;
     captchaUrl?: string;
 }
 
