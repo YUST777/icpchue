@@ -198,7 +198,7 @@ function MirrorUI({
         if (expanded !== isWhiteboardExpanded) toggleExpanded();
     }, [isWhiteboardExpanded, toggleExpanded]);
     const [mobileView, setMobileView] = useState<'problem' | 'code'>('problem');
-    const [isTestPanelVisible, setIsTestPanelVisible] = useState(true);
+    const [isTestPanelVisible, setIsTestPanelVisible] = useState(false);
     const [testPanelActiveTab, setTestPanelActiveTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
 
     // ─── ProblemDrawer State ───
