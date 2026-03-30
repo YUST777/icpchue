@@ -3,7 +3,7 @@ import { Editor, OnMount } from '@monaco-editor/react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
-import { SUPPORTED_LANGUAGES, TEMPLATES } from './EditorConstants';
+import { SUPPORTED_LANGUAGES } from './EditorConstants';
 import dynamic from 'next/dynamic';
 // @ts-ignore — wasm module may not have type declarations
 import init, { format } from "@wasm-fmt/clang-format/web";
@@ -115,23 +115,21 @@ export default function CodeWorkspace({
         }
     }, []);
 
-    // Sync isTestPanelVisible with panelContentPercent
+    // Sync: when parent sets isTestPanelVisible=true, expand the panel
     useEffect(() => {
         if (isTestPanelVisible && panelContentPercent === 0) {
             setIsAnimating(true);
             setPanelContentPercent(savedHeightRef.current);
             setTimeout(() => setIsAnimating(false), 300);
+        } else if (!isTestPanelVisible && panelContentPercent > 0) {
+            // Parent wants to close — collapse the panel
+            savedHeightRef.current = panelContentPercent;
+            localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
+            setIsAnimating(true);
+            setPanelContentPercent(0);
+            setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [isTestPanelVisible, panelContentPercent]);
-
-    // Keep isTestPanelVisible in sync
-    useEffect(() => {
-        if (panelContentPercent > 0 && !isTestPanelVisible) {
-            setIsTestPanelVisible(true);
-        } else if (panelContentPercent === 0 && isTestPanelVisible) {
-            setIsTestPanelVisible(false);
-        }
-    }, [panelContentPercent, isTestPanelVisible, setIsTestPanelVisible]);
+    }, [isTestPanelVisible]); // Only react to parent's intent, not our own state
 
     // Expand/collapse helpers
     const expandPanel = useCallback((tab?: 'testcase' | 'result' | 'codeforces') => {
@@ -139,9 +137,10 @@ export default function CodeWorkspace({
         if (panelContentPercent === 0) {
             setIsAnimating(true);
             setPanelContentPercent(savedHeightRef.current);
+            setIsTestPanelVisible(true);
             setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [panelContentPercent, setTestPanelTab]);
+    }, [panelContentPercent, setTestPanelTab, setIsTestPanelVisible]);
 
     const collapsePanel = useCallback(() => {
         if (panelContentPercent > 0) {
@@ -149,9 +148,10 @@ export default function CodeWorkspace({
             localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
             setIsAnimating(true);
             setPanelContentPercent(0);
+            setIsTestPanelVisible(false);
             setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [panelContentPercent]);
+    }, [panelContentPercent, setIsTestPanelVisible]);
 
     const togglePanel = useCallback(() => {
         if (panelContentPercent === 0) {
