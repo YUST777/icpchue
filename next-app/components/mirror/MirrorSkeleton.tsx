@@ -83,12 +83,12 @@ export default function MirrorSkeleton() {
                     {/* Editor Area */}
                     <div className="flex-1 font-mono">
                         <div className="space-y-2">
-                            {Array.from({ length: 15 }).map((_, i) => (
+                            {[65, 45, 80, 35, 55, 70, 40, 60, 50, 75, 30, 85, 45, 55, 65].map((w, i) => (
                                 <div key={i} className="flex gap-4">
                                     <Skeleton className="h-4 w-4 opacity-20 shrink-0" />
                                     <Skeleton 
                                         className="h-4 rounded opacity-40" 
-                                        style={{ width: `${Math.random() * 40 + 20}%` }} 
+                                        style={{ width: `${w}%` }} 
                                     />
                                 </div>
                             ))}

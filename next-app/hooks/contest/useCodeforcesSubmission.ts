@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
 import { mapLanguageToExtension, getProblemDescriptionUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
 
@@ -46,6 +46,11 @@ export function useCodeforcesSubmission({
     const [submitting, setSubmitting] = useState(false);
     const activeSubIdRef = useRef<number | null>(null);
     const isMountedRef = useRef(true);
+    // Refs for values used inside handleSubmit to keep the callback stable
+    const codeRef = useRef(code);
+    const languageRef = useRef(language);
+    codeRef.current = code;
+    languageRef.current = language;
 
     // Track mount status
     useEffect(() => {
@@ -59,7 +64,9 @@ export function useCodeforcesSubmission({
         activeSubIdRef.current = null;
     }, [contestId, problemId]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
+        const code = codeRef.current;
+        const language = languageRef.current;
         if (!code || submitting) return;
 
         setSubmitting(true);
@@ -484,7 +491,8 @@ export function useCodeforcesSubmission({
         } finally {
             setSubmitting(false);
         }
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [submitting, contestId, problemId, urlType, groupId, codeforcesUrl, setIsTestPanelVisible, setTestPanelActiveTab, sheetId]);
 
     return {
         cfStatus,

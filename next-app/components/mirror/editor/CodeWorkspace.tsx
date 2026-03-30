@@ -433,9 +433,7 @@ export default function CodeWorkspace({
                             },
                         }}
                         loading={
-                            <div className="flex items-center justify-center h-full text-[#666]">
-                                Loading Editor...
-                            </div>
+                            <div className="h-full bg-[#1e1e1e]" />
                         }
                     />
                 </div>

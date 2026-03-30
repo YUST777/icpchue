@@ -536,10 +536,14 @@ function MirrorUI({
         track({ action: 'language_change', contestId, problemId, metadata: { from: language, to: lang } });
         setLanguage(lang);
     }, [track, contestId, problemId, language, setLanguage]);
+    // Use ref for code length in tracking to avoid re-creating callbacks on every keystroke
+    const codeRef = useRef(code);
+    codeRef.current = code;
+
     const trackedOnSubmit = useCallback(() => {
-        track({ action: 'code_submit', contestId, problemId, sheetId, metadata: { trigger: 'button', language, codeLength: code.length } });
+        track({ action: 'code_submit', contestId, problemId, sheetId, metadata: { trigger: 'button', language, codeLength: codeRef.current.length } });
         handleSubmit();
-    }, [track, contestId, problemId, sheetId, language, code.length, handleSubmit]);
+    }, [track, contestId, problemId, sheetId, language, handleSubmit]);
     const trackedOnRunTests = useCallback(() => {
         track({ action: 'code_run', contestId, problemId, sheetId, metadata: { trigger: 'button', language } });
         runTests();

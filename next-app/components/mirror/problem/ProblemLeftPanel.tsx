@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { CFProblemData, Submission } from '../shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
@@ -6,19 +6,16 @@ import ProblemTabs from './ProblemTabs';
 import HandleInputSection from '../HandleInputSection';
 import ProblemNotes from './ProblemNotes';
 
-// Lazy-load heavy tab components — only loaded when user switches to that tab
-const SubmissionsList = dynamic(() => import('../SubmissionsList'), {
-    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
-});
-const AnalyticsView = dynamic(() => import('../AnalyticsView'), {
-    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
-});
-const SolutionView = dynamic(() => import('../SolutionView'), {
-    loading: () => <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /></div>,
-});
-const Whiteboard = dynamic(() => import('../Whiteboard'), {
-    loading: () => <div className="h-20 bg-[#121212]" />,
-});
+// Lazy-load tab components but preload them immediately so they're ready when user clicks
+const submissionsImport = () => import('../SubmissionsList');
+const analyticsImport = () => import('../AnalyticsView');
+const solutionImport = () => import('../SolutionView');
+const whiteboardImport = () => import('../Whiteboard');
+
+const SubmissionsList = dynamic(submissionsImport, { ssr: false });
+const AnalyticsView = dynamic(analyticsImport, { ssr: false });
+const SolutionView = dynamic(solutionImport, { ssr: false });
+const Whiteboard = dynamic(whiteboardImport, { ssr: false });
 
 interface ProblemLeftPanelProps {
     activeTab: 'description' | 'submissions' | 'analytics' | 'solution';
@@ -85,6 +82,14 @@ function ProblemLeftPanel({
 }: ProblemLeftPanelProps) {
     const safeContestId = contestId || '0';
     const safeProblemId = problemId || 'A';
+
+    // Preload all tab chunks immediately so switching tabs is instant
+    useEffect(() => {
+        submissionsImport();
+        analyticsImport();
+        solutionImport();
+        whiteboardImport();
+    }, []);
 
     return (
         <div

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { SubmissionResult, Example } from '@/components/mirror/types';
 
 interface UseLocalTestRunnerParams {
@@ -31,13 +31,27 @@ export function useLocalTestRunner({
     const [result, setResult] = useState<SubmissionResult | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
+    // Refs for values used inside runTests to keep the callback stable
+    const codeRef = useRef(code);
+    const languageRef = useRef(language);
+    const testCasesRef = useRef(testCases);
+    const timeLimitRef = useRef(timeLimit);
+    const memoryLimitRef = useRef(memoryLimit);
+    codeRef.current = code;
+    languageRef.current = language;
+    testCasesRef.current = testCases;
+    timeLimitRef.current = timeLimit;
+    memoryLimitRef.current = memoryLimit;
+
     // Clear result when problem changes
     useEffect(() => {
         setResult(null);
     }, [contestId, problemId]);
 
-    const runTests = async () => {
-        if (!code.trim() || submitting || testCases.length === 0) return;
+    const runTests = useCallback(async () => {
+        const currentCode = codeRef.current;
+        const currentTestCases = testCasesRef.current;
+        if (!currentCode.trim() || submitting || currentTestCases.length === 0) return;
 
         setSubmitting(true);
         setIsTestPanelVisible(true);
@@ -47,14 +61,14 @@ export function useLocalTestRunner({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    sourceCode: code,
-                    language: language,
-                    testCases: testCases.map(tc => ({
+                    sourceCode: currentCode,
+                    language: languageRef.current,
+                    testCases: currentTestCases.map(tc => ({
                         input: tc.input,
                         output: tc.output || tc.expectedOutput || ''
                     })),
-                    timeLimit,
-                    memoryLimit
+                    timeLimit: timeLimitRef.current,
+                    memoryLimit: memoryLimitRef.current
                 })
             });
 
@@ -64,7 +78,7 @@ export function useLocalTestRunner({
                     verdict: 'Error',
                     passed: false,
                     testsPassed: 0,
-                    totalTests: testCases.length,
+                    totalTests: currentTestCases.length,
                     results: [{
                         testCase: 1,
                         verdict: err.error || 'Judge Error',
@@ -90,7 +104,7 @@ export function useLocalTestRunner({
                 verdict: 'Network Error',
                 passed: false,
                 testsPassed: 0,
-                totalTests: testCases.length,
+                totalTests: currentTestCases.length,
                 results: [{
                     testCase: 1,
                     verdict: 'Network Error',
@@ -101,7 +115,7 @@ export function useLocalTestRunner({
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [submitting, setIsTestPanelVisible]);
 
     return {
         result,
@@ -109,4 +123,3 @@ export function useLocalTestRunner({
         submitting
     };
 }
-
