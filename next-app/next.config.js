@@ -13,7 +13,8 @@ const nextConfig = {
     },
     // 🧹 Best Practice #3: Handling Native/External Modules
     serverExternalPackages: ['pg', 'sharp'],
-    // reactCompiler: true,
+    // React Compiler — auto-memoizes components, eliminates unnecessary re-renders
+    reactCompiler: true,
 
     async redirects() {
         return [

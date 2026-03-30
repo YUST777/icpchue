@@ -5,8 +5,15 @@ import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES } from './EditorConstants';
 import dynamic from 'next/dynamic';
-// @ts-ignore — wasm module may not have type declarations
-import init, { format } from "@wasm-fmt/clang-format/web";
+// Lazy-load clang-format WASM — only loaded when user actually formats
+let formatModule: { format: (code: string, filename: string, style: string) => string } | null = null;
+async function loadFormatter() {
+    if (formatModule) return formatModule;
+    const mod = await import("@wasm-fmt/clang-format/web");
+    await mod.default(); // init()
+    formatModule = { format: mod.format };
+    return formatModule;
+}
 
 const GradiaExportModal = dynamic(() => import('../GradiaExportModal'), {
     ssr: false,
@@ -95,10 +102,8 @@ export default function CodeWorkspace({
     const testPanelTab = testPanelActiveTab ?? internalTab;
     const setTestPanelTab = setTestPanelActiveTab ?? setInternalTab;
 
-    // Initialize formatter on mount and listen for shortcuts
+    // Listen for export shortcut
     useEffect(() => {
-        init().catch((err: Error) => console.error("Formatting module failed to load:", err));
-
         const handleToggleExport = () => setIsExportModalOpen(prev => !prev);
         window.addEventListener('verdict:toggle-export', handleToggleExport);
         return () => window.removeEventListener('verdict:toggle-export', handleToggleExport);
@@ -170,11 +175,10 @@ export default function CodeWorkspace({
         }
     }, [panelContentPercent, expandPanel, setTestPanelTab]);
 
-    // Formatting handler
-    const handleFormat = useCallback(() => {
+    // Formatting handler — lazy-loads WASM on first use
+    const handleFormat = useCallback(async () => {
         if (!code.trim()) return;
         try {
-            // Map language to clang-format filename for correct formatting rules
             const langFileMap: Record<string, string> = {
                 c: 'main.c',
                 cpp: 'main.cpp',
@@ -182,13 +186,11 @@ export default function CodeWorkspace({
                 javascript: 'main.js',
                 csharp: 'Main.cs',
             };
-            const filename = langFileMap[language] || 'main.cpp';
-            // clang-format only supports C/C++/Java/JS/C# — skip for others
-            if (!langFileMap[language]) return;
-            const formatted = format(code, filename, "Chromium");
-            if (formatted) {
-                setCode(formatted);
-            }
+            const filename = langFileMap[language];
+            if (!filename) return; // clang-format doesn't support this language
+            const mod = await loadFormatter();
+            const formatted = mod.format(code, filename, "Chromium");
+            if (formatted) setCode(formatted);
         } catch (err) {
             console.error("Failed to format code:", err);
         }
