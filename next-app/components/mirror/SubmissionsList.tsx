@@ -239,6 +239,7 @@ export default function SubmissionsList({
 function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHoveredId }: any) {
     const [noteModalData, setNoteModalData] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [localNotes, setLocalNotes] = useState<Record<number, { notes: string; noteColor: string }>>({});
 
     const handleSaveNote = async (text: string, color: string) => {
         if (!noteModalData) return;
@@ -250,11 +251,8 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
                 body: JSON.stringify({ notes: text, noteColor: color })
             });
             if (res.ok) {
-                const updatedSub = submissions.find((s: any) => s.id === noteModalData.id);
-                if (updatedSub) {
-                    updatedSub.notes = text;
-                    updatedSub.noteColor = color;
-                }
+                // Update local overlay state so UI reflects the change immediately
+                setLocalNotes(prev => ({ ...prev, [noteModalData.id]: { notes: text, noteColor: color } }));
             }
         } catch (error) {
             console.error('Failed to save note:', error);
@@ -263,6 +261,9 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
             setNoteModalData(null);
         }
     };
+
+    // Merge server submissions with local note overrides
+    const getNote = (sub: any) => localNotes[sub.id] || { notes: sub.notes, noteColor: sub.noteColor };
 
     if (loading) {
         return (
@@ -336,11 +337,11 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
 
                         <div className="pl-4 min-w-0" onClick={(e) => { e.stopPropagation(); setNoteModalData(sub); }}>
                             <div className="flex items-center gap-2 group/note cursor-text">
-                                <span className={`text-[11px] truncate italic flex-1 ${sub.notes ? 'text-white/80' : 'text-[#444]'}`}>
-                                    {sub.notes ? (
+                                <span className={`text-[11px] truncate italic flex-1 ${getNote(sub).notes ? 'text-white/80' : 'text-[#444]'}`}>
+                                    {getNote(sub).notes ? (
                                         <span className="flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: NOTE_COLORS.find(c => c.name === sub.noteColor)?.hex || '#444' }} />
-                                            {sub.notes}
+                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: NOTE_COLORS.find(c => c.name === getNote(sub).noteColor)?.hex || '#444' }} />
+                                            {getNote(sub).notes}
                                         </span>
                                     ) : 'Add note...'}
                                 </span>
@@ -356,8 +357,8 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
             <NotesModal
                 isOpen={!!noteModalData}
                 onClose={() => setNoteModalData(null)}
-                note={noteModalData?.notes}
-                color={noteModalData?.noteColor}
+                note={noteModalData ? getNote(noteModalData).notes : ''}
+                color={noteModalData ? getNote(noteModalData).noteColor : 'default'}
                 onSave={handleSaveNote}
                 isSaving={isSaving}
             />

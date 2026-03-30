@@ -43,7 +43,6 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
                 setLoading(true);
                 setError(null);
 
-                // Fetch problem details from curriculum API
                 const response = await fetch(`/api/curriculum/problem/${levelSlug}/${sheetSlug}/${problemId}`);
 
                 if (!response.ok) {
@@ -54,8 +53,11 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
 
                 if (data.problem?.solutionVideoUrl) {
                     setSolutionUrl(data.problem.solutionVideoUrl);
-                    // Also fetch stats if video exists
-                    fetchStats();
+                    // Fetch stats inline — don't use fetchStats callback to avoid dep issues
+                    try {
+                        const statsRes = await fetch(`/api/video/rate?contestId=${contestId}&problemId=${problemId}`);
+                        if (statsRes.ok) setStats(await statsRes.json());
+                    } catch { /* stats are non-critical */ }
                 } else {
                     setError('No solution video available for this problem yet.');
                 }
@@ -70,7 +72,7 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
         if (levelSlug && sheetSlug && problemId) {
             fetchSolutionUrl();
         }
-    }, [contestId, problemId, sheetSlug, levelSlug, fetchStats]);
+    }, [contestId, problemId, sheetSlug, levelSlug]);
 
     // Handle Rating click
     const handleRate = async (newRating: number) => {
