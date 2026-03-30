@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
 import { mapLanguageToExtension, getProblemDescriptionUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
-import { fetchWithAuth } from '@/lib/api';
 
 const FINAL_VERDICTS = new Set([
     'OK', 'WRONG_ANSWER', 'TIME_LIMIT_EXCEEDED', 'MEMORY_LIMIT_EXCEEDED',
@@ -328,7 +327,7 @@ export function useCodeforcesSubmission({
                 body: JSON.stringify({
                     contestId,
                     problemId,
-                    language: mapLanguageToExtension(language),
+                    language,
                     code,
                     isSubmitted: true,
                 }),
@@ -411,11 +410,13 @@ export function useCodeforcesSubmission({
                             let saved = false;
                             for (let attempt = 0; attempt < 3; attempt++) {
                                 try {
-                                    const saveRes: any = await fetchWithAuth('/api/codeforces/save-submission', {
+                                    const saveRes = await fetch('/api/codeforces/save-submission', {
                                         method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
                                         body: JSON.stringify(savePayload)
                                     });
-                                    if (saveRes && !saveRes.error) {
+                                    if (saveRes.ok) {
                                         saved = true;
                                         break;
                                     }
