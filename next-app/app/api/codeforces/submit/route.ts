@@ -23,6 +23,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Reject oversized code (CF limit is 64KB, we allow 256KB for safety)
+        if (typeof code !== 'string' || code.length > 256 * 1024) {
+            return NextResponse.json({ success: false, error: 'Code too large (max 256KB)' }, { status: 400 });
+        }
+
         // Start the submission job on the bridge (returns immediately with jobId)
         const bridgeRes = await fetch(`${BRIDGE_URL}/submit`, {
             method: 'POST',

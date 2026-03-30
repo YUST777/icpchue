@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
+import crypto from 'crypto';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -54,8 +55,10 @@ export async function validateAdminRequest(req: NextRequest): Promise<NextRespon
         const [username, ...passwordParts] = credentials.split(':');
         const passwordInput = passwordParts.join(':');
 
-        // Check Username
-        if (username !== ADMIN_USERNAME) {
+        // Check Username (timing-safe)
+        const usernameMatch = username.length === ADMIN_USERNAME.length &&
+            crypto.timingSafeEqual(Buffer.from(username), Buffer.from(ADMIN_USERNAME));
+        if (!usernameMatch) {
             return new NextResponse('Invalid credentials', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ICPC Hue Admin"' } });
         }
 
@@ -70,8 +73,10 @@ export async function validateAdminRequest(req: NextRequest): Promise<NextRespon
             password = parts.slice(0, -1).join(',');
         }
 
-        // Check Password
-        if (password !== ADMIN_PASSWORD) {
+        // Check Password (timing-safe)
+        const passwordMatch = password.length === ADMIN_PASSWORD.length &&
+            crypto.timingSafeEqual(Buffer.from(password), Buffer.from(ADMIN_PASSWORD));
+        if (!passwordMatch) {
             return new NextResponse('Invalid credentials', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ICPC Hue Admin"' } });
         }
 

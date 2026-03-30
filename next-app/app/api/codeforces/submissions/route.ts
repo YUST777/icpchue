@@ -87,8 +87,16 @@ export async function GET(req: NextRequest) {
     try {
         const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
         
-        // We need cookies for the bridge to work for private/group contests
-        const cookies = req.headers.get('cookie') || '';
+        // Only forward Codeforces-related cookies to the bridge, not auth cookies
+        const allCookies = req.headers.get('cookie') || '';
+        const cfCookies = allCookies.split(';')
+            .map(c => c.trim())
+            .filter(c => {
+                const name = c.split('=')[0]?.toLowerCase() || '';
+                // Only keep CF session cookies, drop Supabase/auth cookies
+                return !name.startsWith('sb-') && !name.startsWith('supabase') && name !== 'authtoken';
+            })
+            .join('; ');
 
         const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/submissions`, {
             method: 'POST',
@@ -96,7 +104,7 @@ export async function GET(req: NextRequest) {
             body: JSON.stringify({
                 contestId,
                 problemIndex,
-                cookies,
+                cookies: cfCookies,
                 urlType,
                 groupId
             })

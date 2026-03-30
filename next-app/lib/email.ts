@@ -55,7 +55,7 @@ export const sendOtpEmail = async (email: string, code: string) => {
 
     return sendEmail({
         to: email,
-        subject: `${code} - ICPC HUE Verification Code`,
+        subject: 'ICPC HUE - Verification Code',
         text: `Your ICPC HUE verification code is: ${code}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore this email.\n`,
         html
     });

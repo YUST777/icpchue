@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
 
             return NextResponse.json(content);
         }
-    } catch {
+    } catch (dbErr) {
+        console.error('[Mirror] Curriculum DB lookup failed:', dbErr);
     }
 
     // Build the correct URL based on type
