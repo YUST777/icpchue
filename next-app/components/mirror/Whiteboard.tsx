@@ -37,7 +37,7 @@ export default function Whiteboard({
         if (api && savedData) {
             updateScene(savedData);
         }
-    }, [api, isDataLoaded, savedData, updateScene]);
+    }, [api, savedData, updateScene]);
 
     const handleClear = useCallback(() => {
         resetScene();

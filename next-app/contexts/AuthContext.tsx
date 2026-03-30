@@ -146,7 +146,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setIsAuthenticated(false);
                 clearApiCache();
             } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-                // Re-fetch profile on sign-in or token refresh
+                // Clear stale cache before re-fetching profile
+                clearApiCache();
                 try {
                     const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
                         credentials: 'include',

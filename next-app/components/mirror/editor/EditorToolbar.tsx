@@ -52,7 +52,13 @@ export default function EditorToolbar({
 
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
-    const theme = "dark"; // Defaulting to dark
+
+    // Sync fullscreen state with actual browser fullscreen
+    useEffect(() => {
+        const handler = () => setIsFullScreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
 
     const handleLanguageChange = (langId: string) => {
         // useCodePersistence.handleSetLanguage handles loading saved code / template
@@ -67,18 +73,11 @@ export default function EditorToolbar({
     };
 
     const handleFullScreen = () => {
-        setIsFullScreen(true);
-        const element = document.documentElement;
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        }
+        document.documentElement.requestFullscreen?.();
     };
 
     const handleExitFullScreen = () => {
-        setIsFullScreen(false);
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+        document.exitFullscreen?.();
     };
 
     const handleSubmitClick = () => {
