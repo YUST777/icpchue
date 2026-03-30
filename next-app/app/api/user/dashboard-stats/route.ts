@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
                 })
             )).sort().reverse() as string[];
 
+            const dateSet = new Set(uniqueDates);
+
             let streak = 0;
             const today = new Date().toISOString().split('T')[0];
             const yesterdayDate = new Date();
@@ -73,19 +75,20 @@ export async function GET(request: NextRequest) {
             const yesterday = yesterdayDate.toISOString().split('T')[0];
 
             let currentDateCheck = today;
-            if (!uniqueDates.includes(today)) {
-                if (uniqueDates.includes(yesterday)) {
+            if (!dateSet.has(today)) {
+                if (dateSet.has(yesterday)) {
                     currentDateCheck = yesterday;
                 }
             }
 
-            if (uniqueDates.includes(currentDateCheck)) {
+            if (dateSet.has(currentDateCheck)) {
                 streak = 1;
                 const checkDate = new Date(currentDateCheck);
-                for (let i = 1; i < uniqueDates.length; i++) {
+                // Check at most 365 consecutive days (reasonable max streak)
+                for (let i = 1; i <= 365; i++) {
                     checkDate.setDate(checkDate.getDate() - 1);
                     const checkString = checkDate.toISOString().split('T')[0];
-                    if (uniqueDates.includes(checkString)) {
+                    if (dateSet.has(checkString)) {
                         streak++;
                     } else {
                         break;

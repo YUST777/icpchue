@@ -11,6 +11,18 @@ interface TrackPayload {
 // Debounce map to prevent duplicate rapid-fire events
 const lastSent = new Map<string, number>();
 const DEBOUNCE_MS = 2000;
+const MAX_DEBOUNCE_ENTRIES = 200;
+
+// Periodic cleanup of stale debounce entries
+if (typeof window !== 'undefined') {
+    setInterval(() => {
+        if (lastSent.size <= MAX_DEBOUNCE_ENTRIES) return;
+        const now = Date.now();
+        for (const [key, ts] of lastSent) {
+            if (now - ts > 30000) lastSent.delete(key); // Remove entries older than 30s
+        }
+    }, 60000);
+}
 
 // Generate a unique session ID per browser tab (persists across navigations within the tab)
 function getSessionId(): string {

@@ -93,8 +93,11 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         return weeks;
     }, [stats.activity]);
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const totalSubmissions = Object.values(stats.activity).reduce((a, b) => a + b, 0);
+    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const totalSubmissions = useMemo(
+        () => Object.values(stats.activity).reduce((a, b) => a + b, 0),
+        [stats.activity]
+    );
 
     return {
         stats,
