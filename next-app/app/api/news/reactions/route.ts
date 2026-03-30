@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { redis } from '@/lib/redis';
-import { rateLimit } from '@/lib/rate-limit';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { redis } from '@/lib/db/redis';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function GET(req: NextRequest) {
     const authResult = await verifyAuth(req);

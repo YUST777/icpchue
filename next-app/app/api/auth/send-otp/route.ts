@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomInt } from 'crypto';
-import { rateLimit } from '@/lib/rate-limit';
-import { createBlindIndex } from '@/lib/encryption';
-import { query } from '@/lib/db';
-import { redis } from '@/lib/redis';
-import { sendOtpEmail } from '@/lib/email';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { createBlindIndex } from '@/lib/security/encryption';
+import { query } from '@/lib/db/db';
+import { redis } from '@/lib/db/redis';
+import { sendOtpEmail } from '@/lib/services/email';
 
 const OTP_TTL = 300; // 5 minutes
 

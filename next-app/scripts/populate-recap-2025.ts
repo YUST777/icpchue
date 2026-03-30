@@ -7,7 +7,7 @@
  * Usage: npx ts-node scripts/populate-recap-2025.ts
  */
 
-import { query } from '../lib/db';
+import { query } from '../lib/db/db';
 import problemsMetadata from '../data/problems-metadata.json';
 
 // Create a lookup map for problem metadata

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
-import { addCacheBust } from '@/lib/cache-version';
+import { addCacheBust } from '@/lib/cache/cache-version';
 
 // Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
@@ -60,7 +60,7 @@ interface SheetUser {
     acceptedCount: number;
 }
 
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export default function LeaderboardPage() {
     useAuth(); // Keep auth context active

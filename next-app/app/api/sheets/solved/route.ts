@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
 
 // Smart endpoint: Returns ONLY the list of solved problem IDs for a sheet
 // Much more efficient than fetching all submissions

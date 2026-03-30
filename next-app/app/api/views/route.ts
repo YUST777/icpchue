@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
 
 export async function POST(req: NextRequest) {
     const user = await verifyAuth(req);
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
                 `, [user.id]);
 
                 if (parseInt(viewCheck.rows[0].unique_sessions) >= 3) {
-                    const { updateUserStatus } = await import('@/lib/achievements');
+                    const { updateUserStatus } = await import('@/lib/services/achievements');
                     await updateUserStatus(user.id, 'is_approval_unlocked', true);
                 }
             } catch {

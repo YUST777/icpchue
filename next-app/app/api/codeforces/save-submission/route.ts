@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
-import { invalidateCache } from '@/lib/cache';
-import { rateLimit } from '@/lib/rate-limit';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { invalidateCache } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 /**
  * POST /api/codeforces/save-submission
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
 
         if (status === 'SOLVED') {
             // Update daily streak and solve counts
-            const { updateStreakOnSolve } = await import('@/lib/streaks');
+            const { updateStreakOnSolve } = await import('@/lib/services/streaks');
             await updateStreakOnSolve(user.id);
 
             await invalidateCache(`user:${user.id}:dashboard_stats`);
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
                         if (total > 0 && solved >= total) {
                             // Sheet 1 Achievement is for Level 0 (Newcomers) or Level 1 first sheet
                             if ((level_number === 0 || level_number === 1) && sheet_number === 1) {
-                                const { updateUserStatus } = await import('@/lib/achievements');
+                                const { updateUserStatus } = await import('@/lib/services/achievements');
                                 await updateUserStatus(user.id, 'sheet_1_solved', true);
                             }
                         }
@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
         }
 
 
-        const { syncRank1Achievement } = await import('@/lib/achievements');
+        const { syncRank1Achievement } = await import('@/lib/services/achievements');
         await syncRank1Achievement('submission');
 
         return NextResponse.json({

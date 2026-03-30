@@ -3,9 +3,9 @@
  * Grant all achievements to 8241043@horus.edu.eg
  */
 
-import { query } from '../lib/db';
-import { createBlindIndex } from '../lib/encryption';
-import { grantAchievement, ACHIEVEMENTS } from '../lib/achievements';
+import { query } from '../lib/db/db';
+import { createBlindIndex } from '../lib/security/encryption';
+import { grantAchievement, ACHIEVEMENTS } from '../lib/services/achievements';
 
 const EMAIL = '8241043@horus.edu.eg'.trim().toLowerCase();
 
@@ -56,8 +56,8 @@ async function run() {
 
     // Invalidate profile cache so changes show immediately
     try {
-        const { invalidateCache } = await import('../lib/cache');
-        const { CACHE_VERSION } = await import('../lib/cache-version');
+        const { invalidateCache } = await import('../lib/cache/cache');
+        const { CACHE_VERSION } = await import('../lib/cache/cache-version');
         await invalidateCache(`user:${userId}:profile:${CACHE_VERSION}`);
         await invalidateCache(`user:${userId}:achievements`);
         console.log('  Cache invalidated');

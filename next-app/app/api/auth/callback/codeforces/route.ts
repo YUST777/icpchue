@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerClient } from '@supabase/ssr';
 
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
 
             // Perform initial scrape to show stats immediately
             try {
-                const { scrapeCodeforces } = await import('@/lib/codeforces');
+                const { scrapeCodeforces } = await import('@/lib/services/codeforces');
                 const codeforcesData = await scrapeCodeforces(handle);
                 if (codeforcesData) {
                     await query(
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
             }
 
             // Invalidate profile cache
-            const { invalidateCache } = await import('@/lib/cache');
+            const { invalidateCache } = await import('@/lib/cache/cache');
             await invalidateCache(`user:${authUser.id}:profile`);
             await invalidateCache(`user:${authUser.id}:dashboard_stats`);
             await invalidateCache(`user:${authUser.id}:roadmap`);

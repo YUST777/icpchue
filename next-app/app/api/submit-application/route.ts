@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { scraperQueue } from '@/lib/queue';
-import { encrypt, createBlindIndex } from '@/lib/encryption';
-import { sanitizeInput } from '@/lib/validation';
+import { query } from '@/lib/db/db';
+import { scraperQueue } from '@/lib/db/queue';
+import { encrypt, createBlindIndex } from '@/lib/security/encryption';
+import { sanitizeInput } from '@/lib/security/validation';
 
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function POST(req: NextRequest) {
     // 1. Rate Limiting (Global Redis)

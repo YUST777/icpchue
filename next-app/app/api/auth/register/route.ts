@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '@/lib/rate-limit';
-import { getPool, query } from '@/lib/db';
-import { encrypt, createBlindIndex } from '@/lib/encryption';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { getPool, query } from '@/lib/db/db';
+import { encrypt, createBlindIndex } from '@/lib/security/encryption';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { redis } from '@/lib/redis';
-import { sanitizeInput } from '@/lib/validation';
-import { scraperQueue } from '@/lib/queue';
+import { redis } from '@/lib/db/redis';
+import { sanitizeInput } from '@/lib/security/validation';
+import { scraperQueue } from '@/lib/db/queue';
 
 const OTP_ENABLED = process.env.REGISTER_OTP_ENABLED === 'true';
 
@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
             await client.query('COMMIT');
 
             // Post-transaction jobs
-            import('@/lib/achievements').then(({ grantAchievement, ACHIEVEMENTS }) =>
+            import('@/lib/services/achievements').then(({ grantAchievement, ACHIEVEMENTS }) =>
                 grantAchievement(newUser.id, ACHIEVEMENTS.WELCOME)
             ).catch(() => {});
 

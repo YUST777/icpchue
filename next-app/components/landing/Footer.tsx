@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { translations } from '@/lib/translations';
+import { translations } from '@/lib/utils/translations';
 import { SiFacebook, SiTelegram } from 'react-icons/si';
 import { FaLinkedin } from 'react-icons/fa';
 

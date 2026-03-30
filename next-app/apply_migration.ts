@@ -1,4 +1,4 @@
-import { query } from './lib/db';
+import { query } from './lib/db/db';
 import * as fs from 'fs';
 import * as path from 'path';
 

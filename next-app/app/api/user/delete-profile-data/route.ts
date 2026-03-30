@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
 
 export async function POST(request: NextRequest) {
     try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Invalidate relevant caches
-        const { invalidateCache } = await import('@/lib/cache');
+        const { invalidateCache } = await import('@/lib/cache/cache');
         await invalidateCache(`user:${userId}:profile`);
         await invalidateCache(`user:${userId}:dashboard_stats`);
         if (field === 'codeforces') {

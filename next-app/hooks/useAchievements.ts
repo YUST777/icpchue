@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { addCacheBust } from '@/lib/cache-version';
-import { fetchWithCache } from '@/lib/api-cache';
+import { addCacheBust } from '@/lib/cache/cache-version';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export interface Achievement {
     id: number;

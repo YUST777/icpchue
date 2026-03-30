@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createBlindIndex } from '@/lib/encryption';
-import { query } from '@/lib/db';
-import { sanitizeInput } from '@/lib/validation';
-import { rateLimit } from '@/lib/rate-limit';
-import { redis } from '@/lib/redis';
+import { createBlindIndex } from '@/lib/security/encryption';
+import { query } from '@/lib/db/db';
+import { sanitizeInput } from '@/lib/security/validation';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { redis } from '@/lib/db/redis';
 
 export async function POST(req: NextRequest) {
     try {

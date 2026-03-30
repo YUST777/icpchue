@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
-import { rateLimit } from '@/lib/rate-limit';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 /**
  * Returns analytics stats for a specific problem from our own DB.

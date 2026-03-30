@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { rateLimit } from '@/lib/rate-limit';
-import { getCachedData } from '@/lib/cache';
+import { verifyAuth } from '@/lib/auth/auth';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { getCachedData } from '@/lib/cache/cache';
 
 // Cache for 1 hour to handle "Low Cost" requirement
 const CACHE_KEY = 'cf:problem_stats';

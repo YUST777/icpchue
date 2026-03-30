@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
-import { createBlindIndex } from '@/lib/encryption';
-import { query } from '@/lib/db';
-import { sendPasswordResetEmail } from '@/lib/email';
-import { rateLimit } from '@/lib/rate-limit';
-import { redis } from '@/lib/redis';
+import { createBlindIndex } from '@/lib/security/encryption';
+import { query } from '@/lib/db/db';
+import { sendPasswordResetEmail } from '@/lib/services/email';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { redis } from '@/lib/db/redis';
 
 const TOKEN_TTL = 3600; // 1 hour
 

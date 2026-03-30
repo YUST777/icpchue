@@ -1,4 +1,4 @@
-import { getDevLog } from '@/lib/devlog';
+import { getDevLog } from '@/lib/content/devlog';
 import { Metadata } from 'next';
 import React from 'react';
 
