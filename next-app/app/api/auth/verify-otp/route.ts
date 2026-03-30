@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '@/lib/rate-limit';
-import { redis } from '@/lib/redis';
-import { query } from '@/lib/db';
-import { createBlindIndex } from '@/lib/encryption';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { redis } from '@/lib/db/redis';
+import { query } from '@/lib/db/db';
+import { createBlindIndex } from '@/lib/security/encryption';
 
 const CODE_RE = /^\d{6}$/;
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { scrapeCodeforces, extractUsername } from '@/lib/codeforces';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { scrapeCodeforces, extractUsername } from '@/lib/services/codeforces';
 
 // Add type definition for global
 declare global {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             // Check for achievements
             if (codeforcesData.rating && parseInt(String(codeforcesData.rating)) >= 500) {
                 try {
-                    const { grantAchievement, ACHIEVEMENTS, syncRank1Achievement } = await import('@/lib/achievements');
+                    const { grantAchievement, ACHIEVEMENTS, syncRank1Achievement } = await import('@/lib/services/achievements');
                     await grantAchievement(userId, ACHIEVEMENTS.RANK_500);
                     await syncRank1Achievement('refresh');
                 } catch {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Invalidate caches
-            const { invalidateCache } = await import('@/lib/cache');
+            const { invalidateCache } = await import('@/lib/cache/cache');
             await invalidateCache(`user:${userId}:profile`);
             await invalidateCache('leaderboard:codeforces');
 

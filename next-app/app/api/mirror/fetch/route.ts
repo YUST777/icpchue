@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { rateLimit } from '@/lib/rate-limit';
+import { verifyAuth } from '@/lib/auth/auth';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 /**
  * POST /api/mirror/fetch

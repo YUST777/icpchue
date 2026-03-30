@@ -26,7 +26,7 @@ import { useCodeforcesSubmission } from '@/hooks/contest/useCodeforcesSubmission
 import { useLocalTestRunner } from '@/hooks/contest/useLocalTestRunner';
 import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
 import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 import { useTrack } from '@/hooks/useTrack';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 

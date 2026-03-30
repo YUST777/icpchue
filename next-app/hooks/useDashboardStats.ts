@@ -36,7 +36,7 @@ export interface UseDashboardStatsReturn {
     totalSubmissions: number;
 }
 
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export function useDashboardStats(): UseDashboardStatsReturn {
     const { user } = useAuth();

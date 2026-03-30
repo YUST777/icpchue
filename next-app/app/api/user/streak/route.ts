@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { getUserStreak } from '@/lib/streaks';
-import { getCache, setCache } from '@/lib/cache';
-import { rateLimit } from '@/lib/rate-limit';
+import { verifyAuth } from '@/lib/auth/auth';
+import { getUserStreak } from '@/lib/services/streaks';
+import { getCache, setCache } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 /**
  * GET /api/user/streak

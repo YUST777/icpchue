@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Hexagon, ChevronDown, Pencil } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 import AchievementsWidget from '@/components/achievements/AchievementsWidget';
 import CurrentSheetWidget from '@/components/dashboard/CurrentSheetWidget';

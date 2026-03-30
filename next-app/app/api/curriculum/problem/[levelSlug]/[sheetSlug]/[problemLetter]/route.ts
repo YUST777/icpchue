@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query } from '@/lib/db/db';
 
 /**
  * GET /api/curriculum/problem/[levelSlug]/[sheetSlug]/[problemLetter]

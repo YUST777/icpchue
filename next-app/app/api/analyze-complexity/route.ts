@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
 
 // Add type definition for global
 declare global {

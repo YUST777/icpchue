@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
-import { getCachedData } from '@/lib/cache';
-import { rateLimit } from '@/lib/rate-limit';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { getCachedData } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 const TIMEOUT_MS = 20000; // 20s - avoid gateway 504 (typically 60-100s)
 

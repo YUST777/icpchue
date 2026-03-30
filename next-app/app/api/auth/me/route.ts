@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { decrypt } from '@/lib/encryption';
-import { verifyAuth } from '@/lib/auth';
-import { getCachedData } from '@/lib/cache';
-import { CACHE_VERSION } from '@/lib/cache-version';
+import { query } from '@/lib/db/db';
+import { decrypt } from '@/lib/security/encryption';
+import { verifyAuth } from '@/lib/auth/auth';
+import { getCachedData } from '@/lib/cache/cache';
+import { CACHE_VERSION } from '@/lib/cache/cache-version';
 
 export async function GET(req: NextRequest) {
     try {

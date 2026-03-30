@@ -2,7 +2,7 @@
 
 import { Globe2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { translations } from '@/lib/translations';
+import { translations } from '@/lib/utils/translations';
 
 export default function Network() {
     const { language } = useLanguage();

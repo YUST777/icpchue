@@ -1,9 +1,9 @@
 import React from 'react';
-import Session1Content from './sessionContent/Session1Content';
-import Session3Content from './sessionContent/Session3Content';
-import Session4Content from './sessionContent/Session4Content';
-import Session5Content from './sessionContent/Session5Content';
-import { FullRevisionContent, ExamTrainingContent } from './sessionContent/Programming1Content';
+import Session1Content from './content/sessions/Session1Content';
+import Session3Content from './content/sessions/Session3Content';
+import Session4Content from './content/sessions/Session4Content';
+import Session5Content from './content/sessions/Session5Content';
+import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Programming1Content';
 
 // --- Data Definitions ---
 

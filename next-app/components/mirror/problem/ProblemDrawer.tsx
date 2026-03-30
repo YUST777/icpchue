@@ -14,7 +14,7 @@ import {
     getInternalRoute,
     getDifficultyColor,
     ParsedCodeforcesUrl,
-} from "@/lib/parseCodeforcesUrl";
+} from "@/lib/utils/parseCodeforcesUrl";
 import { getNavigationBaseUrl } from "@/lib/utils/codeforcesUtils";
 
 /* ─── Types ─── */

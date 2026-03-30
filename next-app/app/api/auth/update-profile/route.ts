@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { sanitizeInput } from '@/lib/validation';
-import { invalidateCache } from '@/lib/cache';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { sanitizeInput } from '@/lib/security/validation';
+import { invalidateCache } from '@/lib/cache/cache';
 
 export async function POST(req: NextRequest) {
     const authResult = await verifyAuth(req);

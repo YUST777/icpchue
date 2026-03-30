@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
-import { getProblem, getSheet } from '@/lib/problems';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { getProblem, getSheet } from '@/lib/content/problems';
 
 export async function GET(
     req: NextRequest,

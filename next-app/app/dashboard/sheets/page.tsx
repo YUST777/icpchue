@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpen, FileCode2, Info, X, ChevronRight, Calendar, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { curriculum } from '@/lib/curriculum';
-import { fetchWithCache } from '@/lib/api-cache';
+import { curriculum } from '@/lib/content/curriculum';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export default function SheetsPage() {
     const router = useRouter();

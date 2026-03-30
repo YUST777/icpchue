@@ -1,4 +1,4 @@
-import { query } from './lib/db';
+import { query } from './lib/db/db';
 
 async function main() {
     try {

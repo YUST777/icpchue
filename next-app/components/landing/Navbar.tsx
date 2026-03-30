@@ -16,7 +16,7 @@ import {
 import { FaLinkedin } from 'react-icons/fa';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { translations } from '@/lib/translations';
+import { translations } from '@/lib/utils/translations';
 
 const socialLinks = [
     { name: 'Facebook', url: 'https://www.facebook.com/icpchue/', icon: SiFacebook, color: '#1877F2' },

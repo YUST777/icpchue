@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Calendar, FileText, Download, X, ZoomIn, ChevronRight } from 'lucide-react';
 import { notFound, useParams } from 'next/navigation';
-import { getDevLog } from '@/lib/devlog';
+import { getDevLog } from '@/lib/content/devlog';
 import dynamic from 'next/dynamic';
 import { MapExpandedProvider } from '@/context/MapExpandedContext';
 import DOMPurify from 'isomorphic-dompurify';

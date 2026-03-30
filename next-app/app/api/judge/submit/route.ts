@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
-import { invalidateCache } from '@/lib/cache';
-import { rateLimit } from '@/lib/rate-limit';
+import { invalidateCache } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 // Self-hosted Judge0 Configuration
 const JUDGE0_API_URL = process.env.JUDGE0_API_URL;
@@ -346,7 +346,7 @@ export async function POST(req: NextRequest) {
                             const levelNum = levelInfo.rows[0].level_number;
                             // Sheet 1 Achievement is for Level 0 (Newcomers) or Level 1 first sheet
                             if ((levelNum === 0 || levelNum === 1) && sheet.sheet_number === 1) {
-                                const { updateUserStatus } = await import('@/lib/achievements');
+                                const { updateUserStatus } = await import('@/lib/services/achievements');
                                 await updateUserStatus(user.id, 'sheet_1_solved', true);
                             }
                         }
@@ -356,7 +356,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const { syncRank1Achievement } = await import('@/lib/achievements');
+        const { syncRank1Achievement } = await import('@/lib/services/achievements');
         await syncRank1Achievement('submission');
 
         return NextResponse.json({

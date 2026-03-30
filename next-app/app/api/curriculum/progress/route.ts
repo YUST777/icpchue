@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
-import { getCachedData } from '@/lib/cache';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
+import { getCachedData } from '@/lib/cache/cache';
 
 export const dynamic = 'force-dynamic';
 

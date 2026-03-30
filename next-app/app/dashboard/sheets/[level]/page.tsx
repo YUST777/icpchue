@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { FileCode2, ChevronRight, Loader2, Info, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 interface DBSheet {
     id: string;

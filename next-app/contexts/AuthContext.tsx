@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { CACHE_VERSION } from '@/lib/cache-version';
-import { fetchWithCache, clearApiCache } from '@/lib/api-cache';
+import { CACHE_VERSION } from '@/lib/cache/cache-version';
+import { fetchWithCache, clearApiCache } from '@/lib/cache/api-cache';
 import { createClient } from '@/lib/supabase/client';
 
 interface User {

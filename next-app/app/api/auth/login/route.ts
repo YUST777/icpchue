@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/cache/rate-limit';
 import { createServerClient } from '@supabase/ssr';
-import { query } from '@/lib/db';
+import { query } from '@/lib/db/db';
 
 export async function POST(req: NextRequest) {
     try {

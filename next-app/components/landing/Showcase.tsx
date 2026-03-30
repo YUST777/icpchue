@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { translations } from '@/lib/translations';
+import { translations } from '@/lib/utils/translations';
 
 export default function Showcase() {
     const { language } = useLanguage();

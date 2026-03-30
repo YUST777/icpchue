@@ -125,8 +125,8 @@ const DevLogEntry = ({ entry, searchQuery }: DevLogEntryProps) => {
     );
 };
 
-import { devLogs, LogEntry } from '@/lib/devlog';
-import { searchDevLogs } from '@/lib/devlog-search';
+import { devLogs, LogEntry } from '@/lib/content/devlog';
+import { searchDevLogs } from '@/lib/content/devlog-search';
 
 export default function DevLogPage() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
