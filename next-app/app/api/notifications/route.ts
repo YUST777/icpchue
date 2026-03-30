@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { verifyAuth } from '@/lib/auth';
+import { query } from '@/lib/db/db';
+import { verifyAuth } from '@/lib/auth/auth';
 
 export async function GET(req: NextRequest) {
     const authResult = await verifyAuth(req);

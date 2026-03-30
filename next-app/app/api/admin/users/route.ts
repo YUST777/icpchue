@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/auth';
-import { query } from '@/lib/db';
-import { decrypt } from '@/lib/encryption';
+import { verifyAdmin } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { decrypt } from '@/lib/security/encryption';
 
 export async function GET(req: NextRequest) {
     try {

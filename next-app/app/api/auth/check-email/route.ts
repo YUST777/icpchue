@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { createBlindIndex } from '@/lib/encryption';
+import { query } from '@/lib/db/db';
+import { createBlindIndex } from '@/lib/security/encryption';
 
 export async function POST(req: NextRequest) {
     try {

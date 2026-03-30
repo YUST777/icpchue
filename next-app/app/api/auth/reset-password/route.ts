@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { redis } from '@/lib/redis';
-import { rateLimit } from '@/lib/rate-limit';
+import { redis } from '@/lib/db/redis';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 const TOKEN_RE = /^[0-9a-f]{64}$/;
 

@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { rateLimit } from '@/lib/rate-limit';
+import { query } from '@/lib/db/db';
+import { rateLimit } from '@/lib/cache/rate-limit';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';

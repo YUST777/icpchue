@@ -4,10 +4,10 @@
  * Apply → OTP → Register. Removes user, auth, application, and Redis keys.
  */
 
-import { query } from '../lib/db';
-import { createBlindIndex } from '../lib/encryption';
+import { query } from '../lib/db/db';
+import { createBlindIndex } from '../lib/security/encryption';
 import { createAdminClient } from '../lib/supabase/admin';
-import { redis } from '../lib/redis';
+import { redis } from '../lib/db/redis';
 
 const EMAIL = '8241043@horus.edu.eg'.trim().toLowerCase();
 const STUDENT_ID = '8241043';

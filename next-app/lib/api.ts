@@ -1,6 +1,6 @@
 'use client';
 
-import { addCacheBust } from './cache-version';
+import { addCacheBust } from './cache/cache-version';
 
 interface FetchOptions extends RequestInit {
     headers?: Record<string, string>;

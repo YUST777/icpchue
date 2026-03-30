@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { curriculum } from '@/lib/curriculum';
-import { verifyAuth } from '@/lib/auth';
-import { getCachedData } from '@/lib/cache';
+import { query } from '@/lib/db/db';
+import { curriculum } from '@/lib/content/curriculum';
+import { verifyAuth } from '@/lib/auth/auth';
+import { getCachedData } from '@/lib/cache/cache';
 
 export async function GET(req: NextRequest) {
     try {

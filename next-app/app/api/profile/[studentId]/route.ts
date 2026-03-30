@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import { createBlindIndex, decrypt } from '@/lib/encryption';
-import { getCachedData } from '@/lib/cache';
-import { rateLimit } from '@/lib/rate-limit';
+import { query } from '@/lib/db/db';
+import { createBlindIndex, decrypt } from '@/lib/security/encryption';
+import { getCachedData } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function GET(
     req: NextRequest,

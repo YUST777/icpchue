@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
 
 const INTERVAL_MAP: Record<string, string> = {
     '1d': '1 day',

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth';
-import { rateLimit } from '@/lib/rate-limit';
-import { pushEvent } from '@/lib/track-buffer';
+import { verifyAuth } from '@/lib/auth/auth';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { pushEvent } from '@/lib/services/track-buffer';
 
 const VALID_ACTIONS = new Set([
     // Core UI actions

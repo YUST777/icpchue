@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { camps } from '@/lib/sessionData';
-import { devLogs } from '@/lib/devlog';
+import { devLogs } from '@/lib/content/devlog';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://icpchue.com';

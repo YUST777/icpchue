@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Problem, CFProblemData, Example } from '@/components/mirror/types';
-import { fetchWithCache } from '@/lib/api-cache';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 import { useCodeforcesHandle } from './useCodeforcesHandle';
 
 interface UseProblemDataParams {
