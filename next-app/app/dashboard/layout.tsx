@@ -14,6 +14,7 @@ import {
     ChevronRight, ChevronLeft, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '' }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string }) {
     const [showTooltip, setShowTooltip] = useState(false);
@@ -75,6 +76,9 @@ function MobileNavItem({ icon, label, id, active = false, onClick }: { icon: Rea
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const { user, profile, loading, isAuthenticated, logout } = useAuth();
     const router = useRouter();
+
+    // Track page navigation across all dashboard pages
+    usePageTracking();
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
