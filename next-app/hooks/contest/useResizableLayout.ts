@@ -13,7 +13,7 @@ export function useResizableLayout(): UseResizableLayoutReturn {
     const lastWidth = useRef(50);
     const isResizingRef = useRef(false);
 
-    // Load saved width
+    // Load saved width from localStorage (instant, no API call)
     useEffect(() => {
         const savedWidth = localStorage.getItem('verdict-layout-width');
         if (savedWidth && leftPanelRef.current) {
@@ -23,22 +23,6 @@ export function useResizableLayout(): UseResizableLayoutReturn {
                 leftPanelRef.current.style.setProperty('--panel-width', `${width}%`);
             }
         }
-        // Async: fetch from DB (cross-device sync)
-        fetch('/api/user/preferences?keys=verdict-layout-width', { credentials: 'include' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                if (data?.prefs?.['verdict-layout-width']) {
-                    const w = parseFloat(data.prefs['verdict-layout-width']);
-                    if (!isNaN(w) && w >= 20 && w <= 80) {
-                        lastWidth.current = w;
-                        if (leftPanelRef.current) {
-                            leftPanelRef.current.style.setProperty('--panel-width', `${w}%`);
-                        }
-                        localStorage.setItem('verdict-layout-width', String(w));
-                    }
-                }
-            })
-            .catch(() => {});
     }, []);
 
     // Ghost Resizer approach — zero layout reflow during drag
