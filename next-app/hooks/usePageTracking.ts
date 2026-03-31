@@ -61,38 +61,40 @@ export function usePageTracking() {
     useEffect(() => {
         const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
 
-        // Record leaving old page
+        // Record leaving old page (debounced, non-blocking)
         if (lastPathRef.current && lastPathRef.current !== pathname) {
             const timeSpent = Date.now() - enterTimeRef.current;
-            fetch('/api/track/navigation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    page: lastPathRef.current,
-                    sessionId,
-                    timeSpent,
-                    leftPage: true,
-                }),
-                keepalive: true,
-            }).catch(() => {});
+            const oldPath = lastPathRef.current;
+            // Use requestIdleCallback to avoid blocking navigation
+            const send = () => {
+                fetch('/api/track/navigation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ page: oldPath, sessionId, timeSpent, leftPage: true }),
+                    keepalive: true,
+                }).catch(() => {});
+            };
+            if ('requestIdleCallback' in window) {
+                (window as any).requestIdleCallback(send, { timeout: 2000 });
+            } else {
+                setTimeout(send, 100);
+            }
         }
 
         lastPathRef.current = pathname;
         enterTimeRef.current = Date.now();
 
-        // Record entering new page
-        fetch('/api/track/navigation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                page: pathname,
-                referrer: document.referrer || null,
-                sessionId,
-            }),
-            keepalive: true,
-        }).catch(() => {});
+        // Record entering new page (delayed to not block render)
+        const timer = setTimeout(() => {
+            fetch('/api/track/navigation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ page: pathname, referrer: document.referrer || null, sessionId }),
+                keepalive: true,
+            }).catch(() => {});
+        }, 500); // 500ms delay — let the page render first
 
         // Record leaving on unload
         const handleUnload = () => {
@@ -105,7 +107,10 @@ export function usePageTracking() {
         };
 
         window.addEventListener('beforeunload', handleUnload);
-        return () => window.removeEventListener('beforeunload', handleUnload);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('beforeunload', handleUnload);
+        };
     }, [pathname]);
 
     // Track JS errors
