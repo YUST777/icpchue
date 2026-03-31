@@ -15,12 +15,18 @@ const VALID_ACTIONS = new Set([
     'tab_hidden', 'tab_visible', 'window_blur', 'window_focus',
     'text_copy', 'user_idle', 'heartbeat', 'problem_leave',
     'context_menu',
-    // New: enhanced tracking
+    // Enhanced tracking
     'scroll_depth', 'code_change', 'editor_selection',
     'resize_window', 'mouse_idle_zone', 'error_encounter',
     'submission_result', 'test_result', 'code_restore',
     'whiteboard_draw', 'solution_video_play', 'solution_video_seek',
     'devtools_open', 'print_attempt',
+    // Session & device context
+    'session_start', 'session_end',
+    'connection_online', 'connection_offline',
+    // Search & feature usage
+    'search_query', 'command_palette_open', 'command_palette_action',
+    'format_code', 'export_image',
 ]);
 
 export async function POST(req: NextRequest) {
@@ -64,6 +70,37 @@ export async function POST(req: NextRequest) {
             user_agent: ua,
             created_at: new Date().toISOString(),
         }).catch(() => {});
+
+        // Special handling for specific events
+        if (action === 'error_encounter' && metadata) {
+            // Store in dedicated error_logs table for fast querying
+            import('@/lib/db').then(({ query: dbQuery }) => {
+                dbQuery(
+                    `INSERT INTO error_logs (user_id, session_id, error_message, error_source, error_line, error_col, page_path, error_type)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                    [user.id, sessionId || '', metadata.message?.slice(0, 500) || 'Unknown', metadata.source || null,
+                     metadata.line || null, metadata.col || null, metadata.page || null, metadata.type || 'js_error']
+                ).catch(() => {});
+            });
+        }
+
+        if (action === 'session_start' && metadata && sessionId) {
+            // Update session with device context
+            import('@/lib/db').then(({ query: dbQuery }) => {
+                dbQuery(
+                    `UPDATE user_sessions SET 
+                        screen_width = $1, screen_height = $2, viewport_width = $3, viewport_height = $4,
+                        pixel_ratio = $5, timezone = $6, language = $7, connection_type = $8,
+                        referrer = $9, utm_source = $10, utm_medium = $11, utm_campaign = $12
+                     WHERE user_id = $13 AND session_id = $14`,
+                    [metadata.screen?.w, metadata.screen?.h, metadata.viewport?.w, metadata.viewport?.h,
+                     metadata.pixelRatio, metadata.timezone?.slice(0, 50), metadata.language?.slice(0, 10),
+                     metadata.connection?.type, metadata.referrer?.slice(0, 500),
+                     metadata.utmSource?.slice(0, 100), metadata.utmMedium?.slice(0, 100), metadata.utmCampaign?.slice(0, 100),
+                     user.id, sessionId]
+                ).catch(() => {});
+            });
+        }
 
         return NextResponse.json({ ok: true });
     } catch {
