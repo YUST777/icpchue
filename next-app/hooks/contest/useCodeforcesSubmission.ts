@@ -46,6 +46,7 @@ export function useCodeforcesSubmission({
     const [submitting, setSubmitting] = useState(false);
     const activeSubIdRef = useRef<number | null>(null);
     const isMountedRef = useRef(true);
+    const submittingRef = useRef(false); // Ref to prevent double-submit race
     // Refs for values used inside handleSubmit to keep the callback stable
     const codeRef = useRef(code);
     const languageRef = useRef(language);
@@ -67,8 +68,9 @@ export function useCodeforcesSubmission({
     const handleSubmit = useCallback(async () => {
         const code = codeRef.current;
         const language = languageRef.current;
-        if (!code || submitting) return;
+        if (!code || submittingRef.current) return;
 
+        submittingRef.current = true;
         setSubmitting(true);
         setIsTestPanelVisible(true);
         setTestPanelActiveTab('codeforces');
@@ -353,10 +355,18 @@ export function useCodeforcesSubmission({
 
                 const pollCfApi = async () => {
                     try {
-                        const handleParam = userHandle ? `&handle=${encodeURIComponent(userHandle)}` : '';
-                        const cookieParam = `&cookies=${encodeURIComponent(extResponse.cookies)}`;
-                        const typeParam = `&urlType=${urlType}${groupId ? `&groupId=${groupId}` : ''}`;
-                        const res = await fetch(`/api/codeforces/submission?contestId=${contestId}&submissionId=${submissionId}${handleParam}${cookieParam}${typeParam}`);
+                        const res = await fetch('/api/codeforces/submission', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contestId,
+                                submissionId,
+                                handle: userHandle || undefined,
+                                cookies: extResponse.cookies,
+                                urlType,
+                                groupId: groupId || undefined,
+                            }),
+                        });
                         if (res.ok) {
                             return await res.json();
                         }
@@ -404,7 +414,7 @@ export function useCodeforcesSubmission({
                                 verdict: verdictText,
                                 timeMs: status.time || 0,
                                 memoryKb: status.memory || 0,
-                                language,
+                                language: mapLanguageToExtension(language),
                                 sourceCode: code,
                                 cfHandle: userHandle,
                                 urlType,
@@ -463,9 +473,6 @@ export function useCodeforcesSubmission({
                                 substatus: elapsedSec > 15 ? `In queue for ${elapsedSec}s...` : undefined
                             });
                         }
-
-                        // If we got a final verdict, the break above handles it
-                        if (isFinal) break;
                     }
                 }
 
@@ -489,10 +496,11 @@ export function useCodeforcesSubmission({
                 error: 'Failed to submit via server. Please try again.'
             });
         } finally {
+            submittingRef.current = false;
             setSubmitting(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [submitting, contestId, problemId, urlType, groupId, codeforcesUrl, setIsTestPanelVisible, setTestPanelActiveTab, sheetId]);
+    }, [contestId, problemId, urlType, groupId, codeforcesUrl, setIsTestPanelVisible, setTestPanelActiveTab, sheetId]);
 
     return {
         cfStatus,

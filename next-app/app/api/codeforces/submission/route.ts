@@ -78,14 +78,40 @@ async function cfPublicApiCall(method: string, params: Record<string, string> = 
 
 let lastCfApiCall = 0;
 
+// Support both GET (legacy) and POST (cookies in body, not URL)
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const contestId = searchParams.get('contestId');
-    const submissionId = searchParams.get('submissionId');
-    const handle = searchParams.get('handle');
-    const cookies = searchParams.get('cookies');
-    const urlType = searchParams.get('urlType') || 'contest';
-    const groupId = searchParams.get('groupId');
+    return handleSubmissionStatus(req, {
+        contestId: searchParams.get('contestId'),
+        submissionId: searchParams.get('submissionId'),
+        handle: searchParams.get('handle'),
+        cookies: searchParams.get('cookies'),
+        urlType: searchParams.get('urlType') || 'contest',
+        groupId: searchParams.get('groupId'),
+    });
+}
+
+export async function POST(req: NextRequest) {
+    const body = await req.json();
+    return handleSubmissionStatus(req, {
+        contestId: body.contestId,
+        submissionId: String(body.submissionId),
+        handle: body.handle || null,
+        cookies: body.cookies || null,
+        urlType: body.urlType || 'contest',
+        groupId: body.groupId || null,
+    });
+}
+
+async function handleSubmissionStatus(req: NextRequest, params: {
+    contestId: string | null;
+    submissionId: string | null;
+    handle: string | null;
+    cookies: string | null;
+    urlType: string;
+    groupId: string | null;
+}) {
+    const { contestId, submissionId, handle, cookies, urlType, groupId } = params;
 
     if (!contestId || !submissionId) {
         return NextResponse.json({ error: 'Missing contestId or submissionId' }, { status: 400 });
@@ -168,7 +194,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (API_KEY && API_SECRET) {
-            result = await cfApiCall('contest.status', { contestId, from: 1, count: 15 });
+            result = await cfApiCall('contest.status', { contestId, from: 1, count: 50 });
             if (result.status === 'OK') {
                 const sub = result.result.find((s: any) => s.id === parseInt(submissionId));
                 if (sub) {
