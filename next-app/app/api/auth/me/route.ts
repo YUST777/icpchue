@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Fetch profile directly instead of using Redis cache which times out
+        // Fetch profile directly — no longer need sheet_1_solved/is_approval_unlocked from users table
         const userResult = await query(
-            'SELECT id, email, is_verified, last_login_at, created_at, application_id, telegram_username, role, profile_picture, codeforces_handle, codeforces_data, sheet_1_solved, is_approval_unlocked FROM users WHERE id = $1',
+            'SELECT id, email, is_verified, last_login_at, created_at, application_id, telegram_username, role, profile_picture, codeforces_handle, codeforces_data FROM users WHERE id = $1',
             [authUser.id]
         );
 
@@ -56,21 +56,22 @@ export async function GET(req: NextRequest) {
             profile.codeforces_profile = user.codeforces_handle;
         }
 
-        // Inject achievement status into profile for frontend consumption
-        profile.sheet_1_solved = user.sheet_1_solved;
-        profile.is_approval_unlocked = user.is_approval_unlocked;
+        // Fetch user achievements and derive status flags from them
+        const achievementResult = await query(
+            'SELECT achievement_id FROM user_achievements WHERE user_id = $1',
+            [user.id]
+        );
+        const achievementIds = achievementResult.rows.map((r: { achievement_id: string }) => r.achievement_id);
+        profile.achievements = achievementIds;
+
+        // Derive achievement flags from the achievements table (single source of truth)
+        profile.sheet_1_solved = achievementIds.includes('sheet-1');
+        profile.is_approval_unlocked = achievementIds.includes('approval');
 
         // Sync telegram username if missing in profile but present in user
         if (!profile.telegram_username && user.telegram_username) {
             profile.telegram_username = user.telegram_username;
         }
-
-        // Fetch user achievements
-        const achievementResult = await query(
-            'SELECT achievement_id FROM user_achievements WHERE user_id = $1',
-            [user.id]
-        );
-        profile.achievements = achievementResult.rows.map(r => r.achievement_id);
 
         const data = {
             user: {
