@@ -5,18 +5,13 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
 
 // Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
-// Dynamic import for Virtualization to avoid SSR/Build issues with react-virtualized-auto-sizer
 const VirtualLeaderboard = dynamic(() => import('@/components/common/VirtualLeaderboard'), {
     ssr: false,
-    loading: () => (
-        <div className="flex items-center justify-center h-full text-[#666]">
-            <Loader2 className="animate-spin mr-2" size={20} /> Loading list...
-        </div>
-    )
 });
 
 // Medal animation component
@@ -180,8 +175,10 @@ export default function LeaderboardPage() {
                                 <div className="hidden sm:block col-span-2">Submissions</div>
                             </div>
                             {loading ? (
-                                <div className="p-8 flex items-center justify-center flex-1">
-                                    <Loader2 className="animate-spin text-[#E8C15A]" size={32} />
+                                <div className="p-4 space-y-2 flex-1">
+                                    {[1,2,3,4,5,6,7,8].map(i => (
+                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                                    ))}
                                 </div>
                             ) : error ? (
                                 <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
@@ -261,8 +258,10 @@ export default function LeaderboardPage() {
                                 <div className="hidden sm:block col-span-3">Rank</div>
                             </div>
                             {loading ? (
-                                <div className="p-8 flex items-center justify-center flex-1">
-                                    <Loader2 className="animate-spin text-[#E8C15A]" size={32} />
+                                <div className="p-4 space-y-2 flex-1">
+                                    {[1,2,3,4,5,6,7,8].map(i => (
+                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                                    ))}
                                 </div>
                             ) : error ? (
                                 <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">

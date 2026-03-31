@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, ChevronRight, FileCode2, Trophy, Clock, CheckCircle2, Lock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { TracingBeam } from "@/components/ui/tracing-beam";
 import { cn } from "@/lib/utils";
@@ -63,8 +64,23 @@ export default function RoadmapPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={48} />
+            <div className="min-h-screen bg-[#050505] p-4 md:p-8">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48 rounded-lg" />
+                        <Skeleton className="h-4 w-72 rounded" />
+                    </div>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="space-y-3">
+                            <Skeleton className="h-6 w-32 rounded" />
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {[1, 2, 3, 4].map(j => (
+                                    <Skeleton key={j} className="h-24 rounded-xl" />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
