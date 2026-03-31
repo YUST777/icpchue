@@ -7,13 +7,13 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
     ChevronRight, ChevronLeft, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '' }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string }) {
     const [showTooltip, setShowTooltip] = useState(false);
@@ -265,7 +265,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     const handleNav = (path: string) => { router.push(path); setMobileMenuOpen(false); };
 
-    if (loading) return <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center"><TestCasesLoader /></div>;
+    if (loading) return (
+        <div className="min-h-screen bg-[#0B0B0C] p-4 md:p-8">
+            <div className="max-w-6xl mx-auto space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-5 w-40 rounded" />
+                        <Skeleton className="h-3 w-24 rounded" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Skeleton className="h-32 rounded-xl" />
+                    <Skeleton className="h-32 rounded-xl" />
+                    <Skeleton className="h-32 rounded-xl" />
+                </div>
+                <Skeleton className="h-64 rounded-xl" />
+            </div>
+        </div>
+    );
     return (
         <div dir="ltr" className="relative min-h-screen bg-[#0B0B0C] text-[#DCDCDC] font-sans selection:bg-[#CFA144] selection:text-[#121212] w-full max-w-[100vw]">
 

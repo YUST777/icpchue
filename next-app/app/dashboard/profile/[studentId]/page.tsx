@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ChevronLeft, Trophy, Zap, Code, ExternalLink, Shield, Calendar, Lock, Loader2, Award } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
@@ -68,7 +69,21 @@ export default function DashboardPublicProfile() {
     }, [studentId]);
 
     if (loading) {
-        return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#E8C15A] animate-spin" /></div>;
+        return (
+            <div className="p-4 md:p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-48 rounded" />
+                        <Skeleton className="h-4 w-32 rounded" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                </div>
+                <Skeleton className="h-48 rounded-xl" />
+            </div>
+        );
     }
 
     if (error || !profile) {

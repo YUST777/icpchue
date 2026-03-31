@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { BookOpen, ChevronRight, Sparkles } from 'lucide-react';
 import { CurrentSheet } from '@/hooks/useDashboardStats';
 
+import { Skeleton } from '@/components/ui/Skeleton';
+
 interface CurrentSheetWidgetProps {
     sheet: CurrentSheet | null;
     loading?: boolean;
@@ -13,8 +15,12 @@ interface CurrentSheetWidgetProps {
 export default function CurrentSheetWidget({ sheet, loading = false }: CurrentSheetWidgetProps) {
     if (loading) {
         return (
-            <div className="bg-[#121212] rounded-xl border border-white/5 p-6 h-full flex items-center justify-center min-h-[320px]">
-                <div className="w-6 h-6 border-2 border-[#E8C15A] border-t-transparent rounded-full animate-spin" />
+            <div className="bg-[#121212] rounded-xl border border-white/5 p-6 h-full min-h-[320px] space-y-4">
+                <Skeleton className="h-5 w-32 rounded" />
+                <Skeleton className="h-40 w-full rounded-xl" />
+                <Skeleton className="h-4 w-48 rounded" />
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-lg" />
             </div>
         );
     }
