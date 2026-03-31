@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchWithAuth } from '@/lib/api';
 
 export interface CurrentSheet {
     id: string;

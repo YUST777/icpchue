@@ -20,15 +20,15 @@ export default function SheetsPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Levels
-            const levelsData = await fetchWithCache<any>('/api/curriculum/levels', {
-                credentials: 'include'
-            }, 300); // Cache for 5 mins
+            // Fetch levels and progress in parallel
+            const [levelsData, progressData] = await Promise.all([
+                fetchWithCache<any>('/api/curriculum/levels', { credentials: 'include' }, 300),
+                fetchWithCache<any>('/api/curriculum/progress', { credentials: 'include' }, 60),
+            ]);
 
-            if (levelsData && levelsData.levels) {
-                // Map API fields to match existing UI needs
+            if (levelsData?.levels) {
                 const mappedLevels = levelsData.levels.map((l: any) => ({
-                    id: l.slug, // used as key
+                    id: l.slug,
                     slug: l.slug,
                     name: l.name,
                     description: l.description,
@@ -38,11 +38,6 @@ export default function SheetsPage() {
                 }));
                 setLevels(mappedLevels);
             }
-
-            // 2. Fetch Progress
-            const progressData = await fetchWithCache<any>('/api/curriculum/progress', {
-                credentials: 'include'
-            }, 60);
 
             if (progressData) {
                 setProgress(progressData.progress || {});

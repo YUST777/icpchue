@@ -181,24 +181,20 @@ export default function ProblemDrawer({
         if (!sheet || !user) return;
         let cancelled = false;
 
+        // Fetch solved problem IDs from user_progress — lightweight, no submission data
         const fetchSolved = async () => {
             try {
-                const params = new URLSearchParams();
-                if (sheetId) params.set('sheetId', sheetId);
-                params.set('contestId', sheet.contestId);
-                
-                const res = await fetch(`/api/submissions?${params}`);
-                if (res.ok) {
+                const contestId = sheet.contestId;
+                const res = await fetch(`/api/sheets/solved?sheetId=${sheetId}&contestId=${contestId}`, { credentials: 'include' });
+                if (res.ok && !cancelled) {
                     const data = await res.json();
-                    if (!cancelled && data.success) {
-                        const solved = new Set<string>();
-                        data.submissions.forEach((s: any) => {
-                            if (s.verdict === 'Accepted' || s.verdict === 'OK') {
-                                solved.add(`${s.contestId || sheet.contestId}-${s.problemId}`);
-                            }
+                    const solved = new Set<string>();
+                    if (data.solvedIds && Array.isArray(data.solvedIds)) {
+                        data.solvedIds.forEach((id: string) => {
+                            solved.add(`${contestId}-${id}`);
                         });
-                        setSolvedSet(solved);
                     }
+                    setSolvedSet(solved);
                 }
             } catch (err) {
                 console.error('Failed to fetch solved status:', err);
