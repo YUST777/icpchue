@@ -1,41 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
+import { getCachedData } from '@/lib/cache/cache';
 
-// Smart endpoint: Returns ONLY the list of solved problem IDs for a sheet
-// Much more efficient than fetching all submissions
+/**
+ * GET /api/sheets/solved?sheetId=X&contestId=Y
+ * Returns ONLY the list of solved problem IDs for a sheet.
+ * Uses user_progress table (single source of truth for solved status).
+ * Much lighter than fetching all submissions.
+ */
 export async function GET(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { searchParams } = new URL(req.url);
         const sheetId = searchParams.get('sheetId');
+        const contestId = searchParams.get('contestId');
 
-        if (!sheetId) {
-            return NextResponse.json({ error: 'sheetId is required' }, { status: 400 });
+        if (!contestId) {
+            return NextResponse.json({ error: 'contestId is required' }, { status: 400 });
         }
 
-        // Single efficient query - just gets distinct problem IDs with Accepted verdict
-        const result = await query(
-            `SELECT DISTINCT problem_id 
-             FROM training_submissions 
-             WHERE user_id = $1 
-               AND sheet_id = $2 
-               AND verdict = 'Accepted'`,
-            [user.id, sheetId]
-        );
+        const cacheKey = `user:${user.id}:solved:${contestId}`;
+        const solvedIds = await getCachedData(cacheKey, 120, async () => {
+            // Get all solved problems for this contest from user_progress
+            const result = await query(
+                `SELECT problem_id FROM user_progress 
+                 WHERE user_id = $1 AND status = 'SOLVED' AND problem_id LIKE $2`,
+                [user.id, `${contestId}:%`]
+            );
 
-        // Return just the array of problem IDs
-        const solvedProblemIds = result.rows.map((row: { problem_id: string }) => row.problem_id);
-
-        return NextResponse.json({
-            success: true,
-            solvedProblemIds
+            // Extract just the problem letter from "contestId:letter" format
+            return result.rows.map((r: { problem_id: string }) => {
+                const parts = r.problem_id.split(':');
+                return parts[parts.length - 1]; // Return just the letter (A, B, C...)
+            });
         });
 
+        return NextResponse.json({ success: true, solvedIds });
     } catch (error) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
