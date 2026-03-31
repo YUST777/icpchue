@@ -252,17 +252,39 @@ export default function SheetDetailPage() {
     if (authLoading || loading) {
         return (
             <div className="space-y-6">
-                <div className="space-y-3">
-                    <Skeleton className="h-8 w-56 rounded-lg" />
-                    <Skeleton className="h-3 w-full max-w-xs rounded-full" />
-                </div>
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden">
-                    {[1,2,3,4,5,6,7,8].map(i => (
-                        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.03]">
-                            <Skeleton className="h-5 w-5 rounded" />
-                            <Skeleton className="h-4 flex-1 rounded" />
-                            <Skeleton className="h-5 w-14 rounded-full" />
+                {/* Hero skeleton */}
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
+                    <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-40 rounded-lg" />
+                            <Skeleton className="h-4 w-72 rounded" />
                         </div>
+                        <div className="flex items-center gap-4">
+                            <div className="text-center space-y-1">
+                                <Skeleton className="h-7 w-8 rounded mx-auto" />
+                                <Skeleton className="h-3 w-10 rounded" />
+                            </div>
+                            <div className="w-px h-10 bg-white/5" />
+                            <div className="text-center space-y-1">
+                                <Skeleton className="h-7 w-8 rounded mx-auto" />
+                                <Skeleton className="h-3 w-14 rounded" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-4 space-y-1">
+                        <Skeleton className="h-3 w-16 rounded" />
+                        <Skeleton className="h-2 w-full rounded-full" />
+                    </div>
+                </div>
+                {/* Tabs skeleton */}
+                <div className="flex gap-2 border-b border-white/5 pb-px">
+                    <Skeleton className="h-8 w-24 rounded" />
+                    <Skeleton className="h-8 w-32 rounded" />
+                </div>
+                {/* Problem cards grid skeleton */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                    {Array.from({ length: 16 }).map((_, i) => (
+                        <Skeleton key={i} className="aspect-square rounded-xl" />
                     ))}
                 </div>
             </div>

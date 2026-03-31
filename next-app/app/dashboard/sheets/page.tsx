@@ -65,9 +65,26 @@ export default function SheetsPage() {
     if (authLoading) {
         return (
             <div className="space-y-8">
-                <Skeleton className="h-40 rounded-2xl" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}
+                {/* Hero skeleton */}
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 md:p-8 border border-white/5">
+                    <div className="flex items-center gap-4 mb-4">
+                        <Skeleton className="h-12 w-12 rounded-xl" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-56 rounded-lg" />
+                            <Skeleton className="h-4 w-72 rounded" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-4 w-full max-w-xl rounded" />
+                    <Skeleton className="h-4 w-3/4 rounded mt-1.5" />
+                </div>
+                {/* Level cards skeleton */}
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-40 rounded" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {[1,2,3].map(i => (
+                            <Skeleton key={i} className="h-96 rounded-3xl" />
+                        ))}
+                    </div>
                 </div>
             </div>
         );

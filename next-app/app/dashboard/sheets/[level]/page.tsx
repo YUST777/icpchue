@@ -89,13 +89,32 @@ export default function LevelOverviewPage() {
     if (authLoading || loading) {
         return (
             <div className="space-y-8">
-                <div className="space-y-3">
-                    <Skeleton className="h-8 w-48 rounded-lg" />
-                    <Skeleton className="h-4 w-72 rounded" />
-                    <Skeleton className="h-2 w-full max-w-md rounded-full" />
+                {/* Hero skeleton */}
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 md:p-8 border border-white/5">
+                    <div className="flex items-center gap-4 mb-4">
+                        <Skeleton className="h-12 w-12 rounded-xl" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-48 rounded-lg" />
+                            <Skeleton className="h-4 w-64 rounded" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-4 w-full max-w-lg rounded mb-5" />
+                    <div className="space-y-2">
+                        <div className="flex justify-between">
+                            <Skeleton className="h-3 w-24 rounded" />
+                            <Skeleton className="h-3 w-20 rounded" />
+                        </div>
+                        <Skeleton className="h-2.5 w-full rounded-full" />
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-44 rounded-xl" />)}
+                {/* Sheets grid skeleton */}
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-36 rounded" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[1,2,3,4].map(i => (
+                            <Skeleton key={i} className="h-44 rounded-xl" />
+                        ))}
+                    </div>
                 </div>
             </div>
         );
