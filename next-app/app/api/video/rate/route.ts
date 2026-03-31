@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 /**
  * GET /api/video/rate?contestId=...&problemId=...
@@ -65,6 +66,9 @@ export async function POST(req: NextRequest) {
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const rl = await rateLimit(`video-rate:${user.id}`, 20, 60);
+        if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
         const { contestId, problemId, rating } = await req.json();
 

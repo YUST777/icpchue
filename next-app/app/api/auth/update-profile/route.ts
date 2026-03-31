@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { sanitizeInput } from '@/lib/security/validation';
 import { invalidateCache } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function POST(req: NextRequest) {
     const authResult = await verifyAuth(req);
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
     }
 
     const user = authResult;
+
+    const rl = await rateLimit(`update-profile:${user.id}`, 10, 60);
+    if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
     try {
         const body = await req.json();
