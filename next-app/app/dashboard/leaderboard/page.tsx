@@ -4,372 +4,211 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
+import { ExternalLink, Trophy, Code } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 import { addCacheBust } from '@/lib/cache/cache-version';
 
-// Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
-const VirtualLeaderboard = dynamic(() => import('@/components/common/VirtualLeaderboard'), {
-    ssr: false,
-});
 
-// Medal animation component
-const MedalAnimation = ({ place }: { place: 1 | 2 | 3 }) => {
+function MedalAnimation({ place }: { place: 1 | 2 | 3 }) {
     const [animationData, setAnimationData] = useState<unknown>(null);
-
     useEffect(() => {
-        const files = {
-            1: '/tgs/1st Place Medal.json',
-            2: '/tgs/2nd Place Medal.json',
-            3: '/tgs/3rd Place Medal.json'
-        };
-        fetchWithCache<any>(files[place], {}, 3600)
-            .then(data => setAnimationData(data))
-            .catch(err => console.error('Failed to load medal animation:', err));
+        const files = { 1: '/tgs/1st Place Medal.json', 2: '/tgs/2nd Place Medal.json', 3: '/tgs/3rd Place Medal.json' };
+        fetchWithCache<unknown>(files[place], {}, 3600).then(setAnimationData).catch(() => {});
     }, [place]);
-
-    if (!animationData) return <span className="text-[#E8C15A] font-bold">{place}</span>;
-
-    return (
-        <Lottie
-            animationData={animationData}
-            loop={true}
-            style={{ width: 32, height: 32 }}
-        />
-    );
-};
-
-interface CFUser {
-    handle: string;
-    name: string;
-    rating: number;
-    rank: string;
+    if (!animationData) return <span className="text-lg font-black text-[#E8C15A]">{place}</span>;
+    return <Lottie animationData={animationData} loop style={{ width: 28, height: 28 }} />;
 }
 
-interface SheetUser {
-    userId: number;
-    username: string;
-    solvedCount: number;
-    totalSubmissions: number;
-    acceptedCount: number;
-}
-
-import { fetchWithCache } from '@/lib/cache/api-cache';
+interface CFUser { handle: string; name: string; rating: number; rank: string; }
+interface SheetUser { userId: number; username: string; solvedCount: number; totalSubmissions: number; acceptedCount: number; }
 
 export default function LeaderboardPage() {
-    useAuth(); // Keep auth context active
-    const [activeTab, setActiveTab] = useState<'codeforces' | 'sheets'>('sheets');
+    useAuth();
+    const [activeTab, setActiveTab] = useState<'sheets' | 'codeforces'>('sheets');
     const [cfLeaderboard, setCfLeaderboard] = useState<CFUser[]>([]);
     const [sheetsLeaderboard, setSheetsLeaderboard] = useState<SheetUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchLeaderboard = async () => {
-            setLoading(true);
-            setError(null);
-
+        let cancelled = false;
+        setLoading(true);
+        setError(null);
+        (async () => {
             try {
                 if (activeTab === 'codeforces') {
-                    // Cache leaderboard for 5 minutes
                     const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard'), {}, 300);
-                    setCfLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
-                } else if (activeTab === 'sheets') {
-                    // Cache sheets leaderboard for 5 minutes
+                    if (!cancelled) setCfLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+                } else {
                     const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard/sheets'), { credentials: 'include' }, 300);
-                    setSheetsLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+                    if (!cancelled) setSheetsLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
                 }
             } catch (err) {
-                console.error('Failed to fetch leaderboard:', err);
-                setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
+                if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
-        };
-
-        fetchLeaderboard();
+        })();
+        return () => { cancelled = true; };
     }, [activeTab]);
 
-    const getRatingColor = (rating: number) => {
-        if (rating >= 2400) return 'text-red-500';
-        if (rating >= 2100) return 'text-orange-400';
-        if (rating >= 1900) return 'text-purple-400';
-        if (rating >= 1600) return 'text-blue-400';
-        if (rating >= 1400) return 'text-cyan-400';
-        if (rating >= 1200) return 'text-green-400';
+    const getRatingColor = (r: number) => {
+        if (r >= 2400) return 'text-red-500';
+        if (r >= 2100) return 'text-orange-400';
+        if (r >= 1900) return 'text-purple-400';
+        if (r >= 1600) return 'text-blue-400';
+        if (r >= 1400) return 'text-cyan-400';
+        if (r >= 1200) return 'text-green-400';
         return 'text-gray-400';
     };
 
-    const getSolvedBadge = (count: number) => {
-        if (count >= 20) return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black';
-        if (count >= 10) return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-        if (count >= 5) return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
-        return 'bg-[#333] text-[#A0A0A0]';
-    };
+    return (
+        <div className="space-y-5">
+            {/* Header */}
+            <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                    <Trophy className="text-[#E8C15A]" size={24} />
+                    Leaderboard
+                </h2>
+                <p className="text-sm text-white/40 mt-1 ml-9">Compare your progress with the community</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/5 w-fit">
+                {(['sheets', 'codeforces'] as const).map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                            activeTab === tab
+                                ? 'bg-[#E8C15A] text-black shadow-lg'
+                                : 'text-white/40 hover:text-white/70'
+                        }`}
+                    >
+                        {tab === 'sheets' ? 'Training Sheets' : 'CF Rating'}
+                    </button>
+                ))}
+            </div>
+
+            {/* Table */}
+            <div className="bg-[#111] rounded-xl border border-white/5 overflow-hidden">
+                {loading ? (
+                    <div className="p-3 space-y-1.5">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="py-16 text-center">
+                        <p className="text-white/40 text-sm mb-4">{error}</p>
+                        <button onClick={() => window.location.reload()} className="px-5 py-2 bg-[#E8C15A] text-black text-xs font-bold rounded-lg">Retry</button>
+                    </div>
+                ) : activeTab === 'sheets' ? (
+                    <SheetsTable data={sheetsLeaderboard} />
+                ) : (
+                    <CFTable data={cfLeaderboard} getRatingColor={getRatingColor} />
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SheetsTable({ data }: { data: SheetUser[] }) {
+    if (data.length === 0) {
+        return (
+            <div className="py-16 text-center">
+                <Code className="mx-auto text-white/10 mb-3" size={32} />
+                <p className="text-white/40 text-sm">No submissions yet</p>
+                <Link href="/dashboard/sheets" className="inline-block mt-4 px-5 py-2 bg-[#E8C15A] text-black text-xs font-bold rounded-lg">Start Solving</Link>
+            </div>
+        );
+    }
 
     return (
-        <>
-
-
-            <div className="space-y-6 animate-fade-in">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-[#F2F2F2] flex items-center gap-3">
-                            <Trophy className="text-[#E8C15A]" size={28} />
-                            Leaderboard
-                        </h2>
-                        <p className="text-[#A0A0A0] mt-1 ml-10">
-                            Compare your progress with the community
-                        </p>
+        <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-[#111] border-b border-white/5 px-3 py-2.5 flex items-center text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                <span className="w-10 text-center shrink-0">#</span>
+                <span className="flex-1 min-w-0">Name</span>
+                <span className="w-16 text-center shrink-0">Solved</span>
+                <span className="w-16 text-center shrink-0 hidden sm:block">AC</span>
+                <span className="w-20 text-center shrink-0 hidden sm:block">Total</span>
+            </div>
+            {/* Rows */}
+            {data.map((user, i) => (
+                <div key={user.userId} className={`flex items-center px-3 py-2.5 border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors ${i < 3 ? 'bg-[#E8C15A]/[0.03]' : ''}`}>
+                    <div className="w-10 flex items-center justify-center shrink-0">
+                        {i < 3 ? <MedalAnimation place={(i + 1) as 1 | 2 | 3} /> : <span className="text-xs font-bold text-white/20 tabular-nums">{i + 1}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-white truncate block">{user.username}</span>
+                    </div>
+                    <div className="w-16 flex justify-center shrink-0">
+                        <span className={`px-2 py-0.5 rounded-md text-xs font-bold tabular-nums ${
+                            user.solvedCount >= 20 ? 'bg-[#E8C15A]/20 text-[#E8C15A]' :
+                            user.solvedCount >= 10 ? 'bg-purple-500/20 text-purple-400' :
+                            user.solvedCount >= 5 ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-white/5 text-white/40'
+                        }`}>
+                            {user.solvedCount}
+                        </span>
+                    </div>
+                    <div className="w-16 text-center shrink-0 hidden sm:block">
+                        <span className="text-xs text-green-400/70 tabular-nums">{user.acceptedCount}</span>
+                    </div>
+                    <div className="w-20 text-center shrink-0 hidden sm:block">
+                        <span className="text-xs text-white/20 tabular-nums">{user.totalSubmissions}</span>
                     </div>
                 </div>
+            ))}
+        </div>
+    );
+}
 
-                {/* Tabs */}
-                <div className="border-b border-white/10">
-                    <div className="flex gap-6">
-                        <button
-                            onClick={() => setActiveTab('sheets')}
-                            className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'sheets'
-                                ? 'text-[#E8C15A]'
-                                : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Code size={16} />
-                                Training Sheets
-                            </div>
-                            {activeTab === 'sheets' && (
-                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('codeforces')}
-                            className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'codeforces'
-                                ? 'text-[#E8C15A]'
-                                : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <ExternalLink size={16} />
-                                Codeforces Rating
-                            </div>
-                            {activeTab === 'codeforces' && (
-                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
-                            )}
-                        </button>
+function CFTable({ data, getRatingColor }: { data: CFUser[]; getRatingColor: (r: number) => string }) {
+    if (data.length === 0) {
+        return (
+            <div className="py-16 text-center">
+                <Trophy className="mx-auto text-white/10 mb-3" size={32} />
+                <p className="text-white/40 text-sm">No rated users yet</p>
+                <a href="https://codeforces.com/contests" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-4 px-5 py-2 bg-[#E8C15A] text-black text-xs font-bold rounded-lg">
+                    <ExternalLink size={13} /> View Contests
+                </a>
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-[#111] border-b border-white/5 px-3 py-2.5 flex items-center text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                <span className="w-10 text-center shrink-0">#</span>
+                <span className="flex-1 min-w-0">Handle</span>
+                <span className="w-16 text-center shrink-0">Rating</span>
+                <span className="w-24 text-center shrink-0 hidden sm:block">Rank</span>
+            </div>
+            {/* Rows */}
+            {data.map((user, i) => (
+                <div key={user.handle} className={`flex items-center px-3 py-2.5 border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors ${i < 3 ? 'bg-[#E8C15A]/[0.03]' : ''}`}>
+                    <div className="w-10 flex items-center justify-center shrink-0">
+                        {i < 3 ? <MedalAnimation place={(i + 1) as 1 | 2 | 3} /> : <span className="text-xs font-bold text-white/20 tabular-nums">{i + 1}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <a href={`https://codeforces.com/profile/${user.handle}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-white hover:text-[#E8C15A] transition-colors truncate block">
+                            {user.handle}
+                        </a>
+                        {user.name && <p className="text-[11px] text-white/20 truncate">{user.name}</p>}
+                    </div>
+                    <div className="w-16 text-center shrink-0">
+                        <span className={`text-sm font-bold tabular-nums ${getRatingColor(user.rating)}`}>{user.rating}</span>
+                    </div>
+                    <div className="w-24 text-center shrink-0 hidden sm:block">
+                        <span className="text-xs text-white/30 capitalize">{user.rank}</span>
                     </div>
                 </div>
-
-                {/* Leaderboard Table */}
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">
-                    {activeTab === 'sheets' ? (
-                        <>
-                            {/* Sheets Header - Mobile Responsive */}
-                            <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
-                                <div className="col-span-1">#</div>
-                                <div className="col-span-2 sm:col-span-4">Username</div>
-                                <div className="col-span-3 sm:col-span-3">Solved</div>
-                                <div className="hidden sm:block col-span-2">Accepted</div>
-                                <div className="hidden sm:block col-span-2">Submissions</div>
-                            </div>
-                            {loading ? (
-                                <div className="p-4 space-y-2 flex-1">
-                                    {[1,2,3,4,5,6,7,8].map(i => (
-                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                                    ))}
-                                </div>
-                            ) : error ? (
-                                <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-red-500/20">
-                                        <Code className="text-red-500" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
-                                    <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
-                                        {error}
-                                    </p>
-                                    <button
-                                        onClick={() => window.location.reload()}
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
-                                    >
-                                        Retry
-                                    </button>
-                                </div>
-                            ) : sheetsLeaderboard.length === 0 ? (
-                                <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-white/5">
-                                        <Code className="text-[#E8C15A]" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">No submissions yet</h3>
-                                    <p className="text-sm text-[#A0A0A0] max-w-xs mx-auto mb-6">
-                                        Be the first to solve a problem and claim your spot on the leaderboard!
-                                    </p>
-                                    <Link
-                                        href="/dashboard/sheets"
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
-                                    >
-                                        Start Solving
-                                    </Link>
-                                </div>
-                            ) : (
-                                <VirtualLeaderboard
-                                    items={sheetsLeaderboard}
-                                    itemSize={56}
-                                >
-                                    {({ index, style }: { index: number; style: React.CSSProperties }) => {
-                                        const user = sheetsLeaderboard[index];
-                                        return (
-                                            <div style={style} key={user.userId} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
-                                                <div className="col-span-1 flex items-center justify-center">
-                                                    {index < 3 ? (
-                                                        <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
-                                                    ) : (
-                                                        <span className="text-sm font-bold text-[#666]">{index + 1}</span>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-2 sm:col-span-4 min-w-0">
-                                                    <span className="text-sm font-medium text-[#F2F2F2] truncate block">{user.username}</span>
-                                                </div>
-                                                <div className="col-span-3">
-                                                    <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold ${getSolvedBadge(user.solvedCount)}`}>
-                                                        {user.solvedCount}
-                                                    </span>
-                                                </div>
-                                                <div className="hidden sm:block col-span-2 text-sm text-green-400 font-medium">
-                                                    {user.acceptedCount}
-                                                </div>
-                                                <div className="hidden sm:block col-span-2 text-sm text-[#666]">
-                                                    {user.totalSubmissions}
-                                                </div>
-                                            </div>
-                                        );
-                                    }}
-                                </VirtualLeaderboard>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {/* CF Header - Mobile Responsive */}
-                            <div className="grid grid-cols-8 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
-                                <div className="col-span-1">#</div>
-                                <div className="col-span-4 sm:col-span-5">Handle</div>
-                                <div className="col-span-3">Rating</div>
-                                <div className="hidden sm:block col-span-3">Rank</div>
-                            </div>
-                            {loading ? (
-                                <div className="p-4 space-y-2 flex-1">
-                                    {[1,2,3,4,5,6,7,8].map(i => (
-                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                                    ))}
-                                </div>
-                            ) : error ? (
-                                <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-red-500/20">
-                                        <Trophy className="text-red-500" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
-                                    <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
-                                        {error}
-                                    </p>
-                                    <button
-                                        onClick={() => window.location.reload()}
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
-                                    >
-                                        Retry
-                                    </button>
-                                </div>
-                            ) : cfLeaderboard.length === 0 ? (
-                                <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-white/5">
-                                        <Trophy className="text-[#E8C15A]" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">No rated users yet</h3>
-                                    <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
-                                        To appear on this leaderboard, you need to compete in a rated Codeforces contest.
-                                        Your rating will be calculated after your first rated participation.
-                                    </p>
-                                    <a
-                                        href="https://codeforces.com/contests"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105 flex items-center gap-2"
-                                    >
-                                        <ExternalLink size={16} />
-                                        View Upcoming Contests
-                                    </a>
-                                </div>
-                            ) : (
-                                <VirtualLeaderboard
-                                    items={cfLeaderboard}
-                                    itemSize={56}
-                                >
-                                    {({ index, style }: { index: number; style: React.CSSProperties }) => {
-                                        const user = cfLeaderboard[index];
-                                        return (
-                                            <div style={style} key={user.handle} className="grid grid-cols-8 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
-                                                <div className="col-span-1 flex items-center justify-center">
-                                                    {index < 3 ? (
-                                                        <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
-                                                    ) : (
-                                                        <span className="text-sm font-bold text-[#666]">{index + 1}</span>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-4 sm:col-span-5 min-w-0">
-                                                    <a
-                                                        href={`https://codeforces.com/profile/${user.handle}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-sm font-medium text-[#F2F2F2] hover:text-[#E8C15A] flex items-center gap-1 sm:gap-2 truncate"
-                                                    >
-                                                        <span className="truncate">{user.handle}</span>
-                                                        <ExternalLink size={12} className="text-[#666] flex-shrink-0 hidden sm:block" />
-                                                    </a>
-                                                    <p className="text-xs text-[#666] truncate">{user.name}</p>
-                                                </div>
-                                                <div className={`col-span-3 text-sm font-bold ${getRatingColor(user.rating)}`}>
-                                                    {user.rating}
-                                                </div>
-                                                <div className="hidden sm:block col-span-3 text-sm text-[#A0A0A0] capitalize">{user.rank}</div>
-                                            </div>
-                                        );
-                                    }}
-                                </VirtualLeaderboard>
-                            )}
-                            {/* CF Ranking Info Box - Moved out to bottom if needed, or overlay */}
-                            <div className="p-4 bg-[#0A0A0A] border-t border-white/5 shrink-0 z-10">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-[#1A1A1A] rounded-lg">
-                                        <Trophy className="text-[#E8C15A]" size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-[#A0A0A0]">
-                                            <span className="text-[#F2F2F2] font-medium">How to get ranked?</span>{' '}
-                                            Compete in any rated Codeforces contest. Your rating will be calculated after your first participation.
-                                        </p>
-                                        <a
-                                            href="https://codeforces.com/contests"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-[#E8C15A] text-sm hover:underline inline-flex items-center gap-1 mt-1"
-                                        >
-                                            View Upcoming Contests <ExternalLink size={12} />
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div >
-
-            <style>{`
-                @keyframes fadeIn { 
-                    from { opacity: 0; transform: translateY(10px); } 
-                    to { opacity: 1; transform: translateY(0); } 
-                } 
-                .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-            `}</style>
-        </>
+            ))}
+        </div>
     );
 }
