@@ -2,74 +2,41 @@
 
 import { useEffect } from 'react';
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 
+/**
+ * Handles app version updates.
+ * Only clears service worker cache on version change — does NOT wipe localStorage.
+ * No hard reload — the new version loads naturally on next navigation.
+ */
 export default function ClientVersionManager() {
     useEffect(() => {
-        const checkVersion = async () => {
-            const currentVersion = localStorage.getItem('app_version');
+        const currentVersion = localStorage.getItem('app_version');
+        if (currentVersion === APP_VERSION) return;
 
-            if (currentVersion !== APP_VERSION) {
-                // Loop protection: Check if we just reloaded for this version
-                const lastReloadVersion = sessionStorage.getItem('last_reload_version');
-                const reloadCount = parseInt(sessionStorage.getItem('reload_count') || '0');
-
-                if (lastReloadVersion === APP_VERSION && reloadCount > 2) {
-                    console.warn('Version Manager: Aborting reload to prevent loop.');
-                    // Force update local storage anyway to break the cycle
-                    localStorage.setItem('app_version', APP_VERSION);
-                    return;
-                }
-
-                console.log('Version Manager: New version detected. Clearing cache...');
-
-                // 1. Unregister Service Workers
-                if ('serviceWorker' in navigator) {
-                    try {
-                        const registrations = await navigator.serviceWorker.getRegistrations();
-                        for (const registration of registrations) {
-                            await registration.unregister();
-                            console.log('Version Manager: Service Worker unregistered');
-                        }
-                    } catch (error) {
-                        console.error('Version Manager: Failed to unregister SW', error);
+        // Version changed — update SW cache only
+        (async () => {
+            // Unregister old service workers so the new one takes over
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
                     }
-                }
-
-                // 2. Clear Caches
-                if ('caches' in window) {
-                    try {
-                        const keys = await caches.keys();
-                        await Promise.all(keys.map(key => caches.delete(key)));
-                        console.log('Version Manager: Cache Storage cleared');
-                    } catch (error) {
-                        console.error('Version Manager: Failed to clear caches', error);
-                    }
-                }
-
-                // 3. Clear Local Storage (except specific keys if needed, but user asked for FULL FLUSH)
-                // Saving the new version is crucial, so we do it AFTER clearing
-                localStorage.clear();
-                // Don't clear session storage entirely, we need loop protection
-                // sessionStorage.clear(); 
-
-                // Set new version
-                localStorage.setItem('app_version', APP_VERSION);
-                sessionStorage.setItem('last_reload_version', APP_VERSION);
-                sessionStorage.setItem('reload_count', (reloadCount + 1).toString());
-
-                console.log(`Version Manager: Updated to ${APP_VERSION}`);
-
-                // 4. Hard Reload
-                window.location.reload();
-            } else {
-                // Version match, clear loop protection
-                sessionStorage.removeItem('last_reload_version');
-                sessionStorage.removeItem('reload_count');
+                } catch { /* ignore */ }
             }
-        };
 
-        checkVersion();
+            // Clear browser cache storage (SW caches)
+            if ('caches' in window) {
+                try {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(key => caches.delete(key)));
+                } catch { /* ignore */ }
+            }
+
+            // Update version — do NOT clear localStorage, do NOT reload
+            localStorage.setItem('app_version', APP_VERSION);
+        })();
     }, []);
 
     return null;
