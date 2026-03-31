@@ -47,21 +47,16 @@ export async function grantAchievement(userId: number | string, achievementId: s
 }
 
 /**
- * Updates a boolean status flag on the users table and potentially grants an achievement.
+ * Grants an achievement based on a status change.
+ * No longer updates the users table — achievements are the single source of truth.
  */
 export async function updateUserStatus(userId: number | string, field: 'sheet_1_solved' | 'is_approval_unlocked', value: boolean) {
+    if (!value) return;
     try {
-        await query(
-            `UPDATE users SET ${field} = $1 WHERE id = $2`,
-            [value, userId]
-        );
-
-        if (value) {
-            const achievementId = field === 'sheet_1_solved' ? ACHIEVEMENTS.SHEET_1 : ACHIEVEMENTS.APPROVAL;
-            await grantAchievement(userId, achievementId);
-        }
+        const achievementId = field === 'sheet_1_solved' ? ACHIEVEMENTS.SHEET_1 : ACHIEVEMENTS.APPROVAL;
+        await grantAchievement(userId, achievementId);
     } catch (error) {
-        console.error(`[Status Update Error] Failed to update ${field} for user ${userId}:`, error);
+        console.error(`[Status Update Error] Failed to grant achievement for ${field} for user ${userId}:`, error);
     }
 }
 
