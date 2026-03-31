@@ -20,11 +20,18 @@ export function getPool(): pg.Pool {
 
         pool = new Pool({
             connectionString,
-            ssl: true, // Simplified for Bun compatibility
-            max: 20,
+            ssl: true,
+            max: 25, // Increased from 20 for higher concurrency
+            min: 5,  // Keep 5 warm connections ready
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 10000,
-            query_timeout: 15000, // Important to prevent "stuck in animation" if TCP drops
+            statement_timeout: 15000, // Kill queries that take > 15s
+            query_timeout: 15000,
+        });
+
+        // Prevent unhandled errors from crashing the process
+        pool.on('error', (err) => {
+            console.error('[DB Pool] Unexpected error on idle client:', err.message);
         });
     }
     return pool;
