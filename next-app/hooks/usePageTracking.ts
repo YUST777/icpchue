@@ -4,42 +4,82 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 /**
- * Tracks page navigation automatically.
- * Records every page visit with time spent.
+ * Tracks page navigation + device context automatically.
+ * Records every page visit with time spent, and sends device info once per session.
  */
 export function usePageTracking() {
     const pathname = usePathname();
     const enterTimeRef = useRef(Date.now());
-    const lastPathRef = useRef(pathname);
+    const lastPathRef = useRef<string | null>(null);
+    const contextSentRef = useRef(false);
 
+    // Send device context once per session
     useEffect(() => {
-        const sessionId = typeof sessionStorage !== 'undefined'
-            ? sessionStorage.getItem('icpchue-session-id') || ''
-            : '';
+        if (contextSentRef.current) return;
+        contextSentRef.current = true;
 
-        // If path changed, record leaving the old page and entering the new one
-        if (lastPathRef.current !== pathname) {
+        const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
+        const context = {
+            type: 'device_context',
+            sessionId,
+            screen: { w: screen.width, h: screen.height },
+            viewport: { w: window.innerWidth, h: window.innerHeight },
+            pixelRatio: window.devicePixelRatio,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            cookiesEnabled: navigator.cookieEnabled,
+            online: navigator.onLine,
+            // @ts-expect-error — connection API is not in all browsers
+            connection: navigator.connection ? {
+                // @ts-expect-error
+                type: navigator.connection.effectiveType,
+                // @ts-expect-error
+                downlink: navigator.connection.downlink,
+                // @ts-expect-error
+                rtt: navigator.connection.rtt,
+            } : null,
+            referrer: document.referrer || null,
+            utmSource: new URLSearchParams(window.location.search).get('utm_source'),
+            utmMedium: new URLSearchParams(window.location.search).get('utm_medium'),
+            utmCampaign: new URLSearchParams(window.location.search).get('utm_campaign'),
+        };
+
+        fetch('/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                action: 'session_start',
+                sessionId,
+                metadata: context,
+            }),
+            keepalive: true,
+        }).catch(() => {});
+    }, []);
+
+    // Track page navigation
+    useEffect(() => {
+        const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
+
+        // Record leaving old page
+        if (lastPathRef.current && lastPathRef.current !== pathname) {
             const timeSpent = Date.now() - enterTimeRef.current;
-
-            // Record leaving old page
-            if (lastPathRef.current) {
-                fetch('/api/track/navigation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        page: lastPathRef.current,
-                        sessionId,
-                        timeSpent,
-                        leftPage: true,
-                    }),
-                    keepalive: true,
-                }).catch(() => {});
-            }
-
-            lastPathRef.current = pathname;
-            enterTimeRef.current = Date.now();
+            fetch('/api/track/navigation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    page: lastPathRef.current,
+                    sessionId,
+                    timeSpent,
+                    leftPage: true,
+                }),
+                keepalive: true,
+            }).catch(() => {});
         }
+
+        lastPathRef.current = pathname;
+        enterTimeRef.current = Date.now();
 
         // Record entering new page
         fetch('/api/track/navigation', {
@@ -48,28 +88,105 @@ export function usePageTracking() {
             credentials: 'include',
             body: JSON.stringify({
                 page: pathname,
-                referrer: typeof document !== 'undefined' ? document.referrer : null,
+                referrer: document.referrer || null,
                 sessionId,
             }),
             keepalive: true,
         }).catch(() => {});
 
-        // Record leaving on page unload
+        // Record leaving on unload
         const handleUnload = () => {
             const timeSpent = Date.now() - enterTimeRef.current;
             try {
                 navigator.sendBeacon('/api/track/navigation', JSON.stringify({
-                    page: pathname,
-                    sessionId,
-                    timeSpent,
-                    leftPage: true,
+                    page: pathname, sessionId, timeSpent, leftPage: true,
                 }));
-            } catch {
-                // fallback
-            }
+            } catch { /* */ }
         };
 
         window.addEventListener('beforeunload', handleUnload);
         return () => window.removeEventListener('beforeunload', handleUnload);
+    }, [pathname]);
+
+    // Track JS errors
+    useEffect(() => {
+        const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
+
+        const handleError = (event: ErrorEvent) => {
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'error_encounter',
+                    sessionId,
+                    metadata: {
+                        message: event.message?.slice(0, 500),
+                        source: event.filename?.slice(-100),
+                        line: event.lineno,
+                        col: event.colno,
+                        page: pathname,
+                    },
+                }),
+                keepalive: true,
+            }).catch(() => {});
+        };
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const reason = event.reason?.message || String(event.reason);
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'error_encounter',
+                    sessionId,
+                    metadata: {
+                        message: reason?.slice(0, 500),
+                        type: 'unhandled_rejection',
+                        page: pathname,
+                    },
+                }),
+                keepalive: true,
+            }).catch(() => {});
+        };
+
+        window.addEventListener('error', handleError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        return () => {
+            window.removeEventListener('error', handleError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        };
+    }, [pathname]);
+
+    // Track online/offline transitions
+    useEffect(() => {
+        const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
+
+        const handleOnline = () => {
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ action: 'connection_online', sessionId, metadata: { page: pathname } }),
+                keepalive: true,
+            }).catch(() => {});
+        };
+
+        const handleOffline = () => {
+            // Can't send when offline, but we can try sendBeacon
+            try {
+                navigator.sendBeacon('/api/track', JSON.stringify({
+                    action: 'connection_offline', sessionId, metadata: { page: pathname },
+                }));
+            } catch { /* */ }
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, [pathname]);
 }
