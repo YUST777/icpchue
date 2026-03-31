@@ -65,17 +65,20 @@ export default function RoadmapPage() {
     if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-[#050505] p-4 md:p-8">
-                <div className="max-w-4xl mx-auto space-y-8">
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-48 rounded-lg" />
-                        <Skeleton className="h-4 w-72 rounded" />
+                <div className="max-w-4xl mx-auto space-y-10">
+                    <div className="space-y-3">
+                        <Skeleton className="h-9 w-56 rounded-lg" />
+                        <Skeleton className="h-4 w-80 rounded" />
                     </div>
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="space-y-3">
-                            <Skeleton className="h-6 w-32 rounded" />
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {[1, 2, 3, 4].map(j => (
-                                    <Skeleton key={j} className="h-24 rounded-xl" />
+                        <div key={i} className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                                <Skeleton className="h-6 w-40 rounded-lg" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pl-12">
+                                {[1, 2, 3].map(j => (
+                                    <Skeleton key={j} className="h-20 rounded-xl" />
                                 ))}
                             </div>
                         </div>

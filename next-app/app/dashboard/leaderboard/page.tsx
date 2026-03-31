@@ -175,9 +175,15 @@ export default function LeaderboardPage() {
                                 <div className="hidden sm:block col-span-2">Submissions</div>
                             </div>
                             {loading ? (
-                                <div className="p-4 space-y-2 flex-1">
-                                    {[1,2,3,4,5,6,7,8].map(i => (
-                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                                <div className="flex-1">
+                                    {Array.from({length: 10}).map((_, i) => (
+                                        <div key={i} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/[0.03]">
+                                            <div className="col-span-1"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></div>
+                                            <div className="col-span-2 sm:col-span-4"><Skeleton className="h-4 w-3/4 rounded" /></div>
+                                            <div className="col-span-3"><Skeleton className="h-5 w-10 rounded-full" /></div>
+                                            <div className="hidden sm:block col-span-2"><Skeleton className="h-4 w-8 rounded" /></div>
+                                            <div className="hidden sm:block col-span-2"><Skeleton className="h-4 w-8 rounded" /></div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : error ? (
@@ -258,9 +264,14 @@ export default function LeaderboardPage() {
                                 <div className="hidden sm:block">Rank</div>
                             </div>
                             {loading ? (
-                                <div className="p-4 space-y-2 flex-1">
-                                    {[1,2,3,4,5,6,7,8].map(i => (
-                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                                <div className="flex-1">
+                                    {Array.from({length: 10}).map((_, i) => (
+                                        <div key={i} className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 py-3 border-b border-white/[0.03]">
+                                            <Skeleton className="h-5 w-5 rounded-full mx-auto" />
+                                            <Skeleton className="h-4 w-3/4 rounded" />
+                                            <Skeleton className="h-4 w-10 rounded ml-auto" />
+                                            <Skeleton className="h-4 w-16 rounded hidden sm:block" />
+                                        </div>
                                     ))}
                                 </div>
                             ) : error ? (

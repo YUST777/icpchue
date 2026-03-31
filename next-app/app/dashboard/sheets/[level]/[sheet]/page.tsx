@@ -251,14 +251,19 @@ export default function SheetDetailPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="space-y-6 p-4">
-                <div className="flex items-center gap-3">
-                    <Skeleton className="h-6 w-6 rounded" />
-                    <Skeleton className="h-7 w-56 rounded-lg" />
+            <div className="space-y-6">
+                <div className="space-y-3">
+                    <Skeleton className="h-8 w-56 rounded-lg" />
+                    <Skeleton className="h-3 w-full max-w-xs rounded-full" />
                 </div>
-                <Skeleton className="h-3 w-full rounded-full max-w-md" />
-                <div className="space-y-2">
-                    {[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden">
+                    {[1,2,3,4,5,6,7,8].map(i => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.03]">
+                            <Skeleton className="h-5 w-5 rounded" />
+                            <Skeleton className="h-4 flex-1 rounded" />
+                            <Skeleton className="h-5 w-14 rounded-full" />
+                        </div>
+                    ))}
                 </div>
             </div>
         );

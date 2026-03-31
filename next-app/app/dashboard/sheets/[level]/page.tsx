@@ -88,15 +88,14 @@ export default function LevelOverviewPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="space-y-6 p-4">
-                <div className="flex items-center gap-3">
-                    <Skeleton className="h-6 w-6 rounded" />
-                    <Skeleton className="h-7 w-48 rounded-lg" />
+            <div className="space-y-8">
+                <div className="space-y-3">
+                    <Skeleton className="h-8 w-48 rounded-lg" />
+                    <Skeleton className="h-4 w-72 rounded" />
+                    <Skeleton className="h-2 w-full max-w-md rounded-full" />
                 </div>
-                <Skeleton className="h-4 w-72 rounded" />
-                <Skeleton className="h-2 w-full rounded-full" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-xl" />)}
+                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-44 rounded-xl" />)}
                 </div>
             </div>
         );

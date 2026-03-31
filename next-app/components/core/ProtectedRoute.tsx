@@ -18,18 +18,19 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0B0B0C] p-6 md:p-10">
-                <div className="max-w-5xl mx-auto space-y-6">
-                    <div className="flex items-center gap-3">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <Skeleton className="h-5 w-36 rounded" />
+            <div className="min-h-screen bg-[#0B0B0C] flex">
+                <div className="hidden md:flex w-[256px] shrink-0 border-r border-white/5 flex-col p-6 gap-6">
+                    <Skeleton className="h-8 w-32 rounded-lg" />
+                    <div className="space-y-2 mt-4">
+                        {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Skeleton className="h-28 rounded-xl" />
-                        <Skeleton className="h-28 rounded-xl" />
-                        <Skeleton className="h-28 rounded-xl" />
+                </div>
+                <div className="flex-1 p-4 md:p-8 space-y-6">
+                    <Skeleton className="h-7 w-40 rounded-lg" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[1,2,3].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
                     </div>
-                    <Skeleton className="h-56 rounded-xl" />
+                    <Skeleton className="h-64 rounded-xl" />
                 </div>
             </div>
         );
