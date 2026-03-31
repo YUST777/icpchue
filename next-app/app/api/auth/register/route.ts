@@ -242,10 +242,10 @@ export async function POST(req: NextRequest) {
             // 2. Insert User Record (same for both returning and new)
             const encryptedEmail = encrypt(normalizedEmail);
             const userSql = `
-                INSERT INTO users (email, email_blind_index, password_hash, application_id, token_version, supabase_uid) 
-                VALUES ($1, $2, $3, $4, 0, $5) RETURNING id
+                INSERT INTO users (email, email_blind_index, application_id, supabase_uid) 
+                VALUES ($1, $2, $3, $4) RETURNING id
             `;
-            const returnUser = await client.query(userSql, [encryptedEmail, emailBlindIndex, 'supabase-managed', applicationId, authData.user.id]);
+            const returnUser = await client.query(userSql, [encryptedEmail, emailBlindIndex, applicationId, authData.user.id]);
             const newUser = returnUser.rows[0];
 
             await client.query('COMMIT');
