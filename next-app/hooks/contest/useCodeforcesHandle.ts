@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchWithAuth } from '@/lib/api';
+import { fetchWithCache } from '@/lib/cache/api-cache';
 
 interface UseCodeforcesHandleReturn {
     handle: string | null;
@@ -82,13 +82,11 @@ export function useCodeforcesHandle(): UseCodeforcesHandleReturn {
         });
     }, []);
 
-    // Get handle from API (Authenticated User)
+    // Get handle from API — use fetchWithCache to avoid duplicate /api/auth/me calls
     const getHandleFromAPI = useCallback(async (): Promise<string | null> => {
         try {
-            const res = await fetchWithAuth('/api/auth/me');
-            if (!res || !res.ok) return null;
-            const data = await res.json();
-            return data.user?.codeforces_handle || null;
+            const data = await fetchWithCache<any>('/api/auth/me', { credentials: 'include' }, 300);
+            return data?.user?.codeforces_handle || null;
         } catch {
             return null;
         }
