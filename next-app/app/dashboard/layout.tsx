@@ -266,19 +266,23 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const handleNav = (path: string) => { router.push(path); setMobileMenuOpen(false); };
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0B0B0C] p-4 md:p-8">
-            <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-5 w-40 rounded" />
-                        <Skeleton className="h-3 w-24 rounded" />
-                    </div>
+        <div className="min-h-screen bg-[#0B0B0C] flex">
+            {/* Sidebar skeleton — matches the real sidebar width */}
+            <div className="hidden md:flex w-[256px] shrink-0 border-r border-white/5 flex-col p-6 gap-6">
+                <Skeleton className="h-8 w-32 rounded-lg" />
+                <div className="space-y-2 mt-4">
+                    {[1,2,3,4,5,6].map(i => (
+                        <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                    ))}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Skeleton className="h-32 rounded-xl" />
-                    <Skeleton className="h-32 rounded-xl" />
-                    <Skeleton className="h-32 rounded-xl" />
+            </div>
+            {/* Content skeleton */}
+            <div className="flex-1 p-4 md:p-8 space-y-6">
+                <Skeleton className="h-7 w-40 rounded-lg" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Skeleton className="h-28 rounded-xl" />
+                    <Skeleton className="h-28 rounded-xl" />
+                    <Skeleton className="h-28 rounded-xl" />
                 </div>
                 <Skeleton className="h-64 rounded-xl" />
             </div>
