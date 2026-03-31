@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerClient } from '@supabase/ssr';
+import crypto from 'crypto';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_CF_CLIENT_ID;
 const CLIENT_SECRET = process.env.CF_CLIENT_SECRET;
@@ -11,9 +12,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
     const error = searchParams.get('error');
+    const state = searchParams.get('state');
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icpchue.com';
     const REDIRECT_URI = `${siteUrl}/api/auth/callback/codeforces`;
+
+    // Validate OAuth state parameter to prevent CSRF
+    const storedState = req.cookies.get('cf_oauth_state')?.value;
+    if (!state || !storedState || state.length !== storedState.length ||
+        !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(storedState))) {
+        return NextResponse.redirect(new URL('/login?error=invalid_state', siteUrl));
+    }
 
     if (error) {
         return NextResponse.json({ error: 'OAuth Error', details: Object.fromEntries(searchParams.entries()) }, { status: 400 });
@@ -180,6 +189,6 @@ export async function GET(req: NextRequest) {
 
     } catch (e: any) {
         console.error('[Codeforces Callback Error]:', e);
-        return NextResponse.json({ error: 'Authentication failed', details: e.message }, { status: 500 });
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
     }
 }

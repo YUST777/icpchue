@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { flushEvents } from '@/lib/services/track-buffer';
+import crypto from 'crypto';
 
 /**
  * Manual flush endpoint — can be called by cron or admin.
@@ -7,7 +8,9 @@ import { flushEvents } from '@/lib/services/track-buffer';
  */
 export async function POST(req: NextRequest) {
     const secret = req.headers.get('x-flush-secret');
-    if (!process.env.TRACK_FLUSH_SECRET || secret !== process.env.TRACK_FLUSH_SECRET) {
+    const expected = process.env.TRACK_FLUSH_SECRET;
+    if (!expected || !secret || secret.length !== expected.length ||
+        !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

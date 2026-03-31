@@ -2,12 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
 
         if (!studentId) {
             return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
+        }
+
+        // Sanitize studentId — only allow alphanumeric, hyphens, underscores (prevent path traversal + command injection)
+        if (!/^[a-zA-Z0-9_-]+$/.test(studentId)) {
+            return NextResponse.json({ error: 'Invalid student ID format' }, { status: 400 });
         }
 
         // Rate limit: 5 per 120s per IP (Python generation is expensive)
@@ -58,9 +63,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
 
         await fs.promises.writeFile(tempJsonPath, JSON.stringify(scriptData));
 
-        // 2. Run Python Script
+        // 2. Run Python Script (execFile is immune to shell injection — args passed as array, not shell string)
         const scriptPath = path.join(process.cwd(), 'scripts/generate_recap_image.py');
-        await execAsync(`python3 "${scriptPath}" "${tempJsonPath}" "${tempImgPath}"`);
+        await execFileAsync('python3', [scriptPath, tempJsonPath, tempImgPath]);
 
         // 3. Read Output Image
         const imageBuffer = await fs.promises.readFile(tempImgPath);
@@ -79,7 +84,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
         });
 
     } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: 'Internal Error', details: errorMessage }, { status: 500 });
+        console.error('[Recap Share] Error:', error instanceof Error ? error.message : error);
+        return NextResponse.json({ error: 'Failed to generate recap image' }, { status: 500 });
     }
 }

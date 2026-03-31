@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
@@ -8,6 +9,9 @@ export async function POST(request: NextRequest) {
         if (!authUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const rl = await rateLimit(`delete-data:${authUser.id}`, 5, 60);
+        if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
         const userId = authUser.id;
         const body = await request.json();

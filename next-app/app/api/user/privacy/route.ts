@@ -11,17 +11,17 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const result = await query(
-            `SELECT show_on_cf_leaderboard, show_on_sheets_leaderboard, show_public_profile 
-             FROM users WHERE id = $1`,
-            [user.id]
-        );
-
         // Rate limit: 10 per 60s per user
         const ratelimit = await rateLimit(`privacy_view:${user.id}`, 10, 60);
         if (!ratelimit.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
+
+        const result = await query(
+            `SELECT show_on_cf_leaderboard, show_on_sheets_leaderboard, show_public_profile 
+             FROM users WHERE id = $1`,
+            [user.id]
+        );
 
         const row = result.rows[0] || {};
         return NextResponse.json({
@@ -68,33 +68,35 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, visibility: body.visibility });
         }
 
-        // New: individual toggles
+        // New: individual toggles — use safe parameterized query
         const { showOnCfLeaderboard, showOnSheetsLeaderboard, showPublicProfile } = body;
 
-        const updates: string[] = [];
-        const values: (boolean | number)[] = [];
-        let paramIndex = 1;
+        // Whitelist approach: only allow known boolean fields
+        const allowedFields: Record<string, string> = {
+            showOnCfLeaderboard: 'show_on_cf_leaderboard',
+            showOnSheetsLeaderboard: 'show_on_sheets_leaderboard',
+            showPublicProfile: 'show_public_profile',
+        };
 
-        if (typeof showOnCfLeaderboard === 'boolean') {
-            updates.push(`show_on_cf_leaderboard = $${paramIndex++}`);
-            values.push(showOnCfLeaderboard);
-        }
-        if (typeof showOnSheetsLeaderboard === 'boolean') {
-            updates.push(`show_on_sheets_leaderboard = $${paramIndex++}`);
-            values.push(showOnSheetsLeaderboard);
-        }
-        if (typeof showPublicProfile === 'boolean') {
-            updates.push(`show_public_profile = $${paramIndex++}`);
-            values.push(showPublicProfile);
+        const setClauses: string[] = [];
+        const values: unknown[] = [];
+        let idx = 1;
+
+        for (const [key, column] of Object.entries(allowedFields)) {
+            const val = body[key];
+            if (typeof val === 'boolean') {
+                setClauses.push(`${column} = $${idx++}`);
+                values.push(val);
+            }
         }
 
-        if (updates.length === 0) {
+        if (setClauses.length === 0) {
             return NextResponse.json({ error: 'No valid settings provided' }, { status: 400 });
         }
 
         values.push(user.id);
         await query(
-            `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+            `UPDATE users SET ${setClauses.join(', ')} WHERE id = $${idx}`,
             values
         );
 
@@ -104,4 +106,3 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
-
