@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
+import { getCachedData } from '@/lib/cache/cache';
 
 /**
  * GET /api/curriculum/problem/[levelSlug]/[sheetSlug]/[problemLetter]
  * Returns problem details for a given level, sheet, and problem letter
+ * Cached for 1 hour — problem metadata rarely changes
  */
 export async function GET(
     req: NextRequest,
@@ -11,13 +13,15 @@ export async function GET(
 ) {
     try {
         const { levelSlug, sheetSlug, problemLetter } = await params;
+        const cacheKey = `curriculum:problem:${levelSlug}:${sheetSlug}:${problemLetter.toUpperCase()}`;
 
-        // Get problem info with sheet and level info
-        const result = await query(`
-            SELECT 
-                p.id as problem_id,
-                p.problem_number,
-                p.problem_letter,
+        const problem = await getCachedData(cacheKey, 3600, async () => {
+            // Get problem info with sheet and level info
+            const result = await query(`
+                SELECT 
+                    p.id as problem_id,
+                    p.problem_number,
+                    p.problem_letter,
                 p.title as problem_title,
                 p.codeforces_url,
                 p.solution_video_url,
@@ -34,18 +38,10 @@ export async function GET(
             WHERE l.slug = $1 AND s.slug = $2 AND p.problem_letter = $3
         `, [levelSlug, sheetSlug, problemLetter]);
 
-        if (result.rows.length === 0) {
-            return NextResponse.json(
-                { error: 'Problem not found' },
-                { status: 404 }
-            );
-        }
+            if (result.rows.length === 0) return null;
 
-        const data = result.rows[0];
-
-        return NextResponse.json({
-            success: true,
-            problem: {
+            const data = result.rows[0];
+            return {
                 id: data.problem_id,
                 letter: data.problem_letter,
                 number: data.problem_number,
@@ -57,8 +53,14 @@ export async function GET(
                 contestId: data.contest_id,
                 groupId: data.group_id,
                 contestUrl: data.contest_url
-            }
+            };
         });
+
+        if (!problem) {
+            return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, problem });
     } catch (error) {
         return NextResponse.json(
             { error: 'Failed to fetch curriculum problem' },
