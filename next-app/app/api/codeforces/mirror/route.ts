@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { checkRateLimit } from '@/lib/cache/simple-rate-limit';
+import { getCachedData } from '@/lib/cache/cache';
 
 export async function GET(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
-    // Strict Rate Limit for Scraping: 20 per minute
     if (!checkRateLimit(`mirror:${ip}`, 20, 60)) {
         return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
     }
 
-    const { searchParams } = new URL(req.url); // Use req.url which is string
+    const { searchParams } = new URL(req.url);
     const contestId = searchParams.get('contestId');
     const problemId = searchParams.get('problemId');
     const urlType = searchParams.get('type') || 'contest';
@@ -20,30 +20,34 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Missing contestId or problemId' }, { status: 400 });
     }
 
-    // 1. Try Cache (Now with curriculum_problems)
+    // 1. Try Redis cache first, then DB (curriculum_problems.content)
     try {
-        // We look up the problem based on the contestId and problemId
-        const curriculumResult = await query(
-            `SELECT cp.content, cp.codeforces_url
-             FROM curriculum_problems cp
-             JOIN curriculum_sheets cs ON cp.sheet_id = cs.id
-             WHERE cs.contest_id = $1 AND cp.problem_letter = $2`,
-            [contestId, problemId.toUpperCase()]
-        );
+        const cacheKey = `mirror:${contestId}:${problemId.toUpperCase()}`;
+        const cached = await getCachedData(cacheKey, 3600, async () => {
+            const curriculumResult = await query(
+                `SELECT cp.content, cp.codeforces_url
+                 FROM curriculum_problems cp
+                 JOIN curriculum_sheets cs ON cp.sheet_id = cs.id
+                 WHERE cs.contest_id = $1 AND cp.problem_letter = $2`,
+                [contestId, problemId.toUpperCase()]
+            );
 
-        if (curriculumResult.rows.length > 0 && curriculumResult.rows[0].content) {
-            const content = curriculumResult.rows[0].content;
-            const codeforcesUrl = curriculumResult.rows[0].codeforces_url;
-
-            // Mirror content is an object, inject the URL
-            if (typeof content === 'object' && content !== null) {
-                (content as any).codeforcesUrl = codeforcesUrl;
+            if (curriculumResult.rows.length > 0 && curriculumResult.rows[0].content) {
+                const content = curriculumResult.rows[0].content;
+                const codeforcesUrl = curriculumResult.rows[0].codeforces_url;
+                if (typeof content === 'object' && content !== null) {
+                    (content as any).codeforcesUrl = codeforcesUrl;
+                }
+                return content;
             }
+            return null;
+        });
 
-            return NextResponse.json(content);
+        if (cached) {
+            return NextResponse.json(cached);
         }
     } catch (dbErr) {
-        console.error('[Mirror] Curriculum DB lookup failed:', dbErr);
+        console.error('[Mirror] Curriculum lookup failed:', dbErr);
     }
 
     // Build the correct URL based on type

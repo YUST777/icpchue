@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { query } from '@/lib/db';
+import crypto from 'crypto';
 
 export interface AuthUser {
     id: number;
@@ -30,16 +31,17 @@ function createSupabaseFromRequest(req: NextRequest) {
 // ── In-Memory Auth Cache to prevent Supabase API exhaustion during polling ──
 // Submissions poll every 2s. Hitting Supabase Auth API + PostgreSQL every 2s exhausts 
 // Node.js sockets and DB connection pools. Note: Next.js 'standalone' keeps module state.
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+const CACHE_TTL_MS = 120 * 1000; // 2 minutes (increased from 60s for less Supabase API calls)
+const MAX_CACHE_SIZE = 500; // Prevent unbounded growth
 const authCache = new Map<string, { user: AuthUser; expiresAt: number }>();
 
-// Simple cleanup interval to prevent memory leaks over time
+// Cleanup stale entries every 5 mins
 setInterval(() => {
     const now = Date.now();
     for (const [key, val] of authCache.entries()) {
         if (val.expiresAt < now) authCache.delete(key);
     }
-}, 5 * 60 * 1000); // Check every 5 mins
+}, 5 * 60 * 1000);
 
 /**
  * Verify a request's Supabase session and return the application user.
@@ -54,8 +56,9 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
         // If there are no auth cookies, user is definitely not logged in
         if (authCookies.length === 0) return null;
 
-        // Create a unique key based on the token payloads
-        const cacheKey = authCookies.map(c => `${c.name}=${c.value}`).join(';');
+        // Create a short hash key instead of storing full cookie values
+        const rawKey = authCookies.map(c => c.value).join('');
+        const cacheKey = crypto.createHash('sha256').update(rawKey).digest('hex').slice(0, 32);
         
         // Check cache first
         const cached = authCache.get(cacheKey);
@@ -83,7 +86,12 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
             role: userRow.role || 'trainee',
         };
 
-        // Save to cache
+        // Save to cache (with size limit)
+        if (authCache.size >= MAX_CACHE_SIZE) {
+            // Evict oldest entry
+            const firstKey = authCache.keys().next().value;
+            if (firstKey) authCache.delete(firstKey);
+        }
         authCache.set(cacheKey, { user, expiresAt: Date.now() + CACHE_TTL_MS });
 
         return user;
