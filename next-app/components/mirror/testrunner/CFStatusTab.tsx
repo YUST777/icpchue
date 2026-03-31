@@ -61,7 +61,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
             <div className="flex flex-col items-center justify-center h-full text-[#666] gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#252526] flex items-center justify-center">
                     <img
-                        src="https://codeforces.org/s/0/favicon-32x32.png"
+                        src="/icons/codeforces-favicon.png"
                         alt="CF"
                         className="w-6 h-6 opacity-50"
                     />
@@ -111,7 +111,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                             className="flex items-center justify-center gap-2 py-2.5 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors text-sm"
                         >
                             <img
-                                src="https://codeforces.org/s/0/favicon-32x32.png"
+                                src="/icons/codeforces-favicon.png"
                                 alt="CF"
                                 className="w-4 h-4"
                             />

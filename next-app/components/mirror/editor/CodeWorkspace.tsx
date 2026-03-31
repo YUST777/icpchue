@@ -516,7 +516,7 @@ export default function CodeWorkspace({
                                 )
                             ) : (
                                 <img
-                                    src="https://codeforces.org/s/0/favicon-32x32.png"
+                                    src="/icons/codeforces-favicon.png"
                                     alt="CF"
                                     className="w-3.5 h-3.5"
                                 />
