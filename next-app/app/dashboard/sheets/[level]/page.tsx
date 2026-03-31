@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { FileCode2, ChevronRight, Loader2, Info, X } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithCache } from '@/lib/cache/api-cache';
 
@@ -87,8 +88,16 @@ export default function LevelOverviewPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={48} />
+            <div className="space-y-6 p-4">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6 rounded" />
+                    <Skeleton className="h-7 w-48 rounded-lg" />
+                </div>
+                <Skeleton className="h-4 w-72 rounded" />
+                <Skeleton className="h-2 w-full rounded-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-xl" />)}
+                </div>
             </div>
         );
     }

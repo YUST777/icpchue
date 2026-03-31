@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Info, Eye, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import Providers from '@/components/core/Providers';
 import { useAuth } from '@/contexts/AuthContext';
 import { camps } from '@/lib/sessionData';
@@ -57,8 +58,8 @@ function DashboardSessionContent() {
         }
     }, [loading, isAuthenticated, router, campSlug, sessionNumber, session]);
 
-    if (loading || !authChecked) return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-[#E8C15A]" size={48} /></div>;
-    if (!isAuthenticated) return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-[#E8C15A]" size={48} /></div>;
+    if (loading || !authChecked) return <div className="min-h-screen bg-black p-6"><div className="max-w-3xl mx-auto space-y-4"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-4 w-72 rounded" /><Skeleton className="h-64 rounded-xl" /></div></div>;
+    if (!isAuthenticated) return <div className="min-h-screen bg-black p-6"><div className="max-w-3xl mx-auto space-y-4"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-64 rounded-xl" /></div></div>;
 
     if (!camp || !session) {
         return (
