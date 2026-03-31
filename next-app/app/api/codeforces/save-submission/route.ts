@@ -140,16 +140,18 @@ export async function POST(req: NextRequest) {
         ]);
 
         if (status === 'SOLVED') {
-            // Update daily streak and solve counts
+            // Update streak and invalidate caches in parallel
             const { updateStreakOnSolve } = await import('@/lib/services/streaks');
-            await updateStreakOnSolve(user.id);
-
-            await invalidateCache(`user:${user.id}:dashboard_stats`);
-            await invalidateCache(`user:${user.id}:roadmap`);
-            await invalidateCache(`user:${user.id}:streak`); // Also invalidate streak cache
-            await invalidateCache(`user:${user.id}:achievements`);
-            await invalidateCache(`user:${user.id}:curriculum_progress`);
-            await invalidateCache('leaderboard:sheets:public');
+            
+            await Promise.all([
+                updateStreakOnSolve(user.id),
+                invalidateCache(`user:${user.id}:dashboard_stats`),
+                invalidateCache(`user:${user.id}:roadmap`),
+                invalidateCache(`user:${user.id}:streak`),
+                invalidateCache(`user:${user.id}:achievements`),
+                invalidateCache(`user:${user.id}:curriculum_progress`),
+                invalidateCache('leaderboard:sheets:public'),
+            ]);
 
             if (sheetId) {
                 // Invalidate specific sheet and details cache
@@ -164,8 +166,12 @@ export async function POST(req: NextRequest) {
 
                 if (levelRes.rows.length > 0) {
                     const { level_slug, sheet_slug, level_number, sheet_number, sheet_id_raw } = levelRes.rows[0];
-                    await invalidateCache(`user:${user.id}:sheets:${level_slug}`);
-                    await invalidateCache(`user:${user.id}:details:${level_slug}:${sheet_slug}`);
+                    
+                    // Parallelize sheet cache invalidation + achievement check
+                    const cachePromise = Promise.all([
+                        invalidateCache(`user:${user.id}:sheets:${level_slug}`),
+                        invalidateCache(`user:${user.id}:details:${level_slug}:${sheet_slug}`),
+                    ]);
 
                     // --- Achievement Logic: Sheet 1 Completion ---
                     try {
@@ -186,6 +192,8 @@ export async function POST(req: NextRequest) {
                     } catch (e) {
                         console.error('Achievement check failed:', e);
                     }
+
+                    await cachePromise; // Ensure cache invalidation completes
                 }
             }
         }
