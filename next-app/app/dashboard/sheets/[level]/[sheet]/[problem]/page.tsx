@@ -304,10 +304,12 @@ function MirrorUI({
         setStatsLoading(false);
     }, [contestId, problemId]);
 
-    // Background prefetch analytics
+    // Fetch analytics only when user switches to the analytics tab (lazy)
     useEffect(() => {
-        fetchAnalyticsData();
-    }, [fetchAnalyticsData]);
+        if (activeTab === 'analytics') {
+            fetchAnalyticsData();
+        }
+    }, [activeTab, fetchAnalyticsData]);
 
     // ─── Submissions ───
     const [submissions, setSubmissions] = useState<any[]>([]);
@@ -359,20 +361,12 @@ function MirrorUI({
         }
     }, [sheetId, problemId, contestId]);
 
-    // Fetch submissions when tab switches or on mount (background prefetch)
+    // Fetch submissions only when user switches to submissions tab
     useEffect(() => {
-        if (activeTab === 'submissions' || activeTab === 'analytics') {
+        if (activeTab === 'submissions') {
             fetchSubmissions();
         }
     }, [activeTab, fetchSubmissions]);
-
-    // Background prefetch: load submissions when cfHandle is available
-    useEffect(() => {
-        if (cfHandle && !submissionsLoading && submissions.length === 0) {
-            fetchSubmissions();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cfHandle]);
 
     // ─── State Reset on Navigation ───
     useEffect(() => {

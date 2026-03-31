@@ -111,6 +111,7 @@ export function useProblemData({ contestId, problemId, urlType, groupId, initial
     }, [contestId, problemId, urlType, groupId, hasInitial]);
 
     // AUTO-SYNC: Check if user solved this problem on CF and sync to DB
+    // Deferred by 5 seconds to not block initial page load
     useEffect(() => {
         if (!cfHandle || !contestId || !problemId) return;
         const syncKey = `${cfHandle}-${contestId}-${problemId}`;
@@ -118,47 +119,36 @@ export function useProblemData({ contestId, problemId, urlType, groupId, initial
 
         let cancelled = false;
 
-        const syncExternalSolve = async () => {
+        const timer = setTimeout(async () => {
+            if (cancelled) return;
             try {
-                // 1. Fetch user's latest submissions for this problem from CF
                 const res = await fetch(`/api/codeforces/user-submissions?handle=${cfHandle}&contestId=${contestId}&problemIndex=${problemId}`);
                 if (res.ok && !cancelled) {
                     const data = await res.json();
                     if (data.success && data.submissions?.length > 0) {
                         const solvedSub = data.submissions.find((s: any) => s.verdict === 'Accepted');
                         if (solvedSub) {
-                            // 2. We found an external solve! Mark sync as attempted for this problem.
                             syncAttemptedRef.current = syncKey;
-                            
-                            // 3. Sync to our DB
                             await fetch('/api/codeforces/save-submission', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     cfSubmissionId: solvedSub.id,
-                                    contestId: contestId,
-                                    problemIndex: problemId,
-                                    sheetId: sheetId,
-                                    verdict: 'Accepted', // Force Accepted/OK for sync
+                                    contestId, problemIndex: problemId, sheetId,
+                                    verdict: 'Accepted',
                                     timeMs: solvedSub.timeConsumedMillis || 0,
                                     memoryKb: Math.round((solvedSub.memoryConsumedBytes || 0) / 1024),
                                     language: solvedSub.language,
-                                    cfHandle: cfHandle,
-                                    urlType: urlType,
-                                    groupId: groupId
+                                    cfHandle, urlType, groupId
                                 })
                             });
-                            console.log(`[AutoSync] Synced external solve for ${contestId}-${problemId}`);
                         }
                     }
                 }
-            } catch (err) {
-                console.error('[AutoSync] Failed:', err);
-            }
-        };
+            } catch { /* non-critical */ }
+        }, 5000); // 5 second delay
 
-        syncExternalSolve();
-        return () => { cancelled = true; };
+        return () => { cancelled = true; clearTimeout(timer); };
     }, [cfHandle, contestId, problemId, sheetId, urlType, groupId]);
 
     return {
