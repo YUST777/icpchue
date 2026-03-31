@@ -1,15 +1,17 @@
 // ICPC HUE Service Worker - PWA Support
 // Bump this version to force all clients to update immediately
-const CACHE_NAME = 'icpchue-v7';
+const CACHE_NAME = 'icpchue-v8';
 const STATIC_ASSETS = [
+  '/',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/icpchue-logo.webp',
   '/images/ui/navlogo.webp',
-  '/manifest.json',
 ];
 
-// Install: cache only static assets, not pages
+// Install: cache static assets + start URL
 self.addEventListener('install', (event) => {
-  // Skip waiting forces the new SW to take over immediately
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,7 +20,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: delete ALL old caches and take control immediately
+// Activate: delete old caches and take control
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -27,51 +29,53 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-    }).then(() => {
-      // Take control of all clients immediately without requiring a reload
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch: Network-first for HTML pages, cache-first for static assets
+// Fetch: Network-first for pages, cache-first for assets
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-
-  // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
-
-  // Skip API requests — always go to network
   if (event.request.url.includes('/api/')) return;
 
-  const isHTMLRequest = event.request.headers.get('accept')?.includes('text/html');
+  const isNavigation = event.request.mode === 'navigate';
 
-  if (isHTMLRequest) {
-    // NETWORK-FIRST for HTML: always get fresh pages from server
+  if (isNavigation) {
+    // NETWORK-FIRST for navigation requests
     event.respondWith(
       fetch(event.request)
         .then((res) => {
-          // Cache the fresh response
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          // Only cache successful responses
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
           return res;
         })
         .catch(() => {
-          // Offline fallback only
-          return caches.match(event.request) || caches.match('/');
+          // Offline: try cached version of this page, then fall back to cached /
+          return caches.match(event.request)
+            .then(cached => cached || caches.match('/'))
+            .then(fallback => fallback || new Response(
+              '<html><body style="background:#0B0B0C;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><div style="text-align:center"><h2>You are offline</h2><p style="color:#888">Please check your internet connection</p></div></body></html>',
+              { headers: { 'Content-Type': 'text/html' } }
+            ));
         })
     );
   } else {
-    // CACHE-FIRST for static assets (images, fonts, etc.)
+    // CACHE-FIRST for static assets
     event.respondWith(
       caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        if (cached) return cached;
+        return fetch(event.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
           return res;
         });
-      }).catch(() => caches.match('/'))
+      }).catch(() => new Response('', { status: 408 }))
     );
   }
 });
