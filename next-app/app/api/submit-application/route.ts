@@ -52,11 +52,11 @@ export async function POST(req: NextRequest) {
         const sql = `
         INSERT INTO applications (
           application_type, name, faculty, student_id, national_id, student_level, 
-          telephone, address, has_laptop, codeforces_profile, leetcode_profile, email, 
+          telephone, has_laptop, codeforces_profile, leetcode_profile, email, 
           ip_address, user_agent, scraping_status,
           email_blind_index, national_id_blind_index, telephone_blind_index, student_id_blind_index
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING id
         `;
 
@@ -68,14 +68,13 @@ export async function POST(req: NextRequest) {
             nationalId ? encrypt(nationalId) : null,
             studentLevel,
             encrypt(telephone),
-            null, // address
             hasLaptop ? 1 : 0,
             codeforcesProfile || null,
             leetcodeProfile || null,
             encrypt(email || null),
             ip,
             userAgent,
-            'pending', // Initial status
+            'pending',
             emailBlindIndex,
             nationalIdBlindIndex,
             telephoneBlindIndex,
