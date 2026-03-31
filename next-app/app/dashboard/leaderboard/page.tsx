@@ -250,12 +250,12 @@ export default function LeaderboardPage() {
                         </>
                     ) : (
                         <>
-                            {/* CF Header - Mobile Responsive */}
-                            <div className="grid grid-cols-8 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
-                                <div className="col-span-1">#</div>
-                                <div className="col-span-4 sm:col-span-5">Handle</div>
-                                <div className="col-span-3">Rating</div>
-                                <div className="hidden sm:block col-span-3">Rank</div>
+                            {/* CF Header */}
+                            <div className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 py-3 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
+                                <div>#</div>
+                                <div>Handle</div>
+                                <div className="text-right">Rating</div>
+                                <div className="hidden sm:block">Rank</div>
                             </div>
                             {loading ? (
                                 <div className="p-4 space-y-2 flex-1">
@@ -307,30 +307,30 @@ export default function LeaderboardPage() {
                                     {({ index, style }: { index: number; style: React.CSSProperties }) => {
                                         const user = cfLeaderboard[index];
                                         return (
-                                            <div style={style} key={user.handle} className="grid grid-cols-8 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
-                                                <div className="col-span-1 flex items-center justify-center">
+                                            <div style={style} key={user.handle} className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
+                                                <div className="flex items-center justify-center">
                                                     {index < 3 ? (
                                                         <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
                                                     ) : (
                                                         <span className="text-sm font-bold text-[#666]">{index + 1}</span>
                                                     )}
                                                 </div>
-                                                <div className="col-span-4 sm:col-span-5 min-w-0">
+                                                <div className="min-w-0">
                                                     <a
                                                         href={`https://codeforces.com/profile/${user.handle}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="text-sm font-medium text-[#F2F2F2] hover:text-[#E8C15A] flex items-center gap-1 sm:gap-2 truncate"
+                                                        className="text-sm font-medium text-[#F2F2F2] hover:text-[#E8C15A] flex items-center gap-1.5 truncate"
                                                     >
                                                         <span className="truncate">{user.handle}</span>
-                                                        <ExternalLink size={12} className="text-[#666] flex-shrink-0 hidden sm:block" />
+                                                        <ExternalLink size={12} className="text-[#666] flex-shrink-0 hidden sm:inline" />
                                                     </a>
-                                                    <p className="text-xs text-[#666] truncate">{user.name}</p>
+                                                    <p className="text-xs text-[#666] truncate hidden sm:block">{user.name}</p>
                                                 </div>
-                                                <div className={`col-span-3 text-sm font-bold ${getRatingColor(user.rating)}`}>
+                                                <div className={`text-sm font-bold text-right ${getRatingColor(user.rating)}`}>
                                                     {user.rating}
                                                 </div>
-                                                <div className="hidden sm:block col-span-3 text-sm text-[#A0A0A0] capitalize">{user.rank}</div>
+                                                <div className="hidden sm:block text-sm text-[#A0A0A0] capitalize">{user.rank}</div>
                                             </div>
                                         );
                                     }}
