@@ -30,25 +30,23 @@ export function Tooltip({
             let top = 0;
             let left = 0;
 
-            const scrollX = window.scrollX;
-            const scrollY = window.scrollY;
-
+            // Use viewport-relative coords since we render with position:fixed
             switch (position) {
                 case "top":
-                    top = rect.top + scrollY - 8;
-                    left = rect.left + scrollX + rect.width / 2;
+                    top = rect.top - 8;
+                    left = rect.left + rect.width / 2;
                     break;
                 case "bottom":
-                    top = rect.bottom + scrollY + 8;
-                    left = rect.left + scrollX + rect.width / 2;
+                    top = rect.bottom + 8;
+                    left = rect.left + rect.width / 2;
                     break;
                 case "left":
-                    top = rect.top + scrollY + rect.height / 2;
-                    left = rect.left + scrollX - 8;
+                    top = rect.top + rect.height / 2;
+                    left = rect.left - 8;
                     break;
                 case "right":
-                    top = rect.top + scrollY + rect.height / 2;
-                    left = rect.left + scrollX + rect.width + 8;
+                    top = rect.top + rect.height / 2;
+                    left = rect.left + rect.width + 8;
                     break;
             }
             setCoords({ top, left });
@@ -125,7 +123,6 @@ export function Tooltip({
                             style={{ 
                                 top: coords.top, 
                                 left: coords.left,
-                                position: 'absolute'
                             }}
                         >
                             <div className="bg-[#0b0b0c]/95 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] relative flex items-center gap-2.5">
