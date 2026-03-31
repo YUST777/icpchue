@@ -162,7 +162,7 @@ function MirrorUI({
     const urlType = groupId ? 'group' : 'contest';
 
     // Problem Data Hook
-    const { problem, cfData, loading, error, cfStats, sampleTestCases } = useProblemData({
+    const { problem, cfData, loading, error, cfStats, sampleTestCases, fetchCfStats } = useProblemData({
         contestId,
         problemId,
         urlType,
@@ -304,12 +304,13 @@ function MirrorUI({
         setStatsLoading(false);
     }, [contestId, problemId]);
 
-    // Fetch analytics only when user switches to the analytics tab (lazy)
+    // Fetch analytics + CF stats only when user switches to the analytics tab (lazy)
     useEffect(() => {
         if (activeTab === 'analytics') {
             fetchAnalyticsData();
+            fetchCfStats();
         }
-    }, [activeTab, fetchAnalyticsData]);
+    }, [activeTab, fetchAnalyticsData, fetchCfStats]);
 
     // ─── Submissions ───
     const [submissions, setSubmissions] = useState<any[]>([]);

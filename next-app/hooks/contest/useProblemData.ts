@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Problem, CFProblemData, Example } from '@/components/mirror/types';
 import { fetchWithCache } from '@/lib/cache/api-cache';
 import { useCodeforcesHandle } from './useCodeforcesHandle';
@@ -21,6 +21,7 @@ interface UseProblemDataReturn {
     error: string | null;
     cfStats: { rating?: number; solvedCount: number } | null;
     sampleTestCases: Example[];
+    fetchCfStats: () => Promise<void>;
 }
 
 /** Transform raw CFProblemData into the Problem interface used by components */
@@ -59,17 +60,13 @@ export function useProblemData({ contestId, problemId, urlType, groupId, initial
     const { handle: cfHandle } = useCodeforcesHandle();
     const syncAttemptedRef = useRef<string | null>(null);
 
-    // Fetch Low Cost Global Stats (always runs — it's async and non-blocking)
-    useEffect(() => {
-        let cancelled = false;
+    // CF stats are fetched lazily when the analytics tab is opened
+    const fetchCfStats = useCallback(async () => {
         if (!contestId || !problemId) return;
-
-        // Cache stats for 60s
-        fetchWithCache<any>(`/api/codeforces/problem-stats?contestId=${contestId}&index=${problemId}`, {}, 60)
-            .then(data => { if (!cancelled && data && !data.error) setCfStats(data); })
-            .catch(err => console.error('Failed to load CF stats', err));
-
-        return () => { cancelled = true; };
+        try {
+            const data = await fetchWithCache<any>(`/api/codeforces/problem-stats?contestId=${contestId}&index=${problemId}`, {}, 300);
+            if (data && !data.error) setCfStats(data);
+        } catch { /* non-critical */ }
     }, [contestId, problemId]);
 
     // Fetch problem from Codeforces Mirror API (SKIP if pre-fetched)
@@ -157,6 +154,7 @@ export function useProblemData({ contestId, problemId, urlType, groupId, initial
         loading,
         error,
         cfStats,
-        sampleTestCases
+        sampleTestCases,
+        fetchCfStats
     };
 }
