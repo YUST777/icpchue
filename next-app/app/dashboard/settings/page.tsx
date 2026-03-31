@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Copy, Check, Settings, User, Shield, Loader2, MessageCircle, Trophy, Code, Globe } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function SettingsPage() {
     const { user, logout } = useAuth();
@@ -149,8 +150,16 @@ export default function SettingsPage() {
                     <h3 className="text-lg font-bold text-[#F2F2F2] mb-4 flex items-center gap-2"><Shield size={20} className="text-[#E8C15A]" />Privacy</h3>
 
                     {loadingPrivacy ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 size={24} className="animate-spin text-[#E8C15A]" />
+                        <div className="space-y-4 py-2">
+                            {[1,2,3].map(i => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <div className="space-y-1.5">
+                                        <Skeleton className="h-4 w-40 rounded" />
+                                        <Skeleton className="h-3 w-56 rounded" />
+                                    </div>
+                                    <Skeleton className="h-6 w-11 rounded-full" />
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <div className="divide-y divide-white/5">

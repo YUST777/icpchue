@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpen, FileCode2, Info, X, ChevronRight, Calendar, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { curriculum } from '@/lib/content/curriculum';
 import { fetchWithCache } from '@/lib/cache/api-cache';
@@ -63,8 +64,11 @@ export default function SheetsPage() {
 
     if (authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={48} />
+            <div className="space-y-6 p-4">
+                <Skeleton className="h-8 w-56 rounded-lg" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-40 rounded-xl" />)}
+                </div>
             </div>
         );
     }

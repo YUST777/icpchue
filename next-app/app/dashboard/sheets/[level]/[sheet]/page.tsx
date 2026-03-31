@@ -5,6 +5,7 @@ import { Editor } from '@monaco-editor/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, Lock, List, FileText, XCircle, AlertTriangle, Users, Filter, ArrowUpDown } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Problem {
@@ -250,8 +251,15 @@ export default function SheetDetailPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="animate-spin text-[#E8C15A]" size={48} />
+            <div className="space-y-6 p-4">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6 rounded" />
+                    <Skeleton className="h-7 w-56 rounded-lg" />
+                </div>
+                <Skeleton className="h-3 w-full rounded-full max-w-md" />
+                <div className="space-y-2">
+                    {[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+                </div>
             </div>
         );
     }
@@ -392,8 +400,8 @@ export default function SheetDetailPage() {
                 {activeTab === 'submissions' && (
                     <div className="bg-[#121212] rounded-xl border border-white/10 overflow-hidden">
                         {submissionsLoading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="animate-spin text-[#E8C15A]" size={32} />
+                            <div className="p-4 space-y-2">
+                                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
                             </div>
                         ) : submissions.length === 0 ? (
                             <div className="text-center py-12">
@@ -494,9 +502,9 @@ export default function SheetDetailPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedSubmission(null)}>
                     <div className="bg-[#1a1a1a] rounded-xl border border-white/10 shadow-2xl w-[98%] h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         {loadingCode ? (
-                            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-[#888]">
-                                <Loader2 className="animate-spin text-[#E8C15A]" size={40} />
-                                <span>Fetching source code...</span>
+                            <div className="flex-1 p-6 space-y-3">
+                                <Skeleton className="h-6 w-48 rounded" />
+                                <Skeleton className="h-[70vh] w-full rounded-xl" />
                             </div>
                         ) : selectedSubmission && (
                             <>
