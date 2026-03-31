@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
                 FROM cf_submissions
                 GROUP BY user_id
             )
-            SELECT u.id, u.email, u.role, u.is_verified, u.is_shadow_banned, u.cheating_flags,
+            SELECT u.id, u.email, u.role, u.is_shadow_banned, u.cheating_flags,
                 u.created_at, u.last_login_at, u.codeforces_handle,
                 a.name, a.student_id, a.faculty,
                 COALESCE(sc.solved, 0)::int AS solved_count,
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         const total = countRes.rows[0]?.c ?? 0;
 
         const users = result.rows.map((r: {
-            id: number; email: string; role: string; is_verified: boolean;
+            id: number; email: string; role: string;
             is_shadow_banned: boolean; cheating_flags: number; created_at: string;
             last_login_at: string | null; codeforces_handle: string | null;
             name: string | null; student_id: string | null; faculty: string | null;
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
             id: r.id,
             email: decrypt(r.email) || r.email,
             role: r.role || 'trainee',
-            isVerified: r.is_verified,
+            isVerified: true, // All users are verified via Supabase Auth
             isShadowBanned: r.is_shadow_banned,
             cheatingFlags: r.cheating_flags ?? 0,
             createdAt: r.created_at,

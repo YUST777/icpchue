@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
         // Fetch profile directly — no longer need sheet_1_solved/is_approval_unlocked from users table
         const userResult = await query(
-            'SELECT id, email, is_verified, last_login_at, created_at, application_id, telegram_username, role, profile_picture, codeforces_handle, codeforces_data FROM users WHERE id = $1',
+            'SELECT id, email, last_login_at, created_at, application_id, telegram_username, role, profile_picture, codeforces_handle, codeforces_data FROM users WHERE id = $1',
             [authUser.id]
         );
 
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
             user: {
                 id: user.id,
                 email: decryptedEmail,
-                isVerified: user.is_verified,
+                isVerified: true, // All users verified via Supabase Auth
                 lastLogin: user.last_login_at,
                 createdAt: user.created_at,
                 role: user.role || 'trainee',

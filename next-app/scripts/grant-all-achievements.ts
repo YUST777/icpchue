@@ -39,20 +39,16 @@ async function run() {
         console.log('  ', ach, granted ? '✓' : '(already had)');
     }
 
-    // Update users table so UI shows all achievements unlocked:
-    // - sheet_1_solved, is_approval_unlocked for sheet-1 and approval badges
-    // - role = owner for instructor badge
-    // - codeforces_data.rating >= 500 for 500pts badge
+    // Update users table for role-based and CF-based achievements
+    // (sheet_1_solved and is_approval_unlocked are now derived from user_achievements)
     await query(
         `UPDATE users SET 
-          sheet_1_solved = true, 
-          is_approval_unlocked = true,
           role = 'owner',
           codeforces_data = COALESCE(codeforces_data, '{}'::jsonb) || '{"rating": "500"}'::jsonb
         WHERE id = $1`,
         [userId]
     );
-    console.log('  Updated sheet_1_solved, is_approval_unlocked, role=owner, codeforces_data.rating=500');
+    console.log('  Updated role=owner, codeforces_data.rating=500');
 
     // Invalidate profile cache so changes show immediately
     try {
