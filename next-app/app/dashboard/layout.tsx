@@ -110,26 +110,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             if (saved !== null) {
                 setTimeout(() => setIsSidebarCollapsed(saved === 'true'), 0);
             }
-            // Enable transitions after a short delay to allow initial render
             requestAnimationFrame(() => {
                 setTransitionsEnabled(true);
             });
         } catch (error) {
             console.warn('Failed to load sidebar state from localStorage:', error);
-            setTimeout(() => setTransitionsEnabled(true), 0); // Ensure enabled even on error
+            setTimeout(() => setTransitionsEnabled(true), 0);
         }
-
-        // Async: fetch from DB (cross-device sync)
-        fetch('/api/user/preferences?keys=sidebarCollapsed', { credentials: 'include' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                if (data?.prefs?.sidebarCollapsed !== undefined) {
-                    const dbVal = data.prefs.sidebarCollapsed === 'true';
-                    setIsSidebarCollapsed(dbVal);
-                    localStorage.setItem('sidebarCollapsed', String(dbVal));
-                }
-            })
-            .catch(() => {});
     }, []);
 
     const toggleSidebar = (collapsed: boolean) => {
