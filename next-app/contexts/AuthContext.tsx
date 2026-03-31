@@ -86,28 +86,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
                 credentials: 'include',
-            }, 60);
+            }, 300);
 
             setUser(data.user);
             setProfile(data.profile);
-
-            // Smart Refresh: Check if Codeforces data is stale (> 1 hour)
-            const cfData = data.profile?.codeforces_data;
-            if (cfData) {
-                const lastUpdated = cfData.lastUpdated ? new Date(cfData.lastUpdated).getTime() : 0;
-                const oneHour = 60 * 60 * 1000;
-                const now = Date.now();
-
-                if (!lastUpdated || (now - lastUpdated > oneHour)) {
-                    fetch('/api/user/refresh-cf', {
-                        method: 'POST',
-                        credentials: 'include',
-                    }).catch(() => {});
-                }
-            }
         } catch (error) {
             console.error('[AuthContext] Refresh profile error:', error);
         }
+    }, []);
+
+    // Refresh CF data — called explicitly from profile page, not on every page load
+    const refreshCfData = useCallback(() => {
+        fetch('/api/user/refresh-cf', {
+            method: 'POST',
+            credentials: 'include',
+        }).catch(() => {});
     }, []);
 
     // Initialize auth state from Supabase session
@@ -145,13 +138,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setProfile(null);
                 setIsAuthenticated(false);
                 clearApiCache();
-            } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-                // Clear stale cache before re-fetching profile
+            } else if (session && event === 'SIGNED_IN') {
+                // Only clear cache on actual sign-in, not token refresh
                 clearApiCache();
                 try {
                     const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
                         credentials: 'include',
-                    }, 60);
+                    }, 300);
                     if (data.user) {
                         setUser(data.user);
                         setProfile(data.profile);
@@ -160,6 +153,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 } catch {
                     // Will retry on next interaction
                 }
+            } else if (session && event === 'TOKEN_REFRESHED') {
+                // Token refreshed — don't re-fetch, the cached data is still valid
+                // The auth cache in verifyAuth handles token changes
             }
         });
 
