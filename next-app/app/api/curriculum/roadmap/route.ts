@@ -111,6 +111,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(data);
 
     } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch roadmap', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+        console.error('[Roadmap API] Error:', error);
+        return NextResponse.json({ error: 'Failed to fetch roadmap' }, { status: 500 });
     }
 }

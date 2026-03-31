@@ -8,6 +8,19 @@ const TOTP_SECRET = process.env.TOTP_SECRET;
 const ADMIN_SECRET_TOKEN = process.env.ADMIN_SECRET_TOKEN;
 
 /**
+ * Timing-safe string comparison that doesn't leak length information.
+ * Pads both strings to the same length before comparing.
+ */
+function timingSafeCompare(a: string, b: string): boolean {
+    const maxLen = Math.max(a.length, b.length);
+    const bufA = Buffer.alloc(maxLen, 0);
+    const bufB = Buffer.alloc(maxLen, 0);
+    bufA.write(a);
+    bufB.write(b);
+    return crypto.timingSafeEqual(bufA, bufB) && a.length === b.length;
+}
+
+/**
  * Validates admin requests using 3 layers of security:
  * 1. Secret Token (Header)
  * 2. Basic Auth (Username/Password)
@@ -31,13 +44,8 @@ export async function validateAdminRequest(req: NextRequest): Promise<NextRespon
     }
 
     const token = req.headers.get('x-admin-token') || req.headers.get('admin-token');
-    if (!token || token !== ADMIN_SECRET_TOKEN) {
-        // Fallback check for query param (legacy support)
-        const url = new URL(req.url);
-        const queryToken = url.searchParams.get('token');
-        if (queryToken !== ADMIN_SECRET_TOKEN) {
-            return NextResponse.json({ error: 'Unauthorized access' }, { status: 403 });
-        }
+    if (!token || !timingSafeCompare(token, ADMIN_SECRET_TOKEN)) {
+        return NextResponse.json({ error: 'Unauthorized access' }, { status: 403 });
     }
 
     // 3. Basic Auth & TOTP
@@ -55,10 +63,8 @@ export async function validateAdminRequest(req: NextRequest): Promise<NextRespon
         const [username, ...passwordParts] = credentials.split(':');
         const passwordInput = passwordParts.join(':');
 
-        // Check Username (timing-safe)
-        const usernameMatch = username.length === ADMIN_USERNAME.length &&
-            crypto.timingSafeEqual(Buffer.from(username), Buffer.from(ADMIN_USERNAME));
-        if (!usernameMatch) {
+        // Check Username (timing-safe, length-independent)
+        if (!timingSafeCompare(username, ADMIN_USERNAME)) {
             return new NextResponse('Invalid credentials', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ICPC Hue Admin"' } });
         }
 
@@ -73,10 +79,8 @@ export async function validateAdminRequest(req: NextRequest): Promise<NextRespon
             password = parts.slice(0, -1).join(',');
         }
 
-        // Check Password (timing-safe)
-        const passwordMatch = password.length === ADMIN_PASSWORD.length &&
-            crypto.timingSafeEqual(Buffer.from(password), Buffer.from(ADMIN_PASSWORD));
-        if (!passwordMatch) {
+        // Check Password (timing-safe, length-independent)
+        if (!timingSafeCompare(password, ADMIN_PASSWORD)) {
             return new NextResponse('Invalid credentials', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ICPC Hue Admin"' } });
         }
 
