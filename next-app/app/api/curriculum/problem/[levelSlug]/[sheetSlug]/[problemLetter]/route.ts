@@ -60,7 +60,9 @@ export async function GET(
             return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ success: true, problem });
+        return NextResponse.json({ success: true, problem }, {
+            headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600' }
+        });
     } catch (error) {
         return NextResponse.json(
             { error: 'Failed to fetch curriculum problem' },
