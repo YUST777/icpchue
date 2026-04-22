@@ -18,8 +18,10 @@ export const redis =
         db: 1, // Using DB 1 (same as Express server)
         keyPrefix: 'web:', // Same prefix
         lazyConnect: isBuild, // Don't connect immediately during build
+        connectTimeout: 5000,
+        commandTimeout: 3000,
+        maxRetriesPerRequest: 2,
         retryStrategy: (times) => {
-            // During build, don't keep retrying
             if (isBuild) return null;
             return Math.min(times * 50, 2000);
         },

@@ -61,6 +61,7 @@ services:
     logging: *default-logging
     volumes:
       - ./pfps:/app/public/pfps
+      - ./team-uploads:/app/team-uploads
     deploy:
       resources:
         limits:

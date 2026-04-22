@@ -12,6 +12,7 @@ export interface Session {
     campSlug: string;
     number: string;
     displayNumber: string;
+    slug: string;
     title: string;
     desc: string;
     description: string;
@@ -33,51 +34,67 @@ export interface Camp {
 
 export const camps: Camp[] = [
     {
-        slug: "approvalcamp",
-        title: "Approval Camp",
+        slug: "level0",
+        title: "Level 0",
         description: "Fundamental C++ concepts including Data Types, I/O, Control Flow, and Loops.",
-        image: '/images/lessons/approval/approvalcamp.webp',
+        image: '/images/lessons/levels_camp/level0/cover.webp',
         publicVisible: false,
         dashboardVisible: true,
         sessions: [
             {
                 id: 1,
-                campSlug: 'approvalcamp',
+                campSlug: 'level0',
                 number: '1',
                 displayNumber: '01',
+                slug: 'data-types',
                 tag: 'Fundamentals',
                 title: 'Data Types & I/O',
                 desc: 'Fundamentals of C++ Input/Output streams, arithmetic operators, and understanding basic data types and their limits.',
                 description: 'Master the basics of C++, input/output streams, and understand how data is stored in memory. Essential first steps for any competitive programmer.',
-                thumbnail: '/images/lessons/approval/datatypes.webp',
+                thumbnail: '/images/lessons/levels_camp/level0/datatypes.webp',
                 videoId: '1Ihh7e6pxPbu5L8RobscDgfSVv-WJEE6g',
                 content: <Session1Content />
             },
             {
+                id: 4,
+                campSlug: 'level0',
+                number: '2',
+                displayNumber: '02',
+                slug: 'revision',
+                tag: 'Revision',
+                title: 'Revision ( I/O & Data Types / Control Flow / Loops )',
+                desc: 'Comprehensive review covering all previous topics with 3 practice problems to solidify your understanding.',
+                description: 'Comprehensive review of all previous topics with 3 practice problems to solidify your understanding.',
+                thumbnail: '/images/lessons/levels_camp/level0/revision.webp',
+                videoId: '1sQT2Uk9A0FdDqn1gzBgvl8zn2rge3fe0',
+                content: <Session4Content />
+            },
+            {
                 id: 3,
-                campSlug: 'approvalcamp',
+                campSlug: 'level0',
                 number: '3',
                 displayNumber: '03',
+                slug: 'control-flow',
                 tag: 'Control Flow',
                 title: 'Control Flow',
                 desc: 'Mastering decision making with if-else statements, switch cases, and understanding program flow control.',
                 description: 'Master conditional statements, logical operators, and control flow patterns. Learn when to use if/else vs switch, and optimize your decision-making code.',
-                thumbnail: '/images/lessons/approval/control-flow.webp',
+                thumbnail: '/images/lessons/levels_camp/level0/control-flow.webp',
                 videoId: '1rm9v66HZd-_bZ7Z9KrpPbIIubBaqIa14',
                 content: <Session3Content />
             },
             {
-                id: 4,
-                campSlug: 'approvalcamp',
+                id: 8,
+                campSlug: 'level0',
                 number: '4',
                 displayNumber: '04',
-                tag: 'Revision',
-                title: 'Revision',
-                desc: 'Comprehensive review covering all previous topics with 3 practice problems to solidify your understanding.',
-                description: 'Comprehensive review of all previous topics with 3 practice problems to solidify your understanding.',
-                thumbnail: '/images/lessons/approval/revision.webp',
-                videoId: '1sQT2Uk9A0FdDqn1gzBgvl8zn2rge3fe0',
-                content: <Session4Content />
+                slug: 'functions',
+                tag: 'Fundamentals',
+                title: 'Functions',
+                desc: 'Mastering functions in C++, understanding scope, parameters, and modular programming.',
+                description: 'Learn how to write modular code using functions. covering scope, pass-by-value vs pass-by-reference, and organizational best practices.',
+                thumbnail: '/images/lessons/levels_camp/level0/functions.webp',
+                videoId: '12sTF5jj5S-w763CNt_k5XNpuAjYJC9Fk',
             },
         ]
     },
@@ -94,6 +111,7 @@ export const camps: Camp[] = [
                 campSlug: 'programming1',
                 number: '1',
                 displayNumber: '01',
+                slug: 'revision',
                 tag: 'Programming 1',
                 title: 'Full Revision',
                 desc: 'Comprehensive revision of Programming 1 concepts.',
@@ -107,6 +125,7 @@ export const camps: Camp[] = [
                 campSlug: 'programming1',
                 number: '2',
                 displayNumber: '02',
+                slug: 'exam-training',
                 tag: 'Programming 1',
                 title: 'Exam Training',
                 desc: 'Live exam training session recording.',
@@ -118,26 +137,27 @@ export const camps: Camp[] = [
         ]
     },
     {
-        slug: "wintercamp",
-        title: "Winter Camp",
+        slug: "level1",
+        title: "Level 1",
         description: "Advanced topics for competitive programming.",
-        image: '/images/lessons/winter/wintercamp.webp',
+        image: '/images/lessons/levels_camp/level1/cover.webp',
         publicVisible: false,
         dashboardVisible: true,
         sessions: [
             {
                 id: 5,
-                campSlug: 'wintercamp',
+                campSlug: 'level1',
                 number: '1',
                 displayNumber: '01',
-                tag: 'Winter Camp',
+                slug: 'time-complexity',
+                tag: 'Intermediate',
                 title: 'Time Complexity',
                 desc: 'Introduction to Algorithms, Instructions, and Time Complexity analysis (O(n), O(1), O(n²)).',
                 description: 'Introduction to Algorithms, Instructions, and Time Complexity. Learn O(n), O(1), and O(n²) analysis with practical examples.',
-                thumbnail: '/images/lessons/winter/complexity.webp',
+                thumbnail: '/images/lessons/levels_camp/level1/complexity.webp',
                 videoId: '1fH4AIGqw3j6XSomagPB3CNwJVtM1YUxf',
                 content: <Session5Content />
-            }
+            },
         ]
     },
 ];

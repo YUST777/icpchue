@@ -414,35 +414,68 @@ async def _do_submit_job(job_id: str, req: SubmitRequest, lang_id: int):
                     return {"success": False, "error": "NOT_LOGGED_IN"}
 
                 # 2. Wait for form (may take a while if Turnstile is loading in background)
+                # CF sometimes loads HTML with form markers but Ace editor JS doesn't init.
+                # Try multiple selectors: Ace container, raw textarea, or problem dropdown.
+                FORM_SELECTORS = [
+                    "#sourceCodeTextarea",
+                    "textarea[name='source']",
+                    "select[name='submittedProblemIndex']",
+                    ".submit-form",
+                ]
                 form_found = False
-                for form_attempt in range(3):
-                    try:
-                        page.wait_for_selector("#sourceCodeTextarea", timeout=15000)
-                        form_found = True
+                for form_attempt in range(5):
+                    # Try each selector
+                    for sel in FORM_SELECTORS:
+                        try:
+                            page.wait_for_selector(sel, timeout=5000)
+                            form_found = True
+                            logger.info(f"  form found via '{sel}' (attempt {form_attempt+1})")
+                            break
+                        except Exception:
+                            pass
+                    if form_found:
                         break
-                    except Exception:
-                        if form_attempt < 2:
-                            logger.warning(f"  form not visible yet (attempt {form_attempt+1}), waiting...")
-                            # Scroll to trigger lazy rendering, then wait
-                            page.evaluate("() => window.scrollTo(0, 0)")
+
+                    logger.warning(f"  form not visible yet (attempt {form_attempt+1}), waiting...")
+
+                    # Try to force-init the Ace editor if the page has the textarea but JS stalled
+                    page.evaluate("""() => {
+                        // Force scroll to top to trigger lazy rendering
+                        window.scrollTo(0, 0);
+                        // If raw textarea exists but Ace editor didn't init, create a visible textarea
+                        const ta = document.querySelector('textarea[name="source"]');
+                        if (ta && !document.getElementById('sourceCodeTextarea')) {
+                            ta.style.display = 'block';
+                            ta.style.width = '100%';
+                            ta.style.height = '300px';
+                            ta.id = 'sourceCodeTextarea';
+                        }
+                    }""")
+                    page.wait_for_timeout(3000)
+
+                    # Check if we got redirected
+                    if "/enter" in page.url or "/login" in page.url:
+                        return {"success": False, "error": "NOT_LOGGED_IN"}
+
+                    # Reload on attempt 2 and 4
+                    if form_attempt in (1, 3):
+                        logger.info(f"  reloading submit page...")
+                        try:
+                            page.reload(wait_until="domcontentloaded", timeout=30000)
                             page.wait_for_timeout(3000)
-                            # Check if we got redirected
-                            if "/enter" in page.url or "/login" in page.url:
-                                return {"success": False, "error": "NOT_LOGGED_IN"}
-                            # Try reloading if form still missing
-                            if form_attempt == 1:
-                                logger.info(f"  reloading submit page...")
-                                try:
-                                    page.reload(wait_until="domcontentloaded", timeout=30000)
-                                    page.wait_for_timeout(2000)
-                                except Exception:
-                                    pass
+                        except Exception:
+                            pass
 
                 if not form_found:
                     err = page.evaluate(JS_ERR)
                     page_url = page.url
                     page_title = page.title()
-                    logger.warning(f"  form not found — url={page_url}, title={page_title}")
+                    # Dump page content for debugging
+                    try:
+                        page_html = page.content()[:500]
+                        logger.warning(f"  form not found — url={page_url}, title={page_title}, html_start={page_html}")
+                    except Exception:
+                        logger.warning(f"  form not found — url={page_url}, title={page_title}")
                     if page_url.rstrip("/") == "https://codeforces.com" or page_title == "Codeforces":
                         return {"success": False, "error": "NOT_LOGGED_IN"}
                     return {"success": False, "error": err or "FORM_NOT_FOUND"}

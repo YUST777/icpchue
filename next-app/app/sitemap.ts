@@ -60,8 +60,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 2. Dynamic Camp/Session Routes
     const sessionRoutes: MetadataRoute.Sitemap = camps.flatMap((camp) => {
         // Only include camps that are publicly visible
-        if (camp.publicVisible === false && camp.slug !== 'approvalcamp' && camp.slug !== 'wintercamp') {
-            // Note: approvalcamp and wintercamp have some public sessions even if camp is technically "internal"
+        if (camp.publicVisible === false && camp.slug !== 'level0' && camp.slug !== 'level1') {
+            // Note: level0 and level1 have some public sessions even if camp is technically "internal"
             // But based on app structure, we usually only index what's on the /sessions page
         }
 

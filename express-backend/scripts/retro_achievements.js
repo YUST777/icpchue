@@ -65,10 +65,10 @@ async function run() {
             const approvalProgress = await client.query(`
                 SELECT COUNT(DISTINCT entity_id) as count
                 FROM view_logs
-                WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN ('approvalcamp-1', 'approvalcamp-3', 'approvalcamp-4')
+                WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN ('level0-1', 'level0-2', 'level0-3', 'level0-4')
             `, [user.id]);
 
-            if (parseInt(approvalProgress.rows[0].count) >= 3) {
+            if (parseInt(approvalProgress.rows[0].count) >= 4) {
                 console.log(`User ${user.id} finished Approval Camp!`);
                 await client.query(`UPDATE users SET is_approval_unlocked = TRUE WHERE id = $1`, [user.id]);
                 await client.query(`INSERT INTO user_achievements (user_id, achievement_id, earned_at, seen) VALUES ($1, $2, NOW(), TRUE) ON CONFLICT DO NOTHING`, [user.id, ACHIEVEMENTS.APPROVAL]);
