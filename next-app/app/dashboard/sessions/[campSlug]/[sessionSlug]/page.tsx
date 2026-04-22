@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Info, Eye, Loader2 } from 'lucide-react';
+import { Info, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import Providers from '@/components/core/Providers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,14 +15,15 @@ function DashboardSessionContent() {
     const { isAuthenticated, loading } = useAuth();
     // params can assume string as per Next.js App Router dynamic segments
     const campSlug = params.campSlug as string;
-    const sessionNumber = params.sessionNumber as string;
+    const sessionSlug = params.sessionSlug as string;
 
     const [authChecked, setAuthChecked] = useState(false);
     const [viewCount, setViewCount] = useState<number | null>(null);
 
     // Find Session
     const camp = camps.find(c => c.slug === campSlug);
-    const session = camp?.sessions.find(s => s.number === sessionNumber);
+    // Find by slug first, then fallback to number (for backward compatibility during transition if needed)
+    const session = camp?.sessions.find(s => s.slug === sessionSlug || s.number === sessionSlug);
 
     useEffect(() => {
         if (!loading) {
@@ -31,8 +32,8 @@ function DashboardSessionContent() {
                 router.replace('/login');
             } else if (session) {
                 // Fetch/Increment views
-                // Use a composite ID: campSlug-sessionNumber
-                const entityId = `${campSlug}-${sessionNumber}`;
+                // Use a composite ID: campSlug-sessionNumber (keeping legacy ID for view consistency)
+                const entityId = `${campSlug}-${session.number}`;
 
                 const fetchViews = async () => {
                     try {
@@ -56,7 +57,7 @@ function DashboardSessionContent() {
                 fetchViews();
             }
         }
-    }, [loading, isAuthenticated, router, campSlug, sessionNumber, session]);
+    }, [loading, isAuthenticated, router, campSlug, sessionSlug, session]);
 
     if (loading || !authChecked) return <div className="min-h-screen bg-black p-6"><div className="max-w-3xl mx-auto space-y-4"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-4 w-72 rounded" /><Skeleton className="h-64 rounded-xl" /></div></div>;
     if (!isAuthenticated) return <div className="min-h-screen bg-black p-6"><div className="max-w-3xl mx-auto space-y-4"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-64 rounded-xl" /></div></div>;

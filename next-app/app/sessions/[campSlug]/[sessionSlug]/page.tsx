@@ -11,28 +11,21 @@ function SessionContent() {
     const params = useParams();
     // params can assume string as per Next.js App Router dynamic segments
     const campSlug = params.campSlug as string;
-    const sessionNumber = params.sessionNumber as string;
+    const sessionSlug = params.sessionSlug as string;
 
     const [viewCount, setViewCount] = useState<number | null>(null);
 
     // Find Session
     const camp = camps.find(c => c.slug === campSlug);
-    const session = camp?.sessions.find(s => s.number === sessionNumber);
+    const session = camp?.sessions.find(s => s.slug === sessionSlug || s.number === sessionSlug);
 
     useEffect(() => {
         if (session) {
             // Fetch/Increment views
-            // Use a composite ID: campSlug-sessionNumber
-            const entityId = `${campSlug}-${sessionNumber}`;
+            // Use a composite ID: campSlug-sessionNumber (keeping legacy ID for view consistency)
+            const entityId = `${campSlug}-${session.number}`;
 
             const fetchViews = async () => {
-                // Determine logic for view counting on public pages. 
-                // We might not want to increment on every visit without auth, or maybe we do.
-                // For now, let's just fetch view counts or maybe increment if we want to track public views.
-                // The dashboard implementation increments. Let's assume we want to increment here too.
-                // However, the API might require auth? 
-                // The implementation plan says: "View Counter: Update view counter to use composite IDs...".
-                // And "Add a view counter to Sessions and News items."
                 try {
                     const res = await fetch('/api/views', {
                         method: 'POST',
@@ -53,7 +46,7 @@ function SessionContent() {
             };
             fetchViews();
         }
-    }, [campSlug, sessionNumber, session]);
+    }, [campSlug, sessionSlug, session]);
 
     if (!camp || !session) {
         return (
@@ -125,7 +118,9 @@ function SessionContent() {
                     <div className="h-px bg-white/10 flex-1"></div>
                 </div>
 
-                <article className="prose prose-invert prose-lg max-w-none">{session.content}</article>
+                <article className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-a:text-[#d59928] prose-strong:text-white prose-code:text-[#d59928] prose-pre:bg-[#0a0a0a] prose-pre:border prose-pre:border-white/10">
+                    {session.content}
+                </article>
             </div>
         </div>
     );

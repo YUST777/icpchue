@@ -87,7 +87,7 @@ export default function AchievementsPage() {
 
     const achievements = [
         { id: 'welcome', modelPath: '/3d/WELCOME.glb', title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
-        { id: 'approval', modelPath: '/3d/done_approvalcamp.glb', title: 'Approval Camp', description: 'Complete all sessions of the Approval Camp', unlocked: isApprovalUnlocked, rarity: 'rare' as const },
+        { id: 'approval', modelPath: '/3d/done_approvalcamp.glb', title: 'Level 0', description: 'Complete all sessions of Level 0', unlocked: isApprovalUnlocked, rarity: 'rare' as const },
         { id: 'sheet-1', modelPath: '/3d/sheet1.glb', title: 'Sheet 1 Solved', description: 'Solve all problems in Sheet 1', unlocked: isSheet1Unlocked, rarity: 'rare' as const },
         { id: '500pts', modelPath: '/3d/500pts.glb', title: '500+ Rating', description: 'Achieve 500+ rating on Codeforces', unlocked: is500PtsUnlocked, rarity: 'rare' as const },
         { id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
