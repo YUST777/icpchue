@@ -45,15 +45,15 @@ export async function POST(req: NextRequest) {
         const views = Number(result.rows[0]?.views || 0);
 
         // --- Achievement Logic: Approval Camp Completion ---
-        if (entityType === 'session' && entityId.startsWith('approvalcamp-')) {
+        if (entityType === 'session' && entityId.startsWith('level0-')) {
             try {
                 const viewCheck = await query(`
                     SELECT COUNT(DISTINCT entity_id) as unique_sessions
                     FROM view_logs
-                    WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN ('approvalcamp-1', 'approvalcamp-3', 'approvalcamp-4')
+                    WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN ('level0-1', 'level0-2', 'level0-3', 'level0-4')
                 `, [user.id]);
 
-                if (parseInt(viewCheck.rows[0].unique_sessions) >= 3) {
+                if (parseInt(viewCheck.rows[0].unique_sessions) >= 4) {
                     const { updateUserStatus } = await import('@/lib/services/achievements');
                     await updateUserStatus(user.id, 'is_approval_unlocked', true);
                 }

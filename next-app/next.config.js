@@ -15,12 +15,81 @@ const nextConfig = {
     serverExternalPackages: ['pg', 'sharp'],
     // React Compiler — auto-memoizes components, eliminates unnecessary re-renders
     reactCompiler: true,
+    serverActions: {
+        bodySizeLimit: '50mb',
+    },
+    experimental: {
+        proxyClientMaxBodySize: '50mb',
+    },
 
     async redirects() {
         return [
             {
                 source: '/apply',
                 destination: '/register',
+                permanent: true,
+            },
+            // Specific Legacy Moves (Safety Net)
+            {
+                source: '/dashboard/sessions/wintercamp/2',
+                destination: '/dashboard/sessions/level0/functions',
+                permanent: true,
+            },
+            {
+                source: '/sessions/wintercamp/2',
+                destination: '/sessions/level0/functions',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/sessions/level1/2',
+                destination: '/dashboard/sessions/level0/functions',
+                permanent: true,
+            },
+            {
+                source: '/sessions/level1/2',
+                destination: '/sessions/level0/functions',
+                permanent: true,
+            },
+            // Legacy Camp Redirects
+            {
+                source: '/sessions/approvalcamp',
+                destination: '/sessions/level0',
+                permanent: true,
+            },
+            {
+                source: '/sessions/wintercamp',
+                destination: '/sessions/level1',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/sessions/approvalcamp',
+                destination: '/dashboard/sessions/level0',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/sessions/wintercamp',
+                destination: '/dashboard/sessions/level1',
+                permanent: true,
+            },
+            // Catch-all for deep links (e.g., /sessions/approvalcamp/1)
+            {
+                source: '/sessions/approvalcamp/:path*',
+                destination: '/sessions/level0/:path*',
+                permanent: true,
+            },
+            {
+                source: '/sessions/wintercamp/:path*',
+                destination: '/sessions/level1/:path*',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/sessions/approvalcamp/:path*',
+                destination: '/dashboard/sessions/level0/:path*',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/sessions/wintercamp/:path*',
+                destination: '/dashboard/sessions/level1/:path*',
                 permanent: true,
             },
         ];

@@ -60,7 +60,7 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
                     {camp.sessions.map((session) => (
                         <Link
                             key={session.id}
-                            href={`/sessions/${camp.slug}/${session.number}`}
+                            href={`/sessions/${camp.slug}/${session.slug}`}
                             className="group relative bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden hover:border-[#d59928]/50 transition-all duration-300 hover:-translate-y-1 block"
                         >
                             <div className="aspect-video relative overflow-hidden bg-[#1a1a1a]">

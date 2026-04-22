@@ -58,9 +58,20 @@ export default function ProblemPage() {
             setLoading(true);
         }
 
+        const fetchWithTimeout = <T,>(url: string, ttl: number, timeoutMs = 30000): Promise<T> => {
+            return Promise.race([
+                fetchWithCache<T>(url, {}, ttl),
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Request timed out — please refresh')), timeoutMs)
+                )
+            ]);
+        };
+
         const loadAll = async () => {
             try {
-                const metaData = await fetchWithCache<any>(`/api/curriculum/problem/${levelSlug}/${sheetSlug}/${problemLetter}`, {}, 300);
+                const metaData = await fetchWithTimeout<any>(
+                    `/api/curriculum/problem/${levelSlug}/${sheetSlug}/${problemLetter}`, 300, 15000
+                );
 
                 if (!metaData || !metaData.problem) {
                     if (!cancelled) setError('Problem not found in curriculum');
@@ -71,7 +82,7 @@ export default function ProblemPage() {
                 const urlType = problem.groupId ? 'group' : 'contest';
                 const mirrorUrl = `/api/codeforces/mirror?contestId=${problem.contestId}&problemId=${problemLetter}&type=${urlType}${problem.groupId ? `&groupId=${problem.groupId}` : ''}`;
 
-                const cfData: CFProblemData = await fetchWithCache<CFProblemData>(mirrorUrl, {}, 300);
+                const cfData: CFProblemData = await fetchWithTimeout<CFProblemData>(mirrorUrl, 300, 65000);
                 
                 if (!cancelled) {
                     setMeta(problem);
@@ -407,6 +418,7 @@ function MirrorUI({
         timeLimit: cfData?.meta.timeLimitMs || 2000,
         memoryLimit: cfData?.meta.memoryLimitMB || 256,
         setIsTestPanelVisible,
+        setTestPanelActiveTab,
         contestId,
         problemId
     });

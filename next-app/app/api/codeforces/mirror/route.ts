@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
     try {
         const response = await fetch(`${mirrorServiceUrl}/fetch?url=${encodeURIComponent(targetUrl)}`, {
-            signal: AbortSignal.timeout(120000) // 2 minute timeout
+            signal: AbortSignal.timeout(60000) // 60s timeout — must be under Cloudflare's 100s limit
         });
 
         if (!response.ok) {

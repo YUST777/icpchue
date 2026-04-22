@@ -60,7 +60,15 @@ export async function middleware(request: NextRequest) {
     const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
     
     if (isProtectedPage) {
-        await supabase.auth.getUser();
+        try {
+            await Promise.race([
+                supabase.auth.getUser(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
+            ]);
+        } catch (e) {
+            // Auth refresh failed/timed out — continue with stale session rather than hanging
+            console.error('[Middleware] Auth refresh failed:', e instanceof Error ? e.message : e);
+        }
     }
 
     const headers = supabaseResponse.headers;

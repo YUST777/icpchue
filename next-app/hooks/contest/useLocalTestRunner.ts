@@ -8,6 +8,7 @@ interface UseLocalTestRunnerParams {
     timeLimit?: number;
     memoryLimit?: number;
     setIsTestPanelVisible: (visible: boolean) => void;
+    setTestPanelActiveTab?: (tab: 'testcase' | 'result' | 'codeforces') => void;
     contestId?: string;
     problemId?: string;
 }
@@ -25,6 +26,7 @@ export function useLocalTestRunner({
     timeLimit = 2000,
     memoryLimit = 256,
     setIsTestPanelVisible,
+    setTestPanelActiveTab,
     contestId,
     problemId
 }: UseLocalTestRunnerParams): UseLocalTestRunnerReturn {
@@ -55,6 +57,7 @@ export function useLocalTestRunner({
 
         setSubmitting(true);
         setIsTestPanelVisible(true);
+        if (setTestPanelActiveTab) setTestPanelActiveTab('result');
 
         try {
             const response = await fetch('/api/judge/test', {
@@ -115,7 +118,7 @@ export function useLocalTestRunner({
         } finally {
             setSubmitting(false);
         }
-    }, [submitting, setIsTestPanelVisible]);
+    }, [submitting, setIsTestPanelVisible, setTestPanelActiveTab]);
 
     return {
         result,

@@ -37,7 +37,7 @@ export default async function CampSessionsPage(props: { params: Promise<{ campSl
                     {camp.sessions.map((session) => (
                         <Link
                             key={session.id}
-                            href={`/dashboard/sessions/${camp.slug}/${session.number}`}
+                            href={`/dashboard/sessions/${camp.slug}/${session.slug}`}
                             className="group"
                         >
                             <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden h-full">
