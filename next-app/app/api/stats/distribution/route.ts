@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
         // Fetch accepted submissions for valid stats
         const result = await query(
             `SELECT user_id, time_ms, memory_kb 
-             FROM training_submissions 
-             WHERE sheet_id = $1 AND problem_id = $2 AND verdict = 'Accepted'`,
+             FROM submissions 
+             WHERE sheet_id = $1 AND problem_index = $2 AND verdict = 'Accepted' AND source = 'judge0'`,
             [sheetId, problemId]
         );
 

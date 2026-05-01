@@ -35,10 +35,14 @@ export async function POST(req: NextRequest) {
 
         if (leftPage) {
             // User left a page — update the time_spent on the last navigation entry
+            // Note: Postgres doesn't support ORDER BY/LIMIT in UPDATE, use subquery
             await query(
                 `UPDATE page_navigation SET left_at = NOW(), time_spent_ms = $1 
-                 WHERE user_id = $2 AND session_id = $3 AND page_path = $4 AND left_at IS NULL
-                 ORDER BY entered_at DESC LIMIT 1`,
+                 WHERE id = (
+                     SELECT id FROM page_navigation 
+                     WHERE user_id = $2 AND session_id = $3 AND page_path = $4 AND left_at IS NULL
+                     ORDER BY entered_at DESC LIMIT 1
+                 )`,
                 [timeSpent || 0, user.id, sessionId || '', page]
             ).catch(() => {});
         } else {

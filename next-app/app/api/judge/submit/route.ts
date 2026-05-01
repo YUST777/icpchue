@@ -283,16 +283,16 @@ export async function POST(req: NextRequest) {
         const compileError = results.find(r => r.compileError)?.compileError || null;
         const runtimeError = results.find(r => r.runtimeError)?.runtimeError || null;
 
-        // Save submission history
+        // Save submission to unified submissions table
         const insertResult = await query(
-            `INSERT INTO training_submissions (
-                user_id, sheet_id, problem_id, source_code, verdict,
+            `INSERT INTO submissions (
+                user_id, source, sheet_id, problem_index, contest_id, source_code, verdict,
                 time_ms, memory_kb, test_cases_passed, total_test_cases,
-                compile_error, runtime_error, ip_address,
+                compilation_error, runtime_error, ip_address,
                 tab_switches, paste_events, time_to_solve_seconds, attempt_number
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ) VALUES ($1, 'judge0', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
             RETURNING id`,
-            [user.id, sheetId, problemId, sourceCode, finalVerdict, Math.round(totalTimeMs), maxMemoryKb, passedCount, testCases.length, compileError, runtimeError, ipAddress, tabSwitches, pasteEvents, timeToSolve || null, attemptNumber]
+            [user.id, sheetId, problemId, problem.contest_id || null, sourceCode, finalVerdict, Math.round(totalTimeMs), maxMemoryKb, passedCount, testCases.length, compileError, runtimeError, ipAddress, tabSwitches, pasteEvents, timeToSolve || null, attemptNumber]
         );
 
         const submissionId = insertResult.rows[0]?.id;

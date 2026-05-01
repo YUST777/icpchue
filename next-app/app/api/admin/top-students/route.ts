@@ -10,29 +10,16 @@ export async function GET(req: NextRequest) {
         }
 
         const result = await query(`
-            WITH solves AS (
-                SELECT user_id, COALESCE(CAST(sheet_id AS TEXT), CAST(contest_id AS TEXT)) || '-' || problem_index AS pk, NULL::int AS time_to_solve_seconds
-                FROM cf_submissions WHERE verdict = 'Accepted'
-            ),
-            agg AS (
-                SELECT user_id, COUNT(DISTINCT pk) AS solved, COALESCE(SUM(time_to_solve_seconds), 0)::bigint AS total_seconds
-                FROM solves
-                GROUP BY user_id
-            ),
-            sub_counts AS (
-                SELECT user_id, COUNT(*)::int AS total_subs
-                FROM cf_submissions
-                GROUP BY user_id
-            )
-            SELECT u.id, a.name, a.faculty, a.student_id, u.email, agg.solved::int, agg.total_seconds, COALESCE(sc.total_subs, 0) AS total_submissions,
+            SELECT u.id, a.name, a.faculty, a.student_id, u.email,
+                uss.distinct_solved AS solved, 0::bigint AS total_seconds,
+                COALESCE(uss.total_submissions, 0) AS total_submissions,
                 u.codeforces_handle
-            FROM agg
-            JOIN users u ON u.id = agg.user_id
+            FROM user_solve_stats uss
+            JOIN users u ON u.id = uss.user_id
             LEFT JOIN applications a ON a.id = u.application_id
-            LEFT JOIN sub_counts sc ON sc.user_id = u.id
             WHERE (u.is_shadow_banned = false OR u.is_shadow_banned IS NULL)
               AND (u.cheating_flags = 0 OR u.cheating_flags IS NULL)
-            ORDER BY agg.solved DESC, agg.total_seconds DESC NULLS LAST
+            ORDER BY uss.distinct_solved DESC, uss.total_submissions ASC NULLS LAST
             LIMIT 100
         `);
 

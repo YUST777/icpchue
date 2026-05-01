@@ -96,6 +96,19 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0/functions.webp',
                 videoId: '12sTF5jj5S-w763CNt_k5XNpuAjYJC9Fk',
             },
+            {
+                id: 9,
+                campSlug: 'level0',
+                number: '5',
+                displayNumber: '05',
+                slug: 'recursion',
+                tag: 'Fundamentals',
+                title: 'Recursion',
+                desc: 'Understanding recursion in C++, base cases, and recursive programming techniques.',
+                description: 'Dive into recursion. Learn how functions can call themselves, understand base cases, and solve complex problems using recursive techniques.',
+                thumbnail: '/images/lessons/approval/recursion.webp',
+                videoId: '1bWcPjD6DEsCRKQ14Gk_M-1EHjvrKkD4C',
+            },
         ]
     },
     {

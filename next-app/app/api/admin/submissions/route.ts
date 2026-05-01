@@ -14,35 +14,22 @@ export async function GET(req: NextRequest) {
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '30')));
         const offset = (page - 1) * limit;
 
+        // Single query on unified submissions table — no more UNION ALL
         const result = await query(`
-            SELECT * FROM (
-                SELECT ts.id, ts.user_id, ts.sheet_id, ts.problem_id, ts.verdict, ts.time_ms, ts.memory_kb,
-                    ts.time_to_solve_seconds, ts.attempt_number, ts.submitted_at, ts.language, 'judge0' AS source,
-                    a.name AS user_name, cs.name AS sheet_name
-                FROM training_submissions ts
-                LEFT JOIN users u ON u.id = ts.user_id
-                LEFT JOIN applications a ON a.id = u.application_id
-                LEFT JOIN curriculum_sheets cs ON cs.id::text = ts.sheet_id::text
-                UNION ALL
-                SELECT cf.id, cf.user_id, cf.sheet_id, cf.contest_id || '-' || cf.problem_index AS problem_id,
-                    cf.verdict, cf.time_ms, cf.memory_kb, NULL::int AS time_to_solve_seconds, NULL::int AS attempt_number,
-                    cf.submitted_at, cf.language, 'codeforces' AS source,
-                    a.name AS user_name, cs.name AS sheet_name
-                FROM cf_submissions cf
-                LEFT JOIN users u ON u.id = cf.user_id
-                LEFT JOIN applications a ON a.id = u.application_id
-                LEFT JOIN curriculum_sheets cs ON cs.id::text = cf.sheet_id::text
-            ) AS unified
-            ORDER BY submitted_at DESC
+            SELECT s.id, s.user_id, s.sheet_id,
+                CASE WHEN s.source = 'codeforces' THEN s.contest_id || '-' || s.problem_index ELSE s.problem_index END AS problem_id,
+                s.verdict, s.time_ms, s.memory_kb,
+                s.time_to_solve_seconds, s.attempt_number, s.submitted_at, s.language, s.source,
+                a.name AS user_name, cs.name AS sheet_name
+            FROM submissions s
+            LEFT JOIN users u ON u.id = s.user_id
+            LEFT JOIN applications a ON a.id = u.application_id
+            LEFT JOIN curriculum_sheets cs ON cs.id::text = s.sheet_id
+            ORDER BY s.submitted_at DESC
             LIMIT $1 OFFSET $2
         `, [limit, offset]);
 
-        const countRes = await query(`
-            SELECT (
-                (SELECT COUNT(*) FROM training_submissions) +
-                (SELECT COUNT(*) FROM cf_submissions)
-            )::bigint AS total
-        `);
+        const countRes = await query('SELECT COUNT(*)::bigint AS total FROM submissions');
         const total = parseInt(countRes.rows[0]?.total ?? '0');
 
         const submissions = result.rows.map((r: Record<string, unknown>) => ({

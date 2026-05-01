@@ -74,61 +74,33 @@ export async function GET(req: NextRequest) {
 }
 
 async function fetchLeaderboard(isShadowBanned: boolean) {
-    // Privacy filter: cheaters can't hide, normal users can opt out
-    // is_shadow_banned = TRUE -> always shown (can't hide)
-    // otherwise respects show_on_sheets_leaderboard setting
-
-    // Note: Parameterized query logic moved here
     const shadowBanClause = isShadowBanned
-        ? '' // Cheaters see everyone (including other cheaters)
-        : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)'; // Normal users don't see cheaters
+        ? ''
+        : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
 
-    // Leaderboard: counts problems solved via Codeforces (cf_submissions) only.
-    // A problem is "solved" if it has an Accepted verdict in cf_submissions.
-
+    // Uses pre-computed user_solve_stats (auto-updated by trigger on submissions table)
+    // No more scanning all cf_submissions on every leaderboard load
     const queryStr = `
-        WITH all_solves AS (
-            -- Codeforces solves are the only ones that count for the leaderboard
-            -- We group by user_id and problem key to count distinct solves
-            SELECT user_id, contest_id || '-' || problem_index AS problem_key, submitted_at, id AS sub_id
-            FROM cf_submissions
-            WHERE verdict = 'Accepted'
-        ),
-        user_stats AS (
-            SELECT 
-                user_id,
-                COUNT(DISTINCT problem_key) AS solved_count,
-                COUNT(sub_id) AS accepted_count,
-                MAX(submitted_at) AS last_solve_at
-            FROM all_solves
-            GROUP BY user_id
-        ),
-        sub_counts AS (
-            -- Total submissions from Codeforces only
-            SELECT user_id, COUNT(*)::int AS total_submissions
-            FROM cf_submissions
-            GROUP BY user_id
-        )
         SELECT 
             u.id,
             u.email,
             u.profile_visibility,
             u.is_shadow_banned,
             a.name,
-            us.solved_count,
-            us.accepted_count,
-            COALESCE(sc.total_submissions, 0) AS total_submissions
+            uss.distinct_solved AS solved_count,
+            uss.total_accepted AS accepted_count,
+            uss.total_submissions
         FROM users u
-        INNER JOIN user_stats us ON u.id = us.user_id
-        LEFT JOIN sub_counts sc ON u.id = sc.user_id
+        INNER JOIN user_solve_stats uss ON u.id = uss.user_id
         LEFT JOIN applications a ON u.application_id = a.id
-        WHERE (
+        WHERE uss.distinct_solved > 0
+          AND (
             u.is_shadow_banned = TRUE 
             OR u.show_on_sheets_leaderboard = TRUE 
             OR u.show_on_sheets_leaderboard IS NULL
-        )
+          )
           ${shadowBanClause}
-        ORDER BY us.solved_count DESC, COALESCE(sc.total_submissions, 0) ASC, us.last_solve_at ASC
+        ORDER BY uss.distinct_solved DESC, uss.total_submissions ASC, uss.last_solve_at ASC
         LIMIT 100
     `;
 
