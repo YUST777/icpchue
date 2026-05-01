@@ -17,171 +17,72 @@ export async function GET(req: NextRequest) {
         const limit = Math.min(parseInt(searchParams.get('limit') || '30'), 50);
         const offset = (page - 1) * limit;
 
-        // ── Build unified query: training_submissions UNION ALL cf_submissions ──
-        const parts: string[] = [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const params: any[] = [user.id];
-        let p = 1; // param counter
+        // Build WHERE conditions dynamically
+        const conditions: string[] = ['s.user_id = $1'];
+        const params: unknown[] = [user.id];
+        let p = 1;
 
-        // ── Judge0 (training_submissions) ──
-        // Supports: sheetId only (all problems) OR sheetId+problemId (single problem)
-        if (sheetId) {
-            p++;
-            const pSheet = p;
-            params.push(sheetId);
-
-            let judge0Where = `ts.user_id = $1 AND ts.sheet_id = $${pSheet}`;
-            if (problemId) {
-                p++;
-                const pProblem = p;
-                params.push(problemId);
-                judge0Where += ` AND ts.problem_id = $${pProblem}`;
-            }
-
-            parts.push(`
-                SELECT
-                    ts.id,
-                    ts.problem_id,
-                    NULL AS contest_id,
-                    ts.verdict,
-                    ts.time_ms,
-                    ts.memory_kb,
-                    ts.test_cases_passed,
-                    ts.total_test_cases,
-                    ts.submitted_at,
-                    ts.attempt_number,
-                    ts.language,
-                    'judge0' AS source,
-                    NULL::bigint AS cf_submission_id,
-                    ts.compile_error AS compilation_error,
-                    NULL AS details,
-                    NULL::integer AS test_number,
-                    ts.notes,
-                    ts.note_color
-                FROM training_submissions ts
-                WHERE ${judge0Where}
-            `);
-        }
-
-        // ── Codeforces (cf_submissions) ──
-        // Supports: contestId+problemId (single problem) OR sheetId only (all problems)
         if (contestId && problemId) {
-            p++;
-            const pContest = p;
-            p++;
-            const pIndex = p;
-            params.push(contestId, problemId);
-
-            parts.push(`
-                SELECT
-                    cf.id,
-                    cf.problem_index AS problem_id,
-                    cf.contest_id,
-                    cf.verdict,
-                    cf.time_ms,
-                    cf.memory_kb,
-                    NULL::integer AS test_cases_passed,
-                    NULL::integer AS total_test_cases,
-                    cf.submitted_at,
-                    NULL::integer AS attempt_number,
-                    cf.language,
-                    'codeforces' AS source,
-                    cf.cf_submission_id,
-                    cf.compilation_error,
-                    cf.details,
-                    cf.test_number,
-                    cf.notes,
-                    cf.note_color
-                FROM cf_submissions cf
-                WHERE cf.user_id = $1
-                  AND cf.contest_id = $${pContest}
-                  AND cf.problem_index = UPPER($${pIndex})
-            `);
-        } else if (sheetId && !problemId) {
-            // Sheet-level Logic [V2]: 
-            // 1. We find all problems that BELONG to this sheet
-            // 2. We find ALL submissions for those problems by this user
-            // This ensures that if a problem is in multiple sheets, solving it once marks it solved everywhere.
-            
+            // Single problem by contest
+            p++; conditions.push(`s.contest_id = $${p}`); params.push(contestId);
+            p++; conditions.push(`s.problem_index = UPPER($${p})`); params.push(problemId);
+        } else if (sheetId && problemId) {
+            // Single problem by sheet + problemId (Judge0 path)
+            p++; conditions.push(`s.sheet_id = $${p}`); params.push(sheetId);
+            p++; conditions.push(`s.problem_index = $${p}`); params.push(problemId);
+        } else if (sheetId) {
+            // All problems in a sheet — find all problems belonging to this sheet
+            // and match by contest_id + problem_index from curriculum
             const problemsRes = await query(
                 `SELECT contest_id, problem_letter FROM curriculum_problems WHERE sheet_id = $1`,
                 [sheetId]
             );
 
             if (problemsRes.rows.length > 0) {
-                // Build parameterized filters for each problem
-                const problemFilterParts: string[] = [];
+                const problemFilters: string[] = [];
                 for (const row of problemsRes.rows) {
-                    p++;
-                    const pCid = p;
-                    p++;
-                    const pIdx = p;
+                    p++; const pCid = p;
+                    p++; const pIdx = p;
                     params.push(row.contest_id, row.problem_letter.toUpperCase());
-                    problemFilterParts.push(`(cf.contest_id = $${pCid} AND cf.problem_index = $${pIdx})`);
+                    problemFilters.push(`(s.contest_id = $${pCid} AND s.problem_index = $${pIdx})`);
                 }
-                const problemFilters = problemFilterParts.join(' OR ');
-
-                parts.push(`
-                    SELECT
-                        cf.id,
-                        cf.problem_index AS problem_id,
-                        cf.contest_id,
-                        cf.verdict,
-                        cf.time_ms,
-                        cf.memory_kb,
-                        NULL::integer AS test_cases_passed,
-                        NULL::integer AS total_test_cases,
-                        cf.submitted_at,
-                        NULL::integer AS attempt_number,
-                        cf.language,
-                        'codeforces' AS source,
-                        cf.cf_submission_id,
-                        cf.compilation_error,
-                        cf.details,
-                        cf.test_number,
-                        cf.notes,
-                        cf.note_color
-                    FROM cf_submissions cf
-                    WHERE cf.user_id = $1
-                      AND (${problemFilters})
-                `);
+                // Also include Judge0 submissions for this sheet
+                p++; params.push(sheetId);
+                conditions.push(`(${problemFilters.join(' OR ')} OR (s.source = 'judge0' AND s.sheet_id = $${p}))`);
+            } else {
+                // No curriculum problems found, just match by sheet_id
+                p++; conditions.push(`s.sheet_id = $${p}`); params.push(sheetId);
             }
-        }
-
-        if (parts.length === 0) {
+        } else {
             return NextResponse.json({ success: true, submissions: [], pagination: { page, limit, total: 0, totalPages: 0 } });
         }
 
-        // Single query: data + total count via window function (no separate count query)
-        p++;
-        const pLimit = p;
-        p++;
-        const pOffset = p;
-        params.push(limit, offset);
+        p++; const pLimit = p; params.push(limit);
+        p++; const pOffset = p; params.push(offset);
 
         const dataQuery = `
             SELECT *, COUNT(*) OVER() AS total_count
-            FROM (${parts.join(' UNION ALL ')}) AS unified
-            ORDER BY submitted_at DESC
+            FROM submissions s
+            WHERE ${conditions.join(' AND ')}
+            ORDER BY s.submitted_at DESC
             LIMIT $${pLimit} OFFSET $${pOffset}
         `;
         const result = await query(dataQuery, params);
 
         const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const submissions = result.rows.map((row: any) => ({
+        const submissions = result.rows.map((row: Record<string, unknown>) => ({
             id: row.id,
-            problemId: row.problem_id,
+            problemId: row.problem_index,
             contestId: row.contest_id,
             verdict: row.verdict,
-            timeMs: row.time_ms ?? 0,
-            memoryKb: row.memory_kb ?? 0,
+            timeMs: (row.time_ms as number) ?? 0,
+            memoryKb: (row.memory_kb as number) ?? 0,
             testsPassed: row.test_cases_passed,
             totalTests: row.total_test_cases,
             submittedAt: row.submitted_at,
             attemptNumber: row.attempt_number,
-            language: row.language || 'C++20 (GCC 13-64)',
+            language: (row.language as string) || 'C++20 (GCC 13-64)',
             source: row.source,
             cfSubmissionId: row.cf_submission_id,
             compilationError: row.compilation_error,
@@ -197,9 +98,9 @@ export async function GET(req: NextRequest) {
             pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
         });
 
-    } catch (error: any) {
-        console.error('[API Submissions] Database error:', error.message);
-        // If it's a connection or DB error, return empty instead of 500 to keep UI alive
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error('[API Submissions] Error:', msg);
         return NextResponse.json({ 
             success: true, 
             submissions: [], 

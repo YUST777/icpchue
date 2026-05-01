@@ -17,16 +17,13 @@ export async function GET(req: NextRequest) {
 
         const result = await query(`
             WITH solved_counts AS (
-                SELECT user_id, COUNT(DISTINCT problem_key) AS solved
-                FROM (
-                    SELECT user_id, COALESCE(sheet_id, contest_id::text) || '-' || problem_index AS problem_key
-                    FROM cf_submissions WHERE verdict = 'Accepted'
-                ) AS all_solves
+                SELECT user_id, COUNT(DISTINCT contest_id || '-' || problem_index) AS solved
+                FROM submissions WHERE verdict = 'Accepted' AND source = 'codeforces'
                 GROUP BY user_id
             ),
             sub_counts AS (
                 SELECT user_id, COUNT(*)::int AS total_subs
-                FROM cf_submissions
+                FROM submissions WHERE source = 'codeforces'
                 GROUP BY user_id
             )
             SELECT u.id, u.email, u.role, u.is_shadow_banned, u.cheating_flags,

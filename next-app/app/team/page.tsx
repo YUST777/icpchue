@@ -254,11 +254,11 @@ export default function TeamRegistration() {
                                 {/* Codeforces & ICPC Email */}
                                 <div className="grid grid-cols-2 gap-2.5">
                                     <div>
-                                        <label className="block text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1 ml-0.5">CF Handle</label>
+                                        <label className="block text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1 ml-0.5">Codeforces Handle</label>
                                         <input type="text" value={m.codeforces} onChange={e => upd(idx, 'codeforces', e.target.value)} placeholder="handle" className={cn(iB, iN)} />
                                     </div>
                                     <div>
-                                        <label className="block text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1 ml-0.5 flex items-center gap-1">ICPC Email <HelpCircle size={9} className="text-white/20" /></label>
+                                        <label className="block text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1 ml-0.5 flex items-center gap-1">ICPC.Global Email <HelpCircle size={9} className="text-white/20" /></label>
                                         <input type="email" value={m.icpcEmail} onChange={e => upd(idx, 'icpcEmail', e.target.value)} placeholder="icpc@email.com" className={cn(iB, iN)} />
                                     </div>
                                 </div>

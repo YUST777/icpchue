@@ -47,13 +47,20 @@ export async function POST(req: NextRequest) {
         // --- Achievement Logic: Approval Camp Completion ---
         if (entityType === 'session' && entityId.startsWith('level0-')) {
             try {
+                const { camps } = await import('@/lib/sessionData');
+                const level0Camp = camps.find(c => c.slug === 'level0');
+                const level0Ids = level0Camp
+                    ? level0Camp.sessions.map(s => `level0-${s.number}`)
+                    : ['level0-1', 'level0-2', 'level0-3', 'level0-4', 'level0-5'];
+                
+                const placeholders = level0Ids.map((_, i) => `$${i + 2}`).join(', ');
                 const viewCheck = await query(`
                     SELECT COUNT(DISTINCT entity_id) as unique_sessions
                     FROM view_logs
-                    WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN ('level0-1', 'level0-2', 'level0-3', 'level0-4')
-                `, [user.id]);
+                    WHERE user_id = $1 AND entity_type = 'session' AND entity_id IN (${placeholders})
+                `, [user.id, ...level0Ids]);
 
-                if (parseInt(viewCheck.rows[0].unique_sessions) >= 4) {
+                if (parseInt(viewCheck.rows[0].unique_sessions) >= level0Ids.length) {
                     const { updateUserStatus } = await import('@/lib/services/achievements');
                     await updateUserStatus(user.id, 'is_approval_unlocked', true);
                 }

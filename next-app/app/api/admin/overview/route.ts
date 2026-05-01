@@ -52,11 +52,7 @@ export async function GET(req: NextRequest) {
             FROM generate_series(NOW() - INTERVAL '${seriesInterval}', NOW(), '1 day'::interval) d
             LEFT JOIN (
                 SELECT DATE(submitted_at) AS day, COUNT(*) AS cnt
-                FROM (
-                    SELECT submitted_at FROM training_submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
-                    UNION ALL
-                    SELECT submitted_at FROM cf_submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
-                ) t
+                FROM submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
                 GROUP BY DATE(submitted_at)
             ) s ON s.day = d.d::date
             GROUP BY d.d::date
@@ -76,11 +72,9 @@ export async function GET(req: NextRequest) {
             SELECT d.d::date AS day, COALESCE(cnt, 0)::int AS cnt
             FROM generate_series(NOW() - INTERVAL '${seriesInterval}', NOW(), '1 day'::interval) d
             LEFT JOIN (
-                SELECT day, COUNT(DISTINCT user_id)::int AS cnt FROM (
-                    SELECT DATE(submitted_at) AS day, user_id FROM training_submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
-                    UNION ALL
-                    SELECT DATE(submitted_at), user_id FROM cf_submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
-                ) t GROUP BY day
+                SELECT DATE(submitted_at) AS day, COUNT(DISTINCT user_id)::int AS cnt
+                FROM submissions WHERE submitted_at > NOW() - INTERVAL '${seriesInterval}'
+                GROUP BY DATE(submitted_at)
             ) s ON s.day = d.d::date
             ORDER BY day ASC
         `);
@@ -103,18 +97,15 @@ export async function GET(req: NextRequest) {
         // ── Verdict breakdown (period-scoped) ──
         const timeFilter = hasInterval ? `submitted_at > NOW() - INTERVAL '${interval}'` : 'TRUE';
         const verdictRaw = await query(`
-            SELECT verdict, SUM(cnt)::int AS cnt FROM (
-                SELECT verdict, COUNT(*) AS cnt FROM training_submissions ${hasInterval ? `WHERE ${timeFilter}` : ''} GROUP BY verdict
-                UNION ALL
-                SELECT verdict, COUNT(*) FROM cf_submissions ${hasInterval ? `WHERE ${timeFilter}` : ''} GROUP BY verdict
-            ) t GROUP BY verdict ORDER BY cnt DESC
+            SELECT verdict, COUNT(*)::int AS cnt
+            FROM submissions ${hasInterval ? `WHERE ${timeFilter}` : ''}
+            GROUP BY verdict ORDER BY cnt DESC
         `);
 
         // ── Top sheets ──
         const sheetsRes = await query(`
             SELECT s.id, s.name, s.slug, s.total_problems, l.slug AS level_slug,
-                (SELECT COUNT(*) FROM training_submissions ts WHERE ts.sheet_id::text = s.id::text AND ts.verdict = 'Accepted') +
-                COALESCE((SELECT COUNT(*) FROM cf_submissions cf WHERE cf.sheet_id::text = s.id::text AND cf.verdict = 'Accepted'), 0) AS activity
+                (SELECT COUNT(*) FROM submissions sub WHERE sub.sheet_id = s.id::text AND sub.verdict = 'Accepted') AS activity
             FROM curriculum_sheets s
             JOIN curriculum_levels l ON l.id = s.level_id
             ORDER BY activity DESC
@@ -142,14 +133,8 @@ export async function GET(req: NextRequest) {
         const activeUsersSeries = fmtSeries(activeUsersByDay.rows);
         const totalActiveInPeriod = new Set(activeUsersSeries.flatMap(() => [])).size; // We need the scalar
         const activeScalar = hasInterval
-            ? (await query(`SELECT COUNT(DISTINCT user_id)::int AS c FROM (
-                SELECT user_id FROM training_submissions WHERE ${timeFilter}
-                UNION SELECT user_id FROM cf_submissions WHERE ${timeFilter}
-              ) AS active`)).rows[0]?.c ?? 0
-            : (await query(`SELECT COUNT(DISTINCT user_id)::int AS c FROM (
-                SELECT user_id FROM training_submissions
-                UNION SELECT user_id FROM cf_submissions
-              ) AS active`)).rows[0]?.c ?? 0;
+            ? (await query(`SELECT COUNT(DISTINCT user_id)::int AS c FROM submissions WHERE ${timeFilter}`)).rows[0]?.c ?? 0
+            : (await query(`SELECT COUNT(DISTINCT user_id)::int AS c FROM submissions`)).rows[0]?.c ?? 0;
 
         const newUsersSeries = fmtSeries(newUsersByDay.rows);
         const totalNewInPeriod = newUsersSeries.reduce((a, b) => a + b.count, 0);
