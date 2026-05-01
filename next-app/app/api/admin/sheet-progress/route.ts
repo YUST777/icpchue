@@ -11,11 +11,8 @@ export async function GET(req: NextRequest) {
 
         const result = await query(`
             WITH unified AS (
-                SELECT sheet_id::text AS sheet_id, sheet_id::text || '-' || problem_id AS prob_key, user_id, time_to_solve_seconds
-                FROM training_submissions WHERE verdict = 'Accepted' AND sheet_id IS NOT NULL
-                UNION ALL
-                SELECT sheet_id, sheet_id || '-' || problem_index AS prob_key, user_id, NULL::int
-                FROM cf_submissions WHERE verdict = 'Accepted' AND sheet_id IS NOT NULL
+                SELECT sheet_id, sheet_id || '-' || problem_index AS prob_key, user_id, time_to_solve_seconds
+                FROM submissions WHERE verdict = 'Accepted' AND sheet_id IS NOT NULL
             ),
             per_user AS (
                 SELECT sheet_id, user_id, COUNT(DISTINCT prob_key) AS user_solved

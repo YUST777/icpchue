@@ -26,16 +26,16 @@ export async function GET(req: NextRequest) {
     try {
         // Get ALL accepted submissions for this problem (all users)
         const globalResult = await query(
-            `SELECT time_ms, memory_kb FROM cf_submissions
-             WHERE contest_id = $1 AND problem_index = $2 AND verdict = 'Accepted'
+            `SELECT time_ms, memory_kb FROM submissions
+             WHERE contest_id = $1 AND problem_index = $2 AND verdict = 'Accepted' AND source = 'codeforces'
              ORDER BY time_ms ASC`,
             [contestId, problemIndex.toUpperCase()]
         );
 
         // Get user's own accepted submissions
         const userResult = await query(
-            `SELECT time_ms, memory_kb FROM cf_submissions
-             WHERE user_id = $1 AND contest_id = $2 AND problem_index = $3 AND verdict = 'Accepted'
+            `SELECT time_ms, memory_kb FROM submissions
+             WHERE user_id = $1 AND contest_id = $2 AND problem_index = $3 AND verdict = 'Accepted' AND source = 'codeforces'
              ORDER BY time_ms ASC`,
             [user.id, contestId, problemIndex.toUpperCase()]
         );

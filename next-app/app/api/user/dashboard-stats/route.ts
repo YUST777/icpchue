@@ -4,7 +4,7 @@ import { query } from '@/lib/db/db';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
 
-const TIMEOUT_MS = 20000; // 20s - avoid gateway 504 (typically 60-100s)
+const TIMEOUT_MS = 20000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -18,6 +18,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 const FALLBACK_STATS = {
     streak: 0,
+    maxStreak: 0,
     totalSolved: 0,
     consistencyMap: {} as Record<string, number>,
     currentSheet: null
@@ -30,43 +31,40 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'No token provided' }, { status: 401 });
         }
 
-        // Rate limit: 10 per 60s per user
         const ratelimit = await rateLimit(`dashboard_stats:${user.id}`, 10, 60);
         if (!ratelimit.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const cacheKey = `user:${user.id}:dashboard_stats`;
-        // Cache stats for 5 minutes (300 seconds)
         const statsData = await getCachedData(cacheKey, 300, async () => {
             try {
                 return await withTimeout((async () => {
-            // Run both queries in parallel
-            const [solvedResult, activeSheetResult] = await Promise.all([
-                // Query 1: All solved problems
+            // Run all 3 queries in parallel
+            const [solvedResult, streakResult, activeSheetResult] = await Promise.all([
+                // Query 1: All solved problems (for total count + heatmap)
                 query(`
-                    SELECT DISTINCT problem_key, MIN(solved_at) AS solved_at
-                    FROM (
-                        SELECT 
-                            COALESCE(cf.contest_id, '') || ':' || cf.problem_index AS problem_key,
-                            cf.submitted_at AS solved_at
-                        FROM cf_submissions cf
-                        WHERE cf.user_id = $1 AND cf.verdict = 'Accepted'
-                    ) AS all_solved
+                    SELECT DISTINCT
+                        COALESCE(s.contest_id, '') || ':' || s.problem_index AS problem_key,
+                        MIN(s.submitted_at) AS solved_at
+                    FROM submissions s
+                    WHERE s.user_id = $1 AND s.verdict = 'Accepted' AND s.source = 'codeforces'
                     GROUP BY problem_key
                     ORDER BY solved_at ASC
                 `, [user.id]),
 
-                // Query 2: Current active sheet
+                // Query 2: Read pre-computed streak from user_streaks (single row fetch)
+                query(`
+                    SELECT current_streak, max_streak, last_solve_date
+                    FROM user_streaks WHERE user_id = $1
+                `, [user.id]),
+
+                // Query 3: Current active sheet
                 query(`
                     WITH latest_activity AS (
                         SELECT sheet_id, MAX(submitted_at) AS last_active
-                        FROM (
-                            SELECT sheet_id::text, submitted_at FROM training_submissions WHERE user_id = $1
-                            UNION ALL
-                            SELECT sheet_id::text, submitted_at FROM cf_submissions WHERE user_id = $1 AND sheet_id IS NOT NULL
-                        ) AS all_subs
-                        WHERE sheet_id IS NOT NULL
+                        FROM submissions
+                        WHERE user_id = $1 AND sheet_id IS NOT NULL
                         GROUP BY sheet_id
                         ORDER BY last_active DESC
                         LIMIT 1
@@ -91,40 +89,21 @@ export async function GET(request: NextRequest) {
             const submissions = solvedResult.rows;
             const totalSolved = submissions.length;
 
-            // Streak Calculation
-            const uniqueDates = Array.from(new Set(
-                submissions.map((s: { solved_at: Date }) => {
-                    const date = new Date(s.solved_at);
-                    return date.toISOString().split('T')[0];
-                })
-            )).sort().reverse() as string[];
-
-            const dateSet = new Set(uniqueDates);
-
+            // Streak: use pre-computed value from user_streaks
+            // Same display logic as getUserStreak() in streaks.ts
             let streak = 0;
-            const today = new Date().toISOString().split('T')[0];
-            const yesterdayDate = new Date();
-            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-            const yesterday = yesterdayDate.toISOString().split('T')[0];
-
-            let currentDateCheck = today;
-            if (!dateSet.has(today)) {
-                if (dateSet.has(yesterday)) {
-                    currentDateCheck = yesterday;
-                }
-            }
-
-            if (dateSet.has(currentDateCheck)) {
-                streak = 1;
-                const checkDate = new Date(currentDateCheck);
-                // Check at most 365 consecutive days (reasonable max streak)
-                for (let i = 1; i <= 365; i++) {
-                    checkDate.setDate(checkDate.getDate() - 1);
-                    const checkString = checkDate.toISOString().split('T')[0];
-                    if (dateSet.has(checkString)) {
-                        streak++;
-                    } else {
-                        break;
+            let maxStreak = 0;
+            if (streakResult.rows.length > 0) {
+                const row = streakResult.rows[0];
+                maxStreak = row.max_streak || 0;
+                if (row.last_solve_date) {
+                    const lastDate = new Date(row.last_solve_date).toISOString().split('T')[0];
+                    const today = new Date().toISOString().split('T')[0];
+                    const yesterdayDate = new Date();
+                    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                    const yesterday = yesterdayDate.toISOString().split('T')[0];
+                    if (lastDate === today || lastDate === yesterday) {
+                        streak = row.current_streak || 0;
                     }
                 }
             }
@@ -136,7 +115,7 @@ export async function GET(request: NextRequest) {
                 consistencyMap[date] = (consistencyMap[date] || 0) + 1;
             });
 
-            // Current active sheet from parallel query
+            // Current active sheet
             let currentSheet = null;
             if (activeSheetResult.rows.length > 0) {
                 const row = activeSheetResult.rows[0];
@@ -155,6 +134,7 @@ export async function GET(request: NextRequest) {
 
             return {
                 streak,
+                maxStreak,
                 totalSolved,
                 consistencyMap,
                 currentSheet

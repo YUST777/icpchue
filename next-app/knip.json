@@ -1,0 +1,30 @@
+{
+  "entry": [
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "hooks/**/*.{ts,tsx}",
+    "contexts/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "middleware.ts"
+  ],
+  "project": ["**/*.{ts,tsx}"],
+  "ignore": [
+    "scripts/**",
+    "migrations/**",
+    "**/*.d.ts",
+    "eslint.config.mjs",
+    "next.config.js",
+    "tailwind.config.ts",
+    "postcss.config.mjs",
+    "tsconfig.tsbuildinfo"
+  ],
+  "ignoreDependencies": [
+    "@types/*",
+    "autoprefixer",
+    "postcss",
+    "tailwindcss",
+    "eslint*",
+    "typescript",
+    "babel-plugin-react-compiler"
+  ]
+}

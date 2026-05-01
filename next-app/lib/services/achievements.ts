@@ -89,37 +89,13 @@ export async function syncRank1Achievement(triggerType: string) {
             await client.query('SELECT pg_advisory_xact_lock(202603)');
 
             // 2. Get the current Rank 1 holder
-            // Tie-breaking logic:
-            // 1. solved_count DESC (most problems)
-            // 2. total_submissions ASC (efficiency/fewer attempts)
-            // 3. min_submitted_at ASC (first to reach this solve count)
             const leaderboardResult = await client.query(`
-                WITH all_solves AS (
-                    SELECT user_id, contest_id || '-' || problem_index AS problem_key, submitted_at
-                    FROM cf_submissions
-                    WHERE verdict = 'Accepted'
-                ),
-                user_stats AS (
-                    SELECT 
-                        user_id,
-                        COUNT(DISTINCT problem_key) AS solved_count,
-                        MIN(submitted_at) AS first_solve_at,
-                        MAX(submitted_at) AS last_solve_at
-                    FROM all_solves
-                    GROUP BY user_id
-                ),
-                sub_counts AS (
-                    SELECT user_id, COUNT(*)::int AS total_submissions
-                    FROM cf_submissions
-                    GROUP BY user_id
-                )
                 SELECT u.id
                 FROM users u
-                INNER JOIN user_stats us ON u.id = us.user_id
-                LEFT JOIN sub_counts sc ON u.id = sc.user_id
+                INNER JOIN user_solve_stats uss ON u.id = uss.user_id
                 WHERE (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)
                   AND (u.show_on_sheets_leaderboard = TRUE OR u.show_on_sheets_leaderboard IS NULL OR u.is_shadow_banned = TRUE)
-                ORDER BY us.solved_count DESC, COALESCE(sc.total_submissions, 0) ASC, us.first_solve_at ASC
+                ORDER BY uss.distinct_solved DESC, uss.total_submissions ASC, uss.first_solve_at ASC
                 LIMIT 1
             `);
 

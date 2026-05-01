@@ -11,8 +11,9 @@ import { rateLimit } from '@/lib/cache/rate-limit';
  * Called from the client after polling detects a final verdict.
  * 
  * This is the AUTHORITY for leaderboard & achievements:
- * - Saves to cf_submissions (full submission history)
+ * - Saves to submissions table (unified, source='codeforces')
  * - Updates user_progress (SOLVED/ATTEMPTED tracking)
+ * - user_solve_stats auto-updated via trigger
  */
 export async function POST(req: NextRequest) {
     try {
@@ -79,13 +80,13 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 1. Save to cf_submissions (upsert on cf_submission_id to prevent duplicates)
+        // 1. Save to unified submissions table (upsert on cf_submission_id to prevent duplicates)
         const insertResult = await query(
-            `INSERT INTO cf_submissions (
-                user_id, cf_submission_id, contest_id, problem_index, sheet_id,
+            `INSERT INTO submissions (
+                user_id, source, cf_submission_id, contest_id, problem_index, sheet_id,
                 verdict, time_ms, memory_kb, language, source_code,
                 cf_handle, url_type, group_id, compilation_error, details, test_number
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ) VALUES ($1, 'codeforces', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             ON CONFLICT (cf_submission_id) DO UPDATE SET
                 verdict = EXCLUDED.verdict,
                 time_ms = EXCLUDED.time_ms,
@@ -213,7 +214,7 @@ export async function POST(req: NextRequest) {
         console.error('[API Save Submission] Database error:', error.message);
         
         // Handle unique constraint violation gracefully (duplicate submission)
-        if (error.message?.includes('cf_submissions_cf_id_unique') || error.message?.includes('duplicate key')) {
+        if (error.message?.includes('submissions_cf_submission_id_key') || error.message?.includes('duplicate key')) {
             return NextResponse.json({ success: true, duplicate: true });
         }
 
