@@ -58,8 +58,8 @@ function compareOutputs(expected: string, actual: string): boolean {
         const tExp = tokensExp[i];
         const tAct = tokensAct[i];
 
-        // 1. Direct string match (Case-Insensitive)
-        if (tExp.toLowerCase() === tAct.toLowerCase()) continue;
+        // 1. Direct string match (Case-Sensitive — competitive programming requires exact output)
+        if (tExp === tAct) continue;
 
         // 2. BigInt comparison (for large integers)
         try {

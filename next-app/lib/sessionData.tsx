@@ -3,6 +3,8 @@ import Session1Content from './content/sessions/Session1Content';
 import Session3Content from './content/sessions/Session3Content';
 import Session4Content from './content/sessions/Session4Content';
 import Session5Content from './content/sessions/Session5Content';
+import Session6Content from './content/sessions/Session6Content';
+import Session7Content from './content/sessions/Session7Content';
 import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Programming1Content';
 
 // --- Data Definitions ---
@@ -108,6 +110,47 @@ export const camps: Camp[] = [
                 description: 'Dive into recursion. Learn how functions can call themselves, understand base cases, and solve complex problems using recursive techniques.',
                 thumbnail: '/images/lessons/approval/recursion.webp',
                 videoId: '1bWcPjD6DEsCRKQ14Gk_M-1EHjvrKkD4C',
+            },
+            {
+                id: 10,
+                campSlug: 'level0',
+                number: '6',
+                displayNumber: '06',
+                slug: 'arrays-and-adhocs',
+                tag: 'Data Structures',
+                title: 'Arrays and Ad-Hocs',
+                desc: 'Introduction to 1D/2D arrays and strategies for solving ad-hoc problems.',
+                description: 'Learn how to store multiple values using arrays in C++ and develop logical thinking to tackle ad-hoc problems effectively.',
+                thumbnail: '/images/lessons/levels_camp/level0/arrays-adhocs.png',
+                videoId: '1lSj_AO1AijyMLAwayNFWbVTX81lfWHyY',
+                content: <Session6Content />
+            },
+            {
+                id: 11,
+                campSlug: 'level0',
+                number: '7',
+                displayNumber: '07',
+                slug: 'complexity',
+                tag: 'Analysis',
+                title: 'Complexity',
+                desc: 'Introduction to time complexity analysis, Big-O notation, and estimating runtime from problem constraints.',
+                description: 'Learn how to analyze the efficiency of your code using Big-O notation. Understand common complexities and how to pick the right approach based on input constraints.',
+                thumbnail: '/images/lessons/levels_camp/level0/complexity.png',
+                videoId: '1nNM7Zd4DoZZB5js5Se3tzU9q0UPzneHb',
+                content: <Session7Content />
+            },
+            {
+                id: 12,
+                campSlug: 'level0',
+                number: '8',
+                displayNumber: '08',
+                slug: 'contest-3',
+                tag: 'Contest',
+                title: 'Contest #3',
+                desc: 'Live contest session — solve problems under time pressure and review solutions.',
+                description: 'Recording of Contest #3. Practice solving competitive programming problems under real contest conditions with post-contest solution review.',
+                thumbnail: '/images/lessons/levels_camp/level0/contest3.png',
+                videoId: '1NpXBt2jPxwE6696h9UKnsdV5qtZKy5R4',
             },
         ]
     },

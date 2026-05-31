@@ -12,7 +12,7 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     // 🧹 Best Practice #3: Handling Native/External Modules
-    serverExternalPackages: ['pg', 'sharp'],
+    serverExternalPackages: ['pg', 'sharp', 'canvas'],
     // React Compiler — auto-memoizes components, eliminates unnecessary re-renders
     reactCompiler: true,
     serverActions: {
@@ -26,6 +26,11 @@ const nextConfig = {
         return [
             {
                 source: '/apply',
+                destination: '/register',
+                permanent: true,
+            },
+            {
+                source: '/joinnow',
                 destination: '/register',
                 permanent: true,
             },
@@ -111,6 +116,23 @@ const nextConfig = {
             {
                 source: '/2025/:path*',
                 destination: '/Dec/:path*',
+            },
+            // Rybbit Analytics Proxies
+            {
+                source: "/api/script.js",
+                destination: `${process.env.NEXT_PUBLIC_RYBBIT_HOST}/api/script.js`,
+            },
+            {
+                source: "/api/track",
+                destination: `${process.env.NEXT_PUBLIC_RYBBIT_HOST}/api/track`,
+            },
+            {
+                source: "/api/site/tracking-config/:path*",
+                destination: `${process.env.NEXT_PUBLIC_RYBBIT_HOST}/api/site/tracking-config/:path*`,
+            },
+            {
+                source: "/api/identify",
+                destination: `${process.env.NEXT_PUBLIC_RYBBIT_HOST}/api/identify`,
             },
         ]
     },

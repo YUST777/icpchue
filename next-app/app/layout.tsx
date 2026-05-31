@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 
 import ClientVersionManager from '@/components/core/ClientVersionManager';
 import "./globals.css";
@@ -211,6 +212,11 @@ export default async function RootLayout({
           ))}
           <ClientVersionManager />
           <AchievementToast />
+          <Script
+            src="/api/rybbit/script.js"
+            data-site-id={process.env.NEXT_PUBLIC_RYBBIT_SITE_ID}
+            strategy="afterInteractive"
+          />
 
           {children}
         </Providers>
