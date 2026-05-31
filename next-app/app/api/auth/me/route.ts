@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { decrypt } from '@/lib/security/encryption';
 import { verifyAuth } from '@/lib/auth/auth';
-import { getCachedData } from '@/lib/cache/cache';
-import { CACHE_VERSION } from '@/lib/cache/cache-version';
 
 export async function GET(req: NextRequest) {
     try {
@@ -30,7 +28,13 @@ export async function GET(req: NextRequest) {
         // Fetch Application/Profile details
         let profile: any = null;
         if (user.application_id) {
-            const appResult = await query('SELECT * FROM applications WHERE id = $1', [user.application_id]);
+            const appResult = await query(
+                `SELECT id, name, faculty, student_id, student_level, telephone, 
+                        codeforces_profile, leetcode_profile, codeforces_data, 
+                        telegram_username, application_type, submitted_at
+                 FROM applications WHERE id = $1`,
+                [user.application_id]
+            );
             if (appResult.rows.length > 0) {
                 profile = appResult.rows[0];
             }

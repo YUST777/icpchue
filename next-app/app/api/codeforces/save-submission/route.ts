@@ -69,15 +69,18 @@ export async function POST(req: NextRequest) {
         }
 
         // Verify the user's CF handle matches the submission's cfHandle
-        if (cfHandle) {
-            const userResult = await query(
-                'SELECT codeforces_handle FROM users WHERE id = $1',
-                [user.id]
-            );
-            const userHandle = userResult.rows[0]?.codeforces_handle;
-            if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
-                return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
-            }
+        // SECURITY: cfHandle is REQUIRED — without it, anyone could claim submissions
+        if (!cfHandle) {
+            return NextResponse.json({ error: 'cfHandle is required' }, { status: 400 });
+        }
+        
+        const userResult = await query(
+            'SELECT codeforces_handle FROM users WHERE id = $1',
+            [user.id]
+        );
+        const userHandle = userResult.rows[0]?.codeforces_handle;
+        if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
+            return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
 
         // 1. Save to unified submissions table (upsert on cf_submission_id to prevent duplicates)
@@ -200,8 +203,11 @@ export async function POST(req: NextRequest) {
         }
 
 
-        const { syncRank1Achievement } = await import('@/lib/services/achievements');
-        await syncRank1Achievement('submission');
+        // Only sync rank achievement on accepted submissions (expensive operation)
+        if (isAc) {
+            const { syncRank1Achievement } = await import('@/lib/services/achievements');
+            await syncRank1Achievement('submission');
+        }
 
         return NextResponse.json({
             success: true,

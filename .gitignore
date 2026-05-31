@@ -83,3 +83,6 @@ Mirror/
 *.zip
 *.crx
 team-uploads/
+*.csv
+SUSPICIOUS_SUBMISSIONS.md
+

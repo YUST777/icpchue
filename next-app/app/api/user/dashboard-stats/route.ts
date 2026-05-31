@@ -42,24 +42,21 @@ export async function GET(request: NextRequest) {
                 return await withTimeout((async () => {
             // Run all 3 queries in parallel
             const [solvedResult, streakResult, activeSheetResult] = await Promise.all([
-                // Query 1: All solved problems (for total count + heatmap)
+                // Query 1: All solved problems (Optimized: use user_progress instead of full submissions scan)
                 query(`
-                    SELECT DISTINCT
-                        COALESCE(s.contest_id, '') || ':' || s.problem_index AS problem_key,
-                        MIN(s.submitted_at) AS solved_at
-                    FROM submissions s
-                    WHERE s.user_id = $1 AND s.verdict = 'Accepted' AND s.source = 'codeforces'
-                    GROUP BY problem_key
+                    SELECT problem_id AS problem_key, solved_at
+                    FROM user_progress
+                    WHERE user_id = $1 AND status = 'SOLVED'
                     ORDER BY solved_at ASC
                 `, [user.id]),
 
-                // Query 2: Read pre-computed streak from user_streaks (single row fetch)
+                // Query 2: Read pre-computed streak from user_streaks
                 query(`
                     SELECT current_streak, max_streak, last_solve_date
                     FROM user_streaks WHERE user_id = $1
                 `, [user.id]),
 
-                // Query 3: Current active sheet
+                // Query 3: Current active sheet (Optimized: use sheet_id in user_progress for counting)
                 query(`
                     WITH latest_activity AS (
                         SELECT sheet_id, MAX(submitted_at) AS last_active
@@ -73,24 +70,18 @@ export async function GET(request: NextRequest) {
                         s.id AS sheet_id, s.sheet_letter, s.name AS sheet_name,
                         s.slug AS sheet_slug, s.total_problems,
                         l.slug AS level_slug, l.name AS level_name, la.last_active,
-                        COUNT(DISTINCT CASE WHEN up.status = 'SOLVED' THEN p.id END) AS solved_count
+                        (SELECT COUNT(*)::int FROM user_progress WHERE user_id = $1 AND sheet_id = la.sheet_id AND status = 'SOLVED') AS solved_count
                     FROM latest_activity la
                     JOIN curriculum_sheets s ON s.id::text = la.sheet_id
                     JOIN curriculum_levels l ON s.level_id = l.id
-                    LEFT JOIN curriculum_problems p ON p.sheet_id = s.id
-                    LEFT JOIN user_progress up 
-                        ON up.problem_id = (s.contest_id || ':' || p.problem_letter)
-                        AND up.user_id = $1
                     GROUP BY s.id, s.sheet_letter, s.name, s.slug, s.total_problems,
-                             l.slug, l.name, la.last_active
+                             l.slug, l.name, la.last_active, la.sheet_id
                 `, [user.id])
             ]);
 
             const submissions = solvedResult.rows;
             const totalSolved = submissions.length;
 
-            // Streak: use pre-computed value from user_streaks
-            // Same display logic as getUserStreak() in streaks.ts
             let streak = 0;
             let maxStreak = 0;
             if (streakResult.rows.length > 0) {
@@ -108,14 +99,12 @@ export async function GET(request: NextRequest) {
                 }
             }
 
-            // Consistency Data (for heatmap)
             const consistencyMap: Record<string, number> = {};
             submissions.forEach((s: { solved_at: Date }) => {
                 const date = new Date(s.solved_at).toISOString().split('T')[0];
                 consistencyMap[date] = (consistencyMap[date] || 0) + 1;
             });
 
-            // Current active sheet
             let currentSheet = null;
             if (activeSheetResult.rows.length > 0) {
                 const row = activeSheetResult.rows[0];
@@ -127,7 +116,7 @@ export async function GET(request: NextRequest) {
                     levelSlug: row.level_slug,
                     levelName: row.level_name,
                     totalProblems: parseInt(row.total_problems) || 0,
-                    solvedCount: parseInt(row.solved_count) || 0,
+                    solvedCount: row.solved_count || 0,
                     lastActive: row.last_active
                 };
             }

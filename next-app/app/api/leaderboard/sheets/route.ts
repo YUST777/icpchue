@@ -2,45 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
+import { decrypt } from '@/lib/security/encryption';
 
-// Extract first and last name, handling compound family names (Al-, Abd-, El-, etc.)
+// Extract first and last name
 function getShortName(fullName: string | null): string {
     if (!fullName) return 'Anonymous';
-
-    // Clean up mixed format like "nabila / نبيلة"
     const cleaned = fullName.split('/')[0].trim();
     const parts = cleaned.trim().split(/\s+/);
-
     if (parts.length <= 2) return cleaned.trim();
-
     const firstName = parts[0];
     const lastPart = parts[parts.length - 1];
     const secondToLast = parts.length > 2 ? parts[parts.length - 2] : null;
-
-    // Common compound prefixes: Al, El, Abd, Abu, Ben, Ibn
     const compoundPrefixes = /^(al|el|abd|abu|ben|ibn)[-]?$/i;
-
     if (secondToLast && compoundPrefixes.test(secondToLast)) {
         return `${firstName} ${secondToLast} ${lastPart}`;
     }
-
     if (/^(al|el|abd|abu)-/i.test(lastPart)) {
         return `${firstName} ${lastPart}`;
     }
-
     return `${firstName} ${lastPart}`;
+}
+
+/**
+ * Detect if a string looks like encrypted data (any of the 3 formats):
+ * - Legacy CryptoJS: starts with "U2FsdGVk"
+ * - Legacy GCM: starts with "aes256gcm:"
+ * - Cryptr (hex): long hex-only string (64+ chars)
+ */
+function isEncrypted(value: string): boolean {
+    if (value.startsWith('U2FsdGVk')) return true;
+    if (value.startsWith('aes256gcm:')) return true;
+    // Cryptr outputs hex strings, typically 64+ chars with only hex characters
+    if (value.length >= 64 && /^[0-9a-f]+$/i.test(value)) return true;
+    return false;
+}
+
+/**
+ * Try to decrypt a name, falling back to null if decryption fails.
+ */
+function decryptName(name: string | null): string | null {
+    if (!name) return null;
+    if (!isEncrypted(name)) return name;
+    return decrypt(name);
 }
 
 export async function GET(req: NextRequest) {
     try {
-        // Try to get current user (optional - works for both auth and non-auth requests)
         let currentUser: { id: number } | null = null;
         let isShadowBanned = false;
 
         try {
             currentUser = await verifyAuth(req);
             if (currentUser) {
-                // Check if user is shadow banned
                 const userCheck = await query(
                     `SELECT is_shadow_banned FROM users WHERE id = $1`,
                     [currentUser.id]
@@ -48,23 +61,23 @@ export async function GET(req: NextRequest) {
                 isShadowBanned = userCheck.rows[0]?.is_shadow_banned === true;
             }
         } catch {
-            // Not authenticated - that's fine for leaderboard
+            // Unauthenticated
         }
 
-        // Check Cache (only for public view, i.e., non-shadow-banned users)
-        // If shadow-banned (admin/cheater view), we bypassing cache to show real-time restricted data found nowhere else
+        // Cache public view for 10 minutes
         if (isShadowBanned) {
-            return await fetchLeaderboard(true);
+            const data = await fetchLeaderboard(true);
+            return NextResponse.json(data);
         }
 
-        // Use centralized caching for public view
-        const data = await getCachedData('leaderboard:sheets:public', 300, async () => {
+        const data = await getCachedData('leaderboard:sheets:public', 600, async () => {
             return await fetchLeaderboard(false);
         });
 
         return NextResponse.json(data);
 
     } catch (error) {
+        console.error('[SheetsLeaderboard] Error:', error);
         return NextResponse.json({
             success: false,
             leaderboard: [],
@@ -78,8 +91,7 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         ? ''
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
 
-    // Uses pre-computed user_solve_stats (auto-updated by trigger on submissions table)
-    // No more scanning all cf_submissions on every leaderboard load
+    // Optimized: Added LIMIT 200 and better sorting
     const queryStr = `
         SELECT 
             u.id,
@@ -101,31 +113,29 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
           )
           ${shadowBanClause}
         ORDER BY uss.distinct_solved DESC, uss.total_submissions ASC, uss.last_solve_at ASC
-        LIMIT 100
+        LIMIT 200
     `;
 
     const result = await query(queryStr);
 
-    type LeaderboardRow = {
-        id: number;
-        name: string | null;
-        email: string | null;
-        solved_count: string;
-        accepted_count: string;
-        total_submissions: string;
-    };
+    const leaderboard = result.rows.map((row: any) => {
+        // Try to decrypt the name if it's encrypted, then shorten it
+        const rawName = decryptName(row.name);
+        const displayName = rawName 
+            ? getShortName(rawName) 
+            : row.email?.split('@')[0] || 'Anonymous';
 
-    const leaderboard = result.rows.map((row: LeaderboardRow) => ({
-        userId: row.id,
-        username: getShortName(row.name) || row.email?.split('@')[0] || 'Anonymous',
-        solvedCount: parseInt(row.solved_count) || 0,
-        totalSubmissions: parseInt(row.total_submissions) || 0,
-        acceptedCount: parseInt(row.accepted_count) || 0,
-    }));
+        return {
+            userId: row.id,
+            username: displayName,
+            solvedCount: parseInt(row.solved_count) || 0,
+            totalSubmissions: parseInt(row.total_submissions) || 0,
+            acceptedCount: parseInt(row.accepted_count) || 0,
+        };
+    });
 
     return {
         success: true,
         leaderboard
     };
 }
-

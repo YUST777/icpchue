@@ -94,6 +94,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No valid settings provided' }, { status: 400 });
         }
 
+        // Sync profile_visibility column based on showPublicProfile toggle
+        // The profile route checks profile_visibility, so we must keep them in sync
+        if (typeof showPublicProfile === 'boolean') {
+            setClauses.push(`profile_visibility = $${idx++}`);
+            values.push(showPublicProfile ? 'public' : 'private');
+        }
+
         values.push(user.id);
         await query(
             `UPDATE users SET ${setClauses.join(', ')} WHERE id = $${idx}`,

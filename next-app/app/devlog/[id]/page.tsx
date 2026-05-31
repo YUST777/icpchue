@@ -8,7 +8,10 @@ import { notFound, useParams } from 'next/navigation';
 import { getDevLog } from '@/lib/content/devlog';
 import dynamic from 'next/dynamic';
 import { MapExpandedProvider } from '@/context/MapExpandedContext';
-import DOMPurify from 'isomorphic-dompurify';
+import _DOMPurify from 'dompurify';
+
+// DOMPurify only works in browser — provide a passthrough for SSR
+const DOMPurify = typeof window !== 'undefined' ? _DOMPurify : { sanitize: (html: string) => html };
 
 const SecurityArchitecture = dynamic(() => import('@/components/landing/SecurityArchitecture'), { ssr: false });
 

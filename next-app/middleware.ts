@@ -7,6 +7,7 @@ const WINDOW_SIZE = 60 * 1000;
 const MAX_REQUESTS_PAGE = 500;
 const MAX_REQUESTS_API = 120;
 const MAX_REQUESTS_SENSITIVE = 15;
+const MAX_RATE_LIMIT_ENTRIES = 10000; // Prevent unbounded growth under DDoS
 
 const SENSITIVE_PREFIXES = [
     '/api/judge/',
@@ -63,11 +64,13 @@ export async function middleware(request: NextRequest) {
         try {
             await Promise.race([
                 supabase.auth.getUser(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 3000))
             ]);
         } catch (e) {
             // Auth refresh failed/timed out — continue with stale session rather than hanging
-            console.error('[Middleware] Auth refresh failed:', e instanceof Error ? e.message : e);
+            if (e instanceof Error && e.message !== 'Auth timeout') {
+                console.warn('[Middleware] Auth refresh failed:', e.message);
+            }
         }
     }
 
@@ -120,6 +123,15 @@ export async function middleware(request: NextRequest) {
                 rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
             }
         } else {
+            // Cap map size to prevent memory exhaustion
+            if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+                // Evict oldest entries
+                const iterator = rateLimitMap.keys();
+                for (let i = 0; i < 1000; i++) {
+                    const key = iterator.next().value;
+                    if (key) rateLimitMap.delete(key);
+                }
+            }
             rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
         }
     }

@@ -5,7 +5,10 @@ import Script from 'next/script';
 import { CFProblemData } from '../shared/types';
 import { Clock, HardDrive } from 'lucide-react';
 
-import DOMPurify from 'isomorphic-dompurify';
+import _DOMPurify from 'dompurify';
+
+// DOMPurify only works in browser — provide a passthrough for SSR
+const DOMPurify = typeof window !== 'undefined' ? _DOMPurify : { sanitize: (html: string) => html };
 
 // React.memo prevents re-renders when parent state (resize) changes but data is same.
 // This is critical because re-render recreates dangerouslySetInnerHTML object, 

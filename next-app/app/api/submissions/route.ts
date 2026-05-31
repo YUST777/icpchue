@@ -31,28 +31,10 @@ export async function GET(req: NextRequest) {
             p++; conditions.push(`s.sheet_id = $${p}`); params.push(sheetId);
             p++; conditions.push(`s.problem_index = $${p}`); params.push(problemId);
         } else if (sheetId) {
-            // All problems in a sheet — find all problems belonging to this sheet
-            // and match by contest_id + problem_index from curriculum
-            const problemsRes = await query(
-                `SELECT contest_id, problem_letter FROM curriculum_problems WHERE sheet_id = $1`,
-                [sheetId]
-            );
-
-            if (problemsRes.rows.length > 0) {
-                const problemFilters: string[] = [];
-                for (const row of problemsRes.rows) {
-                    p++; const pCid = p;
-                    p++; const pIdx = p;
-                    params.push(row.contest_id, row.problem_letter.toUpperCase());
-                    problemFilters.push(`(s.contest_id = $${pCid} AND s.problem_index = $${pIdx})`);
-                }
-                // Also include Judge0 submissions for this sheet
-                p++; params.push(sheetId);
-                conditions.push(`(${problemFilters.join(' OR ')} OR (s.source = 'judge0' AND s.sheet_id = $${p}))`);
-            } else {
-                // No curriculum problems found, just match by sheet_id
-                p++; conditions.push(`s.sheet_id = $${p}`); params.push(sheetId);
-            }
+            // OPTIMIZED: Filter by sheet_id directly. 
+            // In the unified table, all curriculum-related submissions (both CF and Judge0) 
+            // should have sheet_id set for efficiency.
+            p++; conditions.push(`s.sheet_id = $${p}`); params.push(sheetId);
         } else {
             return NextResponse.json({ success: true, submissions: [], pagination: { page, limit, total: 0, totalPages: 0 } });
         }
@@ -61,7 +43,7 @@ export async function GET(req: NextRequest) {
         p++; const pOffset = p; params.push(offset);
 
         const dataQuery = `
-            SELECT *, COUNT(*) OVER() AS total_count
+            SELECT s.*, COUNT(*) OVER() AS total_count
             FROM submissions s
             WHERE ${conditions.join(' AND ')}
             ORDER BY s.submitted_at DESC
@@ -102,10 +84,10 @@ export async function GET(req: NextRequest) {
         const msg = error instanceof Error ? error.message : String(error);
         console.error('[API Submissions] Error:', msg);
         return NextResponse.json({ 
-            success: true, 
+            success: false, 
             submissions: [], 
             pagination: { page: 1, limit: 30, total: 0, totalPages: 0 },
-            error: 'DATABASE_UNAVAILABLE'
-        });
+            error: 'Failed to load submissions'
+        }, { status: 500 });
     }
 }

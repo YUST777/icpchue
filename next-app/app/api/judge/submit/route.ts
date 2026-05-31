@@ -37,8 +37,8 @@ function compareOutputs(expected: string, actual: string): boolean {
         const tExp = tokensExp[i];
         const tAct = tokensAct[i];
 
-        // 1. Direct string match (Case-Insensitive)
-        if (tExp.toLowerCase() === tAct.toLowerCase()) continue;
+        // 1. Direct string match (Case-Sensitive — competitive programming requires exact output)
+        if (tExp === tAct) continue;
 
         // 2. BigInt comparison (Found logical error: precision loss for > 2^53)
         try {
@@ -356,8 +356,11 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const { syncRank1Achievement } = await import('@/lib/services/achievements');
-        await syncRank1Achievement('submission');
+        // Only sync rank achievement on accepted submissions (expensive operation)
+        if (allPassed) {
+            const { syncRank1Achievement } = await import('@/lib/services/achievements');
+            await syncRank1Achievement('submission');
+        }
 
         return NextResponse.json({
             success: true,
