@@ -19,6 +19,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // SECURITY: Only allow 'ATTEMPTED' status from this endpoint.
+        // 'SOLVED' status must come from verified submission paths (save-submission, judge/submit)
+        // which validate the verdict from Codeforces API or Judge0.
+        if (status !== 'ATTEMPTED') {
+            return NextResponse.json({ error: 'Invalid status. Only ATTEMPTED is allowed from this endpoint.' }, { status: 403 });
+        }
+
         // trackingProblemId format: "contestId:problemId" or "sheetId:problemId"
         // Based on roadmap/route.ts and judge/submit/route.ts:
         // Roadmap uses (s.contest_id || ':' || p.problem_letter)

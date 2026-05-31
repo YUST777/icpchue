@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         let idx = 1;
         for (const [key, value] of entries) {
             rows.push(`($${idx}, $${idx + 1}, $${idx + 2}, NOW())`);
-            values.push(auth.id, String(key).slice(0, 100), String(value));
+            values.push(auth.id, String(key).slice(0, 100), String(value).slice(0, 2000));
             idx += 3;
         }
 

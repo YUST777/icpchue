@@ -16,6 +16,11 @@ COPY next-app/ ./
 COPY next-app/.env.production .env.production
 
 # Build Next.js application
+ARG NEXT_PUBLIC_RYBBIT_HOST
+ARG NEXT_PUBLIC_RYBBIT_SITE_ID
+ENV NEXT_PUBLIC_RYBBIT_HOST=${NEXT_PUBLIC_RYBBIT_HOST}
+ENV NEXT_PUBLIC_RYBBIT_SITE_ID=${NEXT_PUBLIC_RYBBIT_SITE_ID}
+
 ENV NODE_ENV=production
 RUN bun next build
 

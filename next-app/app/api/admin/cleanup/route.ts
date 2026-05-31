@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, deleted: results });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[Admin Cleanup] Error:', error.message);
+        return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 });
     }
 }
