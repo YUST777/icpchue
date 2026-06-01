@@ -1,39 +1,50 @@
 import Redis from 'ioredis';
 
-// Use same config as server/lib/redis.js
-const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
-const REDIS_HOST = process.env.REDIS_HOST || (isBuild ? 'localhost' : 'redis');
+const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
 // Use singleton pattern to avoid multiple connections in dev hot-reload
 const globalForRedis = global as unknown as { redis: Redis };
 
-export const redis =
-    globalForRedis.redis ||
-    new Redis({
-        host: REDIS_HOST,
-        port: REDIS_PORT,
-        password: REDIS_PASSWORD,
-        db: 1, // Using DB 1 (same as Express server)
-        keyPrefix: 'web:', // Same prefix
-        lazyConnect: isBuild, // Don't connect immediately during build
-        connectTimeout: 5000,
-        commandTimeout: 3000,
-        maxRetriesPerRequest: 2,
-        retryStrategy: (times) => {
-            if (isBuild) return null;
-            return Math.min(times * 50, 2000);
-        },
-    });
+let redisInstance: Redis | null = null;
 
-// Prevent unhandled error events from crashing the process
-redis.on('error', (err) => {
-    if (!isBuild) {
-        console.error('[Redis] Connection Error:', err.message);
+function getRedis(): Redis {
+    if (!redisInstance) {
+        redisInstance = new Redis({
+            host: REDIS_HOST,
+            port: REDIS_PORT,
+            password: REDIS_PASSWORD,
+            db: 1, // Using DB 1 (same as Express server)
+            keyPrefix: 'web:', // Same prefix
+            lazyConnect: true, // Don't connect immediately during build
+            connectTimeout: 5000,
+            commandTimeout: 3000,
+            maxRetriesPerRequest: 2,
+            retryStrategy: (times) => {
+                return Math.min(times * 50, 2000);
+            },
+        });
+        redisInstance.on('error', (err) => {
+            console.error('[Redis] Connection Error:', err.message);
+        });
+    }
+    return redisInstance;
+}
+
+// Proxy behaves exactly like the Redis client but defers instantiation and connection until method execution
+const redisProxy = new Proxy({} as Redis, {
+    get(target, prop) {
+        const instance = getRedis();
+        const value = Reflect.get(instance, prop);
+        if (typeof value === 'function') {
+            return value.bind(instance);
+        }
+        return value;
     }
 });
 
-if (process.env.NODE_ENV !== 'production') globalForRedis.redis = redis;
+if (process.env.NODE_ENV !== 'production') globalForRedis.redis = redisProxy;
 
-export default redis;
+export const redis = redisProxy;
+export default redisProxy;
