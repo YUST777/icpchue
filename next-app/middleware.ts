@@ -22,125 +22,150 @@ const SENSITIVE_PREFIXES = [
 ];
 
 export async function middleware(request: NextRequest) {
-    // Lazy pruning of rateLimitMap (approx 5% chance per request) to avoid memory growth without background timers
-    if (Math.random() < 0.05) {
-        const now = Date.now();
-        for (const [key, data] of rateLimitMap.entries()) {
-            if (now > data.resetTime) {
-                rateLimitMap.delete(key);
-            }
-        }
-    }
-
-    // --- Supabase Session Refresh ---
-    // This must happen before creating the response so cookies propagate correctly
-    let supabaseResponse = NextResponse.next({ request });
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-
-    const supabase = createServerClient(
-        supabaseUrl,
-        supabaseKey,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll();
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) =>
-                        request.cookies.set(name, value)
-                    );
-                    supabaseResponse = NextResponse.next({ request });
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    );
-                },
-            },
-        }
-    );
-
-    // Refresh session for protected pages (NOT API routes — they handle auth themselves via verifyAuth which has its own cache)
-    const urlPath = request.nextUrl.pathname;
-    const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
-    
-    if (isProtectedPage) {
-        try {
-            await Promise.race([
-                supabase.auth.getUser(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 3000))
-            ]);
-        } catch (e) {
-            // Auth refresh failed/timed out — continue with stale session rather than hanging
-            if (e instanceof Error && e.message !== 'Auth timeout') {
-                console.warn('[Middleware] Auth refresh failed:', e.message);
-            }
-        }
-    }
-
-    const headers = supabaseResponse.headers;
-
-    // --- 1. Security Headers ---
-    headers.set('X-DNS-Prefetch-Control', 'on');
-    headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    headers.set('X-Frame-Options', 'SAMEORIGIN');
-    headers.set('X-Content-Type-Options', 'nosniff');
-    headers.set('Referrer-Policy', 'origin-when-cross-origin');
-
-    const isDev = process.env.NODE_ENV === 'development';
-    const scriptSrc = isDev 
-        ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: blob:" 
-        : "'self' 'unsafe-inline' 'wasm-unsafe-eval' https: blob:";
-
-    headers.set('Content-Security-Policy', `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob:; media-src 'self' https: data: blob:; frame-src 'self' https://drive.google.com https://www.youtube.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`);
-
-    // --- 2. Bot Blocking ---
-    const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
-    const allowedBots = ['googlebot', 'bingbot', 'applebot', 'yandexbot', 'duckduckbot', 'baiduspider', 'facebookexternalhit', 'twitterbot', 'linkedinbot', 'slackbot'];
-    const isLegitimateBot = allowedBots.some(bot => userAgent.includes(bot));
-    const blockedAgents = ['python-requests', 'libwww-perl', 'scrapy'];
-
-    if (!isLegitimateBot && blockedAgents.some(agent => userAgent.includes(agent))) {
-        return new NextResponse('Access Denied', { status: 403 });
-    }
-
-    // --- 3. Rate Limiting (covers all routes including /api/) ---
-    const url = request.nextUrl.pathname;
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-
-    if (ip !== 'unknown') {
-        const isSensitive = SENSITIVE_PREFIXES.some(p => url.startsWith(p));
-        const isApi = url.startsWith('/api/');
-        const maxRequests = isSensitive ? MAX_REQUESTS_SENSITIVE : isApi ? MAX_REQUESTS_API : MAX_REQUESTS_PAGE;
-        const rateLimitKey = isSensitive ? `${ip}:sensitive` : isApi ? `${ip}:api` : ip;
-
-        const now = Date.now();
-        const limitData = rateLimitMap.get(rateLimitKey);
-
-        if (limitData) {
-            if (now < limitData.resetTime) {
-                if (limitData.count >= maxRequests) {
-                    return new NextResponse('Too Many Requests', { status: 429 });
+    try {
+        // Lazy pruning of rateLimitMap (approx 5% chance per request) to avoid memory growth without background timers
+        if (Math.random() < 0.05) {
+            const now = Date.now();
+            for (const [key, data] of rateLimitMap.entries()) {
+                if (now > data.resetTime) {
+                    rateLimitMap.delete(key);
                 }
-                limitData.count++;
+            }
+        }
+
+        // --- Supabase Session Refresh ---
+        // This must happen before creating the response so cookies propagate correctly
+        let supabaseResponse = NextResponse.next({ request });
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+
+        // Safe URL check to prevent TypeError: Invalid URL crashes in Edge runtime
+        let isValidUrl = false;
+        try {
+            new URL(supabaseUrl);
+            isValidUrl = true;
+        } catch {
+            // URL is invalid
+        }
+
+        if (isValidUrl) {
+            const supabase = createServerClient(
+                supabaseUrl,
+                supabaseKey,
+                {
+                    cookies: {
+                        getAll() {
+                            return request.cookies.getAll();
+                        },
+                        setAll(cookiesToSet) {
+                            try {
+                                cookiesToSet.forEach(({ name, value }) =>
+                                    request.cookies.set(name, value)
+                                );
+                                supabaseResponse = NextResponse.next({ request });
+                                cookiesToSet.forEach(({ name, value, options }) =>
+                                    supabaseResponse.cookies.set(name, value, options)
+                                );
+                            } catch {
+                                // Ignore cookie mutations errors
+                            }
+                        },
+                    },
+                }
+            );
+
+            // Refresh session for protected pages (NOT API routes — they handle auth themselves via verifyAuth which has its own cache)
+            const urlPath = request.nextUrl.pathname;
+            const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
+            
+            if (isProtectedPage) {
+                try {
+                    let timeoutId: any;
+                    const timeoutPromise = new Promise((_, reject) => {
+                        timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000);
+                    });
+                    await Promise.race([
+                        supabase.auth.getUser(),
+                        timeoutPromise
+                    ]);
+                    if (timeoutId) clearTimeout(timeoutId);
+                } catch (e) {
+                    // Auth refresh failed/timed out — continue with stale session rather than hanging
+                    if (e instanceof Error && e.message !== 'Auth timeout') {
+                        console.warn('[Middleware] Auth refresh failed:', e.message);
+                    }
+                }
+            }
+        }
+
+        const headers = supabaseResponse.headers;
+
+        // --- 1. Security Headers ---
+        headers.set('X-DNS-Prefetch-Control', 'on');
+        headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+        headers.set('X-Frame-Options', 'SAMEORIGIN');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('Referrer-Policy', 'origin-when-cross-origin');
+
+        const isDev = process.env.NODE_ENV === 'development';
+        const scriptSrc = isDev 
+            ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: blob:" 
+            : "'self' 'unsafe-inline' 'wasm-unsafe-eval' https: blob:";
+
+        headers.set('Content-Security-Policy', `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob:; media-src 'self' https: data: blob:; frame-src 'self' https://drive.google.com https://www.youtube.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`);
+
+        // --- 2. Bot Blocking ---
+        const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+        const allowedBots = ['googlebot', 'bingbot', 'applebot', 'yandexbot', 'duckduckbot', 'baiduspider', 'facebookexternalhit', 'twitterbot', 'linkedinbot', 'slackbot'];
+        const isLegitimateBot = allowedBots.some(bot => userAgent.includes(bot));
+        const blockedAgents = ['python-requests', 'libwww-perl', 'scrapy'];
+
+        if (!isLegitimateBot && blockedAgents.some(agent => userAgent.includes(agent))) {
+            return new NextResponse('Access Denied', { status: 403 });
+        }
+
+        // --- 3. Rate Limiting (covers all routes including /api/) ---
+        const url = request.nextUrl.pathname;
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+
+        if (ip !== 'unknown') {
+            const isSensitive = SENSITIVE_PREFIXES.some(p => url.startsWith(p));
+            const isApi = url.startsWith('/api/');
+            const maxRequests = isSensitive ? MAX_REQUESTS_SENSITIVE : isApi ? MAX_REQUESTS_API : MAX_REQUESTS_PAGE;
+            const rateLimitKey = isSensitive ? `${ip}:sensitive` : isApi ? `${ip}:api` : ip;
+
+            const now = Date.now();
+            const limitData = rateLimitMap.get(rateLimitKey);
+
+            if (limitData) {
+                if (now < limitData.resetTime) {
+                    if (limitData.count >= maxRequests) {
+                        return new NextResponse('Too Many Requests', { status: 429 });
+                    }
+                    limitData.count++;
+                } else {
+                    rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
+                }
             } else {
+                // Cap map size to prevent memory exhaustion
+                if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+                    // Evict oldest entries
+                    const iterator = rateLimitMap.keys();
+                    for (let i = 0; i < 1000; i++) {
+                        const key = iterator.next().value;
+                        if (key) rateLimitMap.delete(key);
+                    }
+                }
                 rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
             }
-        } else {
-            // Cap map size to prevent memory exhaustion
-            if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
-                // Evict oldest entries
-                const iterator = rateLimitMap.keys();
-                for (let i = 0; i < 1000; i++) {
-                    const key = iterator.next().value;
-                    if (key) rateLimitMap.delete(key);
-                }
-            }
-            rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
         }
-    }
 
-    return supabaseResponse;
+        return supabaseResponse;
+    } catch (err) {
+        console.error('[Middleware] Fatal Error (Caught & Handled Gracefully):', err);
+        return NextResponse.next({ request });
+    }
 }
 
 export const config = {
