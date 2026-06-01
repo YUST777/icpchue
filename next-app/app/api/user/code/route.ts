@@ -69,12 +69,21 @@ export async function POST(request: NextRequest) {
         // sendBeacon sends text/plain, so we need to handle both content types
         const contentType = request.headers.get('content-type') || '';
         let body;
-        if (contentType.includes('application/json')) {
-            body = await request.json();
-        } else {
-            body = JSON.parse(await request.text());
+        try {
+            if (contentType.includes('application/json')) {
+                body = await request.json();
+            } else {
+                const rawText = await request.text();
+                if (!rawText.trim()) {
+                    return NextResponse.json({ error: 'Empty body payload' }, { status: 400 });
+                }
+                body = JSON.parse(rawText);
+            }
+        } catch (parseError) {
+            console.error('[code POST parse error]', parseError);
+            return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 });
         }
-        const { contestId, problemId, language, code, isSubmitted, activeLanguage } = body;
+        const { contestId, problemId, language, code, isSubmitted, activeLanguage } = body || {};
 
         if (!contestId || !problemId || !language) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
