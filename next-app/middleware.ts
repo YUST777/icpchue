@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from './lib/supabase/middleware';
 
 // Simple in-memory rate limiter (per instance)
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
