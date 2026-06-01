@@ -4,11 +4,11 @@
   "private": true,
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "bun next dev -p 3000 --turbopack",
-    "build": "bun next build",
-    "start": "bun next start -p 3000",
-    "lint": "bun eslint",
-    "analyze": "cross-env ANALYZE=true bun next build",
+    "dev": "next dev -p 3000 --turbopack",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint",
+    "analyze": "cross-env ANALYZE=true next build",
     "knip": "knip"
   },
   "dependencies": {
