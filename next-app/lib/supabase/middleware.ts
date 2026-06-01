@@ -45,18 +45,10 @@ export async function updateSession(request: NextRequest) {
     );
 
     try {
-        let timeoutId: any;
-        const timeoutPromise = new Promise((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000);
-        });
-        await Promise.race([
-            supabase.auth.getUser(),
-            timeoutPromise
-        ]);
-        if (timeoutId) clearTimeout(timeoutId);
+        await supabase.auth.getUser();
     } catch (e) {
-        // Auth refresh failed/timed out — continue with stale session rather than hanging
-        if (e instanceof Error && e.name !== 'Auth timeout') {
+        // Auth refresh failed — continue with stale session rather than crashing
+        if (e instanceof Error) {
             console.warn('[Middleware] Auth refresh failed:', e.message);
         }
     }
