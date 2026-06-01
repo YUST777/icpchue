@@ -38,5 +38,9 @@ Thumbs.db
 
 
 
+# bun (enforce npm-only)
+bun.lock
+bun.lockb
+
 # vercel
 .vercel
