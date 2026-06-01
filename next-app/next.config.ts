@@ -93,7 +93,6 @@ const nextConfig: NextConfig = {
     },
 
     async rewrites() {
-        const rybbitHost = process.env.NEXT_PUBLIC_RYBBIT_HOST || "https://rybbit.yust.dev";
         return [
             // Internal Redirects / Shortlinks
             {
@@ -107,23 +106,6 @@ const nextConfig: NextConfig = {
             {
                 source: '/2025/:path*',
                 destination: '/Dec/:path*',
-            },
-            // Rybbit Analytics Proxies
-            {
-                source: "/api/rybbit/script.js",
-                destination: `${rybbitHost}/api/script.js`,
-            },
-            {
-                source: "/api/track",
-                destination: `${rybbitHost}/api/track`,
-            },
-            {
-                source: "/api/site/tracking-config/:path*",
-                destination: `${rybbitHost}/api/site/tracking-config/:path*`,
-            },
-            {
-                source: "/api/identify",
-                destination: `${rybbitHost}/api/identify`,
             },
         ]
     },

@@ -7,7 +7,7 @@ import { redis } from '@/lib/db/redis';
 import { sanitizeInput } from '@/lib/security/validation';
 import { scraperQueue } from '@/lib/db/queue';
 
-const OTP_ENABLED = process.env.REGISTER_OTP_ENABLED === 'true';
+const OTP_ENABLED = false;
 
 function isValidPassword(password: string): boolean {
     if (password.length < 9) return false;
