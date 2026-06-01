@@ -14,39 +14,49 @@ export interface RateLimitResult {
  * @param windowSeconds Duration of the window in seconds
  */
 export async function rateLimit(key: string, limit: number, windowSeconds: number): Promise<RateLimitResult> {
-    const redisKey = `rate_limit:${key}`;
+    try {
+        const redisKey = `rate_limit:${key}`;
 
-    // Get current count
-    const multi = redis.multi();
-    multi.incr(redisKey);
-    multi.ttl(redisKey);
+        // Get current count
+        const multi = redis.multi();
+        multi.incr(redisKey);
+        multi.ttl(redisKey);
 
-    const results = await multi.exec();
+        const results = await multi.exec();
 
-    if (!results) {
-        throw new Error('Redis transaction failed');
+        if (!results) {
+            throw new Error('Redis transaction failed');
+        }
+
+        const [incrErr, newCount] = results[0];
+        const [ttlErr, ttl] = results[1];
+
+        if (incrErr || ttlErr) {
+            throw new Error('Redis operation failed');
+        }
+
+        const count = newCount as number;
+        let currentTtl = ttl as number;
+
+        // If key is new (ttl == -1), set expiration
+        if (currentTtl === -1) {
+            await redis.expire(redisKey, windowSeconds);
+            currentTtl = windowSeconds;
+        }
+
+        return {
+            success: count <= limit,
+            limit,
+            remaining: Math.max(0, limit - count),
+            reset: Date.now() + (currentTtl * 1000)
+        };
+    } catch (error) {
+        console.warn(`[RateLimit] Redis rate limiter failed (check REDIS_HOST settings on Vercel), falling back to bypass:`, error);
+        return {
+            success: true,
+            limit,
+            remaining: 1,
+            reset: Date.now() + (windowSeconds * 1000)
+        };
     }
-
-    const [incrErr, newCount] = results[0];
-    const [ttlErr, ttl] = results[1];
-
-    if (incrErr || ttlErr) {
-        throw new Error('Redis operation failed');
-    }
-
-    const count = newCount as number;
-    let currentTtl = ttl as number;
-
-    // If key is new (ttl == -1), set expiration
-    if (currentTtl === -1) {
-        await redis.expire(redisKey, windowSeconds);
-        currentTtl = windowSeconds;
-    }
-
-    return {
-        success: count <= limit,
-        limit,
-        remaining: Math.max(0, limit - count),
-        reset: Date.now() + (currentTtl * 1000)
-    };
 }

@@ -110,7 +110,7 @@ const nextConfig: NextConfig = {
             },
             // Rybbit Analytics Proxies
             {
-                source: "/api/script.js",
+                source: "/api/rybbit/script.js",
                 destination: `${rybbitHost}/api/script.js`,
             },
             {
