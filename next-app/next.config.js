@@ -5,6 +5,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig = {
+    output: 'standalone',
     // 🧹 Best Practice #1: Strict Mode Enabled
     // We aim to fix all build errors instead of ignoring them
     typescript: {
@@ -14,11 +15,11 @@ const nextConfig = {
     serverExternalPackages: ['pg', 'sharp', 'canvas'],
     // React Compiler — auto-memoizes components, eliminates unnecessary re-renders
     reactCompiler: true,
-    serverActions: {
-        bodySizeLimit: '50mb',
-    },
     experimental: {
         proxyClientMaxBodySize: '50mb',
+        serverActions: {
+            bodySizeLimit: '50mb',
+        },
     },
 
     async redirects() {
