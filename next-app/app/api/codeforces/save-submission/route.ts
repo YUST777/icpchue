@@ -3,6 +3,8 @@ import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { decrypt } from '@/lib/encryption';
+
 
 /**
  * POST /api/codeforces/save-submission
