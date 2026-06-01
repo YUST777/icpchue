@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
 const WINDOW_SIZE = 60 * 1000;
@@ -36,63 +37,14 @@ export async function middleware(request: NextRequest) {
         // This must happen before creating the response so cookies propagate correctly
         let supabaseResponse = NextResponse.next();
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-
-        // Safe URL check to prevent TypeError: Invalid URL crashes in Edge runtime
-        let isValidUrl = false;
-        try {
-            new URL(supabaseUrl);
-            isValidUrl = true;
-        } catch {
-            // URL is invalid
-        }
-
         const urlPath = request.nextUrl.pathname;
         const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
 
-        if (isValidUrl && isProtectedPage) {
-            const { createServerClient } = await import('@supabase/ssr');
-            const supabase = createServerClient(
-                supabaseUrl,
-                supabaseKey,
-                {
-                    cookies: {
-                        getAll() {
-                            return request.cookies.getAll();
-                        },
-                        setAll(cookiesToSet) {
-                            try {
-                                cookiesToSet.forEach(({ name, value }) =>
-                                    request.cookies.set(name, value)
-                                );
-                                supabaseResponse = NextResponse.next();
-                                cookiesToSet.forEach(({ name, value, options }) =>
-                                    supabaseResponse.cookies.set(name, value, options)
-                                );
-                            } catch {
-                                // Ignore cookie mutations errors
-                            }
-                        },
-                    },
-                }
-            );
-
+        if (isProtectedPage) {
             try {
-                let timeoutId: any;
-                const timeoutPromise = new Promise((_, reject) => {
-                    timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000);
-                });
-                await Promise.race([
-                    supabase.auth.getUser(),
-                    timeoutPromise
-                ]);
-                if (timeoutId) clearTimeout(timeoutId);
-            } catch (e) {
-                // Auth refresh failed/timed out — continue with stale session rather than hanging
-                if (e instanceof Error && e.message !== 'Auth timeout') {
-                    console.warn('[Middleware] Auth refresh failed:', e.message);
-                }
+                supabaseResponse = await updateSession(request);
+            } catch (err) {
+                console.error('[Middleware] Supabase updateSession failed:', err);
             }
         }
 
