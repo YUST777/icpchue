@@ -118,7 +118,8 @@ const nextConfig = {
                 source: '/2025/:path*',
                 destination: '/Dec/:path*',
             },
-            // Rybbit Analytics Proxies
+            // Rybbit Analytics Proxies (Vercel-compatible fallback included)
+            // Triggering auto-rebuild on Vercel
             {
                 source: "/api/script.js",
                 destination: `${rybbitHost}/api/script.js`,
