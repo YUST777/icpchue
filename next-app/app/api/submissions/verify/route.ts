@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
                         const rawMatch = cfData.result.find((sub: any) => {
                             const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
                             const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                            const isUserMatch = sub.author?.members?.some(
-                                (m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()
-                            );
+                            const isUserMatch = 
+                                sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
+                                (sub.author?.handle && sub.author.handle.toLowerCase() === trimmedHandle.toLowerCase());
                             return isProblemMatch && isAccepted && isUserMatch;
                         });
                         
@@ -178,9 +178,9 @@ export async function POST(req: NextRequest) {
                     const privateMatch = privateSubs.find((sub: any) => {
                         const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
                         const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                        const isUserMatch = sub.author?.members?.some(
-                            (m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()
-                        );
+                        const isUserMatch = 
+                            sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
+                            (sub.author?.handle && sub.author.handle.toLowerCase() === trimmedHandle.toLowerCase());
                         return isProblemMatch && isAccepted && isUserMatch;
                     });
                     if (privateMatch) {
@@ -198,20 +198,6 @@ export async function POST(req: NextRequest) {
             } catch (fallbackErr) {
                 console.error('[Verify Route] Gym/Group fallback failed:', fallbackErr);
             }
-        }
-
-        // Outside-the-box self-verification fallback for private Gym/Group contests
-        if (!match && targetContestId >= 100000) {
-            console.log(`[Verify Route] Private Group/Gym contest detected (${targetContestId}). Applying relaxed self-verification fallback.`);
-            const mockSubmissionId = 900000000 + Math.floor(Math.random() * 100000000);
-            match = {
-                id: mockSubmissionId,
-                contestId: targetContestId,
-                timeConsumedMillis: 62,
-                memoryConsumedBytes: 0,
-                passedTestCount: 15,
-                programmingLanguage: language || 'C++'
-            };
         }
 
         if (!match) {
