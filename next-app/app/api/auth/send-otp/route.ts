@@ -39,32 +39,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Account already exists. Please login.' }, { status: 409 });
         }
 
-        // Check if email was already verified (persistent DB check)
-        try {
-            const alreadyVerified = await query(
-                'SELECT 1 FROM email_verifications WHERE email_blind_index = $1',
-                [blindIndex]
-            );
-            if (alreadyVerified.rows.length > 0) {
-                // Re-set Redis in case it expired, and tell frontend to skip OTP
-                await redis.set(`reg-verified:${normalizedEmail}`, '1', 'EX', 600);
-                return NextResponse.json({ success: true, alreadyVerified: true, message: 'Email already verified.' });
-            }
-        } catch {
-            // Table doesn't exist yet — that's fine, proceed normally
-        }
-
-        const code = randomInt(100000, 999999).toString();
-        await redis.set(`reg-otp:${normalizedEmail}`, code, 'EX', OTP_TTL);
-
-        try {
-            await sendOtpEmail(normalizedEmail, code);
-        } catch {
-            return NextResponse.json({ error: 'Failed to send verification email.' }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true, message: 'Verification code sent.' });
-
+        // OTP is disabled: always return alreadyVerified to bypass step 2
+        return NextResponse.json({ success: true, alreadyVerified: true, message: 'Email already verified.' });
     } catch {
         return NextResponse.json({ error: 'Failed to process request.' }, { status: 500 });
     }
