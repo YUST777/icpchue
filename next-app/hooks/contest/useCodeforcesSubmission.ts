@@ -74,7 +74,12 @@ export function useCodeforcesSubmission({
         setSubmitting(true);
         setIsTestPanelVisible(true);
         setTestPanelActiveTab('codeforces');
-        setCfStatus({ status: 'submitting', substatus: 'Opening Codeforces...', progress: 30 });
+        
+        // Put the tab into the wait state so the user can verify their submission
+        setCfStatus({
+            status: 'waiting',
+            substatus: 'verify-pending'
+        });
         activeSubIdRef.current = null;
 
         try {
@@ -82,21 +87,7 @@ export function useCodeforcesSubmission({
             const cfUrl = getSubmitUrl(contestId, problemId, urlType, groupId);
             window.open(cfUrl, '_blank');
 
-            setCfStatus({ status: 'submitting', substatus: 'Saving progress locally...', progress: 70 });
-
-            // 2. Fetch the user's CF handle if available
-            let userHandle = '';
-            try {
-                const meRes = await fetch('/api/auth/me');
-                if (meRes.ok) {
-                    const meData = await meRes.json();
-                    userHandle = meData.user?.codeforces_handle || '';
-                }
-            } catch (e) {
-                console.error('Error fetching handle:', e);
-            }
-
-            // Save submitted code snapshot to DB for tracking
+            // 2. Save submitted code snapshot to DB for tracking
             fetch('/api/user/code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -111,53 +102,91 @@ export function useCodeforcesSubmission({
                 keepalive: true,
             }).catch(() => {});
 
-            // 3. Save the submission locally as "Accepted" (SOLVED) so the roadmap/sheets update!
-            const cfSubmissionId = -Date.now(); // Negative unique ID for manual bypasses
-            
-            const saveRes = await fetch('/api/codeforces/save-submission', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    cfSubmissionId,
-                    contestId,
-                    problemIndex: problemId,
-                    sheetId: sheetId || null,
-                    verdict: 'Accepted',
-                    timeMs: 0,
-                    memoryKb: 0,
-                    language: mapLanguageToExtension(language),
-                    sourceCode: code,
-                    cfHandle: userHandle || null,
-                    urlType,
-                    groupId: groupId || null,
-                })
-            });
-
-            if (saveRes.ok) {
-                setCfStatus({
-                    status: 'done',
-                    verdict: 'Accepted',
-                    time: 0,
-                    memory: 0,
-                    submissionId: cfSubmissionId
-                });
-            } else {
-                const errorData = await saveRes.json().catch(() => ({ error: 'Database save failed' }));
-                setCfStatus({
-                    status: 'error',
-                    error: errorData.error || 'Failed to save submission progress locally.'
-                });
-            }
-
         } catch (err) {
             console.error('Manual submit failed:', err);
-            setCfStatus({ status: 'error', error: 'Failed to complete submission.' });
+            setCfStatus({ status: 'error', error: 'Failed to open Codeforces submit page.' });
         } finally {
             submittingRef.current = false;
             setSubmitting(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contestId, problemId, urlType, groupId, codeforcesUrl, setIsTestPanelVisible, setTestPanelActiveTab, sheetId]);
+
+    // Handle explicit verification of Codeforces submission status
+    const handleVerify = useCallback(async (cfHandle: string) => {
+        const code = codeRef.current;
+        const language = languageRef.current;
+        if (!cfHandle) return;
+
+        setSubmitting(true);
+        setCfStatus({
+            status: 'waiting',
+            substatus: 'verify-pending',
+            progress: 50 // Mock loading progress
+        });
+
+        try {
+            const verifyRes = await fetch('/api/submissions/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestId,
+                    problemIndex: problemId,
+                    cfHandle,
+                    sourceCode: code,
+                    language: mapLanguageToExtension(language),
+                    sheetId: sheetId || null,
+                    urlType,
+                    groupId: groupId || null
+                })
+            });
+
+            if (verifyRes.ok) {
+                const data = await verifyRes.json();
+                if (data.success) {
+                    setCfStatus({
+                        status: 'done',
+                        verdict: 'Accepted',
+                        time: data.timeMs || 0,
+                        memory: data.memoryKb || 0,
+                        submissionId: data.submissionId
+                    });
+                } else {
+                    setCfStatus({
+                        status: 'error',
+                        substatus: 'verify-pending',
+                        error: data.error || 'No Accepted submission found on Codeforces.'
+                    });
+                }
+            } else {
+                const errorData = await verifyRes.json().catch(() => ({ error: 'Verification failed' }));
+                setCfStatus({
+                    status: 'error',
+                    substatus: 'verify-pending',
+                    error: errorData.error || 'Failed to verify. Please try again.'
+                });
+            }
+        } catch (err: any) {
+            console.error('Verification query failed:', err);
+            setCfStatus({
+                status: 'error',
+                substatus: 'verify-pending',
+                error: err.message || 'Verification connection failed.'
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    }, [contestId, problemId, urlType, groupId, sheetId]);
+
+    // Attach handleVerify to global window object so CFStatusTab can call it easily without prop drilling
+    useEffect(() => {
+        (window as any).__verdict_verify_cf = handleVerify;
+        return () => {
+            if ((window as any).__verdict_verify_cf === handleVerify) {
+                delete (window as any).__verdict_verify_cf;
+            }
+        };
+    }, [handleVerify]);
 
     return {
         cfStatus,

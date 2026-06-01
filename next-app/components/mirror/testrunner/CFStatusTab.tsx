@@ -18,6 +18,14 @@ interface CFStatusTabProps {
 
 export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatusTabProps) {
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
+    const [handleInput, setHandleInput] = useState('');
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('verdict-cf-handle');
+            if (saved) setHandleInput(saved);
+        } catch {}
+    }, []);
 
     useEffect(() => {
         // Fallback check in case the content script loads slightly late
@@ -68,6 +76,92 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 </div>
                 <p className="text-sm font-medium">Submit to Codeforces to see results</p>
                 <p className="text-xs text-[#555]">Use the Submit button above</p>
+            </div>
+        );
+    }
+
+    const isVerifyPending = cfStatus?.substatus === 'verify-pending';
+
+    if (isVerifyPending) {
+        const verifying = cfStatus.progress === 50;
+        const hasError = cfStatus.status === 'error';
+
+        return (
+            <div className="h-full flex flex-col space-y-4 p-4 bg-[#252526]/30 rounded-xl border border-white/5 animate-fade-in text-left">
+                <div className="flex items-center gap-3 text-[#E8C15A]">
+                    <div className="p-2 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                        <Send size={20} />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-sm text-white">Verify Codeforces Submission</h3>
+                        <p className="text-[10px] text-[#888]">Verify and apply your AC progress locally</p>
+                    </div>
+                </div>
+
+                <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
+                    <p><strong>1. Submit Code:</strong> Make sure you have submitted your solution on Codeforces (opened in the other tab).</p>
+                    <p><strong>2. Check Result:</strong> Once you get <strong>Accepted (AC)</strong> on Codeforces, enter your handle below and click verify to sync your progress here!</p>
+                </div>
+
+                {hasError && cfStatus.error && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start gap-2 leading-relaxed">
+                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                        <span>{cfStatus.error}</span>
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-[#888] uppercase tracking-wider">Codeforces Handle</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={handleInput}
+                            onChange={(e) => {
+                                setHandleInput(e.target.value);
+                                try {
+                                    localStorage.setItem('verdict-cf-handle', e.target.value);
+                                } catch {}
+                            }}
+                            disabled={verifying}
+                            placeholder="Enter your CF handle (e.g. tourist)"
+                            className="flex-1 bg-[#1a1a1a] border border-white/10 hover:border-white/20 focus:border-[#E8C15A]/50 rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none transition-colors"
+                        />
+                        <button
+                            onClick={async () => {
+                                if (!handleInput.trim()) return;
+                                const verifyFn = (window as any).__verdict_verify_cf;
+                                if (verifyFn) {
+                                    await verifyFn(handleInput.trim());
+                                }
+                            }}
+                            disabled={verifying || !handleInput.trim()}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-xs shrink-0 cursor-pointer"
+                        >
+                            {verifying ? (
+                                <>
+                                    <Loader2 size={12} className="animate-spin" /> Verifying...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 size={12} /> Apply Solution
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {contestId && problemId && (
+                    <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                        <a
+                            href={`https://codeforces.com/contest/${contestId}/submit?problemIndex=${problemId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-[#E8C15A] hover:underline transition-colors flex items-center gap-1"
+                        >
+                            Open Codeforces Submit Page Again <ExternalLink size={10} />
+                        </a>
+                    </div>
+                )}
             </div>
         );
     }
