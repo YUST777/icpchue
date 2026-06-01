@@ -5,7 +5,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig = {
-    output: 'standalone',
     // 🧹 Best Practice #1: Strict Mode Enabled
     // We aim to fix all build errors instead of ignoring them
     typescript: {
