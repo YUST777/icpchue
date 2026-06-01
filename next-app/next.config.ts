@@ -1,18 +1,11 @@
-/** @type {import('next').NextConfig} */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-    enabled: process.env.ANALYZE === 'true',
-});
+import type { NextConfig } from "next";
 
-const nextConfig = {
-    // 🧹 Best Practice #1: Strict Mode Enabled
+const nextConfig: NextConfig = {
     // We aim to fix all build errors instead of ignoring them
     typescript: {
         ignoreBuildErrors: true,
     },
-    // 🧹 Best Practice #3: Handling Native/External Modules
     serverExternalPackages: ['pg', 'sharp', 'canvas'],
-    // React Compiler — auto-memoizes components, eliminates unnecessary re-renders
     reactCompiler: true,
     experimental: {
         proxyClientMaxBodySize: '50mb',
@@ -99,8 +92,6 @@ const nextConfig = {
         ];
     },
 
-    // 🧹 Best Practice #2: No Duplicate Rewrites
-    // Nginx handles routing. Only keep rewrites for internal/legacy redirects that Nginx doesn't cover.
     async rewrites() {
         const rybbitHost = process.env.NEXT_PUBLIC_RYBBIT_HOST || "https://rybbit.yust.dev";
         return [
@@ -117,8 +108,7 @@ const nextConfig = {
                 source: '/2025/:path*',
                 destination: '/Dec/:path*',
             },
-            // Rybbit Analytics Proxies (Vercel-compatible fallback included)
-            // Triggering auto-rebuild on Vercel
+            // Rybbit Analytics Proxies
             {
                 source: "/api/script.js",
                 destination: `${rybbitHost}/api/script.js`,
@@ -137,6 +127,6 @@ const nextConfig = {
             },
         ]
     },
-}
+};
 
-module.exports = withBundleAnalyzer(nextConfig);
+export default nextConfig;

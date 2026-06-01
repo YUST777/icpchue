@@ -86,3 +86,4 @@ team-uploads/
 *.csv
 SUSPICIOUS_SUBMISSIONS.md
 
+next-app/bun.lock
