@@ -21,7 +21,7 @@ const SENSITIVE_PREFIXES = [
     '/api/user/delete-profile-data',
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     try {
         // Lazy pruning of rateLimitMap (approx 5% chance per request) to avoid memory growth without background timers
         if (Math.random() < 0.05) {
