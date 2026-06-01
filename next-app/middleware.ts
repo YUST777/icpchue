@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
 const WINDOW_SIZE = 60 * 1000;
@@ -21,7 +20,7 @@ const SENSITIVE_PREFIXES = [
     '/api/user/delete-profile-data',
 ];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     try {
         // Lazy pruning of rateLimitMap (approx 5% chance per request) to avoid memory growth without background timers
         if (Math.random() < 0.05) {
@@ -49,7 +48,11 @@ export async function proxy(request: NextRequest) {
             // URL is invalid
         }
 
-        if (isValidUrl) {
+        const urlPath = request.nextUrl.pathname;
+        const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
+
+        if (isValidUrl && isProtectedPage) {
+            const { createServerClient } = await import('@supabase/ssr');
             const supabase = createServerClient(
                 supabaseUrl,
                 supabaseKey,
@@ -75,26 +78,20 @@ export async function proxy(request: NextRequest) {
                 }
             );
 
-            // Refresh session for protected pages (NOT API routes — they handle auth themselves via verifyAuth which has its own cache)
-            const urlPath = request.nextUrl.pathname;
-            const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
-            
-            if (isProtectedPage) {
-                try {
-                    let timeoutId: any;
-                    const timeoutPromise = new Promise((_, reject) => {
-                        timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000);
-                    });
-                    await Promise.race([
-                        supabase.auth.getUser(),
-                        timeoutPromise
-                    ]);
-                    if (timeoutId) clearTimeout(timeoutId);
-                } catch (e) {
-                    // Auth refresh failed/timed out — continue with stale session rather than hanging
-                    if (e instanceof Error && e.message !== 'Auth timeout') {
-                        console.warn('[Middleware] Auth refresh failed:', e.message);
-                    }
+            try {
+                let timeoutId: any;
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000);
+                });
+                await Promise.race([
+                    supabase.auth.getUser(),
+                    timeoutPromise
+                ]);
+                if (timeoutId) clearTimeout(timeoutId);
+            } catch (e) {
+                // Auth refresh failed/timed out — continue with stale session rather than hanging
+                if (e instanceof Error && e.message !== 'Auth timeout') {
+                    console.warn('[Middleware] Auth refresh failed:', e.message);
                 }
             }
         }
