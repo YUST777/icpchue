@@ -20,7 +20,9 @@ export function getPool(): pg.Pool {
 
         pool = new Pool({
             connectionString,
-            ssl: true,
+            ssl: {
+                rejectUnauthorized: false
+            },
             max: 25, // Increased from 20 for higher concurrency
             min: 5,  // Keep 5 warm connections ready
             idleTimeoutMillis: 30000,

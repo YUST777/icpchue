@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
             { status: 200, headers: response.headers }
         );
 
-    } catch {
+    } catch (error) {
+        console.error('[Login API Error]:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
