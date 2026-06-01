@@ -21,23 +21,27 @@ const SENSITIVE_PREFIXES = [
     '/api/user/delete-profile-data',
 ];
 
-setInterval(() => {
-    const now = Date.now();
-    for (const [ip, data] of rateLimitMap.entries()) {
-        if (now > data.resetTime) {
-            rateLimitMap.delete(ip);
+export async function middleware(request: NextRequest) {
+    // Lazy pruning of rateLimitMap (approx 5% chance per request) to avoid memory growth without background timers
+    if (Math.random() < 0.05) {
+        const now = Date.now();
+        for (const [key, data] of rateLimitMap.entries()) {
+            if (now > data.resetTime) {
+                rateLimitMap.delete(key);
+            }
         }
     }
-}, 60000);
 
-export async function middleware(request: NextRequest) {
     // --- Supabase Session Refresh ---
     // This must happen before creating the response so cookies propagate correctly
     let supabaseResponse = NextResponse.next({ request });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseKey,
         {
             cookies: {
                 getAll() {
