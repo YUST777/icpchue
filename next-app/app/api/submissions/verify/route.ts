@@ -3,6 +3,7 @@ import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { fetchContestSubmissions } from '@/lib/services/codeforces';
 
 export async function POST(req: NextRequest) {
     try {
@@ -50,12 +51,43 @@ export async function POST(req: NextRequest) {
 
         // 2. Find matching Accepted submission
         const targetContestId = Number(contestId);
-        const match = cfData.result.find((sub: any) => {
+        let match = cfData.result.find((sub: any) => {
             const isContestMatch = Number(sub.contestId) === targetContestId;
             const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
             const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
             return isContestMatch && isProblemMatch && isAccepted;
         });
+
+        // Fallback for Gym / Group submissions using authenticated API
+        if (!match) {
+            console.log(`[Verify Route] Attempting authenticated contest.status fallback for Gym/Group check. Contest: ${targetContestId}, problem: ${problemIndex}`);
+            try {
+                const privateSubs = await fetchContestSubmissions(targetContestId, 500);
+                if (privateSubs && privateSubs.length > 0) {
+                    const privateMatch = privateSubs.find((sub: any) => {
+                        const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                        const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                        const isUserMatch = sub.author?.members?.some(
+                            (m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()
+                        );
+                        return isProblemMatch && isAccepted && isUserMatch;
+                    });
+                    if (privateMatch) {
+                        console.log(`[Verify Route] Found matching Gym/Group submission in fallback: ${privateMatch.id}`);
+                        match = {
+                            id: privateMatch.id,
+                            contestId: privateMatch.contestId,
+                            timeConsumedMillis: privateMatch.timeConsumedMillis,
+                            memoryConsumedBytes: privateMatch.memoryConsumedBytes,
+                            passedTestCount: privateMatch.passedTestCount,
+                            programmingLanguage: privateMatch.programmingLanguage
+                        };
+                    }
+                }
+            } catch (fallbackErr) {
+                console.error('[Verify Route] Gym/Group fallback failed:', fallbackErr);
+            }
+        }
 
         if (!match) {
             return NextResponse.json({
