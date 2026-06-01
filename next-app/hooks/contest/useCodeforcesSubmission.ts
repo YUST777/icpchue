@@ -128,16 +128,16 @@ export function useCodeforcesSubmission({
         const hasExtension = typeof document !== 'undefined' && !!document.getElementById('verdict-extension-installed');
 
         if (hasExtension) {
-            console.log('[Verify] Extension detected. Initiating client-side Codeforces session verification...');
+            console.log('[Verify] Extension detected. Extracting active Codeforces session cookies via extension...');
             
             const handleExtensionResponse = async (event: MessageEvent) => {
-                if (event.source !== window || event.data?.type !== 'VERDICT_VERIFY_CF_RESPONSE') return;
+                if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSION_RESULT') return;
                 
                 window.removeEventListener('message', handleExtensionResponse);
-                const { success, submissionId, timeMs, memoryKb, error } = event.data;
+                const { success, cookies, error } = event.data;
 
-                if (success && submissionId) {
-                    console.log('[Verify] Extension successfully verified submission:', submissionId);
+                if (success && cookies) {
+                    console.log('[Verify] Extension successfully retrieved cookies. Initiating server-side session verification...');
                     try {
                         const verifyRes = await fetch('/api/submissions/verify', {
                             method: 'POST',
@@ -151,10 +151,7 @@ export function useCodeforcesSubmission({
                                 sheetId: sheetId || null,
                                 urlType,
                                 groupId: groupId || null,
-                                isExtensionVerified: true,
-                                submissionId,
-                                timeMs,
-                                memoryKb
+                                cookies
                             })
                         });
 
@@ -164,15 +161,15 @@ export function useCodeforcesSubmission({
                                 setCfStatus({
                                     status: 'done',
                                     verdict: 'Accepted',
-                                    time: timeMs || 0,
-                                    memory: memoryKb || 0,
-                                    submissionId
+                                    time: data.timeMs || 0,
+                                    memory: data.memoryKb || 0,
+                                    submissionId: data.submissionId
                                 });
                             } else {
                                 setCfStatus({
                                     status: 'error',
                                     substatus: 'verify-pending',
-                                    error: data.error || 'Failed to save verified submission.'
+                                    error: data.error || 'Failed to verify submission using Codeforces session.'
                                 });
                             }
                         } else {
@@ -192,11 +189,11 @@ export function useCodeforcesSubmission({
                         setSubmitting(false);
                     }
                 } else {
-                    console.warn('[Verify] Extension could not verify submission:', error);
+                    console.warn('[Verify] Extension could not retrieve cookies:', error);
                     setCfStatus({
                         status: 'error',
                         substatus: 'verify-pending',
-                        error: error || 'No Accepted submission found on your Codeforces profile.'
+                        error: error || 'Failed to retrieve active session cookies from the extension. Please make sure you are logged into Codeforces!'
                     });
                     setSubmitting(false);
                 }
@@ -204,8 +201,15 @@ export function useCodeforcesSubmission({
 
             window.addEventListener('message', handleExtensionResponse);
             window.postMessage({
-                type: 'VERDICT_VERIFY_CF',
-                payload: { contestId, problemIndex: problemId, cfHandle }
+                type: 'VERDICT_SUBMIT',
+                payload: {
+                    contestId,
+                    problemIndex: problemId,
+                    code: code || '',
+                    language: mapLanguageToExtension(language),
+                    urlType,
+                    groupId: groupId || null
+                }
             }, '*');
 
             // Setup a safety timeout of 10s to clean up listener in case extension crashes
