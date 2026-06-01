@@ -112,4 +112,28 @@ window.addEventListener('message', async (event) => {
             }, '*');
         }
     }
+
+    // ── Verify Submission ──
+    if (type === 'VERDICT_VERIFY_CF') {
+        try {
+            const result = await chrome.runtime.sendMessage({ 
+                type: 'VERDICT_VERIFY_CF_BACKGROUND', 
+                payload 
+            });
+            window.postMessage({
+                type: 'VERDICT_VERIFY_CF_RESPONSE',
+                success: result.success,
+                submissionId: result.submissionId || null,
+                timeMs: result.timeMs || 0,
+                memoryKb: result.memoryKb || 0,
+                error: result.error || null
+            }, '*');
+        } catch (err) {
+            window.postMessage({
+                type: 'VERDICT_VERIFY_CF_RESPONSE',
+                success: false,
+                error: err.message || 'Extension bridge error'
+            }, '*');
+        }
+    }
 });

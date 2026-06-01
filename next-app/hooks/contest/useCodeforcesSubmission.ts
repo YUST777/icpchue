@@ -125,6 +125,98 @@ export function useCodeforcesSubmission({
             progress: 50 // Mock loading progress
         });
 
+        const hasExtension = typeof document !== 'undefined' && !!document.getElementById('verdict-extension-installed');
+
+        if (hasExtension) {
+            console.log('[Verify] Extension detected. Initiating client-side Codeforces session verification...');
+            
+            const handleExtensionResponse = async (event: MessageEvent) => {
+                if (event.source !== window || event.data?.type !== 'VERDICT_VERIFY_CF_RESPONSE') return;
+                
+                window.removeEventListener('message', handleExtensionResponse);
+                const { success, submissionId, timeMs, memoryKb, error } = event.data;
+
+                if (success && submissionId) {
+                    console.log('[Verify] Extension successfully verified submission:', submissionId);
+                    try {
+                        const verifyRes = await fetch('/api/submissions/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contestId,
+                                problemIndex: problemId,
+                                cfHandle,
+                                sourceCode: code,
+                                language: mapLanguageToExtension(language),
+                                sheetId: sheetId || null,
+                                urlType,
+                                groupId: groupId || null,
+                                isExtensionVerified: true,
+                                submissionId,
+                                timeMs,
+                                memoryKb
+                            })
+                        });
+
+                        if (verifyRes.ok) {
+                            const data = await verifyRes.json();
+                            if (data.success) {
+                                setCfStatus({
+                                    status: 'done',
+                                    verdict: 'Accepted',
+                                    time: timeMs || 0,
+                                    memory: memoryKb || 0,
+                                    submissionId
+                                });
+                            } else {
+                                setCfStatus({
+                                    status: 'error',
+                                    substatus: 'verify-pending',
+                                    error: data.error || 'Failed to save verified submission.'
+                                });
+                            }
+                        } else {
+                            setCfStatus({
+                                status: 'error',
+                                substatus: 'verify-pending',
+                                error: 'Failed to record verification on the server.'
+                            });
+                        }
+                    } catch (err: any) {
+                        setCfStatus({
+                            status: 'error',
+                            substatus: 'verify-pending',
+                            error: err.message || 'Connection error while saving verified submission.'
+                        });
+                    } finally {
+                        setSubmitting(false);
+                    }
+                } else {
+                    console.warn('[Verify] Extension could not verify submission:', error);
+                    setCfStatus({
+                        status: 'error',
+                        substatus: 'verify-pending',
+                        error: error || 'No Accepted submission found on your Codeforces profile.'
+                    });
+                    setSubmitting(false);
+                }
+            };
+
+            window.addEventListener('message', handleExtensionResponse);
+            window.postMessage({
+                type: 'VERDICT_VERIFY_CF',
+                payload: { contestId, problemIndex: problemId, cfHandle }
+            }, '*');
+
+            // Setup a safety timeout of 10s to clean up listener in case extension crashes
+            setTimeout(() => {
+                window.removeEventListener('message', handleExtensionResponse);
+            }, 10000);
+
+            return;
+        }
+
+        // Backend Fallback (no extension installed)
         try {
             const verifyRes = await fetch('/api/submissions/verify', {
                 method: 'POST',
