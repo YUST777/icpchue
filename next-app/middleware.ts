@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
         // --- Supabase Session Refresh ---
         // This must happen before creating the response so cookies propagate correctly
-        let supabaseResponse = NextResponse.next({ request });
+        let supabaseResponse = NextResponse.next();
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
                                 cookiesToSet.forEach(({ name, value }) =>
                                     request.cookies.set(name, value)
                                 );
-                                supabaseResponse = NextResponse.next({ request });
+                                supabaseResponse = NextResponse.next();
                                 cookiesToSet.forEach(({ name, value, options }) =>
                                     supabaseResponse.cookies.set(name, value, options)
                                 );
@@ -161,7 +161,7 @@ export async function middleware(request: NextRequest) {
         return supabaseResponse;
     } catch (err) {
         console.error('[Middleware] Fatal Error (Caught & Handled Gracefully):', err);
-        return NextResponse.next({ request });
+        return NextResponse.next();
     }
 }
 
