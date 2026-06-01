@@ -68,19 +68,27 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid cfSubmissionId' }, { status: 400 });
         }
 
-        // Verify the user's CF handle matches the submission's cfHandle
-        // SECURITY: cfHandle is REQUIRED — without it, anyone could claim submissions
-        if (!cfHandle) {
-            return NextResponse.json({ error: 'cfHandle is required' }, { status: 400 });
-        }
+        let finalCfHandle = cfHandle;
         
         const userResult = await query(
-            'SELECT codeforces_handle FROM users WHERE id = $1',
+            'SELECT codeforces_handle, email FROM users WHERE id = $1',
             [user.id]
         );
         const userHandle = userResult.rows[0]?.codeforces_handle;
-        if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
-            return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
+        const userEmail = userResult.rows[0]?.email;
+        
+        if (!finalCfHandle) {
+            finalCfHandle = userHandle || (userEmail ? (decrypt(userEmail) || userEmail).split('@')[0] : 'unknown');
+        }
+        
+        // If it's a regular submission (positive ID), enforce exact handle matching
+        if (submissionIdNum > 0) {
+            if (!cfHandle) {
+                return NextResponse.json({ error: 'cfHandle is required for automated validation' }, { status: 400 });
+            }
+            if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
+                return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
+            }
         }
 
         // 1. Save to unified submissions table (upsert on cf_submission_id to prevent duplicates)
@@ -109,7 +117,7 @@ export async function POST(req: NextRequest) {
                 memoryKb || 0,
                 language || null,
                 sourceCode || null,
-                cfHandle || null,
+                finalCfHandle || null,
                 urlType || 'contest',
                 groupId || null,
                 compilationError || null,
