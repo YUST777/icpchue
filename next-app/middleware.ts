@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from './lib/supabase/middleware';
 
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
 const WINDOW_SIZE = 60 * 1000;
