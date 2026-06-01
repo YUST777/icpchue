@@ -33,7 +33,10 @@ Thumbs.db
 # user uploads & data
 /pfps/
 /public/pfps/
-/data/
+/data/*
+!/data/problems-metadata.json
+
+
 
 # vercel
 .vercel
