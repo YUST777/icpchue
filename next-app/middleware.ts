@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { updateSession } from './lib/supabase/middleware';
+// import { updateSession } from './lib/supabase/middleware';
 
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
 const WINDOW_SIZE = 60 * 1000;
@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
         const urlPath = request.nextUrl.pathname;
         const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
 
+        /*
         if (isProtectedPage) {
             try {
                 supabaseResponse = await updateSession(request);
@@ -47,6 +48,7 @@ export async function middleware(request: NextRequest) {
                 console.error('[Middleware] Supabase updateSession failed:', err);
             }
         }
+        */
 
         const headers = supabaseResponse.headers;
 
