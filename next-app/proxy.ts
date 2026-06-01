@@ -1,0 +1,119 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { updateSession } from './lib/supabase/middleware';
+
+const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
+const WINDOW_SIZE = 60 * 1000;
+const MAX_REQUESTS_PAGE = 500;
+const MAX_REQUESTS_API = 120;
+const MAX_REQUESTS_SENSITIVE = 15;
+const MAX_RATE_LIMIT_ENTRIES = 10000;
+
+const SENSITIVE_PREFIXES = [
+    '/api/judge/',
+    '/api/analyze-complexity',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/check-email',
+    '/api/auth/send-otp',
+    '/api/auth/verify-otp',
+    '/api/user/upload-pfp',
+    '/api/user/delete-profile-data',
+];
+
+export async function proxy(request: NextRequest) {
+    try {
+        // Safe prune to prevent rate limiter memory leak
+        if (Math.random() < 0.05) {
+            const now = Date.now();
+            for (const [key, data] of rateLimitMap.entries()) {
+                if (now > data.resetTime) {
+                    rateLimitMap.delete(key);
+                }
+            }
+        }
+
+        // --- 1. Supabase Session Refresh ---
+        let response = NextResponse.next({ request });
+        const urlPath = request.nextUrl.pathname;
+        const isProtectedPage = urlPath.startsWith('/dashboard') || urlPath.startsWith('/admin') || urlPath.startsWith('/profile');
+
+        if (isProtectedPage) {
+            try {
+                response = await updateSession(request);
+            } catch (err) {
+                console.error('[Proxy] updateSession error:', err);
+                response = NextResponse.next({ request });
+            }
+        }
+
+        const headers = response.headers;
+
+        // --- 2. Security Headers ---
+        headers.set('X-DNS-Prefetch-Control', 'on');
+        headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+        headers.set('X-Frame-Options', 'SAMEORIGIN');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('Referrer-Policy', 'origin-when-cross-origin');
+
+        const isDev = process.env.NODE_ENV === 'development';
+        const scriptSrc = isDev
+            ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: blob:"
+            : "'self' 'unsafe-inline' 'wasm-unsafe-eval' https: blob:";
+        headers.set('Content-Security-Policy', `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob:; media-src 'self' https: data: blob:; frame-src 'self' https://drive.google.com https://www.youtube.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`);
+
+        // --- 3. Bot Blocking ---
+        const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
+        const allowedBots = ['googlebot', 'bingbot', 'applebot', 'yandexbot', 'duckduckbot', 'baiduspider', 'facebookexternalhit', 'twitterbot', 'linkedinbot', 'slackbot'];
+        const isLegitimateBot = allowedBots.some(bot => userAgent.includes(bot));
+        const blockedAgents = ['python-requests', 'libwww-perl', 'scrapy'];
+
+        if (!isLegitimateBot && blockedAgents.some(agent => userAgent.includes(agent))) {
+            return new NextResponse('Access Denied', { status: 403 });
+        }
+
+        // --- 4. Basic Rate Limiting ---
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+
+        if (ip !== 'unknown') {
+            const isSensitive = SENSITIVE_PREFIXES.some(p => urlPath.startsWith(p));
+            const isApi = urlPath.startsWith('/api/');
+            const maxRequests = isSensitive ? MAX_REQUESTS_SENSITIVE : isApi ? MAX_REQUESTS_API : MAX_REQUESTS_PAGE;
+            const rateLimitKey = isSensitive ? `${ip}:sensitive` : isApi ? `${ip}:api` : ip;
+
+            const now = Date.now();
+            const limitData = rateLimitMap.get(rateLimitKey);
+
+            if (limitData) {
+                if (now < limitData.resetTime) {
+                    if (limitData.count >= maxRequests) {
+                        return new NextResponse('Too Many Requests', { status: 429 });
+                    }
+                    limitData.count++;
+                } else {
+                    rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
+                }
+            } else {
+                if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+                    const iterator = rateLimitMap.keys();
+                    for (let i = 0; i < 1000; i++) {
+                        const key = iterator.next().value;
+                        if (key) rateLimitMap.delete(key);
+                    }
+                }
+                rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + WINDOW_SIZE });
+            }
+        }
+
+        return response;
+    } catch (err) {
+        console.error('[Proxy] Fatal Error (Caught & Handled Gracefully):', err);
+        return NextResponse.next({ request });
+    }
+}
+
+export const config = {
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|pdf|glb|woff2?|map|css|js)).*)',
+    ],
+};
