@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatar = document.getElementById('avatar');
     const handle = document.getElementById('handle');
     const statusText = document.getElementById('status-text');
-    const btnRefresh = document.getElementById('btn-refresh');
 
     // Check Codeforces login status
     async function checkStatus() {
@@ -39,9 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
             statusText.textContent = 'Could not connect';
         }
     }
-
-    // Refresh button handler
-    btnRefresh.addEventListener('click', checkStatus);
 
     // Initial check
     checkStatus();

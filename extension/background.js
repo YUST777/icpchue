@@ -1,18 +1,54 @@
 /**
- * Verdict Helper Extension v1.0.8 — Background Service Worker
+ * Verdict Helper Extension v1.0.9 — Background Service Worker
  *
- * Cookie-based approach: extracts CF cookies + CSRF for server-side submission.
- * No more tab automation / Puppeteer — Cloudflare can't block us.
+ * Cookie-only approach: extracts CF cookies for server-side submission.
+ *
+ * Architecture:
+ * ─────────────────────────────────────────────────────────────────────────
+ * The scrapling bridge (server-side) opens its own headless browser session
+ * using the user's cookies. It handles CSRF, Turnstile, ftaa, bfaa, _tta
+ * all server-side. The extension's ONLY job is:
+ *   1. Extract CF cookies (for session auth)
+ *   2. Check login status + resolve handle
+ *   3. Provide cookies to the page for server-side submission
+ *
+ * Handle resolution: CF doesn't always set a "handle" cookie.
+ * When session cookies exist but no handle cookie, we fetch the CF
+ * homepage ONCE and cache the handle for the session. This is 1 request
+ * total (not per-submit like v1.0.8's CSRF fetch).
  */
+
+// ─── Handle cache ────────────────────────────────────────────────────
+let handleCache = {
+    handle: null,
+    sessionKey: null, // changes when session cookies change
+};
+
+function getSessionKey(rawCookies) {
+    const sessionCookies = rawCookies
+        .filter(c => c.name === 'JSESSIONID' || c.name === '39ce7' || c.name === 'X-User-Sha1')
+        .map(c => `${c.name}=${c.value}`)
+        .sort()
+        .join('|');
+    return sessionCookies || null;
+}
+
+// Invalidate handle cache when session cookies change (login/logout)
+chrome.cookies.onChanged.addListener((changeInfo) => {
+    const name = changeInfo.cookie.name;
+    if (changeInfo.cookie.domain.includes('codeforces.com') &&
+        (name === 'JSESSIONID' || name === '39ce7' || name === 'X-User-Sha1' || name === 'handle')) {
+        handleCache.handle = null;
+        handleCache.sessionKey = null;
+    }
+});
 
 // ─── Cookie Extraction ───────────────────────────────────────────────
 async function getCodeforcesCookies() {
     try {
         const cookies = await chrome.cookies.getAll({ domain: '.codeforces.com' });
-        // Also grab cookies without the dot prefix
         const cookies2 = await chrome.cookies.getAll({ domain: 'codeforces.com' });
 
-        // Deduplicate by name
         const seen = new Set();
         const all = [];
         for (const c of [...cookies, ...cookies2]) {
@@ -30,42 +66,7 @@ async function getCodeforcesCookies() {
     }
 }
 
-// ─── CSRF Token Extraction ───────────────────────────────────────────
-async function fetchCsrfToken(submitUrl) {
-    try {
-        const res = await fetch(submitUrl, {
-            credentials: 'include',
-            headers: {
-                'User-Agent': navigator.userAgent,
-                'Accept': 'text/html'
-            }
-        });
-        const html = await res.text();
-
-        // Extract csrf_token from hidden input
-        const match = html.match(/name=['"]csrf_token['"][^>]*value=['"]([^'"]+)['"]/);
-        if (match && match[1]) {
-            return { success: true, csrfToken: match[1] };
-        }
-
-        // Fallback: look for it in a meta tag or JS variable
-        const metaMatch = html.match(/csrf_token\s*[=:]\s*['"]([a-f0-9]+)['"]/);
-        if (metaMatch && metaMatch[1]) {
-            return { success: true, csrfToken: metaMatch[1] };
-        }
-
-        // Check if we got redirected to login
-        if (html.includes('handleOrEmail') || html.includes('/enter')) {
-            return { success: false, error: 'NOT_LOGGED_IN' };
-        }
-
-        return { success: false, error: 'CSRF token not found in page' };
-    } catch (err) {
-        return { success: false, error: `Failed to fetch CSRF: ${err.message}` };
-    }
-}
-
-// ─── Login Check ─────────────────────────────────────────────────────
+// ─── Login Check (cookies first, single fetch fallback for handle) ───
 async function checkLogin() {
     try {
         const cookieResult = await getCodeforcesCookies();
@@ -75,13 +76,13 @@ async function checkLogin() {
 
         const raw = cookieResult.raw || [];
 
-        // Shortcut: CF stores the handle in a cookie
+        // 1. Check handle cookie (fastest path, zero requests)
         const handleCookie = raw.find(c => c.name === 'handle');
         if (handleCookie) {
             return { loggedIn: true, handle: handleCookie.value };
         }
 
-        // Check for session cookies that indicate login
+        // 2. Check session cookies exist
         const hasSession = raw.some(c =>
             c.name === 'X-User-Sha1' ||
             c.name === '39ce7' ||
@@ -92,7 +93,13 @@ async function checkLogin() {
             return { loggedIn: false };
         }
 
-        // If we have session cookies but no handle cookie, try fetching the page
+        // 3. Session cookies exist but no handle cookie — check cache
+        const currentSessionKey = getSessionKey(raw);
+        if (handleCache.handle && handleCache.sessionKey === currentSessionKey) {
+            return { loggedIn: true, handle: handleCache.handle };
+        }
+
+        // 4. Fetch CF homepage ONCE to resolve handle (cached for session)
         try {
             const res = await fetch('https://codeforces.com/', {
                 credentials: 'include',
@@ -102,15 +109,18 @@ async function checkLogin() {
 
             const handleMatch = html.match(/href="\/profile\/([^"]+)"/);
             if (handleMatch && handleMatch[1]) {
+                handleCache.handle = handleMatch[1];
+                handleCache.sessionKey = currentSessionKey;
                 return { loggedIn: true, handle: handleMatch[1] };
             }
 
-            // Check if logged in by looking for logout link
+            // Logged in but can't find handle (rare)
             if (html.includes('/logout')) {
                 return { loggedIn: true, handle: null };
             }
         } catch {
             // Network fail — assume logged in if session cookies exist
+            return { loggedIn: true, handle: null };
         }
 
         return { loggedIn: true, handle: null };
@@ -192,14 +202,15 @@ async function verifySubmissionViaExtension(contestId, problemIndex, handle) {
 }
 
 // ─── Message Handler ─────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'GET_CF_COOKIES') {
         getCodeforcesCookies().then(sendResponse);
         return true;
     }
 
     if (message.type === 'GET_CSRF_TOKEN') {
-        fetchCsrfToken(message.submitUrl).then(sendResponse);
+        // Bridge handles CSRF server-side. Return placeholder.
+        sendResponse({ success: true, csrfToken: 'bridge-handles-csrf' });
         return true;
     }
 
@@ -221,11 +232,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    // Legacy ping support
     if (message.action === 'ping') {
-        sendResponse({ status: 'pong', version: '1.0.8' });
+        sendResponse({ status: 'pong', version: '1.1.0' });
         return true;
     }
 });
 
-console.log('🧩 Verdict Helper Extension v1.0.8 loaded (cookie-based)');
+console.log('🧩 Verdict Helper v1.1.0 loaded (cookie-only, handle cached per-session, verification assisted)');
