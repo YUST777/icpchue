@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension — Content Script
+ * Verdict Helper Extension v1.1.0 — Content Script
  *
  * Bridges window.postMessage (from the Verdict page) ↔ chrome.runtime.sendMessage (to background).
  * Also injects a marker element so the page knows the extension is installed.
@@ -9,7 +9,7 @@
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.0.8');
+    marker.setAttribute('data-version', '1.1.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();
@@ -74,7 +74,7 @@ window.addEventListener('message', async (event) => {
                 return;
             }
 
-            // 2. Get CSRF token
+            // 2. Get CSRF token (placeholder — bridge handles CSRF server-side)
             const csrfResult = await chrome.runtime.sendMessage({
                 type: 'GET_CSRF_TOKEN',
                 submitUrl
@@ -83,7 +83,7 @@ window.addEventListener('message', async (event) => {
                 window.postMessage({
                     type: 'VERDICT_SUBMISSION_RESULT',
                     success: false,
-                    error: 'CSRF_FETCH_FAILED'
+                    error: csrfResult.error || 'CSRF_FETCH_FAILED'
                 }, '*');
                 return;
             }
@@ -92,14 +92,12 @@ window.addEventListener('message', async (event) => {
             const handleResult = await chrome.runtime.sendMessage({ type: 'GET_CF_HANDLE' });
 
             // 4. Send cookies + csrf + submission data back to the page
-            //    The page will POST these to the backend API.
             window.postMessage({
                 type: 'VERDICT_SUBMISSION_RESULT',
                 success: true,
                 cookies: cookieResult.cookies,
                 csrfToken: csrfResult.csrfToken,
                 handle: handleResult.handle || null,
-                // Signals that the page should use the server-side submit path
                 serverSubmit: true,
                 payload: { contestId, problemIndex, code, language, urlType, groupId }
             }, '*');
@@ -113,12 +111,13 @@ window.addEventListener('message', async (event) => {
         }
     }
 
-    // ── Verify Submission ──
+    // ── Verify Codeforces Submission ──
     if (type === 'VERDICT_VERIFY_CF') {
         try {
-            const result = await chrome.runtime.sendMessage({ 
-                type: 'VERDICT_VERIFY_CF_BACKGROUND', 
-                payload 
+            const { contestId, problemIndex, cfHandle } = payload;
+            const result = await chrome.runtime.sendMessage({
+                type: 'VERDICT_VERIFY_CF_BACKGROUND',
+                payload: { contestId, problemIndex, cfHandle }
             });
             window.postMessage({
                 type: 'VERDICT_VERIFY_CF_RESPONSE',
@@ -132,7 +131,7 @@ window.addEventListener('message', async (event) => {
             window.postMessage({
                 type: 'VERDICT_VERIFY_CF_RESPONSE',
                 success: false,
-                error: err.message || 'Extension bridge error'
+                error: err.message || 'Extension verification error'
             }, '*');
         }
     }
