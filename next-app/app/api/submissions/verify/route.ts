@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { 
             contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
-            isExtensionVerified, submissionId, timeMs, memoryKb
+            isExtensionVerified, submissionId, timeMs, memoryKb, cookies
         } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
@@ -36,8 +36,93 @@ export async function POST(req: NextRequest) {
         const targetContestId = Number(contestId);
         let match = null;
 
-        // 1. Check if the submission was pre-verified client-side by the Chrome extension
-        if (isExtensionVerified && submissionId) {
+        // 1. If cookies are provided by the Chrome extension, perform authenticated fetches to support private contests/groups
+        if (cookies) {
+            console.log(`[Verify Route] Using user cookies for authenticated Codeforces query (Contest: ${targetContestId}, Problem: ${problemIndex})...`);
+            
+            // Try contest.status first (needed for private group contests)
+            const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
+            try {
+                const cfRes = await fetch(cfUrl, {
+                    headers: {
+                        'Cookie': cookies,
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (cfRes.ok) {
+                    const cfData = await cfRes.json();
+                    if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
+                        const rawMatch = cfData.result.find((sub: any) => {
+                            const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                            const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                            const isUserMatch = sub.author?.members?.some(
+                                (m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()
+                            );
+                            return isProblemMatch && isAccepted && isUserMatch;
+                        });
+                        
+                        if (rawMatch) {
+                            console.log(`[Verify Route] Match found on contest.status! Submission: ${rawMatch.id}`);
+                            match = {
+                                id: Number(rawMatch.id),
+                                contestId: targetContestId,
+                                timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
+                                memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
+                                passedTestCount: Number(rawMatch.passedTestCount) || 15,
+                                programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
+                            };
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.error('[Verify Route] Cookie-auth contest.status fetch failed:', err);
+            }
+            
+            // Try user.status with cookies as fallback
+            if (!match) {
+                const cfUserUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=100`;
+                try {
+                    const cfRes = await fetch(cfUserUrl, {
+                        headers: {
+                            'Cookie': cookies,
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (cfRes.ok) {
+                        const cfData = await cfRes.json();
+                        if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
+                            const rawMatch = cfData.result.find((sub: any) => {
+                                const isContestMatch = Number(sub.contestId) === targetContestId;
+                                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                                return isContestMatch && isProblemMatch && isAccepted;
+                            });
+                            
+                            if (rawMatch) {
+                                console.log(`[Verify Route] Match found on user.status! Submission: ${rawMatch.id}`);
+                                match = {
+                                    id: Number(rawMatch.id),
+                                    contestId: targetContestId,
+                                    timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
+                                    memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
+                                    passedTestCount: Number(rawMatch.passedTestCount) || 15,
+                                    programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
+                                };
+                            }
+                        }
+                    }
+                } catch (err: any) {
+                    console.error('[Verify Route] Cookie-auth user.status fetch failed:', err);
+                }
+            }
+        }
+        
+        // 2. Pre-verified by Chrome extension fallback
+        if (!match && isExtensionVerified && submissionId) {
             console.log(`[Verify Route] Submission pre-verified by Chrome Extension: ${submissionId}`);
             match = {
                 id: Number(submissionId),
@@ -47,9 +132,11 @@ export async function POST(req: NextRequest) {
                 passedTestCount: 15,
                 programmingLanguage: language || 'C++'
             };
-        } else {
-            // Standard server-side Codeforces API lookup
-            const cfUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=20`;
+        }
+        
+        // 3. Standard server-side Codeforces API lookup (unauthenticated public fallback)
+        if (!match) {
+            const cfUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=40`;
             
             let cfRes;
             try {
@@ -58,22 +145,28 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: `Unable to reach Codeforces API. Please try again later. Details: ${fetchErr.message}` }, { status: 502 });
             }
 
-            if (!cfRes.ok) {
-                return NextResponse.json({ error: `Failed to fetch from Codeforces (Status ${cfRes.status}). Please make sure your Codeforces handle "${trimmedHandle}" is correct and public!` }, { status: 400 });
+            if (cfRes.ok) {
+                const cfData = await cfRes.json();
+                if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
+                    const rawMatch = cfData.result.find((sub: any) => {
+                        const isContestMatch = Number(sub.contestId) === targetContestId;
+                        const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                        const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                        return isContestMatch && isProblemMatch && isAccepted;
+                    });
+                    
+                    if (rawMatch) {
+                        match = {
+                            id: Number(rawMatch.id),
+                            contestId: targetContestId,
+                            timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
+                            memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
+                            passedTestCount: Number(rawMatch.passedTestCount) || 15,
+                            programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
+                        };
+                    }
+                }
             }
-
-            const cfData = await cfRes.json();
-            if (cfData.status !== 'OK' || !Array.isArray(cfData.result)) {
-                return NextResponse.json({ error: cfData.comment || 'Failed to fetch status from Codeforces.' }, { status: 400 });
-            }
-
-            // Find matching Accepted submission
-            match = cfData.result.find((sub: any) => {
-                const isContestMatch = Number(sub.contestId) === targetContestId;
-                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
-                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                return isContestMatch && isProblemMatch && isAccepted;
-            });
         }
 
         // Fallback for Gym / Group submissions using authenticated API
