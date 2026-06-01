@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId } = body;
+        const { 
+            contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
+            isExtensionVerified, submissionId, timeMs, memoryKb
+        } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
             return NextResponse.json({ error: 'Missing required fields: contestId, problemIndex, cfHandle' }, { status: 400 });
@@ -30,33 +33,48 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Handle cannot be empty' }, { status: 400 });
         }
 
-        // 1. Fetch user status from Codeforces public API
-        const cfUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=20`;
-        
-        let cfRes;
-        try {
-            cfRes = await fetch(cfUrl);
-        } catch (fetchErr: any) {
-            return NextResponse.json({ error: `Unable to reach Codeforces API. Please try again later. Details: ${fetchErr.message}` }, { status: 502 });
-        }
-
-        if (!cfRes.ok) {
-            return NextResponse.json({ error: `Failed to fetch from Codeforces (Status ${cfRes.status}). Please make sure your Codeforces handle "${trimmedHandle}" is correct and public!` }, { status: 400 });
-        }
-
-        const cfData = await cfRes.json();
-        if (cfData.status !== 'OK' || !Array.isArray(cfData.result)) {
-            return NextResponse.json({ error: cfData.comment || 'Failed to fetch status from Codeforces.' }, { status: 400 });
-        }
-
-        // 2. Find matching Accepted submission
         const targetContestId = Number(contestId);
-        let match = cfData.result.find((sub: any) => {
-            const isContestMatch = Number(sub.contestId) === targetContestId;
-            const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
-            const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-            return isContestMatch && isProblemMatch && isAccepted;
-        });
+        let match = null;
+
+        // 1. Check if the submission was pre-verified client-side by the Chrome extension
+        if (isExtensionVerified && submissionId) {
+            console.log(`[Verify Route] Submission pre-verified by Chrome Extension: ${submissionId}`);
+            match = {
+                id: Number(submissionId),
+                contestId: targetContestId,
+                timeConsumedMillis: Number(timeMs) || 0,
+                memoryConsumedBytes: (Number(memoryKb) || 0) * 1024,
+                passedTestCount: 15,
+                programmingLanguage: language || 'C++'
+            };
+        } else {
+            // Standard server-side Codeforces API lookup
+            const cfUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=20`;
+            
+            let cfRes;
+            try {
+                cfRes = await fetch(cfUrl);
+            } catch (fetchErr: any) {
+                return NextResponse.json({ error: `Unable to reach Codeforces API. Please try again later. Details: ${fetchErr.message}` }, { status: 502 });
+            }
+
+            if (!cfRes.ok) {
+                return NextResponse.json({ error: `Failed to fetch from Codeforces (Status ${cfRes.status}). Please make sure your Codeforces handle "${trimmedHandle}" is correct and public!` }, { status: 400 });
+            }
+
+            const cfData = await cfRes.json();
+            if (cfData.status !== 'OK' || !Array.isArray(cfData.result)) {
+                return NextResponse.json({ error: cfData.comment || 'Failed to fetch status from Codeforces.' }, { status: 400 });
+            }
+
+            // Find matching Accepted submission
+            match = cfData.result.find((sub: any) => {
+                const isContestMatch = Number(sub.contestId) === targetContestId;
+                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                return isContestMatch && isProblemMatch && isAccepted;
+            });
+        }
 
         // Fallback for Gym / Group submissions using authenticated API
         if (!match) {
@@ -117,8 +135,8 @@ export async function POST(req: NextRequest) {
         );
 
         // 4. Save to submissions (unified table, source='codeforces')
-        const timeMs = match.timeConsumedMillis || 0;
-        const memoryKb = Math.round((match.memoryConsumedBytes || 0) / 1024);
+        const calculatedTimeMs = match.timeConsumedMillis || 0;
+        const calculatedMemoryKb = Math.round((match.memoryConsumedBytes || 0) / 1024);
 
         const insertResult = await query(
             `INSERT INTO submissions (
@@ -139,8 +157,8 @@ export async function POST(req: NextRequest) {
                 contestId,
                 problemIndex.toUpperCase(),
                 sheetId || null,
-                timeMs,
-                memoryKb,
+                calculatedTimeMs,
+                calculatedMemoryKb,
                 language || 'C++',
                 sourceCode || null,
                 trimmedHandle,
@@ -231,8 +249,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             submissionId: match.id,
-            timeMs,
-            memoryKb
+            timeMs: calculatedTimeMs,
+            memoryKb: calculatedMemoryKb
         });
 
     } catch (err: any) {
