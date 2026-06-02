@@ -8,8 +8,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY api/ ./api/
+COPY app.py .
 
 EXPOSE 8787
 
-CMD ["uvicorn", "api.index:app", "--host", "0.0.0.0", "--port", "8787", "--workers", "2"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8787", "--workers", "2"]

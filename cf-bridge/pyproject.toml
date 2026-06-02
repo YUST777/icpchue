@@ -9,6 +9,5 @@ dependencies = [
     "pydantic>=2.10.0",
 ]
 
-# Vercel loads the function from api/index.py; for other hosts the ASGI app is api.index:app
-[tool.vercel]
-entrypoint = "api/index.py"
+# No [tool.vercel] entrypoint needed: app.py is a supported Vercel entrypoint and
+# exposes `app = FastAPI()`, which Vercel's FastAPI preset detects automatically.
