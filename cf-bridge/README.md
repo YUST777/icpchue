@@ -80,10 +80,10 @@ from the Next.js app):**
 
 1. Create a new Vercel project and point it at the `cf-bridge/` directory as the
    **Root Directory** (Vercel → New Project → import the repo → set Root
-   Directory = `cf-bridge`). Vercel auto-detects the Python/FastAPI runtime from
-   `requirements.txt` + `pyproject.toml` and serves the `app` from `app.py`.
-   - The function entrypoint is `app.py` (defines `app`). `.python-version`
-     pins Python 3.12; `vercel.json` sets 512MB / 30s.
+   Directory = `cf-bridge`). Vercel auto-detects the Python runtime and builds
+   the function at `api/index.py`; `vercel.json` rewrites all paths to it so the
+   FastAPI routes are served at the root.
+   - `.python-version` pins Python 3.12; `vercel.json` sets 512MB / 30s.
 2. After it deploys you'll get a URL like `https://icpchue-cf-bridge.vercel.app`.
    Test it:
    ```bash
@@ -118,5 +118,5 @@ docker run -p 8787:8787 cf-bridge
 **Locally:**
 ```bash
 pip install -r requirements.txt
-uvicorn app:app --port 8787
+uvicorn api.index:app --port 8787
 ```
