@@ -292,6 +292,8 @@ services:
 
   # ===========================================
   # SCRAPLING BRIDGE (CF Submission Proxy)
+  # Heavy (Playwright headless browser) — only needed for the
+  # code-SUBMIT path (CSRF + Turnstile). Cannot run on Vercel.
   # ===========================================
   scrapling-bridge:
     build:
@@ -313,6 +315,35 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+
+  # ===========================================
+  # CF BRIDGE (read-only submission reader)
+  # Lightweight (curl_cffi TLS impersonation, NO browser, ~150MB).
+  # Reads a user's submissions in PRIVATE CF groups using their own
+  # session cookies — the part the serverless "Check & Sync my AC"
+  # button depends on. Deployable as a Vercel Python function too.
+  # Point the app's SCRAPLING_BRIDGE_URL / CF_BRIDGE_URL at this.
+  # ===========================================
+  cf-bridge:
+    build:
+      context: ./cf-bridge
+      dockerfile: Dockerfile
+    container_name: icpchue-cf-bridge
+    networks:
+      - icpchue-network
+    restart: always
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 # ===========================================
 # NETWORKS

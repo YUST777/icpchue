@@ -1,0 +1,14 @@
+[project]
+name = "icpchue-cf-bridge"
+version = "1.0.0"
+description = "Lightweight read-only Codeforces bridge (curl_cffi TLS impersonation). Reads a user's submissions in private CF groups using their own session cookies, bypassing the Cloudflare managed-challenge that blocks plain server-side fetch."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "curl_cffi>=0.7.1",
+    "pydantic>=2.10.0",
+]
+
+# Vercel loads `app` from app.py automatically; this is here for clarity / other hosts.
+[tool.vercel]
+entrypoint = "app:app"
