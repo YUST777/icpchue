@@ -288,6 +288,116 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
     };
 }
 
+// ─── Contest-wide backfill ───────────────────────────────────────────
+// Build the paginated "my submissions in this contest" URL.
+function getContestMyUrl(contestId, urlType, groupId, page) {
+    let base;
+    if (urlType === 'gym') {
+        base = `https://codeforces.com/gym/${contestId}/my`;
+    } else if (urlType === 'group' && groupId) {
+        base = `https://codeforces.com/group/${groupId}/contest/${contestId}/my`;
+    } else {
+        base = `https://codeforces.com/contest/${contestId}/my`;
+    }
+    return page && page > 1 ? `${base}/page/${page}` : base;
+}
+
+/**
+ * Fetch ALL of the user's Accepted submissions across a whole contest/sheet
+ * (every problem at once), paginating until no new rows. Returns the BEST
+ * (first-seen / fastest) AC per problem index.
+ *
+ * Runs in the user's browser (residential IP + their CF session).
+ */
+async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 10 }) {
+    const login = await checkLogin();
+    if (!login.loggedIn) {
+        return { success: false, error: 'NOT_LOGGED_IN' };
+    }
+    const handleLc = (login.handle || '').toLowerCase();
+
+    // problemIndex -> best AC row
+    const acByProblem = {};
+    let totalRows = 0;
+    let pagesRead = 0;
+
+    for (let page = 1; page <= maxPages; page++) {
+        const url = getContestMyUrl(contestId, urlType, groupId, page);
+        let html;
+        try {
+            const res = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'User-Agent': navigator.userAgent,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                },
+            });
+            if (!res.ok) {
+                // Page beyond the last one can 400/404 — stop gracefully if we
+                // already have data, else report the error.
+                if (page > 1) break;
+                return { success: false, error: `HTTP_${res.status}` };
+            }
+            html = await res.text();
+        } catch (err) {
+            if (page > 1) break;
+            return { success: false, error: `FETCH_FAILED: ${err.message}` };
+        }
+
+        if (html.includes('<title>Just a moment...</title>')) {
+            return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
+        }
+        if (!html.includes('status-frame-datatable')) {
+            if (page === 1) {
+                if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
+                    return { success: false, error: 'NOT_LOGGED_IN' };
+                }
+                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
+            }
+            break; // no more pages
+        }
+
+        const rows = parseStatusTable(html).filter(r =>
+            !handleLc || (r.author || '').toLowerCase() === handleLc
+        );
+        if (rows.length === 0) break; // empty page => done
+
+        pagesRead++;
+        totalRows += rows.length;
+
+        for (const r of rows) {
+            if (!r.problemIndex || !isAcceptedVerdict(r.verdict)) continue;
+            const key = r.problemIndex.toUpperCase();
+            const prev = acByProblem[key];
+            // Keep the fastest AC (or the first one we see).
+            if (!prev || (r.timeConsumedMillis || 0) < (prev.timeConsumedMillis || 0)) {
+                acByProblem[key] = r;
+            }
+        }
+
+        // CF shows 50 rows per page; fewer means this was the last page.
+        if (rows.length < 50) break;
+    }
+
+    const accepted = Object.entries(acByProblem).map(([problemIndex, r]) => ({
+        problemIndex,
+        id: r.id,
+        verdict: 'Accepted',
+        timeConsumedMillis: r.timeConsumedMillis || 0,
+        memoryConsumedBytes: r.memoryConsumedBytes || 0,
+        language: r.language || '',
+    }));
+
+    return {
+        success: true,
+        handle: login.handle || null,
+        contestId: String(contestId),
+        accepted,
+        pagesRead,
+        totalRows,
+    };
+}
+
 // ─── Message Handler ─────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'CHECK_CF_LOGIN' || message.action === 'checkLoginStatus') {
@@ -309,6 +419,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             problemIndex: message.problemIndex,
             urlType: message.urlType || 'contest',
             groupId: message.groupId || null,
+        }).then(sendResponse).catch(err => {
+            sendResponse({ success: false, error: err.message || 'EXTENSION_ERROR' });
+        });
+        return true;
+    }
+
+    // NEW: contest-wide backfill — all ACs across one contest/sheet.
+    if (message.type === 'GET_CF_CONTEST_SUBMISSIONS') {
+        getContestSubmissions({
+            contestId: message.contestId,
+            urlType: message.urlType || 'contest',
+            groupId: message.groupId || null,
+            maxPages: message.maxPages || 10,
         }).then(sendResponse).catch(err => {
             sendResponse({ success: false, error: err.message || 'EXTENSION_ERROR' });
         });

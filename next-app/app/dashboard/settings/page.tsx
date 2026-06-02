@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Copy, Check, Settings, User, Shield, Loader2, MessageCircle, Trophy, Code, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import BackfillCard from '@/components/settings/BackfillCard';
 
 export default function SettingsPage() {
     const { user, logout } = useAuth();
@@ -189,6 +190,9 @@ export default function SettingsPage() {
 
 
                 </div>
+
+                {/* Backfill from Codeforces */}
+                <BackfillCard />
 
                 {/* Support */}
                 <div className="bg-[#121212] rounded-xl border border-white/5 p-5 md:p-6">
