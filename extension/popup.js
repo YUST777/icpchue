@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 accountCard.className = 'account-card connected';
                 avatar.textContent = response.handle.charAt(0).toUpperCase();
                 handle.textContent = response.handle;
-                statusText.textContent = 'Ready to submit';
+                statusText.textContent = 'Ready to sync';
             } else {
                 // Not logged in
                 accountCard.className = 'account-card error';
