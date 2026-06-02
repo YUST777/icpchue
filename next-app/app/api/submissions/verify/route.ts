@@ -35,6 +35,12 @@ export async function POST(req: NextRequest) {
 
         const targetContestId = Number(contestId);
         let match = null;
+        // Track whether the CF Bridge (the only thing that can read PRIVATE
+        // groups on serverless) was actually reachable + returned a usable
+        // answer. Used to give an honest error instead of "No AC found" when
+        // the bridge is mis-deployed.
+        let bridgeReachable = false;
+        let bridgeError: string | null = null;
 
         // 1. If cookies are provided by the Chrome extension, query the user's
         //    submissions via the CF Bridge. The bridge uses curl_cffi (Chrome TLS
@@ -76,6 +82,7 @@ export async function POST(req: NextRequest) {
             if (bridgeRes && bridgeRes.ok) {
                 const bridgeData = await bridgeRes.json();
                 if (bridgeData.success && Array.isArray(bridgeData.submissions)) {
+                    bridgeReachable = true;
                     // Find the matched Accepted submission. The bridge already
                     // filters by problemIndex when provided, but we re-check
                     // problemIndex + handle defensively.
@@ -99,8 +106,11 @@ export async function POST(req: NextRequest) {
                         };
                     }
                 } else if (!bridgeData.success) {
+                    bridgeError = bridgeData.error || 'BRIDGE_ERROR';
                     console.warn(`[Verify Route] CF Bridge returned error: ${bridgeData.error}`);
                 }
+            } else {
+                bridgeError = 'BRIDGE_UNREACHABLE';
             }
 
             // Try contest.status as fallback
@@ -267,6 +277,20 @@ export async function POST(req: NextRequest) {
         }
 
         if (!match) {
+            // Distinguish "bridge couldn't run" from "genuinely no AC". For a
+            // PRIVATE group/gym, the public CF API cannot see submissions at all,
+            // so a failed/unreachable bridge means we literally could not check —
+            // don't mislead the user into thinking their AC doesn't exist.
+            const isPrivate = (urlType === 'group' || urlType === 'gym');
+            if (cookies && isPrivate && !bridgeReachable) {
+                console.error(`[Verify Route] CF Bridge unavailable (${bridgeError || 'unknown'}) for private ${urlType}; cannot verify.`);
+                return NextResponse.json({
+                    success: false,
+                    error: 'Could not reach the Codeforces verification service. This is a server configuration issue (CF_BRIDGE_URL), not your submission. Please try again shortly or contact an admin.',
+                    code: bridgeError || 'BRIDGE_UNAVAILABLE'
+                }, { status: 503 });
+            }
+
             return NextResponse.json({
                 success: false,
                 error: `No Accepted (AC) submission found on Codeforces for handle "${trimmedHandle}" and problem ${contestId}${problemIndex}. Please make sure you have submitted the code, it has passed all test cases, and your handle matches.`
