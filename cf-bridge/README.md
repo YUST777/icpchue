@@ -75,11 +75,39 @@ libs.
 
 ## Deploy
 
-**As its own Vercel project (recommended — keeps the Python runtime separate):**
-1. Point a new Vercel project at the `cf-bridge/` directory.
-2. Vercel auto-detects FastAPI from `requirements.txt`/`pyproject.toml` and serves `app`.
-3. Set `SCRAPLING_BRIDGE_URL` in the Next.js project to the deployed bridge URL
-   (e.g. `https://cf-bridge.vercel.app`). The Next.js routes already read that env var.
+**As its own Vercel project (recommended — keeps the Python runtime separate
+from the Next.js app):**
+
+1. Create a new Vercel project and point it at the `cf-bridge/` directory as the
+   **Root Directory** (Vercel → New Project → import the repo → set Root
+   Directory = `cf-bridge`). Vercel auto-detects the Python/FastAPI runtime from
+   `requirements.txt` + `pyproject.toml` and serves the `app` from `app.py`.
+   - The function entrypoint is `app.py` (defines `app`). `.python-version`
+     pins Python 3.12; `vercel.json` sets 512MB / 30s.
+2. After it deploys you'll get a URL like `https://icpchue-cf-bridge.vercel.app`.
+   Test it:
+   ```bash
+   curl https://icpchue-cf-bridge.vercel.app/health
+   # -> {"status":"ok","engine":"curl_cffi","impersonate":"chrome120"}
+   ```
+3. In the **Next.js** project's Vercel env vars (Production), set:
+   ```
+   CF_BRIDGE_URL=https://icpchue-cf-bridge.vercel.app
+   ```
+   Then redeploy the Next.js app (or trigger a redeploy so it picks up the var).
+   The verify route reads `CF_BRIDGE_URL` (falls back to `SCRAPLING_BRIDGE_URL`).
+
+> Without `CF_BRIDGE_URL` set, the Next.js app defaults to `http://cf-bridge:8787`
+> (a docker-compose hostname) which is **unreachable on Vercel** — verify will
+> return a 503 "Could not reach the verification service" instead of a misleading
+> "No AC found".
+
+**Or with the Vercel CLI (from repo root):**
+```bash
+cd cf-bridge
+vercel --prod          # first run links/creates the project
+# then copy the deployment URL into the Next.js project's CF_BRIDGE_URL env var
+```
 
 **As a container (Fly.io / Render / Railway / any Docker host):**
 ```bash
