@@ -76,4 +76,35 @@ window.addEventListener('message', async (event) => {
             }, '*');
         }
     }
+
+    // ── Get Contest Submissions (backfill) ──
+    // Reads ALL of the user's Accepted submissions across one whole contest/
+    // sheet (every problem, paginated) and returns them. Used by the Settings
+    // "backfill" button to recover unmarked progress. No cookies leave the
+    // browser. A requestId echoes back so the page can correlate many contests.
+    if (type === 'VERDICT_GET_CONTEST_SUBMISSIONS') {
+        const requestId = (payload && payload.requestId) || null;
+        try {
+            const { contestId, urlType, groupId, maxPages } = payload || {};
+            const result = await chrome.runtime.sendMessage({
+                type: 'GET_CF_CONTEST_SUBMISSIONS',
+                contestId,
+                urlType,
+                groupId,
+                maxPages
+            });
+            window.postMessage({
+                type: 'VERDICT_CONTEST_SUBMISSIONS_RESULT',
+                requestId,
+                ...result
+            }, '*');
+        } catch (err) {
+            window.postMessage({
+                type: 'VERDICT_CONTEST_SUBMISSIONS_RESULT',
+                requestId,
+                success: false,
+                error: err.message || 'Extension error'
+            }, '*');
+        }
+    }
 });

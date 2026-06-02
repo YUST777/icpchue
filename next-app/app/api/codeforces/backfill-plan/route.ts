@@ -1,0 +1,137 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth/auth';
+import { query } from '@/lib/db/db';
+import { rateLimit } from '@/lib/cache/rate-limit';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/codeforces/backfill-plan
+ *
+ * Builds the plan for a full "backfill from Codeforces" run: every training
+ * sheet/contest the curriculum contains, with the (contestId, groupId, urlType)
+ * needed to read it, plus the list of problem indices the user has NOT solved
+ * yet. The Settings "backfill" button asks the extension to read each contest's
+ * submissions (from the user's own browser/IP) and posts the found ACs back to
+ * /api/codeforces/backfill.
+ *
+ * Sheets where the user has already solved every problem are omitted (nothing
+ * to backfill) — this keeps the run efficient.
+ */
+
+// Derive { urlType, groupId } from a Codeforces contest URL.
+// e.g. https://codeforces.com/group/MWSDmqGsZm/contest/219158  -> group, MWSDmqGsZm
+//      https://codeforces.com/gym/104000                       -> gym, null
+//      https://codeforces.com/contest/1700                     -> contest, null
+function deriveFromUrl(contestUrl: string | null, fallbackGroupId: string | null) {
+    let urlType: 'contest' | 'group' | 'gym' = 'contest';
+    let groupId: string | null = fallbackGroupId || null;
+
+    if (contestUrl) {
+        const groupMatch = contestUrl.match(/\/group\/([^/]+)\//);
+        if (groupMatch) {
+            urlType = 'group';
+            groupId = groupMatch[1];
+        } else if (/\/gym\//.test(contestUrl)) {
+            urlType = 'gym';
+        }
+    } else if (fallbackGroupId) {
+        urlType = 'group';
+    }
+
+    return { urlType, groupId };
+}
+
+export async function GET(req: NextRequest) {
+    try {
+        const user = await verifyAuth(req);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const rl = await rateLimit(`cf-backfill-plan:${user.id}`, 10, 60);
+        if (!rl.success) {
+            return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
+        }
+
+        // Pull every sheet + its problems, and whether THIS user has solved each.
+        // group_id column may or may not be populated; we also keep contest_url
+        // to derive urlType/groupId reliably.
+        const result = await query(`
+            SELECT
+                s.id              AS sheet_id,
+                s.name            AS sheet_name,
+                s.slug            AS sheet_slug,
+                s.contest_id      AS contest_id,
+                s.contest_url     AS contest_url,
+                s.group_id        AS group_id,
+                l.level_number    AS level_number,
+                l.slug            AS level_slug,
+                p.problem_letter  AS problem_letter,
+                up.status         AS status
+            FROM curriculum_sheets s
+            JOIN curriculum_levels l ON s.level_id = l.id
+            JOIN curriculum_problems p ON p.sheet_id = s.id
+            LEFT JOIN user_progress up
+                ON up.user_id = $1
+               AND up.problem_id = (s.contest_id || ':' || p.problem_letter)
+            WHERE s.contest_id IS NOT NULL
+            ORDER BY l.level_number ASC, s.sheet_number ASC, p.problem_number ASC
+        `, [user.id]);
+
+        // Group rows by sheet.
+        const sheetsMap = new Map<string, {
+            sheetId: string;
+            sheetName: string;
+            sheetSlug: string;
+            levelSlug: string;
+            contestId: string;
+            urlType: string;
+            groupId: string | null;
+            unsolved: string[];
+            solvedCount: number;
+            totalCount: number;
+        }>();
+
+        for (const row of result.rows) {
+            const key = String(row.sheet_id);
+            if (!sheetsMap.has(key)) {
+                const { urlType, groupId } = deriveFromUrl(row.contest_url, row.group_id);
+                sheetsMap.set(key, {
+                    sheetId: key,
+                    sheetName: row.sheet_name,
+                    sheetSlug: row.sheet_slug,
+                    levelSlug: row.level_slug,
+                    contestId: String(row.contest_id),
+                    urlType,
+                    groupId,
+                    unsolved: [],
+                    solvedCount: 0,
+                    totalCount: 0,
+                });
+            }
+            const sheet = sheetsMap.get(key)!;
+            sheet.totalCount++;
+            if (row.status === 'SOLVED') {
+                sheet.solvedCount++;
+            } else {
+                sheet.unsolved.push(String(row.problem_letter).toUpperCase());
+            }
+        }
+
+        // Only return sheets that still have something to backfill.
+        const sheets = Array.from(sheetsMap.values()).filter(s => s.unsolved.length > 0);
+
+        const totalUnsolved = sheets.reduce((acc, s) => acc + s.unsolved.length, 0);
+
+        return NextResponse.json({
+            success: true,
+            sheets,
+            totalSheetsToScan: sheets.length,
+            totalUnsolved,
+        });
+    } catch (err: any) {
+        console.error('[Backfill Plan] error:', err);
+        return NextResponse.json({ error: 'Failed to build backfill plan' }, { status: 500 });
+    }
+}
