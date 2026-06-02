@@ -19,6 +19,12 @@ interface CFStatusTabProps {
 export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatusTabProps) {
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
     const [handleInput, setHandleInput] = useState('');
+    // The handle was auto-resolved from the extension's active CF session,
+    // so the user doesn't have to type it (true one-click sync).
+    const [handleAutoResolved, setHandleAutoResolved] = useState(false);
+    // Lets the user reveal the manual handle field if auto-resolution failed
+    // or they want to override it.
+    const [showHandleField, setShowHandleField] = useState(false);
 
     useEffect(() => {
         try {
@@ -40,51 +46,90 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
         return () => clearTimeout(timer);
     }, []);
 
-    if (!cfStatus || cfStatus.status === 'idle') {
-        if (!isExtensionInstalled) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full text-[#666] gap-4 p-4 text-center">
-                    <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center border border-red-500/20">
-                        <AlertTriangle size={28} />
-                    </div>
-                    <div>
-                        <p className="text-base font-bold text-white mb-1">Extension Required</p>
-                        <p className="text-sm text-[#888] mb-4">
-                            You need the ICPC HUE Helper extension to submit code to Codeforces directly from this page.
-                        </p>
-                    </div>
-                    <a
-                        href="https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj"
-                        target="_blank"
-                        className="flex items-center gap-2 px-4 py-2 bg-[#E8C15A] hover:bg-[#F0D06A] text-black font-semibold rounded-lg transition-colors text-sm"
-                    >
-                        Download Extension
-                        <ExternalLink size={14} />
-                    </a>
-                </div>
-            );
-        }
+    // Ask the (unchanged) Verdict Helper extension for the handle of the
+    // currently logged-in Codeforces session. This makes the sync one-click:
+    // the user is already logged into CF (that's how they submitted), so we
+    // can resolve their handle without asking them to type it.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!document.getElementById('verdict-extension-installed')) return;
 
+        let done = false;
+        const handler = (event: MessageEvent) => {
+            if (event.source !== window) return;
+            if (event.data?.type !== 'VERDICT_HANDLE_RESPONSE') return;
+            done = true;
+            window.removeEventListener('message', handler);
+            const resolved = event.data.handle;
+            if (resolved && typeof resolved === 'string') {
+                setHandleInput(resolved);
+                setHandleAutoResolved(true);
+                try { localStorage.setItem('verdict-cf-handle', resolved); } catch {}
+            }
+        };
+        window.addEventListener('message', handler);
+        window.postMessage({ type: 'VERDICT_GET_HANDLE' }, '*');
+
+        const timeout = setTimeout(() => {
+            if (!done) window.removeEventListener('message', handler);
+        }, 4000);
+        return () => {
+            window.removeEventListener('message', handler);
+            clearTimeout(timeout);
+        };
+    }, []);
+
+    const isVerifyPending = cfStatus?.substatus === 'verify-pending';
+    // Show the one-click sync panel both when idle (extension present) and when
+    // a submit flow put us into "verify-pending". This makes the CF tab itself a
+    // button: open the problem, solve on CF, come back and sync — no Submit needed.
+    const showSyncPanel = isExtensionInstalled && (!cfStatus || cfStatus.status === 'idle' || isVerifyPending);
+
+    // ── Extension missing: prompt to install ──
+    if ((!cfStatus || cfStatus.status === 'idle') && !isExtensionInstalled) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-[#666] gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#252526] flex items-center justify-center">
-                    <img
-                        src="/icons/codeforces-favicon.png"
-                        alt="CF"
-                        className="w-6 h-6 opacity-50"
-                    />
+            <div className="flex flex-col items-center justify-center h-full text-[#666] gap-4 p-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center border border-red-500/20">
+                    <AlertTriangle size={28} />
                 </div>
-                <p className="text-sm font-medium">Submit to Codeforces to see results</p>
-                <p className="text-xs text-[#555]">Use the Submit button above</p>
+                <div>
+                    <p className="text-base font-bold text-white mb-1">Extension Required</p>
+                    <p className="text-sm text-[#888] mb-4">
+                        You need the ICPC HUE Helper extension to sync your Codeforces submissions to this page.
+                    </p>
+                </div>
+                <a
+                    href="https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj"
+                    target="_blank"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#E8C15A] hover:bg-[#F0D06A] text-black font-semibold rounded-lg transition-colors text-sm"
+                >
+                    Download Extension
+                    <ExternalLink size={14} />
+                </a>
             </div>
         );
     }
 
-    const isVerifyPending = cfStatus?.substatus === 'verify-pending';
+    if (showSyncPanel) {
+        const verifying = cfStatus?.progress === 50;
+        const hasError = cfStatus?.status === 'error';
+        // We can do a true one-click sync when the handle is already known
+        // (auto-resolved from the extension's CF session, or remembered).
+        const knownHandle = handleInput.trim();
+        const canOneClick = !!knownHandle;
+        const needsManualHandle = showHandleField || !canOneClick;
 
-    if (isVerifyPending) {
-        const verifying = cfStatus.progress === 50;
-        const hasError = cfStatus.status === 'error';
+        const runVerify = async () => {
+            const h = knownHandle;
+            if (!h) {
+                setShowHandleField(true);
+                return;
+            }
+            const verifyFn = (window as any).__verdict_verify_cf;
+            if (verifyFn) {
+                await verifyFn(h);
+            }
+        };
 
         return (
             <div className="h-full flex flex-col space-y-4 p-4 bg-[#252526]/30 rounded-xl border border-white/5 animate-fade-in text-left">
@@ -93,26 +138,28 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         <Send size={20} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-white">Verify Codeforces Submission</h3>
-                        <p className="text-[10px] text-[#888]">Verify and apply your AC progress locally</p>
+                        <h3 className="font-bold text-sm text-white">Sync your Codeforces submission</h3>
+                        <p className="text-[10px] text-[#888]">Check your latest Codeforces submissions and apply your AC here</p>
                     </div>
                 </div>
 
                 <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
-                    <p><strong>1. Submit Code:</strong> Make sure you have submitted your solution on Codeforces (opened in the other tab).</p>
-                    <p><strong>2. Check Result:</strong> Once you get <strong>Accepted (AC)</strong> on Codeforces, enter your handle below and click verify to sync your progress here!</p>
+                    <p><strong>1. Submit on Codeforces:</strong> Solve the problem and get <strong>Accepted (AC)</strong> on Codeforces.</p>
+                    <p><strong>2. Sync here:</strong> Click the button below — we&apos;ll check your latest submissions for this problem and mark it solved if an AC is found.</p>
                 </div>
 
-                {hasError && cfStatus.error && (
+                {hasError && cfStatus?.error && (
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start gap-2 leading-relaxed">
                         <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                         <span>{cfStatus.error}</span>
                     </div>
                 )}
 
-                <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-[#888] uppercase tracking-wider">Codeforces Handle</label>
-                    <div className="flex gap-2">
+                {/* Manual handle field — only shown if we couldn't auto-resolve it
+                    from the extension, or the user chose to override it. */}
+                {needsManualHandle && (
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-[#888] uppercase tracking-wider">Codeforces Handle</label>
                         <input
                             type="text"
                             value={handleInput}
@@ -124,31 +171,44 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                             }}
                             disabled={verifying}
                             placeholder="Enter your CF handle (e.g. tourist)"
-                            className="flex-1 bg-[#1a1a1a] border border-white/10 hover:border-white/20 focus:border-[#E8C15A]/50 rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none transition-colors"
+                            className="bg-[#1a1a1a] border border-white/10 hover:border-white/20 focus:border-[#E8C15A]/50 rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none transition-colors"
                         />
-                        <button
-                            onClick={async () => {
-                                if (!handleInput.trim()) return;
-                                const verifyFn = (window as any).__verdict_verify_cf;
-                                if (verifyFn) {
-                                    await verifyFn(handleInput.trim());
-                                }
-                            }}
-                            disabled={verifying || !handleInput.trim()}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-xs shrink-0 cursor-pointer"
-                        >
-                            {verifying ? (
-                                <>
-                                    <Loader2 size={12} className="animate-spin" /> Verifying...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle2 size={12} /> Apply Solution
-                                </>
-                            )}
-                        </button>
                     </div>
-                </div>
+                )}
+
+                <button
+                    onClick={runVerify}
+                    disabled={verifying || (needsManualHandle && !canOneClick)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-sm cursor-pointer"
+                >
+                    {verifying ? (
+                        <>
+                            <Loader2 size={14} className="animate-spin" /> Checking your submissions...
+                        </>
+                    ) : (
+                        <>
+                            <CheckCircle2 size={14} /> Check &amp; Sync my AC
+                        </>
+                    )}
+                </button>
+
+                {/* Show the resolved handle + a way to change it */}
+                {canOneClick && (
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#888]">
+                        <span>
+                            Checking as <span className="text-[#E8C15A] font-mono">{knownHandle}</span>
+                            {handleAutoResolved && ' (from your Codeforces session)'}
+                        </span>
+                        {!verifying && (
+                            <button
+                                onClick={() => setShowHandleField(true)}
+                                className="text-[#E8C15A] hover:underline cursor-pointer"
+                            >
+                                change
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {contestId && problemId && (
                     <div className="pt-2 flex items-center justify-between border-t border-white/5">
@@ -165,6 +225,10 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
             </div>
         );
     }
+
+    // After the early returns above, cfStatus is guaranteed non-null (idle/null
+    // states are handled by the sync panel). This guard narrows the type for TS.
+    if (!cfStatus) return null;
 
     const statusColor = getCFStatusColor(cfStatus);
     const statusBg = getCFStatusBg(cfStatus);
