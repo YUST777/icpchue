@@ -112,11 +112,13 @@ export function useCodeforcesSubmission({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contestId, problemId, urlType, groupId, codeforcesUrl, setIsTestPanelVisible, setTestPanelActiveTab, sheetId]);
 
-    // Handle explicit verification of Codeforces submission status
-    const handleVerify = useCallback(async (cfHandle: string) => {
+    // Handle explicit verification of Codeforces submission status.
+    // The optional `cfHandle` arg is now just a fallback for the no-extension
+    // path; with the extension we use the handle it resolves from the live CF
+    // session (never icpchue's DB).
+    const handleVerify = useCallback(async (cfHandle?: string) => {
         const code = codeRef.current;
         const language = languageRef.current;
-        if (!cfHandle) return;
 
         setSubmitting(true);
         setCfStatus({
@@ -128,99 +130,135 @@ export function useCodeforcesSubmission({
         const hasExtension = typeof document !== 'undefined' && !!document.getElementById('verdict-extension-installed');
 
         if (hasExtension) {
-            console.log('[Verify] Extension detected. Extracting active Codeforces session cookies via extension...');
-            
+            console.log('[Verify] Extension detected. Asking it to read your recent Codeforces submissions...');
+
             const handleExtensionResponse = async (event: MessageEvent) => {
-                if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSION_RESULT') return;
-                
+                if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSIONS_RESULT') return;
+
                 window.removeEventListener('message', handleExtensionResponse);
-                const { success, cookies, error } = event.data;
+                clearTimeout(safetyTimer);
 
-                if (success && cookies) {
-                    console.log('[Verify] Extension successfully retrieved cookies. Initiating server-side session verification...');
-                    try {
-                        const verifyRes = await fetch('/api/submissions/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contestId,
-                                problemIndex: problemId,
-                                cfHandle,
-                                sourceCode: code,
-                                language: mapLanguageToExtension(language),
-                                sheetId: sheetId || null,
-                                urlType,
-                                groupId: groupId || null,
-                                cookies
-                            })
-                        });
+                const { success, accepted, handle: resolvedHandle, error } = event.data;
 
-                        if (verifyRes.ok) {
-                            const data = await verifyRes.json();
-                            if (data.success) {
-                                setCfStatus({
-                                    status: 'done',
-                                    verdict: 'Accepted',
-                                    time: data.timeMs || 0,
-                                    memory: data.memoryKb || 0,
-                                    submissionId: data.submissionId
-                                });
-                            } else {
-                                setCfStatus({
-                                    status: 'error',
-                                    substatus: 'verify-pending',
-                                    error: data.error || 'Failed to verify submission using Codeforces session.'
-                                });
-                            }
+                if (!success) {
+                    const messages: Record<string, string> = {
+                        NOT_LOGGED_IN: 'You are not logged into Codeforces. Please log in on codeforces.com, then try again.',
+                        CLOUDFLARE_CHALLENGE: 'Codeforces is asking the extension to verify it\'s human. Open codeforces.com once in another tab, then try again.',
+                        NO_SUBMISSIONS_TABLE: 'Could not read your Codeforces submissions. Make sure you can open the contest on Codeforces.',
+                    };
+                    setCfStatus({
+                        status: 'error',
+                        substatus: 'verify-pending',
+                        error: messages[error] || error || 'The extension could not read your Codeforces submissions.'
+                    });
+                    setSubmitting(false);
+                    return;
+                }
+
+                if (!accepted) {
+                    setCfStatus({
+                        status: 'error',
+                        substatus: 'verify-pending',
+                        error: `No Accepted (AC) submission found in your last few submissions for problem ${problemId}. Submit and get AC on Codeforces first, then sync.`
+                    });
+                    setSubmitting(false);
+                    return;
+                }
+
+                // Found an AC in the user's own recent submissions. Persist it.
+                try {
+                    const verifyRes = await fetch('/api/submissions/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contestId,
+                            problemIndex: problemId,
+                            cfHandle: resolvedHandle || cfHandle,
+                            sourceCode: code,
+                            language: mapLanguageToExtension(language),
+                            sheetId: sheetId || null,
+                            urlType,
+                            groupId: groupId || null,
+                            // Extension-verified: it read the AC from the user's
+                            // own live CF session on their own IP.
+                            isExtensionVerified: true,
+                            submissionId: accepted.id,
+                            timeMs: accepted.timeConsumedMillis || 0,
+                            memoryKb: Math.round((accepted.memoryConsumedBytes || 0) / 1024),
+                        })
+                    });
+
+                    if (verifyRes.ok) {
+                        const data = await verifyRes.json();
+                        if (data.success) {
+                            setCfStatus({
+                                status: 'done',
+                                verdict: 'Accepted',
+                                time: data.timeMs || accepted.timeConsumedMillis || 0,
+                                memory: data.memoryKb || Math.round((accepted.memoryConsumedBytes || 0) / 1024),
+                                submissionId: data.submissionId || accepted.id
+                            });
                         } else {
                             setCfStatus({
                                 status: 'error',
                                 substatus: 'verify-pending',
-                                error: 'Failed to record verification on the server.'
+                                error: data.error || 'Found your AC but failed to save it. Please try again.'
                             });
                         }
-                    } catch (err: any) {
+                    } else {
                         setCfStatus({
                             status: 'error',
                             substatus: 'verify-pending',
-                            error: err.message || 'Connection error while saving verified submission.'
+                            error: 'Failed to record verification on the server.'
                         });
-                    } finally {
-                        setSubmitting(false);
                     }
-                } else {
-                    console.warn('[Verify] Extension could not retrieve cookies:', error);
+                } catch (err: any) {
                     setCfStatus({
                         status: 'error',
                         substatus: 'verify-pending',
-                        error: error || 'Failed to retrieve active session cookies from the extension. Please make sure you are logged into Codeforces!'
+                        error: err.message || 'Connection error while saving your verified submission.'
                     });
+                } finally {
                     setSubmitting(false);
                 }
             };
 
             window.addEventListener('message', handleExtensionResponse);
             window.postMessage({
-                type: 'VERDICT_SUBMIT',
+                type: 'VERDICT_GET_SUBMISSIONS',
                 payload: {
                     contestId,
                     problemIndex: problemId,
-                    code: code || '',
-                    language: mapLanguageToExtension(language),
                     urlType,
                     groupId: groupId || null
                 }
             }, '*');
 
-            // Setup a safety timeout of 10s to clean up listener in case extension crashes
-            setTimeout(() => {
+            // Safety timeout: clean up the listener if the extension never replies.
+            const safetyTimer = setTimeout(() => {
                 window.removeEventListener('message', handleExtensionResponse);
-            }, 10000);
+                setCfStatus({
+                    status: 'error',
+                    substatus: 'verify-pending',
+                    error: 'The extension did not respond. Please reload the page and try again.'
+                });
+                setSubmitting(false);
+            }, 20000);
 
             return;
         }
 
-        // Backend Fallback (no extension installed)
+        // Backend Fallback (no extension installed). Public-API only — cannot see
+        // private groups, but works for public contests.
+        if (!cfHandle) {
+            setCfStatus({
+                status: 'error',
+                substatus: 'verify-pending',
+                error: 'The ICPC HUE Helper extension is required to sync private sheet submissions. Please install it.'
+            });
+            setSubmitting(false);
+            return;
+        }
         try {
             const verifyRes = await fetch('/api/submissions/verify', {
                 method: 'POST',
