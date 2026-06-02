@@ -113,21 +113,17 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     if (showSyncPanel) {
         const verifying = cfStatus?.progress === 50;
         const hasError = cfStatus?.status === 'error';
-        // We can do a true one-click sync when the handle is already known
-        // (auto-resolved from the extension's CF session, or remembered).
+        // The extension resolves the user's handle from their live Codeforces
+        // session, so the button is always one-click. The manual handle field is
+        // only a fallback (no extension, or user wants to override).
         const knownHandle = handleInput.trim();
-        const canOneClick = !!knownHandle;
-        const needsManualHandle = showHandleField || !canOneClick;
 
         const runVerify = async () => {
-            const h = knownHandle;
-            if (!h) {
-                setShowHandleField(true);
-                return;
-            }
             const verifyFn = (window as any).__verdict_verify_cf;
             if (verifyFn) {
-                await verifyFn(h);
+                // Pass the known handle if we have one; the extension path
+                // ignores it and uses the session-resolved handle instead.
+                await verifyFn(knownHandle || undefined);
             }
         };
 
@@ -145,7 +141,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
                 <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
                     <p><strong>1. Submit on Codeforces:</strong> Solve the problem and get <strong>Accepted (AC)</strong> on Codeforces.</p>
-                    <p><strong>2. Sync here:</strong> Click the button below — we&apos;ll check your latest submissions for this problem and mark it solved if an AC is found.</p>
+                    <p><strong>2. Sync here:</strong> Click the button below — the extension checks your last few submissions for this problem and marks it solved if an AC is found.</p>
                 </div>
 
                 {hasError && cfStatus?.error && (
@@ -155,9 +151,9 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     </div>
                 )}
 
-                {/* Manual handle field — only shown if we couldn't auto-resolve it
-                    from the extension, or the user chose to override it. */}
-                {needsManualHandle && (
+                {/* Manual handle field — only when the user chooses to override
+                    the session-resolved handle (or no extension is present). */}
+                {showHandleField && (
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[9px] font-bold text-[#888] uppercase tracking-wider">Codeforces Handle</label>
                         <input
@@ -178,7 +174,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
                 <button
                     onClick={runVerify}
-                    disabled={verifying || (needsManualHandle && !canOneClick)}
+                    disabled={verifying}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-sm cursor-pointer"
                 >
                     {verifying ? (
@@ -192,23 +188,25 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     )}
                 </button>
 
-                {/* Show the resolved handle + a way to change it */}
-                {canOneClick && (
-                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#888]">
+                {/* Resolved-handle hint + override toggle */}
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#888]">
+                    {knownHandle ? (
                         <span>
                             Checking as <span className="text-[#E8C15A] font-mono">{knownHandle}</span>
                             {handleAutoResolved && ' (from your Codeforces session)'}
                         </span>
-                        {!verifying && (
-                            <button
-                                onClick={() => setShowHandleField(true)}
-                                className="text-[#E8C15A] hover:underline cursor-pointer"
-                            >
-                                change
-                            </button>
-                        )}
-                    </div>
-                )}
+                    ) : (
+                        <span>Using your active Codeforces session</span>
+                    )}
+                    {!verifying && !showHandleField && (
+                        <button
+                            onClick={() => setShowHandleField(true)}
+                            className="text-[#E8C15A] hover:underline cursor-pointer"
+                        >
+                            change
+                        </button>
+                    )}
+                </div>
 
                 {contestId && problemId && (
                     <div className="pt-2 flex items-center justify-between border-t border-white/5">

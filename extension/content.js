@@ -1,29 +1,23 @@
 /**
- * Verdict Helper Extension v1.0.9 — Content Script
+ * Verdict Helper Extension v1.1.0 — Content Script
  *
- * Bridges window.postMessage (from the Verdict page) ↔ chrome.runtime.sendMessage (to background).
- * Also injects a marker element so the page knows the extension is installed.
+ * Bridges window.postMessage (from the icpchue page) ↔ chrome.runtime.sendMessage
+ * (to the background service worker). Also injects a marker element so the page
+ * knows the extension is installed.
+ *
+ * v1.1.0: the extension reads the user's submissions itself (from their own
+ * browser/IP) and returns only the result — cookies never leave the browser and
+ * no local/remote bridge is contacted.
  */
 
 // ─── Inject marker ──────────────────────────────────────────────────
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.0.9');
+    marker.setAttribute('data-version', '1.1.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();
-
-// ─── Helpers ─────────────────────────────────────────────────────────
-function getSubmitUrl(contestId, problemIndex, urlType, groupId) {
-    if (urlType === 'gym') {
-        return `https://codeforces.com/gym/${contestId}/submit?problemIndex=${problemIndex}`;
-    }
-    if (urlType === 'group' && groupId) {
-        return `https://codeforces.com/group/${groupId}/contest/${contestId}/submit?problemIndex=${problemIndex}`;
-    }
-    return `https://codeforces.com/contest/${contestId}/submit?problemIndex=${problemIndex}`;
-}
 
 // ─── Message Listener ────────────────────────────────────────────────
 window.addEventListener('message', async (event) => {
@@ -44,7 +38,7 @@ window.addEventListener('message', async (event) => {
         }
     }
 
-    // ── Get Handle ──
+    // ── Get Handle (resolved from the live Codeforces session) ──
     if (type === 'VERDICT_GET_HANDLE') {
         try {
             const result = await chrome.runtime.sendMessage({ type: 'GET_CF_HANDLE' });
@@ -57,54 +51,26 @@ window.addEventListener('message', async (event) => {
         }
     }
 
-    // ── Submit ──
-    if (type === 'VERDICT_SUBMIT') {
+    // ── Get Submissions (self-contained AC check) ──
+    // Reads the user's last submissions for a problem in-browser and returns
+    // the found AC (if any). No cookies are sent to the page.
+    if (type === 'VERDICT_GET_SUBMISSIONS') {
         try {
-            const { contestId, problemIndex, code, language, urlType, groupId } = payload;
-            const submitUrl = getSubmitUrl(contestId, problemIndex, urlType, groupId);
-
-            // 1. Get cookies
-            const cookieResult = await chrome.runtime.sendMessage({ type: 'GET_CF_COOKIES' });
-            if (!cookieResult.success) {
-                window.postMessage({
-                    type: 'VERDICT_SUBMISSION_RESULT',
-                    success: false,
-                    error: 'COOKIE_EXTRACTION_FAILED'
-                }, '*');
-                return;
-            }
-
-            // 2. Get CSRF token (placeholder — bridge handles CSRF server-side)
-            const csrfResult = await chrome.runtime.sendMessage({
-                type: 'GET_CSRF_TOKEN',
-                submitUrl
+            const { contestId, problemIndex, urlType, groupId } = payload || {};
+            const result = await chrome.runtime.sendMessage({
+                type: 'GET_CF_SUBMISSIONS',
+                contestId,
+                problemIndex,
+                urlType,
+                groupId
             });
-            if (!csrfResult.success) {
-                window.postMessage({
-                    type: 'VERDICT_SUBMISSION_RESULT',
-                    success: false,
-                    error: csrfResult.error || 'CSRF_FETCH_FAILED'
-                }, '*');
-                return;
-            }
-
-            // 3. Get handle for the response
-            const handleResult = await chrome.runtime.sendMessage({ type: 'GET_CF_HANDLE' });
-
-            // 4. Send cookies + csrf + submission data back to the page
             window.postMessage({
-                type: 'VERDICT_SUBMISSION_RESULT',
-                success: true,
-                cookies: cookieResult.cookies,
-                csrfToken: csrfResult.csrfToken,
-                handle: handleResult.handle || null,
-                serverSubmit: true,
-                payload: { contestId, problemIndex, code, language, urlType, groupId }
+                type: 'VERDICT_SUBMISSIONS_RESULT',
+                ...result
             }, '*');
-
         } catch (err) {
             window.postMessage({
-                type: 'VERDICT_SUBMISSION_RESULT',
+                type: 'VERDICT_SUBMISSIONS_RESULT',
                 success: false,
                 error: err.message || 'Extension error'
             }, '*');
