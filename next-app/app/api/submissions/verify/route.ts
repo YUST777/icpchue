@@ -36,48 +36,114 @@ export async function POST(req: NextRequest) {
         const targetContestId = Number(contestId);
         let match = null;
 
-        // 1. If cookies are provided by the Chrome extension, perform authenticated fetches to support private contests/groups
+        // 1. If cookies are provided by the Chrome extension, query the user's
+        //    submissions via the CF Bridge. The bridge uses curl_cffi (Chrome TLS
+        //    impersonation) + the user's own session cookies to read the PRIVATE
+        //    group/contest status page — which a plain serverless fetch cannot do
+        //    (Cloudflare managed-challenge) and which the official API cannot see.
         if (cookies) {
-            console.log(`[Verify Route] Using user cookies for authenticated Codeforces query (Contest: ${targetContestId}, Problem: ${problemIndex})...`);
-            
-            // Try contest.status first (needed for private group contests)
-            const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
+            console.log(`[Verify Route] Querying user submissions via CF Bridge (Contest: ${targetContestId}, Problem: ${problemIndex}, urlType: ${urlType})...`);
+
+            const BRIDGE_URL = process.env.CF_BRIDGE_URL || process.env.SCRAPLING_BRIDGE_URL || 'http://cf-bridge:8787';
+            const bridgeBody = JSON.stringify({
+                contestId: String(targetContestId),
+                problemIndex: problemIndex.toUpperCase(),
+                cookies,
+                urlType: urlType || 'contest',
+                groupId: groupId || null
+            });
+
+            let bridgeRes;
             try {
-                const cfRes = await fetch(cfUrl, {
-                    headers: {
-                        'Cookie': cookies,
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept': 'application/json'
-                    }
+                bridgeRes = await fetch(`${BRIDGE_URL}/submissions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: bridgeBody
                 });
-                
-                if (cfRes.ok) {
-                    const cfData = await cfRes.json();
-                    if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
-                        const rawMatch = cfData.result.find((sub: any) => {
-                            const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
-                            const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                            const isUserMatch = 
-                                sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
-                                (sub.author?.handle && sub.author.handle.toLowerCase() === trimmedHandle.toLowerCase());
-                            return isProblemMatch && isAccepted && isUserMatch;
-                        });
-                        
-                        if (rawMatch) {
-                            console.log(`[Verify Route] Match found on contest.status! Submission: ${rawMatch.id}`);
-                            match = {
-                                id: Number(rawMatch.id),
-                                contestId: targetContestId,
-                                timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
-                                memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
-                                passedTestCount: Number(rawMatch.passedTestCount) || 15,
-                                programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
-                            };
+            } catch (err: any) {
+                console.warn(`[Verify Route] Failed to connect to CF Bridge at ${BRIDGE_URL} (${err.message}). Trying local fallback (127.0.0.1:8787)...`);
+                try {
+                    bridgeRes = await fetch(`http://127.0.0.1:8787/submissions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: bridgeBody
+                    });
+                } catch (localErr: any) {
+                    console.error('[Verify Route] Local CF Bridge fallback failed:', localErr.message);
+                }
+            }
+
+            if (bridgeRes && bridgeRes.ok) {
+                const bridgeData = await bridgeRes.json();
+                if (bridgeData.success && Array.isArray(bridgeData.submissions)) {
+                    // Find the matched Accepted submission. The bridge already
+                    // filters by problemIndex when provided, but we re-check
+                    // problemIndex + handle defensively.
+                    const rawMatch = bridgeData.submissions.find((sub: any) => {
+                        const isAccepted = sub.verdict?.toUpperCase() === 'ACCEPTED' || sub.verdict === 'OK';
+                        const isUserMatch = sub.author?.toLowerCase() === trimmedHandle.toLowerCase();
+                        const isProblemMatch = !sub.problemIndex ||
+                            sub.problemIndex.toUpperCase() === problemIndex.toUpperCase();
+                        return isAccepted && isUserMatch && isProblemMatch;
+                    });
+
+                    if (rawMatch) {
+                        console.log(`[Verify Route] Match found via CF Bridge! Submission: ${rawMatch.id}`);
+                        match = {
+                            id: Number(rawMatch.id),
+                            contestId: targetContestId,
+                            timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
+                            memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
+                            passedTestCount: 15,
+                            programmingLanguage: rawMatch.language || language || 'C++'
+                        };
+                    }
+                } else if (!bridgeData.success) {
+                    console.warn(`[Verify Route] CF Bridge returned error: ${bridgeData.error}`);
+                }
+            }
+
+            // Try contest.status as fallback
+            if (!match) {
+                console.log(`[Verify Route] Match not found via Scrapling Bridge. Falling back to contest.status (Contest: ${targetContestId})...`);
+                const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
+                try {
+                    const cfRes = await fetch(cfUrl, {
+                        headers: {
+                            'Cookie': cookies,
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (cfRes.ok) {
+                        const cfData = await cfRes.json();
+                        if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
+                            const rawMatch = cfData.result.find((sub: any) => {
+                                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
+                                const isUserMatch = 
+                                    sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
+                                    (sub.author?.handle && sub.author.handle.toLowerCase() === trimmedHandle.toLowerCase());
+                                return isProblemMatch && isAccepted && isUserMatch;
+                            });
+                            
+                            if (rawMatch) {
+                                console.log(`[Verify Route] Match found on contest.status! Submission: ${rawMatch.id}`);
+                                match = {
+                                    id: Number(rawMatch.id),
+                                    contestId: targetContestId,
+                                    timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
+                                    memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
+                                    passedTestCount: Number(rawMatch.passedTestCount) || 15,
+                                    programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
+                                };
+                            }
                         }
                     }
+                } catch (err: any) {
+                    console.error('[Verify Route] Cookie-auth contest.status fetch failed:', err);
                 }
-            } catch (err: any) {
-                console.error('[Verify Route] Cookie-auth contest.status fetch failed:', err);
             }
             
             // Try user.status with cookies as fallback
