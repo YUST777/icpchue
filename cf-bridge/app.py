@@ -35,9 +35,12 @@ X-User, X-User-Sha1, ...) are what authenticate the user.
 
 Deployment note (Vercel)
 -------------------------
-This file lives at `api/index.py` and `vercel.json` rewrites every path to it,
-so the FastAPI routes `/health` and `/submissions` are reachable at the
-deployment root (e.g. https://cf-bridge.vercel.app/submissions).
+Per Vercel's FastAPI framework preset, Vercel detects this `app.py` entrypoint
+and the `app = FastAPI()` instance automatically, turning the whole app into a
+single Vercel Function with automatic routing. No `functions` glob or
+`rewrites` in vercel.json is required (and adding a `functions` pattern breaks
+the build). Routes `/health` and `/submissions` are served at the deployment
+root, e.g. https://verdict.icpchue.com/submissions.
 """
 
 import re
