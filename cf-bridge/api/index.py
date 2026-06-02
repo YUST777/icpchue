@@ -32,6 +32,12 @@ IMPORTANT: the `cf_clearance` cookie must be STRIPPED before the request.
 It is bound to the originating browser's TLS fingerprint; sending it from a
 different client triggers a 403. Session cookies alone (JSESSIONID, 39ce7,
 X-User, X-User-Sha1, ...) are what authenticate the user.
+
+Deployment note (Vercel)
+-------------------------
+This file lives at `api/index.py` and `vercel.json` rewrites every path to it,
+so the FastAPI routes `/health` and `/submissions` are reachable at the
+deployment root (e.g. https://cf-bridge.vercel.app/submissions).
 """
 
 import re
@@ -65,9 +71,6 @@ _DROP_COOKIE_NAMES = {"authtoken", "cf_clearance"}
 
 # Chrome impersonation profile used for the TLS/HTTP2 fingerprint.
 _IMPERSONATE = "chrome120"
-
-# Codeforces verdict cell text -> normalized verdict
-_ACCEPTED_TOKENS = ("accepted", "ok")
 
 
 class SubmissionsRequest(BaseModel):

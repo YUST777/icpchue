@@ -9,6 +9,6 @@ dependencies = [
     "pydantic>=2.10.0",
 ]
 
-# Vercel loads `app` from app.py automatically; this is here for clarity / other hosts.
+# Vercel loads the function from api/index.py; for other hosts the ASGI app is api.index:app
 [tool.vercel]
-entrypoint = "app:app"
+entrypoint = "api/index.py"
