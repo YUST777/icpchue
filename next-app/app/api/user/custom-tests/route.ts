@@ -25,9 +25,12 @@ export async function GET(request: NextRequest) {
             [auth.id, contestId, problemId.toUpperCase()]
         );
         return NextResponse.json({ testCases: res.rows[0]?.test_cases || [] });
-    } catch (error) {
-        console.error('[custom-tests GET]', error);
-        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    } catch (error: any) {
+        // Custom tests are non-critical (user-saved scratch test cases). If the
+        // DB read fails, degrade gracefully to an empty list so the test runner
+        // and editor still load, instead of surfacing a 500 to the client.
+        console.error('[custom-tests GET]', error?.code || '', error?.message || error);
+        return NextResponse.json({ testCases: [] });
     }
 }
 
