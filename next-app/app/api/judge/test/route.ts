@@ -4,9 +4,21 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { z } from 'zod';
 
-// Self-hosted Judge0 Configuration
-const JUDGE0_API_URL = process.env.JUDGE0_API_URL;
+// Judge0 Configuration.
+// Defaults to the free public Judge0 CE API (no self-hosted Docker needed on
+// Vercel). Override JUDGE0_API_URL to point at a self-hosted / RapidAPI instance.
+const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://ce.judge0.com';
 const JUDGE0_AUTH_TOKEN = process.env.JUDGE0_AUTH_TOKEN;
+const JUDGE0_RAPIDAPI_KEY = process.env.JUDGE0_RAPIDAPI_KEY;
+const JUDGE0_RAPIDAPI_HOST = process.env.JUDGE0_RAPIDAPI_HOST;
+
+function judge0Headers(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (JUDGE0_AUTH_TOKEN) h['X-Judge0-Token'] = JUDGE0_AUTH_TOKEN;
+    if (JUDGE0_RAPIDAPI_KEY) h['X-RapidAPI-Key'] = JUDGE0_RAPIDAPI_KEY;
+    if (JUDGE0_RAPIDAPI_HOST) h['X-RapidAPI-Host'] = JUDGE0_RAPIDAPI_HOST;
+    return h;
+}
 
 // Server-side validation schema (defense-in-depth)
 const RequestSchema = z.object({
@@ -137,10 +149,7 @@ export async function POST(req: NextRequest) {
         // Submit batch
         const batchResponse = await fetch(`${JUDGE0_API_URL}/submissions/batch?base64_encoded=true`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(JUDGE0_AUTH_TOKEN && { 'X-Judge0-Token': JUDGE0_AUTH_TOKEN })
-            },
+            headers: judge0Headers(),
             body: JSON.stringify(batchPayload),
         });
 
@@ -173,10 +182,7 @@ export async function POST(req: NextRequest) {
             const resultsResponse = await fetch(
                 `${JUDGE0_API_URL}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=token,stdout,stderr,status_id,time,memory,compile_output`,
                 {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(JUDGE0_AUTH_TOKEN && { 'X-Judge0-Token': JUDGE0_AUTH_TOKEN })
-                    }
+                    headers: judge0Headers()
                 }
             );
 

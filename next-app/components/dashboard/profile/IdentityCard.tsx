@@ -1,5 +1,4 @@
-import { Shield, Camera, Trash2, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { Shield } from "lucide-react";
 import { UserProfile } from "@/lib/types";
 import { StatsGrid } from "./StatsGrid";
 import { getDisplayName } from "@/lib/utils";
@@ -7,12 +6,14 @@ import { getDisplayName } from "@/lib/utils";
 interface IdentityCardProps {
     user?: { id?: number; email?: string; student_id?: string; role?: string };
     profile: UserProfile;
-    profilePicture: string | null;
-    uploadingPfp: boolean;
-    pfpError: string;
-    fileInputRef: React.RefObject<HTMLInputElement | null>;
-    handlePfpUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleDeletePfp: () => void;
+    // Profile pictures are disabled site-wide; these props are kept optional for
+    // backward compatibility with the caller but are no longer used.
+    profilePicture?: string | null;
+    uploadingPfp?: boolean;
+    pfpError?: string;
+    fileInputRef?: React.RefObject<HTMLInputElement | null>;
+    handlePfpUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleDeletePfp?: () => void;
     rating: number | string;
     rank: string;
 }
@@ -20,12 +21,6 @@ interface IdentityCardProps {
 export function IdentityCard({
     user,
     profile,
-    profilePicture,
-    uploadingPfp,
-    pfpError,
-    fileInputRef,
-    handlePfpUpload,
-    handleDeletePfp,
     rating,
     rank
 }: IdentityCardProps) {
@@ -44,67 +39,14 @@ export function IdentityCard({
 
             {/* Main Content */}
             <div className="px-6 pb-6 flex-1 flex flex-col items-center -mt-12 relative z-10">
-                {/* Avatar with Upload Button */}
-                <div className="w-24 h-24 rounded-2xl bg-[#121212] p-1.5 shadow-2xl relative group/avatar">
+                {/* Avatar (profile pictures disabled site-wide — initials only) */}
+                <div className="w-24 h-24 rounded-2xl bg-[#121212] p-1.5 shadow-2xl relative">
                     <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#E8C15A] to-[#B89830] flex items-center justify-center text-3xl font-bold text-black overflow-hidden relative">
-                        {profilePicture ? (
-                            <div className="relative w-full h-full">
-                                <Image
-                                    src={profilePicture}
-                                    alt={profile.name}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 96px) 100vw, 96px"
-                                    unoptimized
-                                />
-                            </div>
-                        ) : (
-                            <span className="absolute inset-0 flex items-center justify-center">
-                                {profile.name?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                        )}
-
-                        {/* Hover overlay with options */}
-                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-1 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
-                            {uploadingPfp ? (
-                                <Loader2 size={24} className="text-white animate-spin" />
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="flex items-center gap-1 text-white hover:text-[#E8C15A] transition-colors"
-                                    >
-                                        <Camera size={16} />
-                                        <span className="text-[10px] font-medium">Change</span>
-                                    </button>
-                                    {profilePicture && (
-                                        <button
-                                            onClick={handleDeletePfp}
-                                            className="flex items-center gap-1 text-white/70 hover:text-red-400 transition-colors"
-                                        >
-                                            <Trash2 size={12} />
-                                            <span className="text-[10px]">Remove</span>
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            {profile.name?.charAt(0).toUpperCase() || 'U'}
+                        </span>
                     </div>
                 </div>
-
-                {/* Hidden file input */}
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handlePfpUpload}
-                    className="hidden"
-                />
-
-                {/* Error message */}
-                {pfpError && (
-                    <p className="text-red-400 text-xs mt-2">{pfpError}</p>
-                )}
 
                 {/* Identity Info */}
                 <div className="mt-4 text-center space-y-1 w-full">

@@ -85,7 +85,10 @@ export async function GET(req: NextRequest) {
                 lastLogin: user.last_login_at,
                 createdAt: user.created_at,
                 role: user.role || 'trainee',
-                profile_picture: user.profile_picture || null,
+                // Profile pictures are disabled site-wide: pfp files live on the
+                // local filesystem which does not persist on Vercel serverless,
+                // so the URLs 404. Always fall back to the initials avatar.
+                profile_picture: null,
                 codeforces_handle: user.codeforces_handle || null
             },
             profile

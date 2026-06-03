@@ -156,19 +156,10 @@ export default function DashboardPublicProfile() {
                         {/* Avatar */}
                         <div className="w-24 h-24 rounded-2xl bg-[#121212] p-1.5 shadow-2xl group-hover:scale-105 transition-transform duration-500">
                             <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#E8C15A] to-[#B89830] flex items-center justify-center text-3xl font-bold text-black overflow-hidden relative">
-                                {profile.profile_picture ? (
-                                    <Image
-                                        src={`/pfps/${profile.profile_picture}`}
-                                        alt={profile.name}
-                                        fill
-                                        className="object-cover"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <span className="absolute inset-0 flex items-center justify-center">
-                                        {profile.name?.charAt(0).toUpperCase() || 'U'}
-                                    </span>
-                                )}
+                                {/* Profile pictures disabled site-wide (don't persist on Vercel) */}
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                    {profile.name?.charAt(0).toUpperCase() || 'U'}
+                                </span>
                             </div>
                         </div>
 
