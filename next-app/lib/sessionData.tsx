@@ -214,6 +214,19 @@ export const camps: Camp[] = [
                 videoId: '1fH4AIGqw3j6XSomagPB3CNwJVtM1YUxf',
                 content: <Session5Content />
             },
+            {
+                id: 13,
+                campSlug: 'level1',
+                number: '2',
+                displayNumber: '02',
+                slug: 'stl1',
+                tag: 'Data Structures',
+                title: 'STL 1',
+                desc: 'Standard Template Library 1 - Vector, Pair, Set, Map, and basic C++ containers.',
+                description: 'Master the basics of C++ Standard Template Library (STL). Learn how to use vectors, pairs, sets, and maps to solve competitive programming problems efficiently.',
+                thumbnail: '/images/lessons/levels_camp/level1/stl1.webp',
+                videoId: '1_oitAo2oKbimJ_eWBhX5WXHNOJY4CJN6',
+            },
         ]
     },
 ];
