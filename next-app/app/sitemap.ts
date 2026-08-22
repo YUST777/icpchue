@@ -38,6 +38,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.5,
         },
         {
+            url: `${baseUrl}/fq`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
+        {
             url: `${baseUrl}/privacy`,
             lastModified: new Date(),
             changeFrequency: 'yearly',
@@ -97,4 +103,3 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     return [...staticRoutes, ...sessionRoutes, ...devlogRoutes];
 }
-
