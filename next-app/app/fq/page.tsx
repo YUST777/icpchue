@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
     ArrowLeft,
-    ArrowUpLeft,
     Check,
     ChevronDown,
     Code2,
@@ -140,7 +139,7 @@ export default function FrequentlyAskedQuestions() {
                 <div className="faq-grid absolute inset-0 opacity-40" />
             </div>
 
-            <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 pb-5 pt-6 sm:px-8 sm:pt-8">
+            <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 sm:px-8 sm:py-6">
                 <Link href="/" className="group flex items-center gap-3" aria-label="العودة إلى الصفحة الرئيسية">
                     <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={42} height={42} priority className="h-10 w-10 transition-transform group-hover:scale-105" />
                     <span className="text-right leading-none">
@@ -148,15 +147,9 @@ export default function FrequentlyAskedQuestions() {
                         <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">Community</span>
                     </span>
                 </Link>
-                <Link href="/joinnow" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-bold text-white/75 transition hover:border-[#E8C15A]/40 hover:bg-[#E8C15A]/10 hover:text-[#E8C15A]">
-                    انضم للمجتمع <ArrowLeft size={15} />
-                </Link>
             </header>
 
-            <section className="relative z-10 mx-auto max-w-4xl px-5 pb-12 pt-12 text-center sm:px-8 sm:pb-16 sm:pt-20">
-                <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-[#E8C15A]/20 bg-[#E8C15A]/[0.08] px-3.5 py-2 text-[11px] font-bold text-[#E8C15A]">
-                    <Sparkles size={14} /> أسئلة بتتكرر كتير
-                </div>
+            <section className="relative z-10 mx-auto max-w-4xl px-5 pb-12 pt-6 text-center sm:px-8 sm:pb-16 sm:pt-10">
                 <h1 className="text-4xl font-black leading-[1.15] tracking-tight text-white sm:text-6xl">كل اللي محتاج تعرفه عن <span className="text-[#E8C15A]">ICPC HUE</span></h1>
                 <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-white/55 sm:text-lg">إيه هي مسابقة ICPC؟ هل لازم أكون محترف؟ هل لازم أكون مجهز تيم؟ والأهم… أنا هستفاد إيه من كل ده؟ تعالوا نجاوب على كل حاجة واحدة واحدة.</p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-white/35">
@@ -182,20 +175,7 @@ export default function FrequentlyAskedQuestions() {
                     ))}
                 </div>
 
-                <div className="mt-8 rounded-3xl border border-[#E8C15A]/20 bg-gradient-to-br from-[#E8C15A]/[0.12] via-white/[0.04] to-transparent p-6 sm:mt-10 sm:p-8">
-                    <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p className="mb-2 text-xs font-bold text-[#E8C15A]">جاهز تبدأ؟</p>
-                            <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl">كل اللي محتاجه إنك تبدأ.</h2>
-                            <p className="mt-2 text-sm leading-7 text-white/50">مش لازم تكون محترف، ومش لازم تكون مجهز تيم. إحنا هنكمل معاك الطريق.</p>
-                        </div>
-                        <Link href="/joinnow" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#E8C15A] px-5 py-3.5 text-sm font-black text-black shadow-lg shadow-[#E8C15A]/10 transition hover:bg-white">
-                            انضم لـ ICPC HUE <ArrowUpLeft size={18} />
-                        </Link>
-                    </div>
-                </div>
-
-                <p className="mt-10 text-center text-xs font-bold tracking-wide text-white/25">ICPC HUE — جيل بيسلّم جيل 💛</p>
+                <p className="mt-12 text-center text-xs font-bold tracking-wide text-white/25">ICPC HUE — جيل بيسلّم جيل 💛</p>
             </section>
 
             <style>{`
