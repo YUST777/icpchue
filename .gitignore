@@ -87,3 +87,4 @@ team-uploads/
 SUSPICIOUS_SUBMISSIONS.md
 
 next-app/bun.lock
+.playwright-cli/

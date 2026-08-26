@@ -1,30 +1,26 @@
 export const committees = [
   {
     id: 'media',
-    name: 'Media Committee',
-    nameAr: 'لجنة الميديا',
-    emoji: '🎨',
+    name: 'Media',
+    icon: 'Palette',
     description: 'Design posts, edit media, photography & presentations',
   },
   {
     id: 'mentor',
-    name: 'Mentorship Committee',
-    nameAr: 'لجنة المينتور',
-    emoji: '🧠',
+    name: 'Mentorship',
+    icon: 'Users',
     description: 'Guide teams, track progress & bridge with instructors',
   },
   {
     id: 'organizing',
-    name: 'Organizing Committee',
-    nameAr: 'لجنة التنظيم',
-    emoji: '👔',
+    name: 'Organizing',
+    icon: 'CalendarCheck',
     description: 'Manage events, welcome newcomers & represent ICPC HUE',
   },
   {
     id: 'instructor',
     name: 'Instructor',
-    nameAr: 'إنستراكتور',
-    emoji: '🎓',
+    icon: 'GraduationCap',
     description: 'Teach algorithms, data structures & competitive programming',
   },
 ] as const;
