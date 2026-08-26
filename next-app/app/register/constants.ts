@@ -1,11 +1,11 @@
 export const facultyOptions = [
+    'Artificial Intelligence and Informatics',
+    'Engineering',
     'Dentistry',
     'Pharmacy',
-    'Engineering',
     'Medicine',
     'Physical Therapy',
     'Business Administration',
-    'Artificial Intelligence and Information',
     'Applied Health Sciences Technology',
     'Al_Alsun and Translation',
     'Fine Arts and Design'

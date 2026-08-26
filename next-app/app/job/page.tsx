@@ -1,22 +1,49 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Loader2, ArrowRight, CheckCircle, Sparkles, AlertCircle } from 'lucide-react';
+import {
+    Loader2,
+    ArrowRight,
+    CheckCircle2,
+    Palette,
+    Users,
+    CalendarCheck,
+    GraduationCap,
+    Code2,
+    Camera,
+    Shirt,
+    Sparkles,
+    Trophy,
+} from 'lucide-react';
 import { facultyOptions, levelOptions } from '@/app/register/constants';
 import { committees, mediaSkills, tshirtSizes, weeklyHoursOptions } from '@/app/job/constants';
 
-function cn(...classes: (string | boolean | undefined)[]) {
-    return classes.filter(Boolean).join(' ');
+function cn(...c: (string | boolean | undefined)[]) {
+    return c.filter(Boolean).join(' ');
 }
 
 type FormErrors = Record<string, string | undefined>;
 
-export default function JobApplicationPage() {
-    const [success, setSuccess] = useState(false);
+const getCommitteeIcon = (id: string, className?: string) => {
+    const cls = className || "text-[#E8C15A]";
+    switch (id) {
+        case 'media':
+            return <Palette size={18} className={cls} />;
+        case 'mentor':
+            return <Users size={18} className={cls} />;
+        case 'organizing':
+            return <CalendarCheck size={18} className={cls} />;
+        case 'instructor':
+            return <GraduationCap size={18} className={cls} />;
+        default:
+            return null;
+    }
+};
 
-    // Personal Info
+export default function JobApplicationPage() {
+    // Step 1: Personal Info
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
@@ -24,138 +51,114 @@ export default function JobApplicationPage() {
     const [academicLevel, setAcademicLevel] = useState('');
     const [nationalId, setNationalId] = useState('');
 
-    // Committee Selection (Multi-select)
+    // Step 2: Committees (Multi-Select)
     const [selectedCommittees, setSelectedCommittees] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<string>('media');
 
-    // Media Fields
+    // Media
     const [selectedMediaSkills, setSelectedMediaSkills] = useState<string[]>([]);
     const [hasCamera, setHasCamera] = useState('');
     const [portfolioLink, setPortfolioLink] = useState('');
 
-    // Codeforces Handle (Mentor & Instructor)
+    // Codeforces (Mentor / Instructor)
     const [codeforcesHandle, setCodeforcesHandle] = useState('');
 
-    // Mentor Fields
+    // Mentor
+    const [participatedEcpc, setParticipatedEcpc] = useState('');
     const [contestExperience, setContestExperience] = useState('');
     const [weeklyAvailability, setWeeklyAvailability] = useState('');
 
-    // Organizing Fields
+    // Organizing
     const [hasEcpcTshirt, setHasEcpcTshirt] = useState('');
     const [tshirtSize, setTshirtSize] = useState('');
     const [campusDays, setCampusDays] = useState('');
     const [organizingExperience, setOrganizingExperience] = useState('');
 
-    // Instructor Fields
+    // Instructor
     const [preferredTeachingLevel, setPreferredTeachingLevel] = useState('');
     const [teachingExperience, setTeachingExperience] = useState('');
 
     const [errors, setErrors] = useState<FormErrors>({});
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const isSubmittingRef = useRef(false);
+    const [success, setSuccess] = useState(false);
 
-    // --- Styling Classes ---
-    const cardBase = 'bg-[#111111]/90 border border-white/[0.08] rounded-2xl p-6 sm:p-8 backdrop-blur-sm shadow-xl shadow-black/40 transition-all';
-    const inputBase = 'w-full px-4 py-3.5 bg-black/50 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
-    const inputNormal = 'border-white/[0.08] focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/30';
-    const inputError = 'border-red-500/60 focus:ring-red-500/50';
-    const labelStyle = 'block text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 ml-1';
+    // Compact styling for zoomed-out zero-scroll layout
+    const iB = 'w-full px-3 py-2 bg-black/50 border rounded-lg text-white text-xs placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
+    const iN = 'border-white/[0.08] focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
+    const iE = 'border-red-500/50 focus:ring-red-500/50';
+    const labelStyle = 'block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-0.5';
 
-    // --- Handlers ---
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (value.includes('@') || value.length < email.length) {
-            setEmail(value);
-            if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+    const handleEmail = (val: string) => {
+        if (val.includes('@') || val.length < email.length) {
+            setEmail(val);
+            if (errors.email) setErrors(p => { const c = { ...p }; delete c.email; return c; });
             return;
         }
-        if (/^\d{7,8}$/.test(value)) {
-            setEmail(value + '@horus.edu.eg');
+        if (/^\d{7,8}$/.test(val)) {
+            setEmail(val + '@horus.edu.eg');
         } else {
-            setEmail(value);
+            setEmail(val);
         }
-        if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+        if (errors.email) setErrors(p => { const c = { ...p }; delete c.email; return c; });
     };
 
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/[^\d+]/g, '');
-        if (value && !value.startsWith('+20')) {
-            if (value.startsWith('20')) value = '+' + value;
-            else if (value.startsWith('0')) value = '+20' + value.substring(1);
-            else if (!value.startsWith('+')) value = '+20' + value;
+    const handlePhone = (val: string) => {
+        let v = val.replace(/[^\d+]/g, '');
+        if (v && !v.startsWith('+20')) {
+            if (v.startsWith('20')) v = '+' + v;
+            else if (v.startsWith('0')) v = '+20' + v.substring(1);
+            else if (!v.startsWith('+')) v = '+20' + v;
         }
-        if (value.length > 13) value = value.substring(0, 13);
-        setPhone(value);
-        if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
+        if (v.length > 13) v = v.substring(0, 13);
+        setPhone(v);
+        if (errors.phone) setErrors(p => { const c = { ...p }; delete c.phone; return c; });
     };
 
     const toggleCommittee = (id: string) => {
-        setSelectedCommittees(prev =>
-            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-        );
-        if (errors.committees) setErrors(prev => ({ ...prev, committees: undefined }));
+        setSelectedCommittees(p => {
+            const next = p.includes(id) ? p.filter(c => c !== id) : [...p, id];
+            if (!next.includes(activeTab) && next.length > 0) {
+                setActiveTab(next[0]);
+            }
+            return next;
+        });
+        if (errors.committees) setErrors(p => { const c = { ...p }; delete c.committees; return c; });
     };
 
     const toggleMediaSkill = (skill: string) => {
-        setSelectedMediaSkills(prev =>
-            prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
-        );
-        if (errors.mediaSkills) setErrors(prev => ({ ...prev, mediaSkills: undefined }));
+        setSelectedMediaSkills(p => p.includes(skill) ? p.filter(s => s !== skill) : [...p, skill]);
+        if (errors.mediaSkills) setErrors(p => { const c = { ...p }; delete c.mediaSkills; return c; });
     };
 
-    const studentId = email.includes('@') ? email.split('@')[0] : '';
-    const needsCfHandle = selectedCommittees.includes('mentor') || selectedCommittees.includes('instructor');
+    const needsCf = selectedCommittees.includes('mentor') || selectedCommittees.includes('instructor');
 
-    // --- Validation ---
-    const validateForm = (): boolean => {
-        const newErrors: FormErrors = {};
-        if (!name.trim()) newErrors.name = 'الاسم مطلوب';
-        if (!email.trim() || !email.includes('@')) newErrors.email = 'البريد الجامعي غير صالح (@horus.edu.eg)';
-        if (!phone.trim() || !/^\+20\d{10}$/.test(phone)) newErrors.phone = 'رقم الواتساب غير صالح (+201...)';
-        if (!faculty) newErrors.faculty = 'يرجى اختيار الكلية';
-        if (!academicLevel) newErrors.academicLevel = 'يرجى اختيار المستوى الدراسي';
-        if (nationalId && nationalId.length !== 14) newErrors.nationalId = 'الرقم القومي يجب أن يتكون من 14 رقم';
+    const validate = () => {
+        const e: FormErrors = {};
+        if (!name.trim()) e.name = 'Full name is required';
+        if (!email.trim() || !email.includes('@')) e.email = 'Valid email required';
+        if (!phone.trim() || !/^\+20\d{10}$/.test(phone)) e.phone = 'Valid phone required (+20...)';
+        if (!faculty) e.faculty = 'Faculty required';
+        if (!academicLevel) e.academicLevel = 'Level required';
+        if (!nationalId.trim() || nationalId.length !== 14) e.nationalId = '14-digit National ID is required';
 
-        if (selectedCommittees.length === 0) {
-            newErrors.committees = 'يرجى اختيار لجنة واحدة على الأقل للانضمام إليها';
-        }
+        if (selectedCommittees.length === 0) e.committees = 'Select at least one committee';
+        if (needsCf && !codeforcesHandle.trim()) e.codeforcesHandle = 'Codeforces handle is required';
+        if (selectedCommittees.includes('media') && selectedMediaSkills.length === 0) e.mediaSkills = 'Select at least one skill';
+        if (selectedCommittees.includes('instructor') && !preferredTeachingLevel) e.preferredTeachingLevel = 'Select level';
 
-        if (needsCfHandle && !codeforcesHandle.trim()) {
-            newErrors.codeforcesHandle = 'كود فورسس هاندل مطلوب لمراجعة خبرتك التنافسية';
-        }
-
-        if (selectedCommittees.includes('media') && selectedMediaSkills.length === 0) {
-            newErrors.mediaSkills = 'يرجى اختيار مهارة واحدة على الأقل في لجنة الميديا';
-        }
-
-        if (selectedCommittees.includes('instructor') && !preferredTeachingLevel) {
-            newErrors.preferredTeachingLevel = 'يرجى تحديد المستوى المفضل للتدريس';
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            const firstKey = Object.keys(newErrors)[0];
-            const elem = document.getElementById(`field-${firstKey}`);
-            if (elem) {
-                elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return false;
-        }
-
-        return true;
+        setErrors(e);
+        return Object.keys(e).length === 0;
     };
 
-    // --- Submit ---
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (loading || isSubmittingRef.current) return;
-
-        if (!validateForm()) return;
-
-        isSubmittingRef.current = true;
-        setSubmitError(null);
-        setErrors({});
+    const handleSubmit = async (ev: React.FormEvent) => {
+        ev.preventDefault();
+        if (loading) return;
+        if (!validate()) return;
         setLoading(true);
+        setSubmitError(null);
+
+        const studentId = email.includes('@') ? email.split('@')[0] : '';
 
         try {
             const res = await fetch('/api/job/apply', {
@@ -164,7 +167,7 @@ export default function JobApplicationPage() {
                 body: JSON.stringify({
                     name: name.trim(),
                     email: email.toLowerCase().trim(),
-                    studentId: studentId || email.split('@')[0],
+                    studentId,
                     phone: phone.trim(),
                     faculty,
                     academicLevel,
@@ -174,7 +177,9 @@ export default function JobApplicationPage() {
                     hasCamera,
                     portfolioLink: portfolioLink.trim() || null,
                     codeforcesHandle: codeforcesHandle.trim() || null,
-                    contestExperience: contestExperience.trim() || null,
+                    contestExperience: participatedEcpc
+                        ? `ECPC: ${participatedEcpc === 'yes' ? 'Yes' : 'No'}${contestExperience.trim() ? ` | ${contestExperience.trim()}` : ''}`
+                        : contestExperience.trim() || null,
                     weeklyAvailability: weeklyAvailability || null,
                     hasEcpcTshirt,
                     tshirtSize: tshirtSize || null,
@@ -186,631 +191,509 @@ export default function JobApplicationPage() {
             });
 
             const data = await res.json();
-
-            if (!res.ok) {
-                setSubmitError(data.error || 'حدث خطأ أثناء إرسال طلبك.');
-                return;
-            }
-
+            if (!res.ok) throw new Error(data.error || 'Submission failed');
             setSuccess(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch {
-            setSubmitError('فشل الاتصال بالسيرفر. يرجى المحاولة مرة أخرى.');
+        } catch (err: any) {
+            setSubmitError(err.message || 'Something went wrong');
         } finally {
             setLoading(false);
-            isSubmittingRef.current = false;
         }
     };
 
-    // ============================================================
-    // SUCCESS SCREEN
-    // ============================================================
-    if (success) {
-        return (
-            <div dir="ltr" className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 py-16 relative overflow-hidden">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#E8C15A]/5 rounded-full blur-[140px] pointer-events-none" />
-
-                <div className="max-w-lg w-full text-center space-y-6 relative z-10 bg-[#111111] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl">
-                    <div className="w-20 h-20 mx-auto bg-[#E8C15A]/10 border border-[#E8C15A]/30 rounded-full flex items-center justify-center">
-                        <CheckCircle size={44} className="text-[#E8C15A]" />
-                    </div>
-
-                    <div className="space-y-2">
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Application Received!</h1>
-                        <p className="text-sm font-semibold text-[#E8C15A]">تم استلام طلب انضمامك بنجاح 🌟</p>
-                    </div>
-
-                    <p className="text-white/60 text-sm leading-relaxed" dir="rtl">
-                        شكراً لرغبتك في المشاركة وبناء المجتمع لموسم 2027. سيقوم مسؤولو اللجان بمراجعة بياناتك والتواصل معك عبر الواتساب قريباً جداً.
-                    </p>
-
-                    <div className="pt-4 border-t border-white/10">
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
-                        >
-                            Back to Home
-                            <ArrowRight size={16} />
-                        </Link>
-                    </div>
+    if (success) return (
+        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-6">
+            <div className="text-center max-w-md bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl">
+                <div className="w-16 h-16 mx-auto mb-5 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
+                <h1 className="text-2xl font-bold text-white mb-2">Application Submitted!</h1>
+                <p className="text-white/50 text-xs mb-6 leading-relaxed">
+                    Your application has been received. We will review your profile and reach out via WhatsApp shortly.
+                </p>
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#E8C15A] hover:bg-[#D59928] text-black font-bold text-xs rounded-xl transition-all shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
+                >
+                    Back to Home <ArrowRight size={14} />
+                </Link>
             </div>
-        );
-    }
+        </div>
+    );
 
-    // ============================================================
-    // GOOGLE FORM STYLE — ONE BIG UNIFIED PAGE
-    // ============================================================
     return (
-        <div dir="ltr" className="min-h-screen w-full bg-[#0A0A0A] text-white relative selection:bg-[#E8C15A]/20 selection:text-[#E8C15A]">
+        <div dir="ltr" className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
             {/* Ambient Background Glows */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#E8C15A]/[0.04] rounded-full blur-[160px]" />
-                <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-emerald-500/[0.02] rounded-full blur-[140px]" />
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-0 left-1/4 w-[400px] h-[250px] bg-[#E8C15A]/[0.03] rounded-full blur-[120px]" />
+                <div className="absolute bottom-0 right-1/4 w-[400px] h-[250px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-8">
-
-                {/* ================= HEADER CARD ================= */}
-                <div className="bg-[#111111] border border-white/[0.08] rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
-                    {/* Top Decorative Color Bar (Google Form Style) */}
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#E8C15A] via-[#F3D78A] to-[#E8C15A]" />
-
-                    <div className="flex items-center justify-between gap-4 mb-6">
-                        <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                            <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={52} height={52} className="w-12 h-12 sm:w-14 sm:h-14 drop-shadow-xl" />
-                        </Link>
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20 text-[#E8C15A] text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
-                            <Sparkles size={14} /> Season 2027
-                        </span>
-                    </div>
-
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
-                        Join the <span className="text-[#E8C15A]">ICPC HUE</span> Team
-                    </h1>
-
-                    <blockquote className="text-white/70 text-base sm:text-lg italic font-medium leading-relaxed mb-4 border-l-2 border-[#E8C15A]/60 pl-4 py-0.5">
-                        &ldquo;Every great community is built by people who chose to give more than they take. Your role matters.&rdquo;
-                    </blockquote>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-white/[0.06] text-xs text-white/40">
-                        <p className="font-semibold text-white/60">ICPC HUE Community &bull; Season 2027 — Join Us</p>
-                        <p className="text-[#E8C15A]/80 font-medium" dir="rtl">متاح التقديم لأي طالب من أي كلية بحورس حتى لو بره الكوميونتي</p>
+            {/* Top Compact Header */}
+            <header className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.06] shrink-0">
+                <div className="flex items-center gap-3.5">
+                    <Link href="/" className="shrink-0 flex items-center justify-center hover:opacity-85 transition-opacity">
+                        <Image
+                            src="/icons/icpchue.svg"
+                            alt="ICPC HUE"
+                            width={38}
+                            height={38}
+                            priority
+                            className="w-[38px] h-[38px] object-contain drop-shadow-[0_2px_8px_rgba(232,193,90,0.25)]"
+                        />
+                    </Link>
+                    <div>
+                        <h1 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                            Join the Team <span className="text-[#E8C15A] font-black">2027</span>
+                        </h1>
+                        <p className="text-[11px] text-white/40">Apply for a community role in ICPC HUE</p>
                     </div>
                 </div>
+            </header>
 
-                {/* ================= MAIN FORM CONTAINER ================= */}
-                <form onSubmit={handleSubmit} className="space-y-8">
-
-                    {/* Global Submit Error Banner */}
-                    {submitError && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5 text-red-400 text-sm flex items-start gap-3 animate-shake">
-                            <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-bold">يرجى تصحيح الأخطاء التالية:</p>
-                                <p className="text-xs text-red-300 mt-1">{submitError}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ================= SECTION 1: PERSONAL INFO ================= */}
-                    <div className={cardBase}>
-                        <div className="mb-6 pb-4 border-b border-white/[0.06]">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <span className="text-[#E8C15A]">01.</span> Personal & Academic Information
-                            </h2>
-                            <p className="text-xs text-white/40 mt-1">البيانات الأساسية للتواصل والتحقق الجامعي</p>
-                        </div>
-
-                        <div className="space-y-5">
-                            {/* Full Name */}
-                            <div id="field-name">
-                                <label className={labelStyle}>
-                                    Full Name <span className="text-[#E8C15A]">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: undefined })); }}
-                                    placeholder="الاسم ثلاثي أو رباعي بالعربي أو الإنجليزي"
-                                    className={cn(inputBase, errors.name ? inputError : inputNormal)}
-                                />
-                                {errors.name && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.name}</p>}
-                            </div>
-
-                            {/* Email */}
-                            <div id="field-email">
-                                <label className={labelStyle}>
-                                    University Email or Student ID <span className="text-[#E8C15A]">*</span>
-                                </label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={handleEmailChange}
-                                    placeholder="Enter your Horus ID (e.g. 8241043) or @horus.edu.eg"
-                                    className={cn(inputBase, errors.email ? inputError : inputNormal)}
-                                    dir="ltr"
-                                />
-                                <p className="text-[11px] text-white/30 mt-1.5 ml-1">
-                                    💡 اكتب رقم الكارنيه فقط وسيتم كتابة @horus.edu.eg تلقائياً
-                                </p>
-                                {errors.email && <p className="text-red-400 text-xs mt-1 ml-1">{errors.email}</p>}
-                            </div>
-
-                            {/* WhatsApp Phone */}
-                            <div id="field-phone">
-                                <label className={labelStyle}>
-                                    WhatsApp Phone Number <span className="text-[#E8C15A]">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={phone}
-                                    onChange={handlePhoneChange}
-                                    placeholder="+20 1x xxxx xxxx"
-                                    className={cn(inputBase, errors.phone ? inputError : inputNormal)}
-                                    dir="ltr"
-                                />
-                                <p className="text-[11px] text-white/30 mt-1.5 ml-1">
-                                    الرقم المستخدم للتواصل وإضافتك لجروب اللجان
-                                </p>
-                                {errors.phone && <p className="text-red-400 text-xs mt-1 ml-1">{errors.phone}</p>}
-                            </div>
-
-                            {/* Faculty + Academic Level */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div id="field-faculty">
-                                    <label className={labelStyle}>
-                                        Faculty / الكلية <span className="text-[#E8C15A]">*</span>
-                                    </label>
-                                    <select
-                                        value={faculty}
-                                        onChange={(e) => { setFaculty(e.target.value); if (errors.faculty) setErrors(p => ({ ...p, faculty: undefined })); }}
-                                        className={cn(inputBase, 'appearance-none cursor-pointer', errors.faculty ? inputError : inputNormal)}
-                                    >
-                                        <option value="" className="bg-[#111]">Select your faculty</option>
-                                        {facultyOptions.map(f => (
-                                            <option key={f.value} value={f.value} className="bg-[#111]">{f.label}</option>
-                                        ))}
-                                    </select>
-                                    {errors.faculty && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.faculty}</p>}
-                                </div>
-
-                                <div id="field-academicLevel">
-                                    <label className={labelStyle}>
-                                        Academic Level / المستوى <span className="text-[#E8C15A]">*</span>
-                                    </label>
-                                    <div className="flex gap-1.5">
-                                        {levelOptions.map(l => (
-                                            <button
-                                                key={l.value}
-                                                type="button"
-                                                onClick={() => { setAcademicLevel(l.value); if (errors.academicLevel) setErrors(p => ({ ...p, academicLevel: undefined })); }}
-                                                className={cn(
-                                                    'flex-1 py-3.5 rounded-xl text-center text-xs sm:text-sm font-semibold border transition-all cursor-pointer',
-                                                    academicLevel === l.value
-                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40 shadow-sm'
-                                                        : 'bg-black/40 border-white/[0.08] text-white/40 hover:bg-white/[0.04]'
-                                                )}
-                                            >
-                                                {l.label.replace('Level ', 'L')}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {errors.academicLevel && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.academicLevel}</p>}
-                                </div>
-                            </div>
-
-                            {/* National ID */}
-                            <div id="field-nationalId">
-                                <label className={labelStyle}>
-                                    National ID / الرقم القومي <span className="text-white/20 font-normal lowercase">(optional - للشهادات الرسمية)</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={14}
-                                    value={nationalId}
-                                    onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, '')); if (errors.nationalId) setErrors(p => ({ ...p, nationalId: undefined })); }}
-                                    placeholder="14-digit National ID (اختياري)"
-                                    className={cn(inputBase, errors.nationalId ? inputError : inputNormal)}
-                                    dir="ltr"
-                                />
-                                {errors.nationalId && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.nationalId}</p>}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ================= SECTION 2: COMMITTEE SELECTION ================= */}
-                    <div className={cardBase} id="field-committees">
-                        <div className="mb-6 pb-4 border-b border-white/[0.06]">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <span className="text-[#E8C15A]">02.</span> Choose Your Committee(s)
+            {/* Main Content: 2 Balanced Columns — Fits on 1 Screen without Scrolling */}
+            <main className="relative z-10 flex-1 py-3 lg:overflow-hidden">
+                <form onSubmit={handleSubmit} className="h-full grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch">
+                    
+                    {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
+                    <div className="lg:col-span-5 bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-xl shadow-black/30">
+                        <div>
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5">
+                                <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
+                                    <span>01.</span> Personal Information
                                 </h2>
-                                <span className="text-xs text-[#E8C15A] font-semibold">Select 1 or more</span>
+                                <span className="text-[9px] text-white/30">Required fields *</span>
                             </div>
-                            <p className="text-xs text-white/40 mt-1">تقدر تختار لجنة واحدة أو أكتر من لجنة في نفس الوقت</p>
-                        </div>
 
-                        {/* Committee Grid Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {committees.map(c => {
-                                const isActive = selectedCommittees.includes(c.id);
-                                return (
-                                    <div
-                                        key={c.id}
-                                        onClick={() => toggleCommittee(c.id)}
-                                        className={cn(
-                                            'relative p-5 rounded-2xl border cursor-pointer select-none transition-all duration-200 group',
-                                            isActive
-                                                ? 'bg-[#E8C15A]/[0.08] border-[#E8C15A]/40 shadow-lg shadow-[#E8C15A]/5 scale-[1.01]'
-                                                : 'bg-black/40 border-white/[0.08] hover:bg-white/[0.03] hover:border-white/20'
-                                        )}
-                                    >
-                                        <div className="flex items-start justify-between gap-3 mb-2">
-                                            <span className="text-3xl block">{c.emoji}</span>
-                                            <div className={cn(
-                                                'w-6 h-6 rounded-lg border flex items-center justify-center transition-all',
-                                                isActive
-                                                    ? 'bg-[#E8C15A] border-[#E8C15A] text-black'
-                                                    : 'border-white/20 bg-black/50 group-hover:border-white/40'
-                                            )}>
-                                                {isActive && <CheckCircle size={14} className="stroke-[3]" />}
-                                            </div>
-                                        </div>
+                            <div className="space-y-2.5">
+                                {/* Full Name */}
+                                <div>
+                                    <label className={labelStyle}>Full Name <span className="text-red-400">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={e => { setName(e.target.value); setErrors(p => { const c = { ...p }; delete c.name; return c; }); }}
+                                        placeholder="Your full name"
+                                        className={cn(iB, errors.name ? iE : iN)}
+                                    />
+                                    {errors.name && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.name}</p>}
+                                </div>
 
-                                        <h3 className={cn('text-base font-bold transition-colors', isActive ? 'text-[#E8C15A]' : 'text-white')}>
-                                            {c.name}
-                                        </h3>
-                                        <p className="text-xs font-semibold text-white/40 mb-2">{c.nameAr}</p>
-                                        <p className="text-xs text-white/50 leading-relaxed">{c.description}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        {errors.committees && <p className="text-red-400 text-xs mt-3 ml-1">{errors.committees}</p>}
-                    </div>
+                                {/* Email or Horus ID */}
+                                <div>
+                                    <label className={labelStyle}>Email or Horus ID <span className="text-red-400">*</span></label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={e => handleEmail(e.target.value)}
+                                        placeholder="Enter your email or Horus ID"
+                                        className={cn(iB, errors.email ? iE : iN)}
+                                        dir="ltr"
+                                    />
+                                    {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.email}</p>}
+                                </div>
 
-                    {/* ================= SECTION 3: DYNAMIC COMMITTEE DETAILS ================= */}
-                    {selectedCommittees.length > 0 && (
-                        <div className="space-y-6">
+                                {/* WhatsApp Phone */}
+                                <div>
+                                    <label className={labelStyle}>WhatsApp Phone <span className="text-red-400">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={phone}
+                                        onChange={e => handlePhone(e.target.value)}
+                                        placeholder="+201xxxxxxxxx"
+                                        className={cn(iB, errors.phone ? iE : iN)}
+                                        dir="ltr"
+                                    />
+                                    {errors.phone && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.phone}</p>}
+                                </div>
 
-                            {/* ---- Competitive Programming Shared Handle ---- */}
-                            {needsCfHandle && (
-                                <div className={cardBase} id="field-codeforcesHandle">
-                                    <div className="mb-5 pb-3 border-b border-white/[0.06]">
-                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <span className="text-[#E8C15A]">⚡</span> Competitive Programming Verification
-                                        </h3>
-                                        <p className="text-xs text-white/40 mt-1">مطلوب لمراجعة خبرتك من قبل مهندسي الكوميونتي</p>
+                                {/* Faculty & Academic Level (Combined Compact Row) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                        <label className={labelStyle}>Faculty <span className="text-red-400">*</span></label>
+                                        <select
+                                            value={faculty}
+                                            onChange={e => { setFaculty(e.target.value); setErrors(p => { const c = { ...p }; delete c.faculty; return c; }); }}
+                                            className={cn(iB, 'appearance-none cursor-pointer', errors.faculty ? iE : iN)}
+                                        >
+                                            <option value="" className="bg-[#111]">Select faculty</option>
+                                            {facultyOptions.map(f => (
+                                                <option key={f.value} value={f.value} className="bg-[#111]">{f.label.split(' / ')[0]}</option>
+                                            ))}
+                                        </select>
+                                        {errors.faculty && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.faculty}</p>}
                                     </div>
 
                                     <div>
-                                        <label className={labelStyle}>
-                                            Codeforces Handle <span className="text-[#E8C15A]">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={codeforcesHandle}
-                                            onChange={(e) => { setCodeforcesHandle(e.target.value); if (errors.codeforcesHandle) setErrors(p => ({ ...p, codeforcesHandle: undefined })); }}
-                                            placeholder="Enter your Codeforces handle"
-                                            dir="ltr"
-                                            className={cn(inputBase, errors.codeforcesHandle ? inputError : inputNormal)}
-                                        />
-                                        {errors.codeforcesHandle && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.codeforcesHandle}</p>}
+                                        <label className={labelStyle}>Academic Level <span className="text-red-400">*</span></label>
+                                        <div className="flex gap-1">
+                                            {levelOptions.map(l => (
+                                                <button
+                                                    key={l.value}
+                                                    type="button"
+                                                    onClick={() => { setAcademicLevel(l.value); setErrors(p => { const c = { ...p }; delete c.academicLevel; return c; }); }}
+                                                    className={cn(
+                                                        'flex-1 py-2 rounded-lg cursor-pointer text-center text-xs font-semibold transition-all border',
+                                                        academicLevel === l.value
+                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                            : 'bg-black/40 border-white/[0.08] text-white/40 hover:bg-white/[0.04]'
+                                                    )}
+                                                >
+                                                    {l.label.replace('Level ', 'L')}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {errors.academicLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.academicLevel}</p>}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* ---- Media Committee Section ---- */}
-                            {selectedCommittees.includes('media') && (
-                                <div className={cardBase} id="field-mediaSkills">
-                                    <div className="mb-5 pb-3 border-b border-white/[0.06]">
-                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <span>🎨</span> Media Committee Details / تفاصيل الميديا
-                                        </h3>
-                                        <p className="text-xs text-white/40 mt-1">تصميم البوستات، الشهادات، شيكات الفيرست سولف، والتصوير</p>
-                                    </div>
-
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className={labelStyle}>
-                                                What skills do you have? / مهاراتك <span className="text-[#E8C15A]">*</span>
-                                            </label>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                                {mediaSkills.map(skill => {
-                                                    const isSkillActive = selectedMediaSkills.includes(skill);
-                                                    return (
-                                                        <button
-                                                            key={skill}
-                                                            type="button"
-                                                            onClick={() => toggleMediaSkill(skill)}
-                                                            className={cn(
-                                                                'px-4 py-3 rounded-xl text-xs font-semibold border text-left transition-all cursor-pointer flex items-center justify-between',
-                                                                isSkillActive
-                                                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                    : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
-                                                            )}
-                                                        >
-                                                            <span>{skill}</span>
-                                                            {isSkillActive && <CheckCircle size={14} className="shrink-0" />}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            {errors.mediaSkills && <p className="text-red-400 text-xs mt-2 ml-1">{errors.mediaSkills}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label className={labelStyle}>Do you own a camera? / معاك كاميرا احترافية؟</label>
-                                            <div className="flex gap-3">
-                                                {['yes', 'no'].map(opt => (
-                                                    <button
-                                                        key={opt}
-                                                        type="button"
-                                                        onClick={() => setHasCamera(opt)}
-                                                        className={cn(
-                                                            'flex-1 p-3.5 rounded-xl text-center text-xs font-semibold border transition-all cursor-pointer',
-                                                            hasCamera === opt
-                                                                ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
-                                                        )}
-                                                    >
-                                                        {opt === 'yes' ? 'Yes, I have a camera 📷' : 'No camera'}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Portfolio / Sample Works <span className="text-white/20 font-normal lowercase">(optional)</span>
-                                            </label>
-                                            <input
-                                                type="url"
-                                                value={portfolioLink}
-                                                onChange={(e) => setPortfolioLink(e.target.value)}
-                                                placeholder="Link to Google Drive / Behance / Facebook page"
-                                                dir="ltr"
-                                                className={cn(inputBase, inputNormal)}
-                                            />
-                                        </div>
-                                    </div>
+                                {/* National ID */}
+                                <div>
+                                    <label className={labelStyle}>National ID <span className="text-red-400">*</span></label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={14}
+                                        value={nationalId}
+                                        onChange={e => { setNationalId(e.target.value.replace(/\D/g, '')); setErrors(p => { const c = { ...p }; delete c.nationalId; return c; }); }}
+                                        placeholder="14-digit National ID"
+                                        className={cn(iB, errors.nationalId ? iE : iN)}
+                                        dir="ltr"
+                                    />
+                                    {errors.nationalId && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.nationalId}</p>}
                                 </div>
-                            )}
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* ---- Mentorship Committee Section ---- */}
-                            {selectedCommittees.includes('mentor') && (
-                                <div className={cardBase}>
-                                    <div className="mb-5 pb-3 border-b border-white/[0.06]">
-                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <span>🧠</span> Mentorship Committee Details / تفاصيل المينتور
-                                        </h3>
-                                        <p className="text-xs text-white/40 mt-1">متابعة الفرق، حل مشاكلهم، والتنسيق مع الإنستراكتورز</p>
-                                    </div>
+                    {/* RIGHT COLUMN: Committee Selection & Dynamic Questions (7 Cols) */}
+                    <div className="lg:col-span-7 bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-xl shadow-black/30 lg:overflow-hidden">
+                        
+                        <div className="flex-1 flex flex-col lg:overflow-hidden">
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5 shrink-0">
+                                <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
+                                    <span>02.</span> Choose Your Committee(s)
+                                </h2>
+                                <span className="text-[9px] text-[#E8C15A] font-semibold">Select 1 or more</span>
+                            </div>
 
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Contest & Problem Solving Experience <span className="text-white/20 font-normal lowercase">(optional)</span>
-                                            </label>
-                                            <textarea
-                                                value={contestExperience}
-                                                onChange={(e) => setContestExperience(e.target.value)}
-                                                placeholder="مشاركتك في مسابقات ECPC، مركزك، أسماء الفرق، الشيتات اللي حلتها..."
-                                                rows={3}
-                                                className={cn(inputBase, inputNormal, 'resize-none')}
-                                            />
-                                        </div>
+                            {/* 4 Committee Cards (Compact 2x2 Grid) */}
+                            <div className="grid grid-cols-2 gap-2 shrink-0 mb-3">
+                                {committees.map(c => {
+                                    const isActive = selectedCommittees.includes(c.id);
+                                    return (
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            onClick={() => toggleCommittee(c.id)}
+                                            className={cn(
+                                                'relative p-2.5 rounded-lg border text-left transition-all cursor-pointer group flex items-start gap-2.5',
+                                                isActive
+                                                    ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 shadow-md shadow-[#E8C15A]/5'
+                                                    : 'bg-black/40 border-white/[0.06] hover:bg-white/[0.03] hover:border-white/10'
+                                            )}
+                                        >
+                                            <div className="w-7 h-7 rounded-md bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center shrink-0">
+                                                {getCommitteeIcon(c.id)}
+                                            </div>
+                                            <div className="min-w-0 flex-1 pr-4 self-center">
+                                                <p className={cn('text-xs font-bold truncate leading-tight', isActive ? 'text-[#E8C15A]' : 'text-white/90')}>
+                                                    {c.name}
+                                                </p>
+                                            </div>
+                                            {isActive && (
+                                                <CheckCircle2 size={14} className="text-[#E8C15A] absolute top-2.5 right-2 shrink-0" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {errors.committees && <p className="text-red-400 text-[9px] -mt-1 mb-2 ml-0.5">{errors.committees}</p>}
 
-                                        <div>
-                                            <label className={labelStyle}>Weekly Availability / ساعات التفرغ الأسبوعية</label>
-                                            <div className="flex gap-2">
-                                                {weeklyHoursOptions.map(opt => (
+                            {/* Dynamic Details Panel: Tabs + Compact Fields with Inner Scroll */}
+                            {selectedCommittees.length > 0 ? (
+                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/40 border border-white/5 rounded-xl p-3 lg:overflow-hidden">
+                                    {/* Tabs when multiple committees selected */}
+                                    {selectedCommittees.length > 1 && (
+                                        <div className="flex gap-1.5 pb-2.5 mb-2 border-b border-white/5 overflow-x-auto shrink-0">
+                                            {selectedCommittees.map(id => {
+                                                const c = committees.find(item => item.id === id);
+                                                if (!c) return null;
+                                                const isTabActive = activeTab === id;
+                                                return (
                                                     <button
-                                                        key={opt}
+                                                        key={id}
                                                         type="button"
-                                                        onClick={() => setWeeklyAvailability(opt)}
+                                                        onClick={() => setActiveTab(id)}
                                                         className={cn(
-                                                            'flex-1 p-3.5 rounded-xl text-center text-xs font-semibold border transition-all cursor-pointer',
-                                                            weeklyAvailability === opt
-                                                                ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
+                                                            'px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer',
+                                                            isTabActive
+                                                                ? 'bg-[#E8C15A] text-black shadow-sm'
+                                                                : 'bg-white/5 text-white/50 hover:bg-white/10'
                                                         )}
                                                     >
-                                                        {opt}
+                                                        {getCommitteeIcon(id, isTabActive ? 'text-black' : 'text-white/60')}
+                                                        <span>{c.name.split(' ')[0]}</span>
                                                     </button>
-                                                ))}
-                                            </div>
+                                                );
+                                            })}
                                         </div>
-                                    </div>
-                                </div>
-                            )}
+                                    )}
 
-                            {/* ---- Organizing Committee Section ---- */}
-                            {selectedCommittees.includes('organizing') && (
-                                <div className={cardBase}>
-                                    <div className="mb-5 pb-3 border-b border-white/[0.06]">
-                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <span>👔</span> Organizing Committee Details / تفاصيل التنظيم
-                                        </h3>
-                                        <p className="text-xs text-white/40 mt-1">تنظيم فعاليات الكوميونتي والإيفنتات والترحيب بالجدد</p>
-                                    </div>
+                                    {/* Inner Scrollable Panel — Page itself never scrolls on desktop */}
+                                    <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scroll text-xs max-h-[320px] lg:max-h-none">
+                                        
+                                        {/* TAB 1: MEDIA */}
+                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('media') : activeTab === 'media') && (
+                                            <div className="space-y-2.5">
+                                                <div>
+                                                    <label className={labelStyle}>Your Skills <span className="text-red-400">*</span></label>
+                                                    <div className="grid grid-cols-2 gap-1.5">
+                                                        {mediaSkills.map(skill => {
+                                                            const isSkillActive = selectedMediaSkills.includes(skill);
+                                                            return (
+                                                                <button
+                                                                    key={skill}
+                                                                    type="button"
+                                                                    onClick={() => toggleMediaSkill(skill)}
+                                                                    className={cn(
+                                                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer truncate',
+                                                                        isSkillActive
+                                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                    )}
+                                                                >
+                                                                    {skill.split(' (')[0]}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {errors.mediaSkills && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.mediaSkills}</p>}
+                                                </div>
 
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Did you participate in ECPC & have the official T-shirt? / شاركت في ECPC ومعاك التيشيرت؟
-                                            </label>
-                                            <div className="flex gap-3">
-                                                {['yes', 'no'].map(opt => (
-                                                    <button
-                                                        key={opt}
-                                                        type="button"
-                                                        onClick={() => setHasEcpcTshirt(opt)}
-                                                        className={cn(
-                                                            'flex-1 p-3.5 rounded-xl text-center text-xs font-semibold border transition-all cursor-pointer',
-                                                            hasEcpcTshirt === opt
-                                                                ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
-                                                        )}
-                                                    >
-                                                        {opt === 'yes' ? 'Yes, I have ECPC T-Shirt 👕' : 'No'}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {hasEcpcTshirt === 'yes' && (
-                                            <div>
-                                                <label className={labelStyle}>T-Shirt Size / مقاس التيشيرت</label>
-                                                <div className="flex gap-2">
-                                                    {tshirtSizes.map(s => (
-                                                        <button
-                                                            key={s}
-                                                            type="button"
-                                                            onClick={() => setTshirtSize(s)}
-                                                            className={cn(
-                                                                'flex-1 p-3.5 rounded-xl text-center text-xs font-semibold border transition-all cursor-pointer',
-                                                                tshirtSize === s
-                                                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                    : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
-                                                            )}
-                                                        >
-                                                            {s}
-                                                        </button>
-                                                    ))}
+                                                <div>
+                                                    <label className={labelStyle}>Own a camera?</label>
+                                                    <div className="flex gap-1.5 max-w-[200px]">
+                                                        {['yes', 'no'].map(opt => (
+                                                            <button
+                                                                key={opt}
+                                                                type="button"
+                                                                onClick={() => setHasCamera(opt)}
+                                                                className={cn(
+                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
+                                                                    hasCamera === opt
+                                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                )}
+                                                            >
+                                                                {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Camera size={11} /> Yes</span> : 'No'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div>
-                                            <label className={labelStyle}>
-                                                On-Campus Days / أيام تواجدك في الجامعة <span className="text-white/20 font-normal lowercase">(optional)</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={campusDays}
-                                                onChange={(e) => setCampusDays(e.target.value)}
-                                                placeholder="مثال: الأحد، الثلاثاء، الخميس"
-                                                className={cn(inputBase, inputNormal)}
-                                            />
-                                        </div>
+                                        {/* TAB 2: MENTOR */}
+                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('mentor') : activeTab === 'mentor') && (
+                                            <div className="space-y-2.5">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
+                                                    <div>
+                                                        <label className={labelStyle}>Codeforces Handle <span className="text-red-400">*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value={codeforcesHandle}
+                                                            onChange={e => { setCodeforcesHandle(e.target.value); setErrors(p => { const c = { ...p }; delete c.codeforcesHandle; return c; }); }}
+                                                            placeholder="your_cf_handle"
+                                                            className={cn(iB, errors.codeforcesHandle ? iE : iN)}
+                                                            dir="ltr"
+                                                        />
+                                                        {errors.codeforcesHandle && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
+                                                    </div>
 
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Previous Organizing Experience <span className="text-white/20 font-normal lowercase">(optional)</span>
-                                            </label>
-                                            <textarea
-                                                value={organizingExperience}
-                                                onChange={(e) => setOrganizingExperience(e.target.value)}
-                                                placeholder="خبرتك السابقة في تنظيم فعاليات، أسر طلابية، مؤتمرات..."
-                                                rows={3}
-                                                className={cn(inputBase, inputNormal, 'resize-none')}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                                                    <div>
+                                                        <label className={labelStyle}>Participated in ECPC?</label>
+                                                        <div className="flex gap-1.5">
+                                                            {['yes', 'no'].map(opt => (
+                                                                <button
+                                                                    key={opt}
+                                                                    type="button"
+                                                                    onClick={() => setParticipatedEcpc(opt)}
+                                                                    className={cn(
+                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                                                                        participatedEcpc === opt
+                                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                    )}
+                                                                >
+                                                                    {opt === 'yes' ? <><Trophy size={12} /> Yes</> : 'No'}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                            {/* ---- Instructor Section ---- */}
-                            {selectedCommittees.includes('instructor') && (
-                                <div className={cardBase} id="field-preferredTeachingLevel">
-                                    <div className="mb-5 pb-3 border-b border-white/[0.06]">
-                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                            <span>🎓</span> Instructor Details / تفاصيل التدريب والشرح
-                                        </h3>
-                                        <p className="text-xs text-white/40 mt-1">شرح المسائل، الأساسيات، والخوارزميات للمتدربين</p>
-                                    </div>
-
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Preferred Level to Teach / المستوى المفضل للشرح <span className="text-[#E8C15A]">*</span>
-                                            </label>
-                                            <div className="flex flex-col sm:flex-row gap-3">
-                                                {['Level 1 (C++ Basics & STL)', 'Level 2 (DS & Algorithms)'].map(opt => (
-                                                    <button
-                                                        key={opt}
-                                                        type="button"
-                                                        onClick={() => { setPreferredTeachingLevel(opt); if (errors.preferredTeachingLevel) setErrors(p => ({ ...p, preferredTeachingLevel: undefined })); }}
-                                                        className={cn(
-                                                            'flex-1 p-3.5 rounded-xl text-center text-xs font-semibold border transition-all cursor-pointer',
-                                                            preferredTeachingLevel === opt
-                                                                ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                : 'bg-black/40 border-white/[0.08] text-white/50 hover:bg-white/[0.04]'
-                                                        )}
-                                                    >
-                                                        {opt}
-                                                    </button>
-                                                ))}
+                                                <div>
+                                                    <label className={labelStyle}>Contest Experience (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={contestExperience}
+                                                        onChange={e => setContestExperience(e.target.value)}
+                                                        placeholder="Team name, qualifications, rank..."
+                                                        className={cn(iB, iN)}
+                                                    />
+                                                </div>
                                             </div>
-                                            {errors.preferredTeachingLevel && <p className="text-red-400 text-xs mt-1.5 ml-1">{errors.preferredTeachingLevel}</p>}
-                                        </div>
+                                        )}
 
-                                        <div>
-                                            <label className={labelStyle}>
-                                                Teaching & Mentoring Experience <span className="text-white/20 font-normal lowercase">(optional)</span>
-                                            </label>
-                                            <textarea
-                                                value={teachingExperience}
-                                                onChange={(e) => setTeachingExperience(e.target.value)}
-                                                placeholder="خبرتك في الشرح، شرحت لزمايلك قبل كده؟ عندك أسلوب معين؟..."
-                                                rows={3}
-                                                className={cn(inputBase, inputNormal, 'resize-none')}
-                                            />
-                                        </div>
+                                        {/* TAB 3: ORGANIZING */}
+                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('organizing') : activeTab === 'organizing') && (
+                                            <div className="space-y-2.5">
+                                                <div>
+                                                    <label className={labelStyle}>Has ECPC T-Shirt?</label>
+                                                    <div className="flex gap-1.5 max-w-[200px]">
+                                                        {['yes', 'no'].map(opt => (
+                                                            <button
+                                                                key={opt}
+                                                                type="button"
+                                                                onClick={() => setHasEcpcTshirt(opt)}
+                                                                className={cn(
+                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
+                                                                    hasEcpcTshirt === opt
+                                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                )}
+                                                            >
+                                                                {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Shirt size={11} /> Yes</span> : 'No'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelStyle}>Previous Experience (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={organizingExperience}
+                                                        onChange={e => setOrganizingExperience(e.target.value)}
+                                                        placeholder="Events, conferences, student clubs..."
+                                                        className={cn(iB, iN)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* TAB 4: INSTRUCTOR */}
+                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('instructor') : activeTab === 'instructor') && (
+                                            <div className="space-y-2.5">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
+                                                    <div>
+                                                        <label className={labelStyle}>Codeforces Handle <span className="text-red-400">*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value={codeforcesHandle}
+                                                            onChange={e => { setCodeforcesHandle(e.target.value); setErrors(p => { const c = { ...p }; delete c.codeforcesHandle; return c; }); }}
+                                                            placeholder="your_cf_handle"
+                                                            className={cn(iB, errors.codeforcesHandle ? iE : iN)}
+                                                            dir="ltr"
+                                                        />
+                                                        {errors.codeforcesHandle && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
+                                                    </div>
+
+                                                    <div>
+                                                        <label className={labelStyle}>Teaching Level <span className="text-red-400">*</span></label>
+                                                        <div className="flex gap-1.5">
+                                                            {['Level 0 (C++ Basics & STL)', 'Level 1 (DS & Algorithms)'].map(opt => (
+                                                                <button
+                                                                    key={opt}
+                                                                    type="button"
+                                                                    onClick={() => { setPreferredTeachingLevel(opt); setErrors(p => { const c = { ...p }; delete c.preferredTeachingLevel; return c; }); }}
+                                                                    className={cn(
+                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center',
+                                                                        preferredTeachingLevel === opt
+                                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                    )}
+                                                                >
+                                                                    {opt.split(' (')[0]}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        {errors.preferredTeachingLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.preferredTeachingLevel}</p>}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className={labelStyle}>Teaching Experience (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={teachingExperience}
+                                                        onChange={e => setTeachingExperience(e.target.value)}
+                                                        placeholder="Mentoring, sessions, explanations..."
+                                                        className={cn(iB, iN)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                     </div>
                                 </div>
-                            )}
-
-                        </div>
-                    )}
-
-                    {/* ================= SUBMIT ACTION CARD ================= */}
-                    <div className={cn(cardBase, 'text-center')}>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-base font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-xl shadow-[#E8C15A]/15 active:scale-[0.99] cursor-pointer"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={20} />
-                                    جاري تسجيل طلبك...
-                                </>
                             ) : (
-                                <>
-                                    Submit Application / إرسال الطلب
-                                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                </>
+                                <div className="flex-1 min-h-[140px] flex items-center justify-center border border-dashed border-white/5 rounded-xl text-center p-4">
+                                    <p className="text-white/20 text-xs">
+                                        Select at least one committee above to view role details
+                                    </p>
+                                </div>
                             )}
-                        </button>
+                        </div>
 
-                        <p className="text-xs text-white/40 mt-4 leading-relaxed" dir="rtl">
-                            ملحوظة: مش لازم تكون بيرفكت، عادي لو لسا بتتعلم نعرف ندربك في اللجان لحد ما تبقى متمكن 🙌
-                        </p>
+                        {/* Submit Action & Error Message at Bottom of Right Column */}
+                        <div className="pt-3 mt-3 border-t border-white/5 shrink-0 space-y-2">
+                            {submitError && (
+                                <p className="text-red-400 text-[10px] font-bold text-center">{submitError}</p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={cn(
+                                    "w-full py-3 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#E8C15A]/10 active:scale-[0.99] cursor-pointer",
+                                    loading ? "opacity-70 cursor-not-allowed" : "group"
+                                )}
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Submitting Application...
+                                    </>
+                                ) : (
+                                    <>
+                                        Submit Application
+                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
                     </div>
 
                 </form>
+            </main>
 
-                {/* Footer Credits */}
-                <footer className="text-center pt-8 pb-4 text-xs text-white/20 space-y-2">
-                    <p>&copy; 2027 Horus University &bull; ICPC HUE Community</p>
-                    <Link href="/" className="inline-block hover:text-white/40 transition-colors">
-                        &larr; Back to ICPC HUE Portal
-                    </Link>
-                </footer>
-
-            </div>
-
-            <style jsx>{`
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-4px); }
-                    75% { transform: translateX(4px); }
+            <style jsx global>{`
+                .custom-scroll::-webkit-scrollbar {
+                    width: 4px;
                 }
-                .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+                .custom-scroll::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scroll::-webkit-scrollbar-thumb {
+                    background: rgba(232, 193, 90, 0.2);
+                    border-radius: 8px;
+                }
+                .custom-scroll::-webkit-scrollbar-thumb:hover {
+                    background: rgba(232, 193, 90, 0.4);
+                }
             `}</style>
         </div>
     );
