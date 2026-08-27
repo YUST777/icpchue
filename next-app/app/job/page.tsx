@@ -508,34 +508,9 @@ export default function JobApplicationPage() {
                                         
                                         {/* TAB 1: MEDIA */}
                                         {(selectedCommittees.length === 1 ? selectedCommittees.includes('media') : activeTab === 'media') && (
-                                            <div className="space-y-2">
+                                            <div className="space-y-2.5">
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <label className="text-white/50 text-[10px] font-bold uppercase tracking-wider ml-0.5">Your Skills <span className="text-red-400">*</span></label>
-                                                        
-                                                        {/* Own a Camera Compact Inline Toggle */}
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-white/40 text-[9px] font-semibold">Own a camera?</span>
-                                                            <div className="flex gap-1">
-                                                                {['yes', 'no'].map(opt => (
-                                                                    <button
-                                                                        key={opt}
-                                                                        type="button"
-                                                                        onClick={() => setHasCamera(opt)}
-                                                                        className={cn(
-                                                                            'px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer flex items-center gap-1',
-                                                                            hasCamera === opt
-                                                                                ? 'bg-[#E8C15A]/20 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                                : 'bg-white/[0.03] border-white/10 text-white/40 hover:bg-white/5'
-                                                                        )}
-                                                                    >
-                                                                        {opt === 'yes' ? <><Camera size={9} /> Yes</> : 'No'}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
+                                                    <label className={labelStyle}>Your Skills <span className="text-red-400">*</span></label>
                                                     <div className="grid grid-cols-2 gap-1.5">
                                                         {mediaSkills.map(skill => {
                                                             const isSkillActive = selectedMediaSkills.includes(skill);
@@ -545,7 +520,7 @@ export default function JobApplicationPage() {
                                                                     type="button"
                                                                     onClick={() => toggleMediaSkill(skill)}
                                                                     className={cn(
-                                                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
+                                                                        'px-2.5 py-2 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
                                                                         isSkillActive
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
                                                                             : 'bg-black/50 border-white/5 text-white/50 hover:bg-white/5'
@@ -558,12 +533,33 @@ export default function JobApplicationPage() {
                                                     </div>
                                                     {errors.mediaSkills && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.mediaSkills}</p>}
                                                 </div>
+
+                                                <div>
+                                                    <label className={labelStyle}>Own a camera?</label>
+                                                    <div className="flex gap-1.5 max-w-[200px]">
+                                                        {['yes', 'no'].map(opt => (
+                                                            <button
+                                                                key={opt}
+                                                                type="button"
+                                                                onClick={() => setHasCamera(opt)}
+                                                                className={cn(
+                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
+                                                                    hasCamera === opt
+                                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                )}
+                                                            >
+                                                                {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Camera size={11} /> Yes</span> : 'No'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
 
                                         {/* TAB 2: MENTOR */}
                                         {(selectedCommittees.length === 1 ? selectedCommittees.includes('mentor') : activeTab === 'mentor') && (
-                                            <div className="space-y-2">
+                                            <div className="space-y-2.5">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                                     <div>
                                                         <label className={labelStyle}>Codeforces Handle <span className="text-red-400">*</span></label>
@@ -615,23 +611,23 @@ export default function JobApplicationPage() {
 
                                         {/* TAB 3: ORGANIZING */}
                                         {(selectedCommittees.length === 1 ? selectedCommittees.includes('organizing') : activeTab === 'organizing') && (
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <label className="text-white/50 text-[10px] font-bold uppercase tracking-wider ml-0.5">Has ECPC T-Shirt?</label>
-                                                    <div className="flex gap-1">
+                                            <div className="space-y-2.5">
+                                                <div>
+                                                    <label className={labelStyle}>Has ECPC T-Shirt?</label>
+                                                    <div className="flex gap-1.5 max-w-[200px]">
                                                         {['yes', 'no'].map(opt => (
                                                             <button
                                                                 key={opt}
                                                                 type="button"
                                                                 onClick={() => setHasEcpcTshirt(opt)}
                                                                 className={cn(
-                                                                    'px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer flex items-center gap-1',
+                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
                                                                     hasEcpcTshirt === opt
-                                                                        ? 'bg-[#E8C15A]/20 text-[#E8C15A] border-[#E8C15A]/40'
-                                                                        : 'bg-white/[0.03] border-white/10 text-white/40 hover:bg-white/5'
+                                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
                                                                 )}
                                                             >
-                                                                {opt === 'yes' ? <><Shirt size={9} /> Yes</> : 'No'}
+                                                                {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Shirt size={11} /> Yes</span> : 'No'}
                                                             </button>
                                                         ))}
                                                     </div>
