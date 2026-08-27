@@ -419,22 +419,24 @@ export default function JobApplicationPage() {
                                             type="button"
                                             onClick={() => toggleCommittee(c.id)}
                                             className={cn(
-                                                'relative p-2.5 rounded-lg border text-left transition-all cursor-pointer group flex items-start gap-2.5',
+                                                'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2',
                                                 isActive
                                                     ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 shadow-md shadow-[#E8C15A]/5'
                                                     : 'bg-black/40 border-white/[0.06] hover:bg-white/[0.03] hover:border-white/10'
                                             )}
                                         >
-                                            <div className="w-7 h-7 rounded-md bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center shrink-0">
-                                                {getCommitteeIcon(c.id)}
-                                            </div>
-                                            <div className="min-w-0 flex-1 pr-4 self-center">
-                                                <p className={cn('text-xs font-bold truncate leading-tight', isActive ? 'text-[#E8C15A]' : 'text-white/90')}>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center shrink-0">
+                                                    {getCommitteeIcon(c.id)}
+                                                </div>
+                                                <p className={cn('text-xs font-bold whitespace-nowrap', isActive ? 'text-[#E8C15A]' : 'text-white/90')}>
                                                     {c.name}
                                                 </p>
                                             </div>
-                                            {isActive && (
-                                                <CheckCircle2 size={14} className="text-[#E8C15A] absolute top-2.5 right-2 shrink-0" />
+                                            {isActive ? (
+                                                <CheckCircle2 size={14} className="text-[#E8C15A] shrink-0" />
+                                            ) : (
+                                                <div className="w-3.5 h-3.5 rounded-full border border-white/10 shrink-0" />
                                             )}
                                         </button>
                                     );
@@ -447,7 +449,12 @@ export default function JobApplicationPage() {
                                 <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/40 border border-white/5 rounded-xl p-3 lg:overflow-hidden">
                                     {/* Tabs when multiple committees selected */}
                                     {selectedCommittees.length > 1 && (
-                                        <div className="flex gap-1.5 pb-2 mb-2.5 border-b border-white/5 overflow-x-auto no-scrollbar shrink-0 select-none">
+                                        <div className={cn(
+                                            "grid gap-1.5 pb-2.5 mb-2.5 border-b border-white/5 select-none",
+                                            selectedCommittees.length === 2 && "grid-cols-2",
+                                            selectedCommittees.length === 3 && "grid-cols-3",
+                                            selectedCommittees.length === 4 && "grid-cols-2 sm:grid-cols-4"
+                                        )}>
                                             {selectedCommittees.map(id => {
                                                 const c = committees.find(item => item.id === id);
                                                 if (!c) return null;
@@ -458,10 +465,10 @@ export default function JobApplicationPage() {
                                                         type="button"
                                                         onClick={() => setActiveTab(id)}
                                                         className={cn(
-                                                            'flex-1 min-w-fit px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap',
+                                                            'w-full py-2 px-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center',
                                                             isTabActive
-                                                                ? 'bg-[#E8C15A] text-black shadow-md shadow-[#E8C15A]/10'
-                                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                                                                ? 'bg-[#E8C15A] text-black shadow-md shadow-[#E8C15A]/15 font-extrabold'
+                                                                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                                                         )}
                                                     >
                                                         {getCommitteeIcon(id, isTabActive ? 'text-black' : 'text-white/60')}
@@ -489,10 +496,10 @@ export default function JobApplicationPage() {
                                                                     type="button"
                                                                     onClick={() => toggleMediaSkill(skill)}
                                                                     className={cn(
-                                                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer truncate',
+                                                                        'px-2.5 py-2 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
                                                                         isSkillActive
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                            : 'bg-black/50 border-white/5 text-white/50 hover:bg-white/5'
                                                                     )}
                                                                 >
                                                                     {skill.split(' (')[0]}
