@@ -78,10 +78,10 @@ export default function JobApplicationPage() {
     const [success, setSuccess] = useState(false);
 
     // Compact styling for zoomed-out zero-scroll layout (text-sm on mobile prevents iOS Safari auto-zoom & enhances legibility)
-    const iB = 'w-full px-3 py-2.5 sm:py-2 bg-black/80 border rounded-lg text-white text-sm sm:text-xs placeholder-white/45 focus:outline-none focus:ring-1 transition-all';
-    const iN = 'border-white/20 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
+    const iB = 'w-full px-3.5 py-2.5 sm:py-2 bg-[#1A1A1E] border rounded-lg text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none focus:ring-1 transition-all';
+    const iN = 'border-white/10 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
     const iE = 'border-red-500/70 focus:ring-red-500/60';
-    const labelStyle = 'block text-white font-bold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5 drop-shadow-sm';
+    const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5';
 
     // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
     const toAsciiDigits = (str: string) => {
@@ -249,16 +249,16 @@ export default function JobApplicationPage() {
 
     if (success) return (
         <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
-            {/* Background Pharaoh Video */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <video autoPlay muted loop playsInline className="w-full h-full object-cover object-[24%_center] sm:object-center opacity-25 filter brightness-75">
+            {/* Background Pharaoh Video - Desktop Only */}
+            <div className="hidden lg:block fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <video autoPlay muted loop playsInline className="w-full h-full object-cover object-center opacity-25 filter brightness-75">
                     <source src="/videos/applynow.webm" type="video/webm" />
                 </video>
                 <div className="absolute inset-0 bg-black/80" />
             </div>
 
             {/* Success Card */}
-            <div className="relative z-10 text-center max-w-md w-full bg-[#111112]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <div className="relative z-10 text-center max-w-md w-full bg-[#121214] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
                 <div className="w-14 h-14 mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center">
                     <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                 </div>
@@ -297,20 +297,20 @@ export default function JobApplicationPage() {
 
     return (
         <div dir="ltr" className="min-h-screen lg:h-screen overflow-x-hidden overflow-y-auto lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
-            {/* Background Pharaoh Video */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Background Pharaoh Video - Desktop Only (Hidden on Mobile) */}
+            <div className="hidden lg:block fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <video
                     autoPlay
                     muted
                     loop
                     playsInline
-                    className="w-full h-full object-cover object-[24%_center] sm:object-center opacity-25 filter brightness-95 contrast-110"
+                    className="w-full h-full object-cover object-center opacity-30 filter brightness-90 contrast-110"
                 >
                     <source src="/videos/applynow.webm" type="video/webm" />
                 </video>
-                {/* Gradient Overlays for High Contrast & Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/85 via-[#0A0A0A]/55 to-[#0A0A0A]/90" />
-                <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,#0A0A0A_95%)]" />
+                {/* Gradient Overlays for Desktop */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/80 via-[#0A0A0A]/55 to-[#0A0A0A]/90" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,#0A0A0A_95%)]" />
             </div>
 
             {/* Ambient Background Glows */}
@@ -346,7 +346,7 @@ export default function JobApplicationPage() {
                 <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch lg:h-full">
                     
                     {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
-                    <div className="lg:col-span-5 bg-[#0e0e11]/92 backdrop-blur-xl border border-white/15 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between shadow-2xl shadow-black/80">
+                    <div className="lg:col-span-5 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between">
                         <div>
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5">
                                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
@@ -380,7 +380,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-black/60 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full bg-[#1A1A1E] border rounded-lg overflow-hidden transition-all focus-within:ring-1",
                                             errors.email ? iE : iN
                                         )}
                                     >
@@ -413,7 +413,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-black/60 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full bg-[#1A1A1E] border rounded-lg overflow-hidden transition-all focus-within:ring-1",
                                             errors.phone ? iE : iN
                                         )}
                                     >
@@ -510,7 +510,7 @@ export default function JobApplicationPage() {
                     </div>
 
                     {/* RIGHT COLUMN: Committee Selection & Dynamic Questions (7 Cols) */}
-                    <div className="lg:col-span-7 bg-[#0e0e11]/92 backdrop-blur-xl border border-white/15 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between shadow-2xl shadow-black/80 lg:overflow-hidden">
+                    <div className="lg:col-span-7 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between lg:overflow-hidden">
                         
                         <div className="flex-1 flex flex-col lg:overflow-hidden">
                             {/* Section Header */}
@@ -534,7 +534,7 @@ export default function JobApplicationPage() {
                                                 'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2',
                                                 isActive
                                                     ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
-                                                    : 'bg-black/60 border-white/10 hover:bg-white/[0.05] hover:border-white/20'
+                                                    : 'bg-[#1A1A1E] border-white/10 hover:bg-white/[0.05] hover:border-white/20'
                                             )}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
@@ -558,7 +558,7 @@ export default function JobApplicationPage() {
 
                             {/* Dynamic Details Panel: Tabs + Compact Fields with Inner Scroll */}
                             {selectedCommittees.length > 0 ? (
-                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/60 border border-white/10 rounded-xl p-3 lg:overflow-hidden">
+                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-[#16161A] border border-white/10 rounded-xl p-3 lg:overflow-hidden">
                                     {/* Tabs when multiple committees selected */}
                                     {selectedCommittees.length > 1 && (
                                         <div className={cn(
