@@ -10,6 +10,11 @@ const eslintConfig = defineConfig([
     plugins: {
       "react-compiler": reactCompiler,
     },
+    settings: {
+      react: {
+        version: "19.0.0",
+      },
+    },
     rules: {
       "react-compiler/react-compiler": "error",
     },
