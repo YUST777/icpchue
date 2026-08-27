@@ -83,8 +83,8 @@ export default function JobApplicationPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Compact styling for zoomed-out zero-scroll layout
-    const iB = 'w-full px-3 py-2 bg-black/50 border rounded-lg text-white text-xs placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
+    // Compact styling for zoomed-out zero-scroll layout (text-base on mobile prevents iOS Safari auto-zoom)
+    const iB = 'w-full px-3 py-2 bg-black/50 border rounded-lg text-white text-base sm:text-xs placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
     const iN = 'border-white/[0.08] focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
     const iE = 'border-red-500/50 focus:ring-red-500/50';
     const labelStyle = 'block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-0.5';
@@ -357,7 +357,7 @@ export default function JobApplicationPage() {
 
             {/* Main Content: 2 Balanced Columns — Fits on 1 Screen without Scrolling */}
             <main className="relative z-10 flex-1 py-3 lg:overflow-hidden">
-                <form onSubmit={handleSubmit} className="h-full grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch">
+                <form onSubmit={handleSubmit} noValidate className="h-full grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch">
                     
                     {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
                     <div className="lg:col-span-5 bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-xl shadow-black/30">
@@ -372,9 +372,14 @@ export default function JobApplicationPage() {
                             <div className="space-y-2.5">
                                 {/* Full Name */}
                                 <div>
-                                    <label className={labelStyle}>Full Name <span className="text-red-400">*</span></label>
+                                    <label htmlFor="fullName" className={labelStyle}>Full Name <span className="text-red-400">*</span></label>
                                     <input
+                                        id="fullName"
+                                        name="name"
                                         type="text"
+                                        autoComplete="name"
+                                        enterKeyHint="next"
+                                        aria-invalid={!!errors.name}
                                         value={name}
                                         onChange={e => { setName(e.target.value); setErrors(p => { const c = { ...p }; delete c.name; return c; }); }}
                                         placeholder="Your full name"
@@ -385,7 +390,7 @@ export default function JobApplicationPage() {
 
                                 {/* Horus ID */}
                                 <div>
-                                    <label className={labelStyle}>Horus ID <span className="text-red-400">*</span></label>
+                                    <label htmlFor="horusId" className={labelStyle}>Horus ID <span className="text-red-400">*</span></label>
                                     <div
                                         dir="ltr"
                                         className={cn(
@@ -394,13 +399,18 @@ export default function JobApplicationPage() {
                                         )}
                                     >
                                         <input
+                                            id="horusId"
+                                            name="studentId"
                                             type="text"
                                             inputMode="numeric"
+                                            autoComplete="off"
+                                            enterKeyHint="next"
+                                            aria-invalid={!!errors.email}
                                             dir="ltr"
                                             value={email}
                                             onChange={e => handleEmail(e.target.value)}
                                             placeholder="8251835"
-                                            className="w-full bg-transparent px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3 py-2 text-white text-base sm:text-xs placeholder-white/20 focus:outline-none text-left font-mono"
                                         />
 
                                         {/* Hardcoded @horus.edu.eg Suffix Badge on the Right */}
@@ -413,7 +423,7 @@ export default function JobApplicationPage() {
 
                                 {/* WhatsApp Phone */}
                                 <div>
-                                    <label className={labelStyle}>WhatsApp Phone <span className="text-red-400">*</span></label>
+                                    <label htmlFor="phone" className={labelStyle}>WhatsApp Phone <span className="text-red-400">*</span></label>
                                     <div
                                         dir="ltr"
                                         className={cn(
@@ -428,14 +438,19 @@ export default function JobApplicationPage() {
                                         </div>
 
                                         <input
+                                            id="phone"
+                                            name="phone"
                                             type="tel"
-                                            inputMode="numeric"
+                                            inputMode="tel"
+                                            autoComplete="tel"
+                                            enterKeyHint="next"
+                                            aria-invalid={!!errors.phone}
                                             dir="ltr"
                                             value={phone}
                                             onChange={e => handlePhone(e.target.value)}
                                             placeholder="01012345678"
                                             maxLength={11}
-                                            className="w-full bg-transparent px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3 py-2 text-white text-base sm:text-xs placeholder-white/20 focus:outline-none text-left font-mono"
                                         />
                                     </div>
                                     {errors.phone && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.phone}</p>}
@@ -444,8 +459,11 @@ export default function JobApplicationPage() {
                                 {/* Faculty & Academic Level (Combined Compact Row) */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div>
-                                        <label className={labelStyle}>Faculty <span className="text-red-400">*</span></label>
+                                        <label htmlFor="faculty" className={labelStyle}>Faculty <span className="text-red-400">*</span></label>
                                         <select
+                                            id="faculty"
+                                            name="faculty"
+                                            aria-invalid={!!errors.faculty}
                                             value={faculty}
                                             onChange={e => { setFaculty(e.target.value); setErrors(p => { const c = { ...p }; delete c.faculty; return c; }); }}
                                             className={cn(iB, 'appearance-none cursor-pointer', errors.faculty ? iE : iN)}
@@ -483,10 +501,15 @@ export default function JobApplicationPage() {
 
                                 {/* National ID */}
                                 <div>
-                                    <label className={labelStyle}>National ID <span className="text-red-400">*</span></label>
+                                    <label htmlFor="nationalId" className={labelStyle}>National ID <span className="text-red-400">*</span></label>
                                     <input
+                                        id="nationalId"
+                                        name="nationalId"
                                         type="text"
                                         inputMode="numeric"
+                                        autoComplete="off"
+                                        enterKeyHint="done"
+                                        aria-invalid={!!errors.nationalId}
                                         maxLength={14}
                                         value={nationalId}
                                         onChange={e => handleNationalId(e.target.value)}
