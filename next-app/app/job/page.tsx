@@ -447,7 +447,7 @@ export default function JobApplicationPage() {
                                 <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/40 border border-white/5 rounded-xl p-3 lg:overflow-hidden">
                                     {/* Tabs when multiple committees selected */}
                                     {selectedCommittees.length > 1 && (
-                                        <div className="flex gap-1.5 pb-2.5 mb-2 border-b border-white/5 overflow-x-auto shrink-0">
+                                        <div className="flex gap-1.5 pb-2 mb-2.5 border-b border-white/5 overflow-x-auto no-scrollbar shrink-0 select-none">
                                             {selectedCommittees.map(id => {
                                                 const c = committees.find(item => item.id === id);
                                                 if (!c) return null;
@@ -458,14 +458,14 @@ export default function JobApplicationPage() {
                                                         type="button"
                                                         onClick={() => setActiveTab(id)}
                                                         className={cn(
-                                                            'px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer',
+                                                            'flex-1 min-w-fit px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap',
                                                             isTabActive
-                                                                ? 'bg-[#E8C15A] text-black shadow-sm'
-                                                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                                                ? 'bg-[#E8C15A] text-black shadow-md shadow-[#E8C15A]/10'
+                                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
                                                         )}
                                                     >
                                                         {getCommitteeIcon(id, isTabActive ? 'text-black' : 'text-white/60')}
-                                                        <span>{c.name.split(' ')[0]}</span>
+                                                        <span>{c.name}</span>
                                                     </button>
                                                 );
                                             })}
@@ -725,6 +725,13 @@ export default function JobApplicationPage() {
                 }
                 .custom-scroll::-webkit-scrollbar-thumb:hover {
                     background: rgba(232, 193, 90, 0.4);
+                }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
         </div>
