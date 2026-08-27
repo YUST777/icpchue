@@ -127,8 +127,8 @@ export default function JobApplicationPage() {
         const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
         if (!trimmedEmail) {
             e.email = 'Horus ID is required';
-        } else if (trimmedEmail.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-            e.email = 'Invalid email address';
+        } else if (!/^\d{7,10}$/.test(trimmedEmail)) {
+            e.email = 'Enter valid 7-10 digit Horus ID';
         }
 
         const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
@@ -157,8 +157,8 @@ export default function JobApplicationPage() {
         setSubmitError(null);
 
         const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
-        const fullEmail = trimmedEmail.includes('@') ? trimmedEmail : `${trimmedEmail}@horus.edu.eg`;
-        const studentId = trimmedEmail.includes('@') ? trimmedEmail.split('@')[0] : trimmedEmail;
+        const fullEmail = `${trimmedEmail}@horus.edu.eg`;
+        const studentId = trimmedEmail;
         const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
         const fullPhone = `+20${normalizedPhone}`;
 
@@ -280,9 +280,9 @@ export default function JobApplicationPage() {
                                     {errors.name && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.name}</p>}
                                 </div>
 
-                                {/* Email or Horus ID */}
+                                {/* Horus ID */}
                                 <div>
-                                    <label className={labelStyle}>Email or Horus ID <span className="text-red-400">*</span></label>
+                                    <label className={labelStyle}>Horus ID <span className="text-red-400">*</span></label>
                                     <div
                                         dir="ltr"
                                         className={cn(
@@ -290,19 +290,20 @@ export default function JobApplicationPage() {
                                             errors.email ? iE : iN
                                         )}
                                     >
-                                        {/* Hardcoded @horus.edu.eg Prefix Badge on the Left */}
-                                        <div className="flex items-center px-2.5 py-2 bg-white/[0.04] border-r border-white/10 text-[#E8C15A]/80 text-xs font-mono shrink-0 select-none">
-                                            @horus.edu.eg
-                                        </div>
-
                                         <input
                                             type="text"
+                                            inputMode="numeric"
                                             dir="ltr"
                                             value={email}
                                             onChange={e => handleEmail(e.target.value)}
                                             placeholder="8251835"
                                             className="w-full bg-transparent px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none text-left font-mono"
                                         />
+
+                                        {/* Hardcoded @horus.edu.eg Suffix Badge on the Right */}
+                                        <div className="flex items-center px-2.5 py-2 bg-white/[0.04] border-l border-white/10 text-[#E8C15A]/80 text-xs font-mono shrink-0 select-none">
+                                            @horus.edu.eg
+                                        </div>
                                     </div>
                                     {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.email}</p>}
                                 </div>
