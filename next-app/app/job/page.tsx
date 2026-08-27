@@ -203,8 +203,16 @@ export default function JobApplicationPage() {
     };
 
     if (success) return (
-        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-6">
-            <div className="text-center max-w-md bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-6 relative overflow-hidden">
+            {/* Background Pharaoh Video */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-20">
+                    <source src="/videos/applynow.webm" type="video/webm" />
+                </video>
+                <div className="absolute inset-0 bg-black/75" />
+            </div>
+
+            <div className="relative z-10 text-center max-w-md bg-[#111]/90 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl">
                 <div className="w-16 h-16 mx-auto mb-5 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
@@ -224,9 +232,25 @@ export default function JobApplicationPage() {
 
     return (
         <div dir="ltr" className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
+            {/* Background Pharaoh Video */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover opacity-25 filter brightness-90 contrast-110"
+                >
+                    <source src="/videos/applynow.webm" type="video/webm" />
+                </video>
+                {/* Gradient Overlays for High Contrast & Text Readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/85 via-[#0A0A0A]/65 to-[#0A0A0A]/95" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#0A0A0A_90%)]" />
+            </div>
+
             {/* Ambient Background Glows */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-[400px] h-[250px] bg-[#E8C15A]/[0.03] rounded-full blur-[120px]" />
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 left-1/4 w-[400px] h-[250px] bg-[#E8C15A]/[0.04] rounded-full blur-[120px]" />
                 <div className="absolute bottom-0 right-1/4 w-[400px] h-[250px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
             </div>
 
