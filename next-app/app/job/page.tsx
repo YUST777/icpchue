@@ -504,13 +504,13 @@ export default function JobApplicationPage() {
                                     )}
 
                                     {/* Inner Scrollable Panel — Page itself never scrolls on desktop */}
-                                    <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scroll text-xs max-h-[320px] lg:max-h-none">
+                                    <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar text-xs max-h-[320px] lg:max-h-none">
                                         
                                         {/* TAB 1: MEDIA */}
                                         {(selectedCommittees.length === 1 ? selectedCommittees.includes('media') : activeTab === 'media') && (
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-2">
                                                 <div>
-                                                    <label className={labelStyle}>Your Skills <span className="text-red-400">*</span></label>
+                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Your Skills <span className="text-red-400">*</span></label>
                                                     <div className="grid grid-cols-2 gap-1.5">
                                                         {mediaSkills.map(skill => {
                                                             const isSkillActive = selectedMediaSkills.includes(skill);
@@ -520,7 +520,7 @@ export default function JobApplicationPage() {
                                                                     type="button"
                                                                     onClick={() => toggleMediaSkill(skill)}
                                                                     className={cn(
-                                                                        'px-2.5 py-2 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
+                                                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
                                                                         isSkillActive
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
                                                                             : 'bg-black/50 border-white/5 text-white/50 hover:bg-white/5'
@@ -535,7 +535,7 @@ export default function JobApplicationPage() {
                                                 </div>
 
                                                 <div>
-                                                    <label className={labelStyle}>Own a camera?</label>
+                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Own a camera?</label>
                                                     <div className="flex gap-1.5 max-w-[200px]">
                                                         {['yes', 'no'].map(opt => (
                                                             <button
