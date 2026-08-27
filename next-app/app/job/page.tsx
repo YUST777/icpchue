@@ -11,14 +11,12 @@ import {
     Users,
     CalendarCheck,
     GraduationCap,
-    Code2,
     Camera,
     Shirt,
-    Sparkles,
     Trophy,
 } from 'lucide-react';
 import { facultyOptions, levelOptions } from '@/app/register/constants';
-import { committees, mediaSkills, tshirtSizes, weeklyHoursOptions } from '@/app/job/constants';
+import { committees, mediaSkills } from '@/app/job/constants';
 
 function cn(...c: (string | boolean | undefined)[]) {
     return c.filter(Boolean).join(' ');
@@ -58,7 +56,6 @@ export default function JobApplicationPage() {
     // Media
     const [selectedMediaSkills, setSelectedMediaSkills] = useState<string[]>([]);
     const [hasCamera, setHasCamera] = useState('');
-    const [portfolioLink, setPortfolioLink] = useState('');
 
     // Codeforces (Mentor / Instructor)
     const [codeforcesHandle, setCodeforcesHandle] = useState('');
@@ -66,12 +63,9 @@ export default function JobApplicationPage() {
     // Mentor
     const [participatedEcpc, setParticipatedEcpc] = useState('');
     const [contestExperience, setContestExperience] = useState('');
-    const [weeklyAvailability, setWeeklyAvailability] = useState('');
 
     // Organizing
     const [hasEcpcTshirt, setHasEcpcTshirt] = useState('');
-    const [tshirtSize, setTshirtSize] = useState('');
-    const [campusDays, setCampusDays] = useState('');
     const [organizingExperience, setOrganizingExperience] = useState('');
 
     // Instructor
@@ -211,15 +205,10 @@ export default function JobApplicationPage() {
 
         const cleanNid = toAsciiDigits(nationalId).replace(/\D/g, '');
 
-        let cleanCf = codeforcesHandle.trim()
+        const cleanCf = codeforcesHandle.trim()
             .replace(/^https?:\/\/(www\.)?codeforces\.com\/profile\//i, '')
             .replace(/\/$/, '')
             .trim();
-
-        let cleanPortfolio = portfolioLink.trim();
-        if (cleanPortfolio && !/^https?:\/\//i.test(cleanPortfolio)) {
-            cleanPortfolio = `https://${cleanPortfolio}`;
-        }
 
         try {
             const res = await fetch('/api/job/apply', {
@@ -236,15 +225,11 @@ export default function JobApplicationPage() {
                     committees: selectedCommittees,
                     mediaSkills: selectedMediaSkills,
                     hasCamera,
-                    portfolioLink: cleanPortfolio || null,
                     codeforcesHandle: cleanCf || null,
                     contestExperience: participatedEcpc
                         ? `ECPC: ${participatedEcpc === 'yes' ? 'Yes' : 'No'}${contestExperience.trim() ? ` | ${contestExperience.trim()}` : ''}`
                         : contestExperience.trim() || null,
-                    weeklyAvailability: weeklyAvailability || null,
                     hasEcpcTshirt,
-                    tshirtSize: tshirtSize || null,
-                    campusDays: campusDays.trim() || null,
                     organizingExperience: organizingExperience.trim() || null,
                     preferredTeachingLevel: preferredTeachingLevel || null,
                     teachingExperience: teachingExperience.trim() || null,
@@ -254,8 +239,9 @@ export default function JobApplicationPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Submission failed');
             setSuccess(true);
-        } catch (err: any) {
-            setSubmitError(err.message || 'Something went wrong');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Something went wrong';
+            setSubmitError(message);
         } finally {
             setLoading(false);
         }
