@@ -7,7 +7,7 @@ export const committees = [
   },
   {
     id: 'mentor',
-    name: 'Mentorship',
+    name: 'Mentor',
     icon: 'Users',
     description: 'Guide teams, track progress & bridge with instructors',
   },
