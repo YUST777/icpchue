@@ -90,28 +90,15 @@ export default function JobApplicationPage() {
     const labelStyle = 'block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-0.5';
 
     const handleEmail = (val: string) => {
-        if (val.includes('@') || val.length < email.length) {
-            setEmail(val);
-            if (errors.email) setErrors(p => { const c = { ...p }; delete c.email; return c; });
-            return;
-        }
-        if (/^\d{7,8}$/.test(val)) {
-            setEmail(val + '@horus.edu.eg');
-        } else {
-            setEmail(val);
-        }
+        const clean = val.replace(/@horus\.edu\.eg$/i, '');
+        setEmail(clean);
         if (errors.email) setErrors(p => { const c = { ...p }; delete c.email; return c; });
     };
 
     const handlePhone = (val: string) => {
-        let v = val.replace(/[^\d+]/g, '');
-        if (v && !v.startsWith('+20')) {
-            if (v.startsWith('20')) v = '+' + v;
-            else if (v.startsWith('0')) v = '+20' + v.substring(1);
-            else if (!v.startsWith('+')) v = '+20' + v;
-        }
-        if (v.length > 13) v = v.substring(0, 13);
-        setPhone(v);
+        // Strip non-digits and keep max 11 digits
+        const digits = val.replace(/\D/g, '').slice(0, 11);
+        setPhone(digits);
         if (errors.phone) setErrors(p => { const c = { ...p }; delete c.phone; return c; });
     };
 
@@ -136,8 +123,19 @@ export default function JobApplicationPage() {
     const validate = () => {
         const e: FormErrors = {};
         if (!name.trim()) e.name = 'Full name is required';
-        if (!email.trim() || !email.includes('@')) e.email = 'Valid email required';
-        if (!phone.trim() || !/^\+20\d{10}$/.test(phone)) e.phone = 'Valid phone required (+20...)';
+
+        const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
+        if (!trimmedEmail) {
+            e.email = 'Horus ID is required';
+        } else if (trimmedEmail.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+            e.email = 'Invalid email address';
+        }
+
+        const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
+        if (!normalizedPhone || !/^1\d{9}$/.test(normalizedPhone)) {
+            e.phone = 'Valid phone required (01xxxxxxxxx)';
+        }
+
         if (!faculty) e.faculty = 'Faculty required';
         if (!academicLevel) e.academicLevel = 'Level required';
         if (!nationalId.trim() || nationalId.length !== 14) e.nationalId = '14-digit National ID is required';
@@ -158,7 +156,11 @@ export default function JobApplicationPage() {
         setLoading(true);
         setSubmitError(null);
 
-        const studentId = email.includes('@') ? email.split('@')[0] : '';
+        const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
+        const fullEmail = trimmedEmail.includes('@') ? trimmedEmail : `${trimmedEmail}@horus.edu.eg`;
+        const studentId = trimmedEmail.includes('@') ? trimmedEmail.split('@')[0] : trimmedEmail;
+        const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
+        const fullPhone = `+20${normalizedPhone}`;
 
         try {
             const res = await fetch('/api/job/apply', {
@@ -166,9 +168,9 @@ export default function JobApplicationPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: name.trim(),
-                    email: email.toLowerCase().trim(),
+                    email: fullEmail.toLowerCase(),
                     studentId,
-                    phone: phone.trim(),
+                    phone: fullPhone,
                     faculty,
                     academicLevel,
                     nationalId: nationalId.trim() || null,
@@ -281,28 +283,57 @@ export default function JobApplicationPage() {
                                 {/* Email or Horus ID */}
                                 <div>
                                     <label className={labelStyle}>Email or Horus ID <span className="text-red-400">*</span></label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={e => handleEmail(e.target.value)}
-                                        placeholder="Enter your email or Horus ID"
-                                        className={cn(iB, errors.email ? iE : iN)}
+                                    <div
                                         dir="ltr"
-                                    />
+                                        className={cn(
+                                            "flex items-stretch w-full bg-black/50 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            errors.email ? iE : iN
+                                        )}
+                                    >
+                                        {/* Hardcoded @horus.edu.eg Prefix Badge on the Left */}
+                                        <div className="flex items-center px-2.5 py-2 bg-white/[0.04] border-r border-white/10 text-[#E8C15A]/80 text-xs font-mono shrink-0 select-none">
+                                            @horus.edu.eg
+                                        </div>
+
+                                        <input
+                                            type="text"
+                                            dir="ltr"
+                                            value={email}
+                                            onChange={e => handleEmail(e.target.value)}
+                                            placeholder="8251835"
+                                            className="w-full bg-transparent px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                        />
+                                    </div>
                                     {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.email}</p>}
                                 </div>
 
                                 {/* WhatsApp Phone */}
                                 <div>
                                     <label className={labelStyle}>WhatsApp Phone <span className="text-red-400">*</span></label>
-                                    <input
-                                        type="text"
-                                        value={phone}
-                                        onChange={e => handlePhone(e.target.value)}
-                                        placeholder="+201xxxxxxxxx"
-                                        className={cn(iB, errors.phone ? iE : iN)}
+                                    <div
                                         dir="ltr"
-                                    />
+                                        className={cn(
+                                            "flex items-stretch w-full bg-black/50 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            errors.phone ? iE : iN
+                                        )}
+                                    >
+                                        {/* Prefix Badge (Egyptian Flag +20) */}
+                                        <div className="flex items-center gap-1.5 px-2.5 py-2 bg-white/[0.04] border-r border-white/10 text-white/70 text-xs font-bold shrink-0 select-none">
+                                            <span className="text-sm leading-none">🇪🇬</span>
+                                            <span className="font-mono text-white/80 text-xs">+20</span>
+                                        </div>
+
+                                        <input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            dir="ltr"
+                                            value={phone}
+                                            onChange={e => handlePhone(e.target.value)}
+                                            placeholder="01012345678"
+                                            maxLength={11}
+                                            className="w-full bg-transparent px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                        />
+                                    </div>
                                     {errors.phone && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.phone}</p>}
                                 </div>
 
