@@ -89,17 +89,40 @@ export default function JobApplicationPage() {
     const iE = 'border-red-500/50 focus:ring-red-500/50';
     const labelStyle = 'block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-0.5';
 
+    // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
+    const toAsciiDigits = (str: string) => {
+        return (str || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+    };
+
     const handleEmail = (val: string) => {
-        const clean = val.replace(/@horus\.edu\.eg$/i, '');
+        const ascii = toAsciiDigits(val);
+        const clean = ascii.replace(/@horus\.edu\.eg$/i, '').replace(/\D/g, '').slice(0, 10);
         setEmail(clean);
         if (errors.email) setErrors(p => { const c = { ...p }; delete c.email; return c; });
+        if (submitError) setSubmitError(null);
     };
 
     const handlePhone = (val: string) => {
-        // Strip non-digits and keep max 11 digits
-        const digits = val.replace(/\D/g, '').slice(0, 11);
-        setPhone(digits);
+        let digits = toAsciiDigits(val).replace(/\D/g, '');
+        if (digits.startsWith('0020')) digits = digits.slice(4);
+        else if (digits.startsWith('20') && digits.length > 10) digits = digits.slice(2);
+        setPhone(digits.slice(0, 11));
         if (errors.phone) setErrors(p => { const c = { ...p }; delete c.phone; return c; });
+        if (submitError) setSubmitError(null);
+    };
+
+    const handleNationalId = (val: string) => {
+        const digits = toAsciiDigits(val).replace(/\D/g, '').slice(0, 14);
+        setNationalId(digits);
+        if (errors.nationalId) setErrors(p => { const c = { ...p }; delete c.nationalId; return c; });
+        if (submitError) setSubmitError(null);
+    };
+
+    const handleCodeforces = (val: string) => {
+        const clean = val.replace(/^https?:\/\/(www\.)?codeforces\.com\/profile\//i, '').replace(/\/$/, '').trim();
+        setCodeforcesHandle(clean);
+        if (errors.codeforcesHandle) setErrors(p => { const c = { ...p }; delete c.codeforcesHandle; return c; });
+        if (submitError) setSubmitError(null);
     };
 
     const toggleCommittee = (id: string) => {
@@ -111,34 +134,51 @@ export default function JobApplicationPage() {
             return next;
         });
         if (errors.committees) setErrors(p => { const c = { ...p }; delete c.committees; return c; });
+        if (submitError) setSubmitError(null);
     };
 
     const toggleMediaSkill = (skill: string) => {
         setSelectedMediaSkills(p => p.includes(skill) ? p.filter(s => s !== skill) : [...p, skill]);
         if (errors.mediaSkills) setErrors(p => { const c = { ...p }; delete c.mediaSkills; return c; });
+        if (submitError) setSubmitError(null);
     };
+
+    const currentTab = selectedCommittees.includes(activeTab)
+        ? activeTab
+        : (selectedCommittees[0] || 'media');
 
     const needsCf = selectedCommittees.includes('mentor') || selectedCommittees.includes('instructor');
 
     const validate = () => {
         const e: FormErrors = {};
-        if (!name.trim()) e.name = 'Full name is required';
+        const trimmedName = name.trim();
+        if (!trimmedName || trimmedName.length < 3) {
+            e.name = 'Full name is required (at least 3 characters)';
+        }
 
-        const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
+        const trimmedEmail = toAsciiDigits(email).trim().replace(/@horus\.edu\.eg$/i, '').replace(/\D/g, '');
         if (!trimmedEmail) {
             e.email = 'Horus ID is required';
         } else if (!/^\d{7,10}$/.test(trimmedEmail)) {
             e.email = 'Enter valid 7-10 digit Horus ID';
         }
 
-        const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
-        if (!normalizedPhone || !/^1\d{9}$/.test(normalizedPhone)) {
-            e.phone = 'Valid phone required (01xxxxxxxxx)';
+        let digitsPhone = toAsciiDigits(phone).replace(/\D/g, '');
+        if (digitsPhone.startsWith('0020')) digitsPhone = digitsPhone.slice(4);
+        else if (digitsPhone.startsWith('20') && digitsPhone.length > 10) digitsPhone = digitsPhone.slice(2);
+        const normalizedPhone = digitsPhone.startsWith('0') ? digitsPhone.slice(1) : digitsPhone;
+
+        if (!normalizedPhone || !/^1[0125]\d{8}$/.test(normalizedPhone)) {
+            e.phone = 'Valid Egyptian mobile required (01xxxxxxxxx)';
         }
 
         if (!faculty) e.faculty = 'Faculty required';
         if (!academicLevel) e.academicLevel = 'Level required';
-        if (!nationalId.trim() || nationalId.length !== 14) e.nationalId = '14-digit National ID is required';
+
+        const cleanNid = toAsciiDigits(nationalId).replace(/\D/g, '');
+        if (!cleanNid || !/^[23]\d{13}$/.test(cleanNid)) {
+            e.nationalId = '14-digit National ID starting with 2 or 3';
+        }
 
         if (selectedCommittees.length === 0) e.committees = 'Select at least one committee';
         if (needsCf && !codeforcesHandle.trim()) e.codeforcesHandle = 'Codeforces handle is required';
@@ -146,7 +186,11 @@ export default function JobApplicationPage() {
         if (selectedCommittees.includes('instructor') && !preferredTeachingLevel) e.preferredTeachingLevel = 'Select level';
 
         setErrors(e);
-        return Object.keys(e).length === 0;
+        const isValid = Object.keys(e).length === 0;
+        if (!isValid) {
+            setSubmitError('Please review the required fields highlighted in red.');
+        }
+        return isValid;
     };
 
     const handleSubmit = async (ev: React.FormEvent) => {
@@ -156,11 +200,26 @@ export default function JobApplicationPage() {
         setLoading(true);
         setSubmitError(null);
 
-        const trimmedEmail = email.trim().replace(/@horus\.edu\.eg$/i, '');
-        const fullEmail = `${trimmedEmail}@horus.edu.eg`;
-        const studentId = trimmedEmail;
-        const normalizedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
+        const studentId = toAsciiDigits(email).trim().replace(/@horus\.edu\.eg$/i, '').replace(/\D/g, '');
+        const fullEmail = `${studentId}@horus.edu.eg`;
+
+        let digitsPhone = toAsciiDigits(phone).replace(/\D/g, '');
+        if (digitsPhone.startsWith('0020')) digitsPhone = digitsPhone.slice(4);
+        else if (digitsPhone.startsWith('20') && digitsPhone.length > 10) digitsPhone = digitsPhone.slice(2);
+        const normalizedPhone = digitsPhone.startsWith('0') ? digitsPhone.slice(1) : digitsPhone;
         const fullPhone = `+20${normalizedPhone}`;
+
+        const cleanNid = toAsciiDigits(nationalId).replace(/\D/g, '');
+
+        let cleanCf = codeforcesHandle.trim()
+            .replace(/^https?:\/\/(www\.)?codeforces\.com\/profile\//i, '')
+            .replace(/\/$/, '')
+            .trim();
+
+        let cleanPortfolio = portfolioLink.trim();
+        if (cleanPortfolio && !/^https?:\/\//i.test(cleanPortfolio)) {
+            cleanPortfolio = `https://${cleanPortfolio}`;
+        }
 
         try {
             const res = await fetch('/api/job/apply', {
@@ -173,12 +232,12 @@ export default function JobApplicationPage() {
                     phone: fullPhone,
                     faculty,
                     academicLevel,
-                    nationalId: nationalId.trim() || null,
+                    nationalId: cleanNid || null,
                     committees: selectedCommittees,
                     mediaSkills: selectedMediaSkills,
                     hasCamera,
-                    portfolioLink: portfolioLink.trim() || null,
-                    codeforcesHandle: codeforcesHandle.trim() || null,
+                    portfolioLink: cleanPortfolio || null,
+                    codeforcesHandle: cleanCf || null,
                     contestExperience: participatedEcpc
                         ? `ECPC: ${participatedEcpc === 'yes' ? 'Yes' : 'No'}${contestExperience.trim() ? ` | ${contestExperience.trim()}` : ''}`
                         : contestExperience.trim() || null,
@@ -430,7 +489,7 @@ export default function JobApplicationPage() {
                                         inputMode="numeric"
                                         maxLength={14}
                                         value={nationalId}
-                                        onChange={e => { setNationalId(e.target.value.replace(/\D/g, '')); setErrors(p => { const c = { ...p }; delete c.nationalId; return c; }); }}
+                                        onChange={e => handleNationalId(e.target.value)}
                                         placeholder="14-digit National ID"
                                         className={cn(iB, errors.nationalId ? iE : iN)}
                                         dir="ltr"
@@ -502,7 +561,7 @@ export default function JobApplicationPage() {
                                             {selectedCommittees.map(id => {
                                                 const c = committees.find(item => item.id === id);
                                                 if (!c) return null;
-                                                const isTabActive = activeTab === id;
+                                                const isTabActive = currentTab === id;
                                                 return (
                                                     <button
                                                         key={id}
@@ -527,7 +586,7 @@ export default function JobApplicationPage() {
                                     <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar text-xs max-h-[320px] lg:max-h-none">
                                         
                                         {/* TAB 1: MEDIA */}
-                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('media') : activeTab === 'media') && (
+                                        {currentTab === 'media' && (
                                             <div className="space-y-2">
                                                 <div>
                                                     <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Your Skills <span className="text-red-400">*</span></label>
@@ -578,7 +637,7 @@ export default function JobApplicationPage() {
                                         )}
 
                                         {/* TAB 2: MENTOR */}
-                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('mentor') : activeTab === 'mentor') && (
+                                        {currentTab === 'mentor' && (
                                             <div className="space-y-2.5">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                                     <div>
@@ -586,7 +645,7 @@ export default function JobApplicationPage() {
                                                         <input
                                                             type="text"
                                                             value={codeforcesHandle}
-                                                            onChange={e => { setCodeforcesHandle(e.target.value); setErrors(p => { const c = { ...p }; delete c.codeforcesHandle; return c; }); }}
+                                                            onChange={e => handleCodeforces(e.target.value)}
                                                             placeholder="your_cf_handle"
                                                             className={cn(iB, errors.codeforcesHandle ? iE : iN)}
                                                             dir="ltr"
@@ -630,7 +689,7 @@ export default function JobApplicationPage() {
                                         )}
 
                                         {/* TAB 3: ORGANIZING */}
-                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('organizing') : activeTab === 'organizing') && (
+                                        {currentTab === 'organizing' && (
                                             <div className="space-y-2.5">
                                                 <div>
                                                     <label className={labelStyle}>Has ECPC T-Shirt?</label>
@@ -667,7 +726,7 @@ export default function JobApplicationPage() {
                                         )}
 
                                         {/* TAB 4: INSTRUCTOR */}
-                                        {(selectedCommittees.length === 1 ? selectedCommittees.includes('instructor') : activeTab === 'instructor') && (
+                                        {currentTab === 'instructor' && (
                                             <div className="space-y-2.5">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                                     <div>
@@ -675,7 +734,7 @@ export default function JobApplicationPage() {
                                                         <input
                                                             type="text"
                                                             value={codeforcesHandle}
-                                                            onChange={e => { setCodeforcesHandle(e.target.value); setErrors(p => { const c = { ...p }; delete c.codeforcesHandle; return c; }); }}
+                                                            onChange={e => handleCodeforces(e.target.value)}
                                                             placeholder="your_cf_handle"
                                                             className={cn(iB, errors.codeforcesHandle ? iE : iN)}
                                                             dir="ltr"
