@@ -469,16 +469,16 @@ export default function JobApplicationPage() {
 
                                     <div className="min-w-0 w-full">
                                         <label className={labelStyle}>Academic Level <span className="text-red-400">*</span></label>
-                                        <div className="grid grid-cols-5 gap-1 w-full min-w-0">
+                                        <div className="grid grid-cols-5 gap-1.5 w-full min-w-0">
                                             {levelOptions.map(l => (
                                                 <button
                                                     key={l.value}
                                                     type="button"
                                                     onClick={() => { setAcademicLevel(l.value); setErrors(p => { const c = { ...p }; delete c.academicLevel; return c; }); }}
                                                     className={cn(
-                                                        'w-full min-w-0 py-2 px-0.5 rounded-lg cursor-pointer text-center text-xs font-semibold transition-all border truncate select-none',
+                                                        'w-full py-2 rounded-lg cursor-pointer text-center text-xs font-bold transition-all border select-none',
                                                         academicLevel === l.value
-                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30 font-bold'
+                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30 font-extrabold'
                                                             : 'bg-[#1A1A1E] border-white/10 text-white/60 hover:bg-white/[0.04]'
                                                     )}
                                                 >
@@ -536,24 +536,24 @@ export default function JobApplicationPage() {
                                             type="button"
                                             onClick={() => toggleCommittee(c.id)}
                                             className={cn(
-                                                'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2 min-w-0',
+                                                'relative p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-1.5 min-w-0',
                                                 isActive
                                                     ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
                                                     : 'bg-[#1A1A1E] border-white/10 hover:bg-white/[0.05] hover:border-white/20'
                                             )}
                                         >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/15 border border-[#E8C15A]/25 flex items-center justify-center shrink-0">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#E8C15A]/15 border border-[#E8C15A]/25 flex items-center justify-center shrink-0">
                                                     {getCommitteeIcon(c.id)}
                                                 </div>
-                                                <p className={cn('text-xs font-bold truncate', isActive ? 'text-[#E8C15A]' : 'text-white')}>
+                                                <p className={cn('text-xs font-bold leading-tight', isActive ? 'text-[#E8C15A]' : 'text-white')}>
                                                     {c.name}
                                                 </p>
                                             </div>
                                             {isActive ? (
-                                                <CheckCircle2 size={14} className="text-[#E8C15A] shrink-0" />
+                                                <CheckCircle2 size={13} className="text-[#E8C15A] shrink-0" />
                                             ) : (
-                                                <div className="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" />
+                                                <div className="w-3 h-3 rounded-full border border-white/20 shrink-0" />
                                             )}
                                         </button>
                                     );
