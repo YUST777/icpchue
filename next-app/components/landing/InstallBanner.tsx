@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, Download, Share } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -11,20 +12,21 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function InstallBanner() {
     const [showBanner, setShowBanner] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
+    const [isIOS] = useState(() => typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent));
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const pathname = usePathname();
 
-    // Don't show on the mirror/problem page — it covers the editor
-    const isEditorPage = pathname?.includes('/sheets/') && pathname?.split('/').length > 5;
+    // Don't show on /job or the mirror/problem page — it covers the form / editor
+    const isExcludedPage = 
+        pathname === '/job' || 
+        pathname?.startsWith('/job/') || 
+        (pathname?.includes('/sheets/') && (pathname?.split('/').length ?? 0) > 5);
 
     useEffect(() => {
+        if (isExcludedPage) return;
         const dismissed = localStorage.getItem('pwa-banner-dismissed');
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         if (dismissed || isStandalone) return;
-
-        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        setIsIOS(iOS);
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (!isMobile) return;
@@ -37,13 +39,13 @@ export default function InstallBanner() {
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-        if (iOS) {
+        if (isIOS) {
             const timer = setTimeout(() => setShowBanner(true), 3000);
             return () => { clearTimeout(timer); window.removeEventListener('beforeinstallprompt', handleBeforeInstall); };
         }
 
         return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-    }, []);
+    }, [isExcludedPage, isIOS]);
 
     const handleInstall = async () => {
         if (deferredPrompt) {
@@ -59,7 +61,7 @@ export default function InstallBanner() {
         localStorage.setItem('pwa-banner-dismissed', 'true');
     };
 
-    if (!showBanner || isEditorPage) return null;
+    if (!showBanner || isExcludedPage) return null;
 
     return (
         <div
@@ -69,7 +71,7 @@ export default function InstallBanner() {
             <div className="pointer-events-auto max-w-md mx-auto bg-[#1a1a1a] border border-white/10 rounded-2xl p-3 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] flex items-center gap-3 animate-slideUp mb-2">
                 {/* Icon */}
                 <div className="w-10 h-10 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center shrink-0">
-                    <img src="/icons/icon-192.png" alt="" className="w-6 h-6 rounded" />
+                    <Image src="/icons/icon-192.png" alt="" width={24} height={24} className="w-6 h-6 rounded" />
                 </div>
 
                 {/* Text */}
