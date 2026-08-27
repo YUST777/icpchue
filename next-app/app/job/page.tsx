@@ -77,11 +77,11 @@ export default function JobApplicationPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Compact styling for zoomed-out zero-scroll layout (text-base on mobile prevents iOS Safari auto-zoom)
-    const iB = 'w-full px-3 py-2 bg-black/50 border rounded-lg text-white text-base sm:text-xs placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
-    const iN = 'border-white/[0.08] focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
-    const iE = 'border-red-500/50 focus:ring-red-500/50';
-    const labelStyle = 'block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-0.5';
+    // Compact styling for zoomed-out zero-scroll layout (text-sm on mobile prevents iOS Safari auto-zoom & enhances legibility)
+    const iB = 'w-full px-3 py-2.5 sm:py-2 bg-black/80 border rounded-lg text-white text-sm sm:text-xs placeholder-white/45 focus:outline-none focus:ring-1 transition-all';
+    const iN = 'border-white/20 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
+    const iE = 'border-red-500/70 focus:ring-red-500/60';
+    const labelStyle = 'block text-white font-bold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5 drop-shadow-sm';
 
     // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
     const toAsciiDigits = (str: string) => {
@@ -251,7 +251,7 @@ export default function JobApplicationPage() {
         <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
             {/* Background Pharaoh Video */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-25 filter brightness-75">
+                <video autoPlay muted loop playsInline className="w-full h-full object-cover object-[24%_center] sm:object-center opacity-25 filter brightness-75">
                     <source src="/videos/applynow.webm" type="video/webm" />
                 </video>
                 <div className="absolute inset-0 bg-black/80" />
@@ -296,7 +296,7 @@ export default function JobApplicationPage() {
     );
 
     return (
-        <div dir="ltr" className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
+        <div dir="ltr" className="min-h-screen lg:h-screen overflow-x-hidden overflow-y-auto lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
             {/* Background Pharaoh Video */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <video
@@ -304,13 +304,13 @@ export default function JobApplicationPage() {
                     muted
                     loop
                     playsInline
-                    className="w-full h-full object-cover opacity-25 filter brightness-90 contrast-110"
+                    className="w-full h-full object-cover object-[24%_center] sm:object-center opacity-25 filter brightness-95 contrast-110"
                 >
                     <source src="/videos/applynow.webm" type="video/webm" />
                 </video>
                 {/* Gradient Overlays for High Contrast & Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/85 via-[#0A0A0A]/65 to-[#0A0A0A]/95" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#0A0A0A_90%)]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/85 via-[#0A0A0A]/55 to-[#0A0A0A]/90" />
+                <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,#0A0A0A_95%)]" />
             </div>
 
             {/* Ambient Background Glows */}
@@ -341,12 +341,12 @@ export default function JobApplicationPage() {
                 </div>
             </header>
 
-            {/* Main Content: 2 Balanced Columns — Fits on 1 Screen without Scrolling */}
-            <main className="relative z-10 flex-1 py-3 lg:overflow-hidden">
-                <form onSubmit={handleSubmit} noValidate className="h-full grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch">
+            {/* Main Content: 2 Balanced Columns — Fits on 1 Screen without Scrolling on Desktop */}
+            <main className="relative z-10 flex-1 py-2 lg:py-3 lg:overflow-hidden">
+                <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch lg:h-full">
                     
                     {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
-                    <div className="lg:col-span-5 bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-xl shadow-black/30">
+                    <div className="lg:col-span-5 bg-[#0e0e11]/92 backdrop-blur-xl border border-white/15 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between shadow-2xl shadow-black/80">
                         <div>
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5">
                                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
@@ -380,7 +380,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-black/50 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full bg-black/60 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
                                             errors.email ? iE : iN
                                         )}
                                     >
@@ -396,7 +396,7 @@ export default function JobApplicationPage() {
                                             value={email}
                                             onChange={e => handleEmail(e.target.value)}
                                             placeholder="8251835"
-                                            className="w-full bg-transparent px-3 py-2 text-white text-base sm:text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3 py-2.5 sm:py-2 text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none text-left font-mono"
                                         />
 
                                         {/* Hardcoded @horus.edu.eg Suffix Badge on the Right */}
@@ -413,7 +413,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-black/50 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full bg-black/60 border rounded-lg overflow-hidden transition-all focus-within:ring-1",
                                             errors.phone ? iE : iN
                                         )}
                                     >
@@ -436,7 +436,7 @@ export default function JobApplicationPage() {
                                             onChange={e => handlePhone(e.target.value)}
                                             placeholder="01012345678"
                                             maxLength={11}
-                                            className="w-full bg-transparent px-3 py-2 text-white text-base sm:text-xs placeholder-white/20 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3 py-2.5 sm:py-2 text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none text-left font-mono"
                                         />
                                     </div>
                                     {errors.phone && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.phone}</p>}
@@ -510,7 +510,7 @@ export default function JobApplicationPage() {
                     </div>
 
                     {/* RIGHT COLUMN: Committee Selection & Dynamic Questions (7 Cols) */}
-                    <div className="lg:col-span-7 bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-xl shadow-black/30 lg:overflow-hidden">
+                    <div className="lg:col-span-7 bg-[#0e0e11]/92 backdrop-blur-xl border border-white/15 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between shadow-2xl shadow-black/80 lg:overflow-hidden">
                         
                         <div className="flex-1 flex flex-col lg:overflow-hidden">
                             {/* Section Header */}
@@ -533,22 +533,22 @@ export default function JobApplicationPage() {
                                             className={cn(
                                                 'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2',
                                                 isActive
-                                                    ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 shadow-md shadow-[#E8C15A]/5'
-                                                    : 'bg-black/40 border-white/[0.06] hover:bg-white/[0.03] hover:border-white/10'
+                                                    ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
+                                                    : 'bg-black/60 border-white/10 hover:bg-white/[0.05] hover:border-white/20'
                                             )}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center shrink-0">
+                                                <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/15 border border-[#E8C15A]/25 flex items-center justify-center shrink-0">
                                                     {getCommitteeIcon(c.id)}
                                                 </div>
-                                                <p className={cn('text-xs font-bold whitespace-nowrap', isActive ? 'text-[#E8C15A]' : 'text-white/90')}>
+                                                <p className={cn('text-xs font-bold whitespace-nowrap', isActive ? 'text-[#E8C15A]' : 'text-white')}>
                                                     {c.name}
                                                 </p>
                                             </div>
                                             {isActive ? (
                                                 <CheckCircle2 size={14} className="text-[#E8C15A] shrink-0" />
                                             ) : (
-                                                <div className="w-3.5 h-3.5 rounded-full border border-white/10 shrink-0" />
+                                                <div className="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" />
                                             )}
                                         </button>
                                     );
@@ -558,7 +558,7 @@ export default function JobApplicationPage() {
 
                             {/* Dynamic Details Panel: Tabs + Compact Fields with Inner Scroll */}
                             {selectedCommittees.length > 0 ? (
-                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/40 border border-white/5 rounded-xl p-3 lg:overflow-hidden">
+                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-black/60 border border-white/10 rounded-xl p-3 lg:overflow-hidden">
                                     {/* Tabs when multiple committees selected */}
                                     {selectedCommittees.length > 1 && (
                                         <div className={cn(
