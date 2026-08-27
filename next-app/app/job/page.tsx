@@ -346,7 +346,7 @@ export default function JobApplicationPage() {
                 <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch lg:h-full">
                     
                     {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
-                    <div className="lg:col-span-5 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between">
+                    <div className="lg:col-span-5 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between min-w-0 max-w-full overflow-hidden">
                         <div>
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5">
                                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
@@ -443,38 +443,43 @@ export default function JobApplicationPage() {
                                 </div>
 
                                 {/* Faculty & Academic Level (Combined Compact Row) */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 min-w-0 w-full">
+                                    <div className="min-w-0 w-full">
                                         <label htmlFor="faculty" className={labelStyle}>Faculty <span className="text-red-400">*</span></label>
-                                        <select
-                                            id="faculty"
-                                            name="faculty"
-                                            aria-invalid={!!errors.faculty}
-                                            value={faculty}
-                                            onChange={e => { setFaculty(e.target.value); setErrors(p => { const c = { ...p }; delete c.faculty; return c; }); }}
-                                            className={cn(iB, 'appearance-none cursor-pointer', errors.faculty ? iE : iN)}
-                                        >
-                                            <option value="" className="bg-[#111]">Select faculty</option>
-                                            {facultyOptions.map(f => (
-                                                <option key={f.value} value={f.value} className="bg-[#111]">{f.label.split(' / ')[0]}</option>
-                                            ))}
-                                        </select>
+                                        <div className="relative w-full min-w-0">
+                                            <select
+                                                id="faculty"
+                                                name="faculty"
+                                                aria-invalid={!!errors.faculty}
+                                                value={faculty}
+                                                onChange={e => { setFaculty(e.target.value); setErrors(p => { const c = { ...p }; delete c.faculty; return c; }); }}
+                                                className={cn(iB, 'appearance-none cursor-pointer w-full min-w-0 max-w-full truncate pr-8', errors.faculty ? iE : iN)}
+                                            >
+                                                <option value="" className="bg-[#111]">Select faculty</option>
+                                                {facultyOptions.map(f => (
+                                                    <option key={f.value} value={f.value} className="bg-[#111]">{f.label.split(' / ')[0]}</option>
+                                                ))}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-white/40">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                            </div>
+                                        </div>
                                         {errors.faculty && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.faculty}</p>}
                                     </div>
 
-                                    <div>
+                                    <div className="min-w-0 w-full">
                                         <label className={labelStyle}>Academic Level <span className="text-red-400">*</span></label>
-                                        <div className="flex gap-1">
+                                        <div className="grid grid-cols-5 gap-1 w-full min-w-0">
                                             {levelOptions.map(l => (
                                                 <button
                                                     key={l.value}
                                                     type="button"
                                                     onClick={() => { setAcademicLevel(l.value); setErrors(p => { const c = { ...p }; delete c.academicLevel; return c; }); }}
                                                     className={cn(
-                                                        'flex-1 py-2 rounded-lg cursor-pointer text-center text-xs font-semibold transition-all border',
+                                                        'w-full min-w-0 py-2 px-0.5 rounded-lg cursor-pointer text-center text-xs font-semibold transition-all border truncate select-none',
                                                         academicLevel === l.value
-                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                            : 'bg-black/40 border-white/[0.08] text-white/40 hover:bg-white/[0.04]'
+                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30 font-bold'
+                                                            : 'bg-[#1A1A1E] border-white/10 text-white/60 hover:bg-white/[0.04]'
                                                     )}
                                                 >
                                                     {l.label.replace('Level ', 'L')}
@@ -510,9 +515,9 @@ export default function JobApplicationPage() {
                     </div>
 
                     {/* RIGHT COLUMN: Committee Selection & Dynamic Questions (7 Cols) */}
-                    <div className="lg:col-span-7 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between lg:overflow-hidden">
+                    <div className="lg:col-span-7 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
                         
-                        <div className="flex-1 flex flex-col lg:overflow-hidden">
+                        <div className="flex-1 flex flex-col min-w-0 lg:overflow-hidden">
                             {/* Section Header */}
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5 shrink-0">
                                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
@@ -522,7 +527,7 @@ export default function JobApplicationPage() {
                             </div>
 
                             {/* 4 Committee Cards (Compact 2x2 Grid) */}
-                            <div className="grid grid-cols-2 gap-2 shrink-0 mb-3">
+                            <div className="grid grid-cols-2 gap-2 shrink-0 mb-3 min-w-0">
                                 {committees.map(c => {
                                     const isActive = selectedCommittees.includes(c.id);
                                     return (
@@ -531,7 +536,7 @@ export default function JobApplicationPage() {
                                             type="button"
                                             onClick={() => toggleCommittee(c.id)}
                                             className={cn(
-                                                'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2',
+                                                'relative p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-2 min-w-0',
                                                 isActive
                                                     ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
                                                     : 'bg-[#1A1A1E] border-white/10 hover:bg-white/[0.05] hover:border-white/20'
@@ -541,7 +546,7 @@ export default function JobApplicationPage() {
                                                 <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/15 border border-[#E8C15A]/25 flex items-center justify-center shrink-0">
                                                     {getCommitteeIcon(c.id)}
                                                 </div>
-                                                <p className={cn('text-xs font-bold whitespace-nowrap', isActive ? 'text-[#E8C15A]' : 'text-white')}>
+                                                <p className={cn('text-xs font-bold truncate', isActive ? 'text-[#E8C15A]' : 'text-white')}>
                                                     {c.name}
                                                 </p>
                                             </div>
