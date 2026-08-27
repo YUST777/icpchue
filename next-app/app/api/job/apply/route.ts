@@ -33,18 +33,36 @@ export async function POST(req: NextRequest) {
             teachingExperience,
         } = body;
 
-        // --- Validation ---
-        if (!name?.trim()) {
-            return NextResponse.json({ error: 'الاسم مطلوب' }, { status: 400 });
+        // --- Sanitization & Normalization ---
+        const cleanName = name?.trim();
+        const cleanEmail = email?.toLowerCase().trim();
+        const cleanStudentId = studentId?.trim();
+        const cleanPhone = phone?.trim();
+        const cleanNationalId = nationalId?.trim() || null;
+        let cleanCfHandle = codeforcesHandle?.trim() || null;
+        if (cleanCfHandle) {
+            cleanCfHandle = cleanCfHandle.replace(/^https?:\/\/(www\.)?codeforces\.com\/profile\//i, '').replace(/\/$/, '').trim();
         }
-        if (!email?.trim() || !email.includes('@')) {
+        let cleanPortfolio = portfolioLink?.trim() || null;
+        if (cleanPortfolio && !/^https?:\/\//i.test(cleanPortfolio)) {
+            cleanPortfolio = `https://${cleanPortfolio}`;
+        }
+
+        // --- Validation ---
+        if (!cleanName || cleanName.length < 3) {
+            return NextResponse.json({ error: 'الاسم ثلاثي مطلوب' }, { status: 400 });
+        }
+        if (!cleanEmail || !cleanEmail.includes('@')) {
             return NextResponse.json({ error: 'البريد الإلكتروني غير صالح' }, { status: 400 });
         }
-        if (!studentId?.trim() || studentId.length < 7) {
-            return NextResponse.json({ error: 'رقم القيد غير صالح' }, { status: 400 });
+        if (!cleanStudentId || !/^\d{7,10}$/.test(cleanStudentId)) {
+            return NextResponse.json({ error: 'رقم القيد غير صالح (7 إلى 10 أرقام)' }, { status: 400 });
         }
-        if (!phone?.trim() || !/^\+20\d{10}$/.test(phone)) {
-            return NextResponse.json({ error: 'رقم الهاتف غير صالح' }, { status: 400 });
+        if (!cleanPhone || !/^\+201\d{9}$/.test(cleanPhone)) {
+            return NextResponse.json({ error: 'رقم هاتف الواتساب غير صالح (+201xxxxxxxxx)' }, { status: 400 });
+        }
+        if (!cleanNationalId || !/^[23]\d{13}$/.test(cleanNationalId)) {
+            return NextResponse.json({ error: 'الرقم القومي غير صالح (14 رقم يبدأ بـ 2 أو 3)' }, { status: 400 });
         }
         if (!faculty?.trim()) {
             return NextResponse.json({ error: 'الكلية مطلوبة' }, { status: 400 });
@@ -58,20 +76,33 @@ export async function POST(req: NextRequest) {
 
         // Committee-specific validation
         if (committees.includes('mentor') || committees.includes('instructor')) {
-            if (!codeforcesHandle?.trim()) {
+            if (!cleanCfHandle) {
                 return NextResponse.json({ error: 'Codeforces Handle مطلوب للمينتور والإنستراكتور' }, { status: 400 });
+            }
+        }
+        if (committees.includes('media')) {
+            if (!mediaSkills || !Array.isArray(mediaSkills) || mediaSkills.length === 0) {
+                return NextResponse.json({ error: 'يرجى تحديد مهارة واحدة على الأقل في الميديا' }, { status: 400 });
+            }
+        }
+        if (committees.includes('instructor')) {
+            if (!preferredTeachingLevel?.trim()) {
+                return NextResponse.json({ error: 'يرجى تحديد مستوى التدريس المفضل' }, { status: 400 });
             }
         }
 
         // --- Check for duplicates ---
         const dupCheck = await query(
-            `SELECT id, email, student_id FROM job_applications WHERE email = $1 OR student_id = $2 LIMIT 1`,
-            [email.toLowerCase().trim(), studentId.trim()]
+            `SELECT id, email, student_id, national_id 
+             FROM job_applications 
+             WHERE email = $1 OR student_id = $2 OR (national_id = $3 AND national_id IS NOT NULL) 
+             LIMIT 1`,
+            [cleanEmail, cleanStudentId, cleanNationalId]
         );
 
         if (dupCheck.rows.length > 0) {
             return NextResponse.json(
-                { error: 'يوجد طلب مسجل مسبقاً بهذا البريد أو رقم القيد.' },
+                { error: 'يوجد طلب مسجل مسبقاً بهذا البريد، رقم القيد، أو الرقم القومي.' },
                 { status: 409 }
             );
         }
@@ -94,18 +125,18 @@ export async function POST(req: NextRequest) {
                 $19, $20
             ) RETURNING id, created_at`,
             [
-                name.trim(),
-                email.toLowerCase().trim(),
-                studentId.trim(),
-                phone.trim(),
+                cleanName,
+                cleanEmail,
+                cleanStudentId,
+                cleanPhone,
                 faculty.trim(),
                 academicLevel.trim(),
-                nationalId?.trim() || null,
+                cleanNationalId,
                 committees,
                 mediaSkills || [],
                 hasCamera ? hasCamera === 'yes' : null,
-                portfolioLink?.trim() || null,
-                codeforcesHandle?.trim() || null,
+                cleanPortfolio,
+                cleanCfHandle,
                 contestExperience?.trim() || null,
                 weeklyAvailability?.trim() || null,
                 hasEcpcTshirt ? hasEcpcTshirt === 'yes' : null,
@@ -130,9 +161,14 @@ export async function POST(req: NextRequest) {
         const message = err instanceof Error ? err.message : 'Internal server error';
 
         // Handle unique constraint violations
-        if (message.includes('idx_job_applications_email') || message.includes('idx_job_applications_student_id')) {
+        if (
+            message.includes('idx_job_applications_email') ||
+            message.includes('idx_job_applications_student_id') ||
+            message.includes('unique') ||
+            message.includes('duplicate key')
+        ) {
             return NextResponse.json(
-                { error: 'يوجد طلب مسجل مسبقاً بهذا البريد أو رقم القيد.' },
+                { error: 'يوجد طلب مسجل مسبقاً بهذا البريد، رقم القيد، أو الرقم القومي.' },
                 { status: 409 }
             );
         }
