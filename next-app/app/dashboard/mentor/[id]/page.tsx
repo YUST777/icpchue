@@ -26,6 +26,7 @@ export default function TraineeDossierPage() {
     const [expandedSheetId, setExpandedSheetId] = useState<number | string | null>(null);
     const [progressSearch, setProgressSearch] = useState('');
     const [selectedLevelId, setSelectedLevelId] = useState<string>('1');
+    const [timeHorizon, setTimeHorizon] = useState<'all' | '24h' | '7d' | '30d' | '90d'>('all');
 
     // Submissions pagination with deduplication
     const [submissionsList, setSubmissionsList] = useState<any[]>([]);
@@ -79,6 +80,39 @@ export default function TraineeDossierPage() {
     const toggleSheet = (id: number | string) => {
         setExpandedSheetId(expandedSheetId === id ? null : id);
     };
+
+    const filteredSubmissionsList = useMemo(() => {
+        if (timeHorizon === 'all') return submissionsList;
+        const now = Date.now();
+        const durationMap = {
+            '24h': 24 * 60 * 60 * 1000,
+            '7d': 7 * 24 * 60 * 60 * 1000,
+            '30d': 30 * 24 * 60 * 60 * 1000,
+            '90d': 90 * 24 * 60 * 60 * 1000,
+        };
+        const cutoff = now - durationMap[timeHorizon];
+        return submissionsList.filter((s: any) => {
+            const t = s.submitted_at ? new Date(s.submitted_at).getTime() : 0;
+            return t >= cutoff;
+        });
+    }, [submissionsList, timeHorizon]);
+
+    const filteredCodeCatalog = useMemo(() => {
+        const catalog = data?.code_catalog || [];
+        if (timeHorizon === 'all') return catalog;
+        const now = Date.now();
+        const durationMap = {
+            '24h': 24 * 60 * 60 * 1000,
+            '7d': 7 * 24 * 60 * 60 * 1000,
+            '30d': 30 * 24 * 60 * 60 * 1000,
+            '90d': 90 * 24 * 60 * 60 * 1000,
+        };
+        const cutoff = now - durationMap[timeHorizon];
+        return catalog.filter((c: any) => {
+            const t = c.updated_at ? new Date(c.updated_at).getTime() : 0;
+            return t >= cutoff;
+        });
+    }, [data?.code_catalog, timeHorizon]);
 
     const filteredSheets = useMemo(() => {
         if (!data?.sheet_progress) return [];
@@ -248,12 +282,39 @@ export default function TraineeDossierPage() {
                 metrics={metrics || {}} 
             />
 
-            {/* 2. Navigation Tabs */}
-            <TraineeTabNav 
-                activeTab={activeTab} 
-                onChange={setActiveTab} 
-                flagsCount={behavioral_analysis?.cheating_flags || 0}
-            />
+            {/* 2. Navigation Tabs & Time Horizon Selector */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                <TraineeTabNav 
+                    activeTab={activeTab} 
+                    onChange={setActiveTab} 
+                    flagsCount={behavioral_analysis?.cheating_flags || 0}
+                />
+
+                {/* Global Time Filter Pills */}
+                <div className="flex items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs self-end sm:self-auto">
+                    <span className="text-[10px] text-white/40 uppercase font-mono px-2 flex items-center gap-1">
+                        <Clock size={11} className="text-[#E8C15A]" /> Time:
+                    </span>
+                    {(['all', '24h', '7d', '30d', '90d'] as const).map((t) => {
+                        const label = t === 'all' ? 'All' : (t === '24h' ? '24h' : (t === '7d' ? '7d' : (t === '30d' ? '30d' : '90d')));
+                        const isActive = timeHorizon === t;
+                        return (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => setTimeHorizon(t)}
+                                className={`px-2.5 py-1 rounded-xl text-xs font-mono transition-all cursor-pointer ${
+                                    isActive
+                                        ? 'text-[#E8C15A] bg-[#E8C15A]/15 border border-[#E8C15A]/30 font-semibold shadow-xs'
+                                        : 'text-white/40 hover:text-white/80 border border-transparent'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             {/* 3. Tab Contents */}
 
@@ -270,7 +331,7 @@ export default function TraineeDossierPage() {
                         </div>
                         <div className="lg:col-span-6">
                             <RecentSubmissionsTable 
-                                submissions={submissionsList.slice(0, 15)} 
+                                submissions={filteredSubmissionsList.slice(0, 15)} 
                             />
                         </div>
                     </div>
@@ -401,7 +462,7 @@ export default function TraineeDossierPage() {
             {activeTab === 'submissions' && (
                 <div className="space-y-3">
                     <RecentSubmissionsTable 
-                        submissions={submissionsList}
+                        submissions={filteredSubmissionsList}
                         onLoadMore={loadMoreSubmissions}
                         hasMore={hasMoreSubmissions}
                         loadingMore={loadingMoreSubs}
@@ -412,7 +473,7 @@ export default function TraineeDossierPage() {
             {/* Tab 4: Clean Code Inspector */}
             {activeTab === 'workspace' && (
                 <div className="space-y-3">
-                    <CodeWorkspaceInspector codeCatalog={code_catalog || []} />
+                    <CodeWorkspaceInspector codeCatalog={filteredCodeCatalog} />
                 </div>
             )}
 
