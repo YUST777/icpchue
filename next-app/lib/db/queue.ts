@@ -4,17 +4,18 @@ import { Queue } from 'bullmq';
 // Use process.env for connection details.
 
 const connection = {
-    host: process.env.REDIS_HOST || 'redis',
+    host: process.env.REDIS_HOST || '127.0.0.1',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    password: process.env.REDIS_PASSWORD,
+    password: process.env.REDIS_PASSWORD || undefined,
 };
 
 // Singleton pattern for queue to avoid creating too many connections in dev
-const globalForQueue = global as unknown as { scraperQueue: Queue };
+const globalForQueue = globalThis as unknown as { __scraperQueue?: Queue };
 
-export const scraperQueue =
-    globalForQueue.scraperQueue ||
-    new Queue('scraper-queue', {
+function getScraperQueue(): Queue {
+    if (globalForQueue.__scraperQueue) return globalForQueue.__scraperQueue;
+
+    const q = new Queue('scraper-queue', {
         connection,
         defaultJobOptions: {
             attempts: 3,
@@ -27,4 +28,18 @@ export const scraperQueue =
         },
     });
 
-if (process.env.NODE_ENV !== 'production') globalForQueue.scraperQueue = scraperQueue;
+    globalForQueue.__scraperQueue = q;
+    return q;
+}
+
+export const scraperQueue = new Proxy({} as Queue, {
+    get(_target, prop) {
+        const instance = getScraperQueue();
+        const value = Reflect.get(instance, prop);
+        if (typeof value === 'function') {
+            return value.bind(instance);
+        }
+        return value;
+    }
+});
+
