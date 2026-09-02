@@ -38,7 +38,6 @@ export async function GET(
         let userRow: any = null;
         let appRow: any = null;
 
-        // Try direct user ID or student ID
         if (/^\d+$/.test(paramId)) {
             const byUserId = await query('SELECT * FROM users WHERE id = $1 LIMIT 1', [paramId]);
             if (byUserId.rows.length > 0) {
@@ -53,7 +52,6 @@ export async function GET(
             }
         }
 
-        // If not found, try blind index & handle
         if (!userRow && !appRow) {
             const bi = createBlindIndex(paramId);
             const [byHandle, byBlindIndex] = await Promise.all([
@@ -70,7 +68,6 @@ export async function GET(
             }
         }
 
-        // Fallback scan if legacy encrypted student_id
         if (!userRow && !appRow) {
             const appCheck = await query('SELECT id, student_id, name, email, faculty, student_level, telephone, telegram_username, has_laptop, codeforces_profile, leetcode_profile, season_year, submitted_at FROM applications ORDER BY id DESC LIMIT 500');
             for (const a of appCheck.rows) {
@@ -96,7 +93,7 @@ export async function GET(
             if (appRes.rows.length > 0) appRow = appRes.rows[0];
         }
 
-        // 2. Fetch Profile Info
+        // 2. Profile Details
         const profile = {
             id: userId,
             application_id: applicationId,
@@ -119,7 +116,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Batch Queries for All Related Telemetry
+        // 3. Parallel Batch Fetching
         const [
             statsRes,
             streakRes,
@@ -129,10 +126,9 @@ export async function GET(
             userProgressRes,
             heatmapRes,
             subsRes,
-            userCodeRes,
+            allUserCodesRes,
+            allUserNotesRes,
             customTestsRes,
-            userNotesRes,
-            achievementsRes,
             sumTimeRes
         ] = await Promise.all([
             query('SELECT * FROM user_solve_stats WHERE user_id = $1 LIMIT 1', [userId]),
@@ -153,12 +149,14 @@ export async function GET(
                 ORDER BY cs.sheet_number ASC, cs.id ASC
             `),
             query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]),
+            // Full rolling year (365 days) daily solves for expansive heatmap
             query(`
                 SELECT solve_date, solve_count 
                 FROM daily_solves 
-                WHERE user_id = $1 AND solve_date >= CURRENT_DATE - INTERVAL '90 days'
+                WHERE user_id = $1 AND solve_date >= CURRENT_DATE - INTERVAL '365 days'
                 ORDER BY solve_date ASC
             `, [userId]),
+            // All submissions for this user
             query(`
                 SELECT 
                     id, contest_id, problem_index, sheet_id, verdict, 
@@ -168,12 +166,25 @@ export async function GET(
                 FROM submissions 
                 WHERE user_id = $1 
                 ORDER BY submitted_at DESC 
-                LIMIT 30
+                LIMIT 100
             `, [userId]),
-            query('SELECT contest_id, problem_id, code, language, updated_at FROM user_code WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1', [userId]),
-            query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 5', [userId]),
-            query('SELECT * FROM user_notes WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 5', [userId]),
-            query('SELECT * FROM user_achievements WHERE user_id = $1 ORDER BY earned_at DESC', [userId]),
+            // All code drafts the student has ever typed
+            query(`
+                SELECT contest_id, problem_id, code, language, updated_at 
+                FROM user_code 
+                WHERE user_id = $1 
+                ORDER BY updated_at DESC 
+                LIMIT 50
+            `, [userId]),
+            // All notes written by student
+            query(`
+                SELECT id, contest_id, problem_index, content, updated_at 
+                FROM user_notes 
+                WHERE user_id = $1 
+                ORDER BY updated_at DESC 
+                LIMIT 50
+            `, [userId]),
+            query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]),
             query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId])
         ]);
 
@@ -184,7 +195,7 @@ export async function GET(
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
-        // Process sheet progress
+        // Process Sheet Progress Breakdown
         const progressMap = new Map<string, { solved: number, attempted: number }>();
         userProgressRes.rows.forEach((p) => {
             const sheetKey = String(p.sheet_id);
@@ -209,6 +220,7 @@ export async function GET(
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 name: s.name,
                 level_name: s.level_name || 'Level 1',
+                contest_id: s.contest_id,
                 total_problems: sheetTotal,
                 solved: p.solved,
                 attempted: p.attempted,
@@ -219,7 +231,7 @@ export async function GET(
 
         const notStartedTotal = Math.max(0, totalProblems - (distinctSolved + totalAttempted));
 
-        // Time calculations
+        // Time spent
         const timeFromRecap = recapRes.rows[0]?.time_spent_minutes;
         let totalMinutes = timeFromRecap ? parseInt(timeFromRecap, 10) : 0;
         if (!totalMinutes) {
@@ -230,7 +242,7 @@ export async function GET(
         const minsSpent = totalMinutes % 60;
         const timeSpentStr = `${hoursSpent}h ${minsSpent}m`;
 
-        // Heatmap
+        // Heatmap Data (Full rolling year)
         const heatmapData = heatmapRes.rows.map((r) => ({
             date: r.solve_date instanceof Date ? r.solve_date.toISOString().slice(0, 10) : String(r.solve_date),
             count: parseInt(r.solve_count, 10) || 0,
@@ -256,30 +268,93 @@ export async function GET(
             source_code: s.source_code || '',
         }));
 
-        // Latest Code Draft
-        const latestDraft = userCodeRes.rows[0] || (recentSubmissions[0] ? {
-            contest_id: recentSubmissions[0].contest_id,
-            problem_id: recentSubmissions[0].problem_index,
-            code: recentSubmissions[0].source_code,
-            language: recentSubmissions[0].language,
-            updated_at: recentSubmissions[0].submitted_at,
-        } : null);
+        // 4. Detailed Flagged Problems Detection & Forensics
+        const flaggedProblems: any[] = [];
+        const isStarterCode = (code: string) => {
+            if (!code) return true;
+            const stripped = code.replace(/\s+/g, '');
+            return stripped === '#include<bits/stdc++.h>usingnamespacestd;intmain(){ios_base::sync_with_stdio(0);cin.tie(0);return0;}' ||
+                   stripped === '#include<iostream>usingnamespacestd;intmain(){return0;}' ||
+                   stripped.length < 100;
+        };
 
-        // Behavioral & Anti-Cheat Signals
-        let suspiciousFastSolves = 0;
-        let highPasteSubmissions = 0;
-        let firstTrySolves = 0;
         recentSubmissions.forEach((s) => {
-            if (s.verdict === 'Accepted') {
-                if (s.time_to_solve_seconds > 0 && s.time_to_solve_seconds < 60) suspiciousFastSolves++;
-                if (s.attempts === 1) firstTrySolves++;
+            const isAc = s.verdict === 'Accepted';
+            let flagReason = '';
+
+            if (isAc && isStarterCode(s.source_code) && s.attempts === 1) {
+                flagReason = 'Submitted starter template on platform while Codeforces marked Accepted (Pasted external code)';
+            } else if (isAc && s.time_to_solve_seconds > 0 && s.time_to_solve_seconds < 45) {
+                flagReason = `Extremely rapid solve (${s.time_to_solve_seconds}s from opening problem)`;
+            } else if (s.paste_events >= 4) {
+                flagReason = `Multiple bulk paste events (${s.paste_events} pastes detected in editor)`;
             }
-            if (s.paste_events > 3) highPasteSubmissions++;
+
+            if (flagReason) {
+                flaggedProblems.push({
+                    submission_id: s.id,
+                    contest_id: s.contest_id,
+                    problem_index: s.problem_index,
+                    problem_title: s.problem,
+                    verdict: s.verdict,
+                    reason: flagReason,
+                    submitted_at: s.submitted_at,
+                    time_to_solve_seconds: s.time_to_solve_seconds,
+                    paste_events: s.paste_events,
+                    cf_submission_id: s.cf_submission_id,
+                    source_code: s.source_code,
+                });
+            }
         });
 
-        const firstTryRate = recentSubmissions.length > 0 
-            ? Math.round((firstTrySolves / recentSubmissions.length) * 100) 
-            : 0;
+        // 5. Code Inspector Problem Index (Merge user_code drafts + submissions)
+        const codeEntriesMap = new Map<string, any>();
+
+        allUserCodesRes.rows.forEach((uc) => {
+            const key = `${uc.contest_id || ''}-${uc.problem_id || ''}`.trim();
+            if (key) {
+                codeEntriesMap.set(key, {
+                    key,
+                    contest_id: uc.contest_id,
+                    problem_id: uc.problem_id,
+                    draft_code: uc.code,
+                    language: uc.language,
+                    updated_at: uc.updated_at,
+                    submission_code: '',
+                    notes: '',
+                });
+            }
+        });
+
+        recentSubmissions.forEach((sub) => {
+            const key = `${sub.contest_id || ''}-${sub.problem_index || ''}`.trim();
+            if (key) {
+                if (!codeEntriesMap.has(key)) {
+                    codeEntriesMap.set(key, {
+                        key,
+                        contest_id: sub.contest_id,
+                        problem_id: sub.problem_index,
+                        draft_code: '',
+                        language: sub.language,
+                        updated_at: sub.submitted_at,
+                        submission_code: sub.source_code,
+                        notes: '',
+                    });
+                } else {
+                    const entry = codeEntriesMap.get(key)!;
+                    entry.submission_code = sub.source_code;
+                }
+            }
+        });
+
+        allUserNotesRes.rows.forEach((note) => {
+            const key = `${note.contest_id || ''}-${note.problem_index || ''}`.trim();
+            if (key && codeEntriesMap.has(key)) {
+                codeEntriesMap.get(key)!.notes = note.content;
+            }
+        });
+
+        const codeCatalog = Array.from(codeEntriesMap.values());
 
         const responsePayload = {
             success: true,
@@ -305,53 +380,22 @@ export async function GET(
             sheet_progress: sheetProgressList,
             heatmap_data: heatmapData,
             recent_submissions: recentSubmissions,
-            code_inspector: {
-                current_draft: latestDraft,
-                test_output: {
-                    status: 'All Test Cases Passed',
-                    passed: true,
-                    runtime: '28 ms',
-                    memory: '18.4 MB',
-                    language: latestDraft?.language || 'C++17',
-                    test_cases_passed: 15,
-                    total_test_cases: 15,
-                }
-            },
-            quick_notes: userNotesRes.rows.map(n => ({
-                id: n.id,
-                contest_id: n.contest_id,
-                problem_index: n.problem_index,
-                content: n.content,
-                updated_at: n.updated_at,
-            })),
-            custom_tests: customTestsRes.rows.map(t => ({
-                id: t.id,
-                contest_id: t.contest_id,
-                problem_id: t.problem_id,
-                test_cases: t.test_cases,
-                updated_at: t.updated_at,
-            })),
-            achievements: achievementsRes.rows.map(a => ({
-                id: a.id,
-                achievement_id: a.achievement_id,
-                earned_at: a.earned_at,
-            })),
+            code_catalog: codeCatalog,
+            user_notes: allUserNotesRes.rows,
+            custom_tests: customTestsRes.rows,
+            flagged_problems: flaggedProblems,
             behavioral_analysis: {
-                cheating_flags: profile.cheating_flags,
+                cheating_flags: Math.max(profile.cheating_flags, flaggedProblems.length),
                 is_shadow_banned: profile.is_shadow_banned,
-                first_try_rate_pct: firstTryRate,
-                suspicious_fast_solves: suspiciousFastSolves,
-                high_paste_submissions: highPasteSubmissions,
+                total_flagged_count: flaggedProblems.length,
             }
         };
 
-        // Cache response for 30 seconds
         dossierCache.set(cacheKey, {
             data: responsePayload,
             expiresAt: Date.now() + CACHE_TTL_MS,
         });
 
-        // Limit cache size to 100 entries
         if (dossierCache.size > 100) {
             const oldestKey = dossierCache.keys().next().value;
             if (oldestKey) dossierCache.delete(oldestKey);
