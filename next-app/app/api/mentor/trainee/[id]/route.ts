@@ -118,8 +118,7 @@ export async function GET(
             if (appRes.rows.length > 0) appRow = appRes.rows[0];
         }
 
-        // 2. Profile Details with Codeforces Telemetry
-        const cfData = userRow?.codeforces_data || {};
+        // 2. Profile Details
         const profile = {
             id: userId || applicationId,
             user_id: userId,
@@ -133,11 +132,6 @@ export async function GET(
             academic_level: appRow?.student_level || 'Level 1',
             has_laptop: appRow?.has_laptop ?? true,
             codeforces_handle: userRow?.codeforces_handle || appRow?.codeforces_profile || '',
-            cf_rating: cfData.rating || 0,
-            cf_rank: cfData.rank || 'unrated',
-            cf_max_rating: cfData.maxRating || 0,
-            cf_max_rank: cfData.maxRank || 'unrated',
-            cf_last_online: cfData.lastOnlineTimeSeconds ? new Date(cfData.lastOnlineTimeSeconds * 1000).toISOString() : null,
             leetcode_profile: appRow?.leetcode_profile || '',
             profile_picture: null,
             created_at: userRow?.created_at || appRow?.submitted_at,
@@ -374,9 +368,6 @@ export async function GET(
                 attempts = 1;
             }
 
-            const isStuck = attempts >= 3 && status !== 'SOLVED';
-            const cfUrl = prob.contest_id && letter ? `https://codeforces.com/contest/${prob.contest_id}/problem/${letter}` : null;
-
             problemsBySheetId.get(sheetIdStr)!.push({
                 id: prob.id,
                 problem_number: prob.problem_number,
@@ -387,8 +378,6 @@ export async function GET(
                 status: status,
                 verdict: verdictLabel,
                 attempts: attempts,
-                is_stuck: isStuck,
-                cf_url: cfUrl,
             });
         });
 
@@ -482,9 +471,9 @@ export async function GET(
             const contestIdStr = sub.contest_id ? String(sub.contest_id) : '';
             const sheetIdStr = sub.sheet_id ? String(sub.sheet_id) : '';
             const sheetLookup = contestToSheetMap.get(contestIdStr) || sheetIdToSheetMap.get(sheetIdStr);
+
             const letter = (sub.problem_index || '').toUpperCase().trim();
             const titleLookup = problemTitleMap.get(`${contestIdStr}_${letter}`) || '';
-            const cfProblemUrl = sub.contest_id && sub.problem_index ? `https://codeforces.com/contest/${sub.contest_id}/problem/${sub.problem_index}` : undefined;
 
             return {
                 id: sub.id,
@@ -505,7 +494,6 @@ export async function GET(
                 attempts: parseInt(sub.real_attempt || '1', 10),
                 submitted_at: sub.submitted_at,
                 cf_submission_id: sub.cf_submission_id,
-                cf_problem_url: cfProblemUrl,
                 source_code: sub.source_code || '',
             };
         });
@@ -529,7 +517,6 @@ export async function GET(
                 time_to_solve_seconds: rawSub?.time_to_solve_seconds,
                 paste_events: rawSub?.paste_events || 0,
                 cf_submission_id: sub.cf_submission_id,
-                cf_problem_url: sub.cf_problem_url,
                 source_code: sub.source_code,
             };
         });
@@ -561,7 +548,6 @@ export async function GET(
                 const hasAc = subData ? subData.has_ac : (s.verdict?.toLowerCase().includes('accepted') || s.verdict === 'OK');
                 const verdict = hasAc ? 'Accepted' : (subData?.latest_verdict || s.verdict || 'Wrong Answer');
                 const status = hasAc ? 'SOLVED' : (verdict.toLowerCase().includes('time') ? 'TIME_LIMIT' : 'WRONG_ANSWER');
-                const cfProblemUrl = cid && letter ? `https://codeforces.com/contest/${cid}/problem/${letter}` : undefined;
 
                 codeCatalog.push({
                     key: `sub_${comboKey}`,
@@ -575,7 +561,6 @@ export async function GET(
                     verdict: verdict,
                     status: status,
                     attempts: subData?.total_attempts || 1,
-                    cf_problem_url: cfProblemUrl,
                     updated_at: s.submitted_at,
                 });
             }
