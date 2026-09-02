@@ -355,7 +355,6 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                             <span className={`font-mono text-[11px] flex items-center justify-center gap-1 ${isToday ? 'text-[#E8C15A] font-bold' : 'text-white/70'}`}>
                                                                 Day {dayNum}
                                                                 {!isUnlocked && <Lock size={10} className="text-amber-400/80" />}
-                                                                {isToday && <span className="text-[8px] bg-[#E8C15A]/20 text-[#E8C15A] px-1 py-0.5 rounded font-bold ml-0.5">TODAY</span>}
                                                             </span>
                                                             <span className="text-[10px] font-mono text-white/40 mt-0.5">{displayDate}</span>
                                                         </div>
