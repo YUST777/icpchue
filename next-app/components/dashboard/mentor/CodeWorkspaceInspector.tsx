@@ -22,22 +22,55 @@ interface CodeWorkspaceInspectorProps {
     codeCatalog: CodeEntry[];
 }
 
+type VerdictFilter = 'all' | 'ac' | 'wa' | 'tle' | 'draft';
+
 export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspectorProps) {
     const [selectedKey, setSelectedKey] = useState<string>(codeCatalog[0]?.key || '');
     const [copied, setCopied] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>('all');
+
+    const filteredCatalog = useMemo(() => {
+        return codeCatalog.filter(c => {
+            // 1. Verdict filter
+            if (verdictFilter === 'ac') {
+                const isAc = c.status === 'SOLVED' || (c.verdict || '').toLowerCase().includes('accepted') || c.verdict === 'OK';
+                if (!isAc) return false;
+            } else if (verdictFilter === 'wa') {
+                const isWa = c.status === 'WRONG_ANSWER' || (c.verdict || '').toLowerCase().includes('wrong');
+                if (!isWa) return false;
+            } else if (verdictFilter === 'tle') {
+                const isTle = c.status === 'TIME_LIMIT' || (c.verdict || '').toLowerCase().includes('time');
+                if (!isTle) return false;
+            } else if (verdictFilter === 'draft') {
+                const isDraft = c.status === 'DRAFT' || (c.verdict || '').toLowerCase() === 'draft';
+                if (!isDraft) return false;
+            }
+
+            // 2. Search query filter
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.toLowerCase();
+            return (c.display_label || '').toLowerCase().includes(q) ||
+                   (c.problem_title || '').toLowerCase().includes(q) ||
+                   (c.sheet_name || '').toLowerCase().includes(q) ||
+                   (c.verdict || '').toLowerCase().includes(q) ||
+                   (c.key || '').toLowerCase().includes(q) ||
+                   (c.contest_id || '').toLowerCase().includes(q) ||
+                   (c.problem_id || '').toLowerCase().includes(q);
+        });
+    }, [codeCatalog, verdictFilter, searchQuery]);
 
     useEffect(() => {
-        if (codeCatalog.length > 0) {
-            if (!selectedKey || !codeCatalog.some(c => c.key === selectedKey)) {
-                setSelectedKey(codeCatalog[0].key);
+        if (filteredCatalog.length > 0) {
+            if (!selectedKey || !filteredCatalog.some(c => c.key === selectedKey)) {
+                setSelectedKey(filteredCatalog[0].key);
             }
         }
-    }, [codeCatalog]);
+    }, [filteredCatalog, selectedKey]);
 
     const activeEntry = useMemo(() => {
-        return codeCatalog.find(c => c.key === selectedKey) || codeCatalog[0];
-    }, [codeCatalog, selectedKey]);
+        return filteredCatalog.find(c => c.key === selectedKey) || filteredCatalog[0] || codeCatalog[0];
+    }, [filteredCatalog, codeCatalog, selectedKey]);
 
     const displayedCode = activeEntry?.code || '// No code recorded for this problem.';
     const codeLines = displayedCode.split('\n');
@@ -91,24 +124,18 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
         );
     };
 
-    const filteredCatalog = useMemo(() => {
-        if (!searchQuery.trim()) return codeCatalog;
-        const q = searchQuery.toLowerCase();
-        return codeCatalog.filter(c => {
-            return (c.display_label || '').toLowerCase().includes(q) ||
-                   (c.problem_title || '').toLowerCase().includes(q) ||
-                   (c.sheet_name || '').toLowerCase().includes(q) ||
-                   (c.verdict || '').toLowerCase().includes(q) ||
-                   (c.key || '').toLowerCase().includes(q) ||
-                   (c.contest_id || '').toLowerCase().includes(q) ||
-                   (c.problem_id || '').toLowerCase().includes(q);
-        });
-    }, [codeCatalog, searchQuery]);
+    const filterButtons: { id: VerdictFilter; label: string }[] = [
+        { id: 'all', label: 'All' },
+        { id: 'ac', label: 'AC' },
+        { id: 'wa', label: 'WA' },
+        { id: 'tle', label: 'TLE' },
+        { id: 'draft', label: 'Draft' },
+    ];
 
     return (
         <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+            {/* Header: Left Title & Right Verdict Filter Pill Selector */}
+            <div className="flex flex-wrap items-center justify-between pb-3 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center shrink-0">
                         <Terminal size={13} />
@@ -117,7 +144,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                         Problem Code Inspector
                     </span>
                     {activeEntry && (
-                        <div className="flex items-center gap-1.5 truncate">
+                        <div className="hidden sm:flex items-center gap-1.5 truncate">
                             <span className="text-[11px] font-mono text-[#E8C15A] font-semibold bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/20">
                                 {activeEntry.display_label || `${activeEntry.contest_id} ${activeEntry.problem_id}`}
                             </span>
@@ -126,11 +153,26 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     )}
                 </div>
 
-                {activeEntry && (
-                    <span className="text-[11px] text-white/40 font-mono shrink-0">
-                        {activeEntry.language || 'C++'}
-                    </span>
-                )}
+                {/* Right Corner: Sleek Verdict Filter Pills (Replaced static cpp) */}
+                <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/[0.06]">
+                    {filterButtons.map((btn) => {
+                        const isActive = verdictFilter === btn.id;
+                        return (
+                            <button
+                                key={btn.id}
+                                type="button"
+                                onClick={() => setVerdictFilter(btn.id)}
+                                className={`px-2 py-0.5 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
+                                    isActive
+                                        ? 'text-[#E8C15A] bg-[#E8C15A]/15 border border-[#E8C15A]/30 font-semibold shadow-xs'
+                                        : 'text-white/40 hover:text-white/80 border border-transparent'
+                                }`}
+                            >
+                                {btn.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* 2-Column Layout */}
@@ -142,7 +184,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Filter (e.g. Loops, Lv 1, AC)..."
+                            placeholder="Filter (e.g. Loops, Lv 1)..."
                             className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
                         />
                     </div>
@@ -150,7 +192,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     <div className="space-y-1 overflow-y-auto max-h-[350px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
                         {filteredCatalog.length === 0 ? (
                             <div className="text-center py-8 text-xs text-white/30 font-mono">
-                                No problems found
+                                No problems found for filter.
                             </div>
                         ) : (
                             filteredCatalog.map((item) => {
