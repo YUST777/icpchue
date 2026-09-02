@@ -500,38 +500,11 @@ export async function GET(
             count: parseInt(row.solve_count || '0', 10),
         })).filter((d: any) => Boolean(d.date));
 
-        // 8. Code Catalog (Deduplicated with Lv / Sheet / Letter labels and unique keys)
+        // 8. Code Catalog (Deduplicated with Lv / Sheet / Letter labels, verdicts, and attempts)
         const seenCatalogKeys = new Set<string>();
         const codeCatalog: any[] = [];
 
-        // 8a. From user_code drafts
-        allUserCodesRes.rows.forEach((c: any) => {
-            const cid = String(c.contest_id || '').trim();
-            const letter = String(c.problem_id || '').replace(/^.*?:/, '').toUpperCase().trim();
-            const comboKey = `${cid}_${letter}`;
-            if (!seenCatalogKeys.has(comboKey) && c.code) {
-                seenCatalogKeys.add(comboKey);
-                const sheetInfo = contestToSheetMap.get(cid);
-                const title = problemTitleMap.get(`${cid}_${letter}`);
-                const displayLabel = sheetInfo 
-                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` 
-                    : `${cid} ${letter}`;
-
-                codeCatalog.push({
-                    key: `draft_${comboKey}`,
-                    contest_id: cid,
-                    problem_id: letter,
-                    display_label: displayLabel,
-                    sheet_name: sheetInfo?.sheet_name,
-                    problem_title: title,
-                    code: c.code,
-                    language: c.language || 'C++',
-                    updated_at: c.updated_at,
-                });
-            }
-        });
-
-        // 8b. From submissions with source_code
+        // 8a. From submissions with source_code (priority: actual evaluated code)
         subsRes.rows.forEach((s: any) => {
             const cid = String(s.contest_id || '').trim();
             const letter = String(s.problem_index || '').toUpperCase().trim();
@@ -544,6 +517,11 @@ export async function GET(
                     ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` 
                     : `${cid} ${letter}`;
 
+                const subData = probSubMap.get(comboKey);
+                const hasAc = subData ? subData.has_ac : (s.verdict?.toLowerCase().includes('accepted') || s.verdict === 'OK');
+                const verdict = hasAc ? 'Accepted' : (subData?.latest_verdict || s.verdict || 'Wrong Answer');
+                const status = hasAc ? 'SOLVED' : (verdict.toLowerCase().includes('time') ? 'TIME_LIMIT' : 'WRONG_ANSWER');
+
                 codeCatalog.push({
                     key: `sub_${comboKey}`,
                     contest_id: cid,
@@ -553,7 +531,53 @@ export async function GET(
                     problem_title: title,
                     code: s.source_code,
                     language: s.language || 'C++',
+                    verdict: verdict,
+                    status: status,
+                    attempts: subData?.total_attempts || 1,
                     updated_at: s.submitted_at,
+                });
+            }
+        });
+
+        // 8b. From user_code drafts
+        allUserCodesRes.rows.forEach((c: any) => {
+            const cid = String(c.contest_id || '').trim();
+            const letter = String(c.problem_id || '').replace(/^.*?:/, '').toUpperCase().trim();
+            const comboKey = `${cid}_${letter}`;
+            if (!seenCatalogKeys.has(comboKey) && c.code) {
+                seenCatalogKeys.add(comboKey);
+                const sheetInfo = contestToSheetMap.get(cid);
+                const title = problemTitleMap.get(`${cid}_${letter}`);
+                const displayLabel = sheetInfo 
+                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` 
+                    : `${cid} ${letter}`;
+
+                const subData = probSubMap.get(comboKey);
+                let verdict = 'Draft';
+                let status = 'DRAFT';
+                if (subData) {
+                    if (subData.has_ac) {
+                        verdict = 'Accepted';
+                        status = 'SOLVED';
+                    } else {
+                        verdict = subData.latest_verdict || 'Attempted';
+                        status = verdict.toLowerCase().includes('wrong') ? 'WRONG_ANSWER' : 'ATTEMPTED';
+                    }
+                }
+
+                codeCatalog.push({
+                    key: `draft_${comboKey}`,
+                    contest_id: cid,
+                    problem_id: letter,
+                    display_label: displayLabel,
+                    sheet_name: sheetInfo?.sheet_name,
+                    problem_title: title,
+                    code: c.code,
+                    language: c.language || 'C++',
+                    verdict: verdict,
+                    status: status,
+                    attempts: subData?.total_attempts || 0,
+                    updated_at: c.updated_at,
                 });
             }
         });
