@@ -162,18 +162,11 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
                     </div>
                 </div>
 
-                {/* Right: Last Solve Date & Back Button */}
-                <div className="flex items-center gap-3 shrink-0 self-end sm:self-center text-xs">
+                {/* Right: Last Solve Date */}
+                <div className="shrink-0 self-end sm:self-center text-xs">
                     <div className="text-right text-[11px] text-white/40 font-mono">
                         <span>Last solve: <strong className="text-[#E8C15A] font-semibold">{formatDate(metrics.last_solve_at)}</strong></span>
                     </div>
-                    <Link
-                        href="/dashboard/mentor"
-                        className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white text-xs font-medium transition-all border border-white/[0.08] flex items-center gap-1.5"
-                    >
-                        <ArrowLeft size={13} />
-                        <span>All Trainees</span>
-                    </Link>
                 </div>
             </div>
 

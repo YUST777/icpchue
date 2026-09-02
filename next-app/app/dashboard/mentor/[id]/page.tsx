@@ -197,41 +197,26 @@ export default function TraineeDossierPage() {
                             </h2>
                         </div>
 
-                        {/* Minimalist Controls: Sleek Level Pills & Search */}
+                        {/* Minimalist Controls: Ultra-Thin Level Pills & Search */}
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center bg-[#0B0B0C] rounded-lg p-0.5 border border-white/10 text-[11px]">
-                                <button
-                                    onClick={() => setSelectedLevelId('1')}
-                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
-                                        selectedLevelId === '1' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
-                                    }`}
-                                >
-                                    Lv 1
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('2')}
-                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
-                                        selectedLevelId === '2' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
-                                    }`}
-                                >
-                                    Lv 2
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('3')}
-                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
-                                        selectedLevelId === '3' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
-                                    }`}
-                                >
-                                    Lv 3
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('all')}
-                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
-                                        selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
-                                    }`}
-                                >
-                                    All
-                                </button>
+                            <div className="flex items-center gap-1">
+                                {(['1', '2', '3', 'all'] as const).map((lvl) => {
+                                    const label = lvl === 'all' ? 'All' : `Lv ${lvl}`;
+                                    const isActive = selectedLevelId === lvl;
+                                    return (
+                                        <button
+                                            key={lvl}
+                                            onClick={() => setSelectedLevelId(lvl)}
+                                            className={`px-2 py-0.5 rounded-md text-[11px] transition-all ${
+                                                isActive
+                                                    ? 'text-[#E8C15A] bg-[#E8C15A]/10 border border-[#E8C15A]/30 font-medium'
+                                                    : 'text-white/40 hover:text-white/80 border border-transparent'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {/* Minimalist Search Bar */}
