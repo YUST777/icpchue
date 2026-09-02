@@ -133,6 +133,7 @@ export default function BackfillCard() {
                                 groupId: sheet.groupId,
                                 cfHandle: extResult.handle || undefined,
                                 accepted: relevant,
+                                submissions: extResult.submissions || [],
                             })
                         });
                         if (res.ok) {

@@ -318,6 +318,7 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
 
     // problemIndex -> best AC row
     const acByProblem = {};
+    const allSubmissions = [];
     let totalRows = 0;
     let pagesRead = 0;
 
@@ -366,12 +367,23 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
         totalRows += rows.length;
 
         for (const r of rows) {
-            if (!r.problemIndex || !isAcceptedVerdict(r.verdict)) continue;
+            if (!r.problemIndex) continue;
             const key = r.problemIndex.toUpperCase();
-            const prev = acByProblem[key];
-            // Keep the fastest AC (or the first one we see).
-            if (!prev || (r.timeConsumedMillis || 0) < (prev.timeConsumedMillis || 0)) {
-                acByProblem[key] = r;
+            allSubmissions.push({
+                problemIndex: key,
+                id: r.id,
+                verdict: r.verdict,
+                timeConsumedMillis: r.timeConsumedMillis || 0,
+                memoryConsumedBytes: r.memoryConsumedBytes || 0,
+                language: r.language || '',
+            });
+
+            if (isAcceptedVerdict(r.verdict)) {
+                const prev = acByProblem[key];
+                // Keep the fastest AC (or the first one we see).
+                if (!prev || (r.timeConsumedMillis || 0) < (prev.timeConsumedMillis || 0)) {
+                    acByProblem[key] = r;
+                }
             }
         }
 
@@ -393,6 +405,7 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
         handle: login.handle || null,
         contestId: String(contestId),
         accepted,
+        submissions: allSubmissions,
         pagesRead,
         totalRows,
     };
