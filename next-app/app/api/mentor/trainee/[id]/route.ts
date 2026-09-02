@@ -116,7 +116,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Fetching
+        // 3. Parallel Queries
         const [
             statsRes,
             streakRes,
@@ -197,29 +197,42 @@ export async function GET(
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
-        // Map user progress per problem
-        const userProgressByProblem = new Map<string, string>();
-        const progressMap = new Map<string, { solved: number, attempted: number }>();
+        // Map user progress accurately across all problem ID variants
+        const progressLookup = new Map<string, string>();
+        const progressCountMap = new Map<string, { solved: number, attempted: number }>();
 
         userProgressRes.rows.forEach((p) => {
             const sheetKey = String(p.sheet_id);
-            const probKey = `${p.sheet_id}_${p.problem_id}`;
-            userProgressByProblem.set(probKey, p.status);
+            const rawProbId = String(p.problem_id).trim();
 
-            if (!progressMap.has(sheetKey)) progressMap.set(sheetKey, { solved: 0, attempted: 0 });
-            const s = progressMap.get(sheetKey)!;
+            progressLookup.set(`${sheetKey}_${rawProbId}`, p.status);
+
+            if (rawProbId.includes(':')) {
+                const [cid, letter] = rawProbId.split(':');
+                progressLookup.set(`${sheetKey}_${letter.toUpperCase()}`, p.status);
+                progressLookup.set(`cid_${cid}_${letter.toUpperCase()}`, p.status);
+            } else if (/^[A-Za-z]+$/.test(rawProbId)) {
+                progressLookup.set(`${sheetKey}_${rawProbId.toUpperCase()}`, p.status);
+            }
+
+            if (!progressCountMap.has(sheetKey)) progressCountMap.set(sheetKey, { solved: 0, attempted: 0 });
+            const s = progressCountMap.get(sheetKey)!;
             if (p.status === 'SOLVED') s.solved++;
             else if (p.status === 'ATTEMPTED') s.attempted++;
         });
 
-        // Group curriculum problems by sheet
+        // Group curriculum problems by sheet with resolved status
         const problemsBySheet = new Map<string, any[]>();
         allCurriculumProblemsRes.rows.forEach((prob) => {
             const sheetKey = String(prob.sheet_id);
             if (!problemsBySheet.has(sheetKey)) problemsBySheet.set(sheetKey, []);
             
-            const probKey = `${prob.sheet_id}_${prob.id}`;
-            const status = userProgressByProblem.get(probKey) || 'NOT_STARTED';
+            const letter = (prob.problem_letter || '').toUpperCase().trim();
+            const status = progressLookup.get(`${sheetKey}_${letter}`) ||
+                           progressLookup.get(`cid_${prob.contest_id}_${letter}`) ||
+                           progressLookup.get(`${sheetKey}_${prob.id}`) ||
+                           progressLookup.get(`${sheetKey}_${prob.contest_id}:${letter}`) ||
+                           'NOT_STARTED';
 
             problemsBySheet.get(sheetKey)!.push({
                 id: prob.id,
@@ -236,12 +249,16 @@ export async function GET(
         const sheetProgressList = sheetsRes.rows.map((s) => {
             const sheetNum = String(s.sheet_number || s.id);
             const sheetIdStr = String(s.id);
-            const p = progressMap.get(sheetNum) || progressMap.get(sheetIdStr) || { solved: 0, attempted: 0 };
+            const p = progressCountMap.get(sheetNum) || progressCountMap.get(sheetIdStr) || { solved: 0, attempted: 0 };
             const sheetProblems = problemsBySheet.get(sheetIdStr) || problemsBySheet.get(sheetNum) || [];
+            
+            // Count actual solved from problem statuses if count is available
+            const actualSolved = sheetProblems.filter(pr => pr.status === 'SOLVED').length || p.solved;
+            const actualAttempted = sheetProblems.filter(pr => pr.status === 'ATTEMPTED').length || p.attempted;
             const sheetTotal = sheetProblems.length || s.total_problems || 26;
-            const notStarted = Math.max(0, sheetTotal - (p.solved + p.attempted));
-            totalAttempted += p.attempted;
-            const pct = Math.min(100, Math.round((p.solved / (sheetTotal || 1)) * 100));
+            const notStarted = Math.max(0, sheetTotal - (actualSolved + actualAttempted));
+            totalAttempted += actualAttempted;
+            const pct = Math.min(100, Math.round((actualSolved / (sheetTotal || 1)) * 100));
 
             return {
                 id: s.id,
@@ -251,8 +268,8 @@ export async function GET(
                 level_name: s.level_name || 'Level 1',
                 contest_id: s.contest_id,
                 total_problems: sheetTotal,
-                solved: p.solved,
-                attempted: p.attempted,
+                solved: actualSolved,
+                attempted: actualAttempted,
                 not_started: notStarted,
                 progress_percentage: pct,
                 problems: sheetProblems,
