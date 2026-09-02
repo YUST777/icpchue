@@ -132,7 +132,7 @@ export default function MentorTraineesDirectoryPage() {
 
             {/* 2. Top Summary KPI Cards */}
             {summary && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div 
                         onClick={() => setStatusFilter('all')}
                         className={`p-4 rounded-2xl border transition-all cursor-pointer ${
@@ -160,19 +160,6 @@ export default function MentorTraineesDirectoryPage() {
                     </div>
 
                     <div 
-                        onClick={() => setStatusFilter(statusFilter === 'stuck' ? 'all' : 'stuck')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                            statusFilter === 'stuck'
-                                ? 'bg-orange-500/15 border-orange-500/35 text-white'
-                                : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
-                        }`}
-                    >
-                        <span className="text-[10px] uppercase font-semibold text-orange-400/80 block">Stuck Trainees</span>
-                        <span className="text-2xl font-bold text-orange-400 mt-1 block">{summary.stuck_trainees || 0}</span>
-                        <span className="text-[11px] text-orange-400/60 font-mono mt-0.5 block">&gt;3 failed attempts</span>
-                    </div>
-
-                    <div 
                         onClick={() => setStatusFilter('inactive')}
                         className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                             statusFilter === 'inactive'
@@ -187,7 +174,7 @@ export default function MentorTraineesDirectoryPage() {
 
                     <div 
                         onClick={() => setStatusFilter('flagged')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                             statusFilter === 'flagged'
                                 ? 'bg-red-500/10 border-red-500/30 text-white'
                                 : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
@@ -339,7 +326,7 @@ export default function MentorTraineesDirectoryPage() {
                                     </div>
                                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                         <div 
-                                            style={{ width: `${t.progress_percentage || Math.min(100, Math.round((t.total_solved / 150) * 100))}%` }} 
+                                            style={{ width: `${Math.min(100, Math.round((t.total_solved / 150) * 100))}%` }} 
                                             className="h-full bg-[#E8C15A] rounded-full"
                                         />
                                     </div>
@@ -384,7 +371,7 @@ export default function MentorTraineesDirectoryPage() {
                                         className="hover:bg-white/[0.02] transition-colors group"
                                     >
                                         <td className="py-3 px-4">
-                                            <div dir="auto" className="font-bold text-white group-hover:text-[#E8C15A] transition-colors">
+                                            <div className="font-bold text-white group-hover:text-[#E8C15A] transition-colors">
                                                 {t.name}
                                             </div>
                                             <div className="text-[11px] font-mono text-white/40">{t.student_id}</div>
