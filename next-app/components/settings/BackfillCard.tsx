@@ -164,14 +164,17 @@ export default function BackfillCard() {
     const running = phase === 'planning' || phase === 'running';
 
     return (
-        <div className="bg-[#121212] rounded-xl border border-white/5 p-5 md:p-6">
+        <div id="codeforces-backfill" className="relative bg-[#121212] rounded-xl border border-[#E8C15A]/30 p-5 md:p-6 shadow-[0_0_24px_rgba(232,193,90,0.08)]">
+            <div className="absolute -top-3 right-5 inline-flex items-center gap-1.5 rounded-full bg-[#E8C15A] px-2.5 py-1 text-[10px] font-black tracking-wider text-[#0B0B0C] shadow-[0_0_16px_rgba(232,193,90,0.45)]">
+                <Zap size={12} /> NEW
+            </div>
             <h3 className="text-lg font-bold text-[#F2F2F2] mb-1 flex items-center gap-2">
                 <Zap size={20} className="text-[#E8C15A]" />
-                Backfill from Codeforces
+                Accurate tries from Codeforces
             </h3>
             <p className="text-sm text-[#A0A0A0] mb-4">
-                Already solved or attempted problems on Codeforces directly? Pull your
-                complete verdict history across every sheet and keep tries accurate.
+                New: automatically import your accepted and failed attempts so every
+                problem&apos;s tries count stays accurate.
             </p>
 
             {!hasExtension ? (

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import AutoBackfillTrigger from '@/components/codeforces/AutoBackfillTrigger';
 
-function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '' }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string }) {
+function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '', badge }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string; badge?: React.ReactNode }) {
     const [showTooltip, setShowTooltip] = useState(false);
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -44,6 +44,12 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
             <span className={active ? 'text-[#E8C15A]' : 'group-hover:text-[#F2F2F2] transition-colors'}>{icon}</span>
 
             {!collapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">{label}</span>}
+
+            {badge && (
+                <span className={`${collapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} inline-flex items-center rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[9px] font-black leading-none text-[#0B0B0C] shadow-[0_0_12px_rgba(232,193,90,0.55)]`}>
+                    {badge}
+                </span>
+            )}
 
             {/* Tooltip for minimized state */}
             <AnimatePresence>
@@ -332,13 +338,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             {/* Mobile Bottom Navigation (hidden on problem page) */}
             {!isProblemPage && (
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0B0B0C] border-t border-white/10 pb-[env(safe-area-inset-bottom)] grid grid-cols-6 w-full items-end">
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0B0B0C] border-t border-white/10 pb-[env(safe-area-inset-bottom)] grid grid-cols-5 w-full items-end">
                     <MobileNavItem id="mobile-nav-dashboard" icon={<LayoutDashboard size={18} />} label="Home" active={activePage === 'Dashboard'} onClick={() => handleNav('/dashboard')} />
                     <MobileNavItem id="mobile-nav-profile" icon={<Code size={18} />} label="Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
                     <MobileNavItem id="mobile-nav-sessions" icon={<Play size={18} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
                     <MobileNavItem id="mobile-nav-sheets" icon={<BookOpen size={18} />} label="Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                     <MobileNavItem id="mobile-nav-leaderboard" icon={<Trophy size={18} />} label="Rank" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
-                    <MobileNavItem id="mobile-nav-news" icon={<Bell size={18} />} label="News" active={activePage === 'Team News'} onClick={() => handleNav('/dashboard/news')} />
                 </nav>
             )}
 
@@ -406,6 +411,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             active={activePage === 'Settings'}
                                             onClick={() => handleNav('/dashboard/settings')}
                                             className="text-lg font-medium"
+                                            badge="NEW"
                                         />
                                         {isMentor && (
                                             <NavItem
@@ -498,8 +504,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sessions" collapsed={isSidebarCollapsed} icon={<Play size={20} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
-                            <NavItem id="onboarding-nav-news" collapsed={isSidebarCollapsed} icon={<Bell size={20} />} label="Team News" active={activePage === 'Team News'} onClick={() => handleNav('/dashboard/news')} />
                             <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} />
+                            <NavItem id="onboarding-nav-settings" collapsed={isSidebarCollapsed} icon={<Settings size={20} />} label="Settings" active={activePage === 'Settings'} onClick={() => handleNav('/dashboard/settings')} badge="NEW" />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
