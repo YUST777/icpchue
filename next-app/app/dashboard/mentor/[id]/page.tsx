@@ -10,7 +10,6 @@ import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgr
 import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHeatmap90Days';
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
-import { QuickNotesWidget } from '@/components/dashboard/mentor/QuickNotesWidget';
 import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
 
 export default function TraineeDossierPage() {
@@ -84,7 +83,7 @@ export default function TraineeDossierPage() {
         let list = data.sheet_progress;
 
         if (selectedLevelId !== 'all') {
-            list = list.filter((s: any) => String(s.level_number ?? s.level_id) === selectedLevelId);
+            list = list.filter((s: any) => String(s.level_id || 1) === selectedLevelId);
         }
 
         if (progressSearch.trim()) {
@@ -143,7 +142,6 @@ export default function TraineeDossierPage() {
         sheet_progress, 
         heatmap_data, 
         code_catalog, 
-        user_notes, 
         flagged_problems, 
         behavioral_analysis,
         submissions_total
@@ -180,7 +178,7 @@ export default function TraineeDossierPage() {
                     {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <div className="lg:col-span-6">
-                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_number ?? s.level_id) === '1') || []} />
+                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_id || 1) === '1') || []} />
                         </div>
                         <div className="lg:col-span-6">
                             <RecentSubmissionsTable 
@@ -363,14 +361,7 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 5: Student Notes */}
-            {activeTab === 'notes' && (
-                <div className="space-y-3">
-                    <QuickNotesWidget notes={user_notes || []} />
-                </div>
-            )}
-
-            {/* Tab 6: Warnings & Flags Audit Trail */}
+            {/* Tab 5: Warnings & Flags Audit Trail */}
             {activeTab === 'flags' && (
                 <div className="space-y-3">
                     <FlaggedProblemsView 
