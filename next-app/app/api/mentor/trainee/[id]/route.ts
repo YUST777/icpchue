@@ -416,10 +416,37 @@ export async function GET(
         const attemptedPct = totalProblems > 0 ? Math.min(100, Math.round((totalAttempted / totalProblems) * 100)) : 0;
         const notStartedPct = totalProblems > 0 ? Math.max(0, 100 - (solvedPct + attemptedPct)) : 0;
 
-        const totalSec = parseInt(sumTimeRes.rows[0]?.total_sec || '0', 10);
+        // Calculate Practice Time and 7-day activity
+        let totalSec = parseInt(sumTimeRes.rows[0]?.total_sec || '0', 10);
+        const subTimestamps = subsRes.rows
+            .map((r: any) => new Date(r.submitted_at).getTime())
+            .filter((t: number) => !isNaN(t))
+            .sort((a: number, b: number) => a - b);
+
+        if (totalSec <= 0 && subTimestamps.length > 0) {
+            let totalSessionMs = 0;
+            let sessionStart = subTimestamps[0];
+            let lastTime = subTimestamps[0];
+            const SESSION_GAP_MS = 45 * 60 * 1000; // 45 mins
+
+            for (let i = 1; i < subTimestamps.length; i++) {
+                const t = subTimestamps[i];
+                if (t - lastTime > SESSION_GAP_MS) {
+                    totalSessionMs += Math.max(15 * 60 * 1000, (lastTime - sessionStart) + 15 * 60 * 1000);
+                    sessionStart = t;
+                }
+                lastTime = t;
+            }
+            totalSessionMs += Math.max(15 * 60 * 1000, (lastTime - sessionStart) + 15 * 60 * 1000);
+            totalSec = Math.round(totalSessionMs / 1000);
+        }
+
         const hours = Math.floor(totalSec / 3600);
         const mins = Math.floor((totalSec % 3600) / 60);
         const timeSpentStr = totalSec > 0 ? `${hours}h ${mins}m` : '0h 0m';
+
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const subs7d = subTimestamps.filter((t: number) => t >= sevenDaysAgo).length;
 
         // 4. Metrics Payload
         const metrics = {
@@ -432,7 +459,7 @@ export async function GET(
             current_streak: currentStreak,
             max_streak: maxStreak,
             total_submissions: totalSubmissions,
-            submissions_last_7_days: 0,
+            submissions_last_7_days: subs7d,
             time_spent_seconds: totalSec,
             time_spent_str: timeSpentStr,
             last_solve_at: lastSolveAt,
