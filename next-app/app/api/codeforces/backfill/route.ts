@@ -101,27 +101,33 @@ export async function POST(req: NextRequest) {
             return true;
         });
 
-        if (toApply.length === 0) {
-            return NextResponse.json({ success: true, solved: 0, skipped: accepted.length, message: 'No matching in-sheet ACs' });
-        }
+        // Optional full history of attempts (WAs, TLEs, ACs) sent by modern extension
+        const allIncomingSubs: Array<{
+            problemIndex: string;
+            id: number | string;
+            verdict?: string;
+            timeConsumedMillis?: number;
+            memoryConsumedBytes?: number;
+            language?: string;
+        }> = Array.isArray(body.submissions) ? body.submissions : [];
 
-        let newlySolved = 0;
+        // 1. Persist all historical attempts if present
+        for (const sub of allIncomingSubs) {
+            const idx = String(sub.problemIndex || '').toUpperCase();
+            const cfSubmissionId = parseInt(String(sub.id), 10);
+            if (!idx || !Number.isFinite(cfSubmissionId) || cfSubmissionId <= 0 || !validIndices.has(idx)) continue;
 
-        for (const a of toApply) {
-            const idx = String(a.problemIndex).toUpperCase();
-            const cfSubmissionId = parseInt(String(a.id), 10);
-            const timeMs = Number(a.timeConsumedMillis) || 0;
-            const memoryKb = Math.round((Number(a.memoryConsumedBytes) || 0) / 1024);
-            const trackingProblemId = `${contestId}:${idx}`;
+            const timeMs = Number(sub.timeConsumedMillis) || 0;
+            const memoryKb = Math.round((Number(sub.memoryConsumedBytes) || 0) / 1024);
+            const verdict = sub.verdict || 'Accepted';
 
-            // 1. Upsert into the unified submissions table (trigger updates stats).
             await query(
                 `INSERT INTO submissions (
                     user_id, source, cf_submission_id, contest_id, problem_index, sheet_id,
                     verdict, time_ms, memory_kb, language, cf_handle, url_type, group_id
-                ) VALUES ($1, 'codeforces', $2, $3, $4, $5, 'Accepted', $6, $7, $8, $9, $10, $11)
+                ) VALUES ($1, 'codeforces', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 ON CONFLICT (cf_submission_id) DO UPDATE SET
-                    verdict = 'Accepted',
+                    verdict = EXCLUDED.verdict,
                     time_ms = EXCLUDED.time_ms,
                     memory_kb = EXCLUDED.memory_kb`,
                 [
@@ -130,6 +136,45 @@ export async function POST(req: NextRequest) {
                     String(contestId),
                     idx,
                     sheetId || null,
+                    verdict,
+                    timeMs,
+                    memoryKb,
+                    sub.language || 'C++',
+                    finalHandle || null,
+                    urlType || 'contest',
+                    groupId || null,
+                ]
+            );
+        }
+
+        let newlySolved = 0;
+
+        // 2. Mark progress for Accepted submissions
+        for (const a of toApply) {
+            const idx = String(a.problemIndex).toUpperCase();
+            const cfSubmissionId = parseInt(String(a.id), 10);
+            const timeMs = Number(a.timeConsumedMillis) || 0;
+            const memoryKb = Math.round((Number(a.memoryConsumedBytes) || 0) / 1024);
+            const trackingProblemId = `${contestId}:${idx}`;
+            const verdict = a.verdict || 'Accepted';
+
+            // Ensure the AC submission is in submissions table
+            await query(
+                `INSERT INTO submissions (
+                    user_id, source, cf_submission_id, contest_id, problem_index, sheet_id,
+                    verdict, time_ms, memory_kb, language, cf_handle, url_type, group_id
+                ) VALUES ($1, 'codeforces', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ON CONFLICT (cf_submission_id) DO UPDATE SET
+                    verdict = EXCLUDED.verdict,
+                    time_ms = EXCLUDED.time_ms,
+                    memory_kb = EXCLUDED.memory_kb`,
+                [
+                    user.id,
+                    cfSubmissionId,
+                    String(contestId),
+                    idx,
+                    sheetId || null,
+                    verdict,
                     timeMs,
                     memoryKb,
                     a.language || 'C++',
@@ -139,7 +184,7 @@ export async function POST(req: NextRequest) {
                 ]
             );
 
-            // 2. Upsert user_progress; count rows that transition to SOLVED.
+            // Upsert user_progress; count rows that transition to SOLVED.
             const progressRes = await query(
                 `INSERT INTO user_progress (user_id, problem_id, sheet_id, status, submission_id, solved_at)
                  VALUES ($1, $2, $3, 'SOLVED', $4, now())
