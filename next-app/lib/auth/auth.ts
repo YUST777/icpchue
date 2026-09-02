@@ -115,3 +115,19 @@ export async function verifyAdmin(req: NextRequest): Promise<AuthUser | null> {
     }
     return user;
 }
+
+/**
+ * Verify mentor access: Supabase session + DB role check.
+ * Permitted roles: 'mentor', 'instructor', 'owner'.
+ */
+export async function verifyMentor(req: NextRequest): Promise<AuthUser | null> {
+    const user = await verifyAuth(req);
+    if (!user) return null;
+
+    const role = user.role;
+    if (role !== 'owner' && role !== 'instructor' && role !== 'mentor') {
+        console.warn(`[Mentor] User ${user.id} has insufficient role: ${role}`);
+        return null;
+    }
+    return user;
+}

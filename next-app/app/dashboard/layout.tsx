@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, Shield
+    ChevronRight, ChevronLeft, Shield, GraduationCap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
@@ -226,12 +226,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname === '/dashboard/leaderboard') return 'Leaderboard';
         if (pathname === '/dashboard/achievements') return 'Achievements';
         if (pathname === '/dashboard/news') return 'Team News';
+        if (pathname === '/dashboard/mentor' || pathname.startsWith('/dashboard/mentor/')) return 'Mentor Panel';
         if (pathname === '/dashboard/settings') return 'Settings';
         if (pathname === '/dashboard/admin') return 'Admin';
         return 'Dashboard';
     };
 
     const isAdmin = user?.role === 'owner' || user?.role === 'instructor';
+    const isMentor = user?.role === 'owner' || user?.role === 'instructor' || user?.role === 'mentor';
 
     const activePage = getActivePage();
 
@@ -387,6 +389,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             onClick={() => handleNav('/dashboard/settings')}
                                             className="text-lg font-medium"
                                         />
+                                        {isMentor && (
+                                            <NavItem
+                                                icon={<GraduationCap size={32} />}
+                                                label="Mentor Panel"
+                                                active={activePage === 'Mentor Panel'}
+                                                onClick={() => handleNav('/dashboard/mentor')}
+                                                className="text-lg font-medium"
+                                            />
+                                        )}
                                         {isAdmin && (
                                             <NavItem
                                                 icon={<Shield size={32} />}
@@ -470,6 +481,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                             <NavItem id="onboarding-nav-news" collapsed={isSidebarCollapsed} icon={<Bell size={20} />} label="Team News" active={activePage === 'Team News'} onClick={() => handleNav('/dashboard/news')} />
+                            {isMentor && (
+                                <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
+                            )}
                             {isAdmin && (
                                 <NavItem id="onboarding-nav-admin" collapsed={isSidebarCollapsed} icon={<Shield size={20} />} label="Admin" active={activePage === 'Admin'} onClick={() => handleNav('/dashboard/admin')} />
                             )}
