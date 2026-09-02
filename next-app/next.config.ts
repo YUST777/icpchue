@@ -26,6 +26,17 @@ const nextConfig: NextConfig = {
                 destination: '/register',
                 permanent: true,
             },
+            // Team News is temporarily offline while it is being refreshed.
+            {
+                source: '/dashboard/news',
+                destination: '/dashboard',
+                permanent: false,
+            },
+            {
+                source: '/dashboard/news/:path*',
+                destination: '/dashboard',
+                permanent: false,
+            },
             // Specific Legacy Moves (Safety Net)
             {
                 source: '/dashboard/sessions/wintercamp/2',
