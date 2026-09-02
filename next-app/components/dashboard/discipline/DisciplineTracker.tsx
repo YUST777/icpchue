@@ -16,7 +16,8 @@ import {
     ChevronUp,
     Sparkles,
     Check,
-    AlertCircle
+    AlertCircle,
+    Lock
 } from 'lucide-react';
 
 interface DisciplineLog {
@@ -25,7 +26,7 @@ interface DisciplineLog {
     week_number: number;
     day_number: number;
     log_date: string;
-    total_hours: number | string;
+    total_hours: number | string | null;
     is_missed: boolean;
     done_tasks: string;
     student_comment: string;
@@ -43,6 +44,8 @@ interface DisciplineTrackerProps {
 
 const TOTAL_WEEKS = 8;
 const DAYS_PER_WEEK = 7;
+// Program start date: August 30, 2026 (matching training schedule)
+const PROGRAM_START_DATE = new Date(2026, 7, 30, 0, 0, 0);
 
 export default function DisciplineTracker({ targetUserId, isMentorView = false, traineeName }: DisciplineTrackerProps) {
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
@@ -287,10 +290,22 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                             const isSaving = savingKey === key;
                                             const isSaved = savedSuccessKey === key;
 
+                                            // Calculate calendar date and midnight unlock status
+                                            const dayOffset = (weekNum - 1) * 7 + (dayNum - 1);
+                                            const dayDate = new Date(PROGRAM_START_DATE.getTime() + dayOffset * 86400000);
+                                            const defaultDateStr = `${dayDate.getDate()}/${dayDate.toLocaleString('en-US', { month: 'short' })}`;
+                                            
+                                            // Unlocks at 12:00 AM (00:00:00) on that day
+                                            const unlockTimestamp = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0).getTime();
+                                            const isUnlocked = isMentorView || Date.now() >= unlockTimestamp;
+                                            const displayDate = log?.log_date || defaultDateStr;
+
                                             return (
                                                 <tr 
                                                     key={key} 
-                                                    className="hover:bg-white/[0.02] transition-colors group"
+                                                    className={`transition-colors group ${
+                                                        isUnlocked ? 'hover:bg-white/[0.02]' : 'opacity-35 bg-black/20'
+                                                    }`}
                                                 >
                                                     {/* Left Vertical Week Banner (Merged on Day 1 of each week) */}
                                                     {dayIdx === 0 && (
@@ -312,69 +327,86 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                     {/* Day / Date Cell */}
                                                     <td className="p-2.5 text-center border-r border-white/[0.06] bg-black/20">
                                                         <div className="flex flex-col items-center justify-center">
-                                                            <span className="font-mono text-[11px] text-white/70">
+                                                            <span className="font-mono text-[11px] text-white/70 flex items-center justify-center gap-1">
                                                                 Day {dayNum}
+                                                                {!isUnlocked && <Lock size={10} className="text-amber-400/80" />}
                                                             </span>
-                                                            <input
-                                                                type="text"
-                                                                value={log?.log_date || ''}
-                                                                placeholder="e.g. 30/Aug"
-                                                                disabled={isMentorView}
-                                                                onChange={(e) => handleSaveLog(weekNum, dayNum, { log_date: e.target.value })}
-                                                                className="w-18 bg-transparent text-[10px] font-mono text-center text-white/40 placeholder-white/20 border-b border-transparent hover:border-white/20 focus:border-[#E8C15A] focus:text-white focus:outline-none transition-colors mt-0.5"
-                                                            />
+                                                            <span className="text-[10px] font-mono text-center text-white/40 mt-0.5">
+                                                                {displayDate}
+                                                            </span>
                                                         </div>
                                                     </td>
 
-                                                    {/* Total Time Cell (Pure Number Input Only) */}
+                                                    {/* Total Time Cell (Pure Number Input Only - Clean & Empty by default) */}
                                                     <td className="p-2 text-center border-r border-white/[0.06]">
-                                                        <div className="flex items-center justify-center">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="24"
-                                                                step="any"
-                                                                value={log?.total_hours !== undefined && log?.total_hours !== null ? log.total_hours : ''}
-                                                                placeholder="0"
-                                                                disabled={isMentorView}
-                                                                onChange={(e) => handleSaveLog(weekNum, dayNum, { total_hours: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) })}
-                                                                className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
-                                                            />
-                                                        </div>
+                                                        {isUnlocked ? (
+                                                            <div className="flex items-center justify-center">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max="24"
+                                                                    step="any"
+                                                                    value={log?.total_hours !== undefined && log?.total_hours !== null ? log.total_hours : ''}
+                                                                    placeholder=""
+                                                                    disabled={isMentorView}
+                                                                    onChange={(e) => handleSaveLog(weekNum, dayNum, { 
+                                                                        total_hours: e.target.value === '' ? null : parseFloat(e.target.value),
+                                                                        is_missed: false 
+                                                                    })}
+                                                                    className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-center text-white/20" title="Unlocks at 12:00 AM midnight">
+                                                                <Lock size={12} />
+                                                            </div>
+                                                        )}
                                                     </td>
 
                                                     {/* Done + Time / Tasks Completed Cell */}
                                                     <td className="p-2.5 border-r border-white/[0.06] relative">
-                                                        <div 
-                                                            onClick={() => !isMentorView && openTextModal(weekNum, dayNum, 'tasks')}
-                                                            className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${
-                                                                !isMentorView ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''
-                                                            }`}
-                                                        >
-                                                            <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2" dir="auto">
-                                                                {log?.done_tasks || <span className="text-white/20 italic font-mono text-[11px]">{isMentorView ? 'No tasks logged' : '+ Add completed topics/problems'}</span>}
+                                                        {isUnlocked ? (
+                                                            <div 
+                                                                onClick={() => !isMentorView && openTextModal(weekNum, dayNum, 'tasks')}
+                                                                className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${
+                                                                    !isMentorView ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''
+                                                                }`}
+                                                            >
+                                                                <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2" dir="auto">
+                                                                    {log?.done_tasks || <span className="text-white/20 italic font-mono text-[11px]">{isMentorView ? 'No tasks logged' : '+ Add completed topics/problems'}</span>}
+                                                                </div>
+                                                                {!isMentorView && (
+                                                                    <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />
+                                                                )}
                                                             </div>
-                                                            {!isMentorView && (
-                                                                <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />
-                                                            )}
-                                                        </div>
+                                                        ) : (
+                                                            <div className="min-h-[32px] p-1.5 flex items-center text-white/20 text-[11px] font-mono gap-1.5">
+                                                                <Lock size={11} className="text-white/30" /> Unlocks at 12:00 AM midnight
+                                                            </div>
+                                                        )}
                                                     </td>
 
                                                     {/* Student Comments / Reflection Cell */}
                                                     <td className="p-2.5 border-r border-white/[0.06] relative">
-                                                        <div 
-                                                            onClick={() => !isMentorView && openTextModal(weekNum, dayNum, 'comment')}
-                                                            className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${
-                                                                !isMentorView ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''
-                                                            }`}
-                                                        >
-                                                            <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2 font-normal" dir="auto">
-                                                                {log?.student_comment || <span className="text-white/20 italic font-mono text-[11px]">{isMentorView ? 'No student comment' : '+ Add daily reflection / notes'}</span>}
+                                                        {isUnlocked ? (
+                                                            <div 
+                                                                onClick={() => !isMentorView && openTextModal(weekNum, dayNum, 'comment')}
+                                                                className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${
+                                                                    !isMentorView ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''
+                                                                }`}
+                                                            >
+                                                                <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2 font-normal" dir="auto">
+                                                                    {log?.student_comment || <span className="text-white/20 italic font-mono text-[11px]">{isMentorView ? 'No student comment' : '+ Add daily reflection / notes'}</span>}
+                                                                </div>
+                                                                {!isMentorView && (
+                                                                    <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />
+                                                                )}
                                                             </div>
-                                                            {!isMentorView && (
-                                                                <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />
-                                                            )}
-                                                        </div>
+                                                        ) : (
+                                                            <div className="min-h-[32px] p-1.5 flex items-center text-white/20 text-[11px] font-mono gap-1.5">
+                                                                <Lock size={11} className="text-white/30" /> Locked
+                                                            </div>
+                                                        )}
                                                     </td>
 
                                                     {/* Mentor Notes / Feedback Cell */}
