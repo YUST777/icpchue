@@ -198,45 +198,13 @@ export function RecentSubmissionsTable({
                         <div className="p-3.5 flex-1 flex flex-col bg-[#0A0A0C] min-h-[220px] max-h-[50vh] overflow-hidden">
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
                                 <span className="text-white/40 text-[10px] font-mono uppercase tracking-wider">Source Code</span>
-                                <div className="flex items-center gap-1.5">
-                                    {activeSubModal.contest_id && activeSubModal.problem_index && (
-                                        <a
-                                            href={`https://codeforces.com/contest/${activeSubModal.contest_id}/problem/${activeSubModal.problem_index}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1 border border-white/[0.08] font-mono"
-                                            title="Open problem on Codeforces"
-                                        >
-                                            <span>CF Problem</span>
-                                            <ExternalLink size={10} className="text-white/40" />
-                                        </a>
-                                    )}
-                                    {activeSubModal.source_code && (
-                                        <button
-                                            onClick={() => {
-                                                const blob = new Blob([activeSubModal.source_code || ''], { type: 'text/plain;charset=utf-8' });
-                                                const url = URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = `${activeSubModal.problem.replace(/\s+/g, '_')}_sub_${activeSubModal.id}.cpp`;
-                                                a.click();
-                                                URL.revokeObjectURL(url);
-                                            }}
-                                            className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1 border border-white/[0.08]"
-                                            title="Download source code"
-                                        >
-                                            <Terminal size={11} />
-                                            <span>Download</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                        className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
-                                    >
-                                        {copied ? <Check size={11} className="text-[#E8C15A]" /> : <Copy size={11} />}
-                                        <span>{copied ? 'Copied' : 'Copy Code'}</span>
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => handleCopy(activeSubModal.source_code || '')}
+                                    className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
+                                >
+                                    {copied ? <Check size={11} className="text-[#E8C15A]" /> : <Copy size={11} />}
+                                    <span>{copied ? 'Copied' : 'Copy Code'}</span>
+                                </button>
                             </div>
 
                             <div className="font-mono text-xs overflow-y-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden leading-relaxed">
