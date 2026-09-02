@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Flame } from 'lucide-react';
 
 interface ActivityHeatmapProps {
@@ -16,12 +17,17 @@ interface HoveredDayInfo {
 
 export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
     const [hoveredDay, setHoveredDay] = useState<HoveredDayInfo | null>(null);
+    const [mounted, setMounted] = useState(false);
 
-    const { calendarGrid, totalSolves, monthLabels, maxStreak, activeDays } = useMemo(() => {
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const { calendarGrid, totalSolves, monthLabels, activeDays } = useMemo(() => {
         const dataMap = new Map<string, number>();
         let sum = 0;
         let active = 0;
-        data.forEach(d => {
+        (data || []).forEach(d => {
             dataMap.set(d.date, d.count);
             sum += d.count;
             if (d.count > 0) active++;
@@ -67,7 +73,6 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             calendarGrid: weeks, 
             totalSolves: sum, 
             monthLabels: labels,
-            maxStreak: Math.max(...data.map(d => d.count), 0),
             activeDays: active
         };
     }, [data]);
@@ -87,8 +92,36 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
         return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const tooltipElement = (hoveredDay && mounted) ? createPortal(
+        <div
+            style={{
+                position: 'fixed',
+                left: `${hoveredDay.x}px`,
+                top: `${hoveredDay.y - 12}px`,
+                transform: 'translate(-50%, -100%)',
+                pointerEvents: 'none',
+                zIndex: 999999,
+            }}
+            className="bg-[#18181B] border border-white/20 rounded-xl px-3 py-1.5 shadow-[0_12px_28px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col items-center gap-0.5"
+        >
+            <div className="text-[11px] font-bold font-mono">
+                {hoveredDay.count > 0 ? (
+                    <span className="text-[#E8C15A]">{hoveredDay.count} solve{hoveredDay.count === 1 ? '' : 's'}</span>
+                ) : (
+                    <span className="text-white/50">No practice</span>
+                )}
+            </div>
+            <div className="text-[10px] text-white/70 font-mono whitespace-nowrap">
+                {formatTooltipDate(hoveredDay.date)}
+            </div>
+            {/* Pointer arrow */}
+            <div className="w-2 h-2 bg-[#18181B] border-r border-b border-white/20 rotate-45 -mb-2 mt-0.5" />
+        </div>,
+        document.body
+    ) : null;
+
     return (
-        <div className="relative bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col w-full">
+        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col w-full">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between pb-3 mb-2 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2.5">
@@ -158,7 +191,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                 </div>
             </div>
 
-            {/* Minimalist Legend (Without deleted subtitle) */}
+            {/* Minimalist Legend */}
             <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-white/40 font-mono">
                 <div className="flex items-center gap-1.5">
                     <span>Less</span>
@@ -171,33 +204,8 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                 </div>
             </div>
 
-            {/* Floating Popout Tooltip */}
-            {hoveredDay && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        left: `${hoveredDay.x}px`,
-                        top: `${hoveredDay.y - 8}px`,
-                        transform: 'translate(-50%, -100%)',
-                        pointerEvents: 'none',
-                        zIndex: 9999,
-                    }}
-                    className="bg-[#18181B]/95 border border-white/15 rounded-xl px-3 py-1.5 shadow-[0_12px_28px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl flex flex-col items-center gap-0.5 animate-in fade-in zoom-in-95 duration-100"
-                >
-                    <div className="text-[11px] font-bold font-mono">
-                        {hoveredDay.count > 0 ? (
-                            <span className="text-[#E8C15A]">{hoveredDay.count} solve{hoveredDay.count === 1 ? '' : 's'}</span>
-                        ) : (
-                            <span className="text-white/50">No practice</span>
-                        )}
-                    </div>
-                    <div className="text-[10px] text-white/60 font-mono whitespace-nowrap">
-                        {formatTooltipDate(hoveredDay.date)}
-                    </div>
-                    {/* Downward triangle pointer */}
-                    <div className="w-2 h-2 bg-[#18181B] border-r border-b border-white/15 rotate-45 -mb-2.5 mt-0.5" />
-                </div>
-            )}
+            {/* Portal-rendered Tooltip (Immune to parent backdrop-blur / overflow containing block traps) */}
+            {tooltipElement}
         </div>
     );
 }
