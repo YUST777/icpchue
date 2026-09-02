@@ -41,15 +41,16 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
             className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 relative ${active ? 'bg-gradient-to-r from-[#E8C15A]/20 to-transparent text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#F2F2F2] hover:bg-white/5'} ${collapsed ? 'justify-center' : ''} ${className}`}
         >
             {active && <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#E8C15A] rounded-r-full shadow-[0_0_10px_#E8C15A] ${collapsed ? 'left-1' : ''}`}></div>}
-            <span className={active ? 'text-[#E8C15A]' : 'group-hover:text-[#F2F2F2] transition-colors'}>{icon}</span>
+            <span className={`relative ${active ? 'text-[#E8C15A]' : 'group-hover:text-[#F2F2F2] transition-colors'}`}>
+                {icon}
+                {badge && (
+                    <span className="absolute -right-2.5 -top-1.5 inline-flex items-center rounded-full bg-[#E8C15A] px-1 py-px text-[7px] font-black leading-none text-[#0B0B0C] shadow-[0_0_8px_rgba(232,193,90,0.45)]">
+                        {badge}
+                    </span>
+                )}
+            </span>
 
             {!collapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">{label}</span>}
-
-            {badge && (
-                <span className={`${collapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} inline-flex items-center rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[9px] font-black leading-none text-[#0B0B0C] shadow-[0_0_12px_rgba(232,193,90,0.55)]`}>
-                    {badge}
-                </span>
-            )}
 
             {/* Tooltip for minimized state */}
             <AnimatePresence>
@@ -404,6 +405,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             active={activePage === 'Self Discipline'}
                                             onClick={() => handleNav('/dashboard/discipline')}
                                             className="text-lg font-medium"
+                                            badge="NEW"
                                         />
                                         <NavItem
                                             icon={<Settings size={32} />}
@@ -411,7 +413,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             active={activePage === 'Settings'}
                                             onClick={() => handleNav('/dashboard/settings')}
                                             className="text-lg font-medium"
-                                            badge="NEW"
                                         />
                                         {isMentor && (
                                             <NavItem
@@ -504,8 +505,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sessions" collapsed={isSidebarCollapsed} icon={<Play size={20} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
-                            <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} />
-                            <NavItem id="onboarding-nav-settings" collapsed={isSidebarCollapsed} icon={<Settings size={20} />} label="Settings" active={activePage === 'Settings'} onClick={() => handleNav('/dashboard/settings')} badge="NEW" />
+                            <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} badge="NEW" />
+                            <NavItem id="onboarding-nav-settings" collapsed={isSidebarCollapsed} icon={<Settings size={20} />} label="Settings" active={activePage === 'Settings'} onClick={() => handleNav('/dashboard/settings')} />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
