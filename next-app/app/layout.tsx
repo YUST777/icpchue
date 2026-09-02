@@ -200,6 +200,36 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function shouldIgnore(msg, url) {
+                  return (
+                    (url && url.startsWith('chrome-extension://')) ||
+                    (msg && (msg.indexOf('ethereum') !== -1 || msg.indexOf('Cannot redefine property') !== -1))
+                  );
+                }
+                window.addEventListener('error', function(e) {
+                  if (shouldIgnore(e.message, e.filename)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(e) {
+                  var reason = e.reason;
+                  var stack = reason && (reason.stack || reason.message || '');
+                  if (stack && (stack.indexOf('chrome-extension://') !== -1 || stack.indexOf('ethereum') !== -1)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased bg-black text-white" suppressHydrationWarning>
         <Providers>
           <InstallBanner />
