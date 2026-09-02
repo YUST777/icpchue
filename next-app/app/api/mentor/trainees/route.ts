@@ -92,12 +92,13 @@ export async function GET(req: NextRequest) {
                     COALESCE(us.current_streak, 0) as current_streak,
                     COALESCE(us.max_streak, 0) as max_streak,
                     us.last_solve_date
-                FROM applications a
-                LEFT JOIN users u ON (a.id = u.application_id OR (a.email_blind_index IS NOT NULL AND a.email_blind_index = u.email_blind_index))
+                FROM users u
+                LEFT JOIN applications a ON (u.application_id = a.id OR (u.email_blind_index IS NOT NULL AND u.email_blind_index = a.email_blind_index))
                 LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
                 LEFT JOIN latest_submissions ls ON u.id = ls.user_id
                 LEFT JOIN user_streaks us ON u.id = us.user_id
-                ORDER BY u.id DESC NULLS LAST
+                WHERE u.role NOT IN ('mentor', 'instructor', 'owner') OR u.role IS NULL
+                ORDER BY u.id DESC
             `);
 
             const totalCurriculumProblems = 150;
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
                 const decryptedFaculty = decrypt(row.encrypted_faculty) || 'Computing & Informatics';
                 const decryptedPhone = decrypt(row.encrypted_phone) || '';
 
-                const lastActiveDate = row.last_submission_at || row.last_login_at || row.last_solve_date || row.submitted_at;
+                const lastActiveDate = row.last_submission_at || row.last_login_at || row.last_solve_date || row.user_created_at;
                 const lastActiveMs = lastActiveDate ? new Date(lastActiveDate).getTime() : 0;
                 const validLastActiveMs = Number.isFinite(lastActiveMs) && lastActiveMs > 0 ? lastActiveMs : 0;
                 const daysSinceActive = validLastActiveMs ? Math.floor((now - validLastActiveMs) / (1000 * 60 * 60 * 24)) : 999;
