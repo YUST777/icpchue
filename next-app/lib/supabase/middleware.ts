@@ -9,8 +9,22 @@ const AUTH_ONLY_PAGES = ['/login', '/register', '/forgot-password', '/reset-pass
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+    const pathname = request.nextUrl.pathname;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Missing auth configuration must never turn protected pages into public
+    // pages. Public routes may continue so the deployment can show a useful
+    // error page, while dashboard routes fail closed.
+    if (!supabaseUrl || !supabaseKey) {
+        if (PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+            const loginUrl = request.nextUrl.clone();
+            loginUrl.pathname = '/login';
+            loginUrl.searchParams.set('redirect', pathname);
+            return NextResponse.redirect(loginUrl);
+        }
+        return supabaseResponse;
+    }
 
     // Safe URL check to prevent TypeError: Invalid URL crashes in Edge runtime
     let isValidUrl = false;
@@ -53,8 +67,6 @@ export async function updateSession(request: NextRequest) {
     // ── SERVER-SIDE AUTH GATE ────────────────────────────────
     // This runs on EVERY request in the Edge middleware, BEFORE the page renders.
     // It blocks unauthenticated users from /dashboard/* at the server level.
-    const pathname = request.nextUrl.pathname;
-
     let hasValidSession = false;
     try {
         const { data: { user } } = await supabase.auth.getUser();

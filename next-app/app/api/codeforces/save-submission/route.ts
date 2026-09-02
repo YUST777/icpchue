@@ -3,7 +3,6 @@ import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
-import { decrypt } from '@/lib/encryption';
 
 
 /**
@@ -30,6 +29,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Too many submission saves. Please wait.' }, { status: 429 });
         }
 
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 128 * 1024) {
+            return NextResponse.json({ error: 'Submission payload is too large' }, { status: 413 });
+        }
         const body = await req.json();
         const {
             cfSubmissionId,
@@ -37,8 +40,6 @@ export async function POST(req: NextRequest) {
             problemIndex,
             sheetId,
             verdict,
-            timeMs,
-            memoryKb,
             language,
             sourceCode,
             cfHandle,
@@ -49,7 +50,9 @@ export async function POST(req: NextRequest) {
             testNumber,
         } = body;
 
-        if (!cfSubmissionId || !contestId || !problemIndex || !verdict) {
+        if (!cfSubmissionId || !contestId || !problemIndex || !verdict ||
+            typeof verdict !== 'string' || typeof contestId !== 'string' ||
+            typeof problemIndex !== 'string') {
             return NextResponse.json({ error: 'Missing required fields: cfSubmissionId, contestId, problemIndex, verdict' }, { status: 400 });
         }
 
@@ -64,34 +67,77 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Non-final verdict rejected: ${verdict}` }, { status: 400 });
         }
 
-        // Verify cfSubmissionId is a valid integer (positive for real CF, negative for migrated Judge0)
+        // This endpoint only accepts real Codeforces IDs. Judge0 submissions
+        // are persisted by /api/judge/submit and must not be forged here.
         const submissionIdNum = parseInt(cfSubmissionId, 10);
-        if (isNaN(submissionIdNum) || String(submissionIdNum) !== String(cfSubmissionId)) {
+        if (!Number.isSafeInteger(submissionIdNum) || submissionIdNum <= 0 || String(submissionIdNum) !== String(cfSubmissionId)) {
             return NextResponse.json({ error: 'Invalid cfSubmissionId' }, { status: 400 });
         }
 
-        let finalCfHandle = cfHandle;
-        
         const userResult = await query(
-            'SELECT codeforces_handle, email FROM users WHERE id = $1',
+            'SELECT codeforces_handle FROM users WHERE id = $1',
             [user.id]
         );
-        const userHandle = userResult.rows[0]?.codeforces_handle;
-        const userEmail = userResult.rows[0]?.email;
-        
-        if (!finalCfHandle) {
-            finalCfHandle = userHandle || (userEmail ? (decrypt(userEmail) || userEmail).split('@')[0] : 'unknown');
+        const userHandle = String(userResult.rows[0]?.codeforces_handle || '').trim();
+        if (!userHandle || !cfHandle || String(cfHandle).trim().toLowerCase() !== userHandle.toLowerCase()) {
+            return NextResponse.json({ error: 'Link your Codeforces account before syncing submissions' }, { status: 403 });
         }
-        
-        // If it's a regular submission (positive ID), enforce exact handle matching
-        if (submissionIdNum > 0) {
-            if (!cfHandle) {
-                return NextResponse.json({ error: 'cfHandle is required for automated validation' }, { status: 400 });
-            }
-            if (userHandle && cfHandle.toLowerCase() !== userHandle.toLowerCase()) {
-                return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
-            }
+
+        const normalizedContestId = String(contestId).trim();
+        const normalizedProblemIndex = String(problemIndex).trim().toUpperCase();
+        if (!/^\d{1,10}$/.test(normalizedContestId) || !/^[A-Z][A-Z0-9]{0,9}$/.test(normalizedProblemIndex)) {
+            return NextResponse.json({ error: 'Invalid contest or problem identifier' }, { status: 400 });
         }
+        if (typeof sourceCode === 'string' && sourceCode.length > 64 * 1024) {
+            return NextResponse.json({ error: 'Source code is too large' }, { status: 400 });
+        }
+
+        // Never trust verdict/timing fields supplied by the browser. Confirm
+        // the exact ID is a submission by the linked handle for this problem.
+        let verifiedSubmission: any = null;
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            let cfRes: Response;
+            try {
+                cfRes = await fetch(
+                    `https://codeforces.com/api/user.status?handle=${encodeURIComponent(userHandle)}&from=1&count=10000`,
+                    { signal: controller.signal, headers: { Accept: 'application/json' } },
+                );
+            } finally {
+                clearTimeout(timeout);
+            }
+            if (!cfRes.ok) return NextResponse.json({ error: 'Codeforces verification is temporarily unavailable' }, { status: 502 });
+            const cfData = await cfRes.json();
+            if (cfData?.status !== 'OK' || !Array.isArray(cfData.result)) {
+                return NextResponse.json({ error: 'Codeforces verification failed' }, { status: 502 });
+            }
+            verifiedSubmission = cfData.result.find((submission: any) => {
+                const handles = submission.author?.members?.map((member: any) => String(member.handle || '').toLowerCase()) || [];
+                return Number(submission.id) === submissionIdNum &&
+                    String(submission.contestId || '') === normalizedContestId &&
+                    String(submission.problem?.index || '').toUpperCase() === normalizedProblemIndex &&
+                    handles.includes(userHandle.toLowerCase());
+            });
+        } catch {
+            return NextResponse.json({ error: 'Codeforces verification is temporarily unavailable' }, { status: 502 });
+        }
+        if (!verifiedSubmission) {
+            return NextResponse.json({ error: 'Submission could not be verified for this account' }, { status: 403 });
+        }
+
+        const verdictMap: Record<string, string> = {
+            OK: 'Accepted', WRONG_ANSWER: 'Wrong Answer', TIME_LIMIT_EXCEEDED: 'Time Limit Exceeded',
+            MEMORY_LIMIT_EXCEEDED: 'Memory Limit Exceeded', RUNTIME_ERROR: 'Runtime Error',
+            COMPILATION_ERROR: 'Compilation Error', PRESENTATION_ERROR: 'Presentation Error',
+            IDLENESS_LIMIT_EXCEEDED: 'Idleness Limit Exceeded', CHALLENGED: 'Challenged', SKIPPED: 'Skipped',
+        };
+        const serverVerdict = verdictMap[String(verifiedSubmission.verdict || '').toUpperCase()] || 'Unknown';
+        const requestedVerdict = String(verdict).trim().toLowerCase();
+        if (requestedVerdict !== serverVerdict.toLowerCase() && !(requestedVerdict === 'ok' && serverVerdict === 'Accepted')) {
+            return NextResponse.json({ error: 'Submission verdict does not match Codeforces' }, { status: 409 });
+        }
+        const finalCfHandle = userHandle;
 
         // 1. Save to unified submissions table (upsert on cf_submission_id to prevent duplicates)
         const insertResult = await query(
@@ -107,17 +153,18 @@ export async function POST(req: NextRequest) {
                 compilation_error = EXCLUDED.compilation_error,
                 details = EXCLUDED.details,
                 test_number = EXCLUDED.test_number
+            WHERE submissions.user_id = EXCLUDED.user_id
             RETURNING id`,
             [
                 user.id,
                 cfSubmissionId,
                 contestId,
-                problemIndex.toUpperCase(),
+                normalizedProblemIndex,
                 sheetId || null,
-                verdict,
-                timeMs || 0,
-                memoryKb || 0,
-                language || null,
+                serverVerdict,
+                Number(verifiedSubmission.timeConsumedMillis) || 0,
+                Math.round((Number(verifiedSubmission.memoryConsumedBytes) || 0) / 1024),
+                verifiedSubmission.programmingLanguage || language || null,
                 sourceCode || null,
                 finalCfHandle || null,
                 urlType || 'contest',
@@ -129,11 +176,14 @@ export async function POST(req: NextRequest) {
         );
 
         const savedId = insertResult.rows[0]?.id;
+        if (!savedId) {
+            return NextResponse.json({ error: 'Submission belongs to another account' }, { status: 403 });
+        }
 
         // 2. Update user_progress (the source of truth for "did user solve this?")
         //    trackingProblemId format: "contestId:problemIndex" — matches roadmap & sync scripts
-        const trackingProblemId = `${contestId}:${problemIndex.toUpperCase()}`;
-        const isAc = verdictLower.includes('accepted') || verdictLower === 'ok';
+        const trackingProblemId = `${normalizedContestId}:${normalizedProblemIndex}`;
+        const isAc = serverVerdict === 'Accepted';
         const status = isAc ? 'SOLVED' : 'ATTEMPTED';
 
         await query(`
@@ -149,7 +199,7 @@ export async function POST(req: NextRequest) {
             trackingProblemId,
             sheetId || null,
             status,
-            cfSubmissionId,
+            savedId,
             status === 'SOLVED' ? new Date() : null
         ]);
 

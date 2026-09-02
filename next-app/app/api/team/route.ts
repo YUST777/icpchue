@@ -3,6 +3,8 @@ import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
+import { getClientIp } from '@/lib/security/request';
 
 function sanitize(s: string): string {
     // Keep Arabic chars \u0600-\u06FF, english letters, numbers, spaces, and hyphens/underscores
@@ -10,8 +12,21 @@ function sanitize(s: string): string {
     return safe || 'team';
 }
 
+const MAX_MULTIPART_BYTES = 35 * 1024 * 1024;
+const EXTENSION_BY_MIME: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+};
+
 export async function POST(req: NextRequest) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    const contentLength = Number(req.headers.get('content-length') || 0);
+    if (Number.isFinite(contentLength) && contentLength > MAX_MULTIPART_BYTES) {
+        return NextResponse.json({ error: 'Upload payload is too large.' }, { status: 413 });
+    }
+    const ip = getClientIp(req);
     const rl = await rateLimit(`team_reg:${ip}`, 5, 600);
     if (!rl.success) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
 
@@ -52,7 +67,7 @@ export async function POST(req: NextRequest) {
             } else if (!/^[A-Za-z0-9\s\-_]+$/.test(m.name)) {
                 errors.push(`Member ${n}: Name must be in English`);
             }
-            if (!m.studentId || m.studentId.length < 7) errors.push(`Member ${n}: Valid Student ID required`);
+            if (!m.studentId || !/^\d{7,10}$/.test(m.studentId)) errors.push(`Member ${n}: Valid Student ID required`);
             if (!m.nationalId || !/^\d{14}$/.test(m.nationalId)) errors.push(`Member ${n}: National ID must be exactly 14 digits`);
             if (!m.faculty) errors.push(`Member ${n}: Faculty is required`);
         }
@@ -66,14 +81,14 @@ export async function POST(req: NextRequest) {
             if (!back || back.size === 0) errors.push(`Member ${i}: National ID back photo is required`);
             if (front && front.size > 5 * 1024 * 1024) errors.push(`Member ${i}: Front photo exceeds 5MB`);
             if (back && back.size > 5 * 1024 * 1024) errors.push(`Member ${i}: Back photo exceeds 5MB`);
-            const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+            const allowed = Object.keys(EXTENSION_BY_MIME);
             if (front && front.size > 0 && !allowed.includes(front.type)) errors.push(`Member ${i}: Front photo must be an image (JPG/PNG/WebP)`);
             if (back && back.size > 0 && !allowed.includes(back.type)) errors.push(`Member ${i}: Back photo must be an image (JPG/PNG/WebP)`);
         }
 
         if (errors.length > 0) return NextResponse.json({ error: errors[0], errors }, { status: 400 });
 
-        const teamFolder = `${sanitize(teamName)}_${Date.now()}`;
+        const teamFolder = `${sanitize(teamName)}_${Date.now()}_${crypto.randomUUID()}`;
         const teamDir = path.join(process.cwd(), 'team-uploads', teamFolder);
 
         const filePaths: Record<string, string> = {};
@@ -84,16 +99,19 @@ export async function POST(req: NextRequest) {
             const safeName = members[i].name.replace(/\s+/g, '_').replace(/[^\w]/g, '') || `member${n}`;
             const memberFolder = safeName;
             const memberDir = path.join(teamDir, memberFolder);
-            await mkdir(memberDir, { recursive: true, mode: 0o777 });
+            await mkdir(memberDir, { recursive: true, mode: 0o700 });
 
             for (const side of ['front', 'back'] as const) {
                 const file = formData.get(`member${n}_id_${side}`) as File;
                 if (file && file.size > 0) {
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                    // Never trust the user-supplied filename extension for
+                    // sensitive ID-card uploads; derive it from the checked
+                    // MIME type and write files with private permissions.
+                    const ext = EXTENSION_BY_MIME[file.type] || 'jpg';
                     const filename = `${safeName}_${side}card.${ext}`;
                     const filePath = path.join(memberDir, filename);
                     const buffer = Buffer.from(await file.arrayBuffer());
-                    await writeFile(filePath, buffer);
+                    await writeFile(filePath, buffer, { mode: 0o600 });
                     filePaths[`m${n}_${side}`] = `team-uploads/${teamFolder}/${memberFolder}/${filename}`;
                 }
             }

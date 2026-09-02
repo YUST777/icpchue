@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { verifyAuth, verifyMentor } from '@/lib/auth/auth';
+import { verifyAuth } from '@/lib/auth/auth';
 import { decrypt } from '@/lib/security/encryption';
 
 export async function GET(req: NextRequest) {
@@ -31,6 +31,14 @@ export async function GET(req: NextRequest) {
         `, [effectiveUserId]);
 
         const targetUserRow = userRes.rows[0];
+        if (!targetUserRow) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+        if (authUser.role === 'mentor' &&
+            ['mentor', 'instructor', 'owner'].includes(String(targetUserRow.role)) &&
+            effectiveUserId !== authUser.id) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
         const targetUserName = targetUserRow ? (decrypt(targetUserRow.enc_name) || targetUserRow.codeforces_handle || `Trainee #${effectiveUserId}`) : `User #${effectiveUserId}`;
 
         // Fetch logs for user
@@ -121,6 +129,16 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Forbidden: Mentor privileges required' }, { status: 403 });
             }
             effectiveUserId = parseInt(target_user_id, 10);
+        }
+
+        if (!Number.isSafeInteger(effectiveUserId) || effectiveUserId <= 0) {
+            return NextResponse.json({ error: 'Invalid target user' }, { status: 400 });
+        }
+        if (authUser.role === 'mentor' && effectiveUserId !== authUser.id) {
+            const targetRole = await query('SELECT role FROM users WHERE id = $1', [effectiveUserId]);
+            if (['mentor', 'instructor', 'owner'].includes(String(targetRole.rows[0]?.role || ''))) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
         }
 
         const hours = (total_hours === null || total_hours === undefined || total_hours === '') 

@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
         const rl = await rateLimit(`cf-backfill:${user.id}`, 6, 60);
         if (!rl.success) return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
 
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 8 * 1024 * 1024) {
+            return NextResponse.json({ error: 'Backfill payload is too large' }, { status: 413 });
+        }
         const body = await req.json();
         const requestedBatches = Array.isArray(body?.batches)
             ? body.batches
@@ -80,10 +84,6 @@ export async function POST(req: NextRequest) {
 
         const index = await loadCurriculumIndex();
         const result = await applyBackfillBatches(user.id, finalHandle || null, batches, index);
-
-        if (!userHandle && finalHandle && finalHandle !== 'unknown') {
-            await query('UPDATE users SET codeforces_handle = $1 WHERE id = $2', [finalHandle, user.id]);
-        }
 
         if (result.newlySolved > 0) {
             await Promise.all([

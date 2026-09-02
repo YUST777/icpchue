@@ -88,6 +88,14 @@ export async function POST(request: NextRequest) {
         if (!contestId || !problemId || !language) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
+        if (typeof contestId !== 'string' || contestId.length > 50 ||
+            typeof problemId !== 'string' || !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(problemId) ||
+            typeof language !== 'string' || language.length > 100) {
+            return NextResponse.json({ error: 'Invalid code payload' }, { status: 400 });
+        }
+        if (code !== undefined && code !== null && typeof code !== 'string') {
+            return NextResponse.json({ error: 'Invalid code payload' }, { status: 400 });
+        }
 
         // Limit code size to 512KB
         if (typeof code === 'string' && code.length > 512 * 1024) {

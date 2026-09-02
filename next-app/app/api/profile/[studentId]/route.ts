@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 export async function GET(
     req: NextRequest,
@@ -11,9 +12,16 @@ export async function GET(
     // Await params if using newer Next.js types, or just access if not.
     // Safe to await.
     const { studentId } = await params;
+
+    // Student IDs are university identifiers, not arbitrary lookup strings.
+    // Keeping this bounded also prevents attackers from filling the profile
+    // cache with unbounded attacker-controlled keys.
+    if (!/^\d{7,10}$/.test(studentId || '')) {
+        return NextResponse.json({ error: 'Invalid student ID' }, { status: 400 });
+    }
     
     // Rate limit public profile access: 15 per 60s per IP
-    const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+    const ip = getClientIp(req);
     const ratelimit = await rateLimit(`profile_view:${ip}`, 15, 60);
     if (!ratelimit.success) {
         return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
@@ -31,14 +39,14 @@ export async function GET(
             const emailBlindIndex = createBlindIndex(fullEmail);
 
             const userResult = await query(
-                'SELECT id, role, profile_visibility, created_at, application_id, profile_picture FROM users WHERE email_blind_index = $1',
+                'SELECT id, role, profile_visibility, show_public_profile, created_at, application_id, profile_picture FROM users WHERE email_blind_index = $1',
                 [emailBlindIndex]
             );
 
             if (userResult.rows.length === 0) return null;
 
             const user = userResult.rows[0];
-            if (user.profile_visibility === 'private') return { isPrivate: true };
+            if (user.profile_visibility === 'private' || user.show_public_profile === false) return { isPrivate: true };
 
             const appResult = await query(
                 'SELECT name, faculty, student_level, codeforces_profile, leetcode_profile, codeforces_data, application_type, submitted_at FROM applications WHERE id = $1',
@@ -49,7 +57,7 @@ export async function GET(
 
             return {
                 isPrivate: false,
-                name: application.name,
+                name: decrypt(application.name),
                 role: user.role,
                 faculty: application.faculty,
                 studentLevel: application.student_level,

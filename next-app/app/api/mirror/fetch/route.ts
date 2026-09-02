@@ -30,8 +30,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Validate URL is from Codeforces group
-        if (!url.includes('codeforces.com/group/MWSDmqGsZm')) {
+        // Validate the parsed origin and path, not a substring. A URL such as
+        // https://evil.example/?next=codeforces.com/group/... must not pass.
+        let parsedUrl: URL;
+        try {
+            parsedUrl = new URL(url);
+        } catch {
+            return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+        }
+        if (parsedUrl.protocol !== 'https:' ||
+            parsedUrl.hostname !== 'codeforces.com' ||
+            !/^\/group\/MWSDmqGsZm\/contest\/\d+\/problem\/[A-Za-z][A-Za-z0-9]{0,9}\/?$/i.test(parsedUrl.pathname)) {
             return NextResponse.json(
                 { error: 'Only curriculum problems are allowed' },
                 { status: 403 }

@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { redis } from '@/lib/db/redis';
-import { query } from '@/lib/db/db';
-import { createBlindIndex } from '@/lib/security/encryption';
+import crypto from 'crypto';
+import { getClientIp } from '@/lib/security/request';
 
 const CODE_RE = /^\d{6}$/;
+const MAX_BODY_BYTES = 8 * 1024;
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+            return NextResponse.json({ error: 'Request payload is too large.' }, { status: 413 });
+        }
+        const ip = getClientIp(req);
 
         const { email, code } = await req.json();
-        if (!email || !code) {
+        if (typeof email !== 'string' || typeof code !== 'string' || !email || !code || email.length > 254) {
             return NextResponse.json({ error: 'Email and code are required' }, { status: 400 });
         }
         if (!CODE_RE.test(code)) {
@@ -33,36 +38,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Code has expired. Please request a new one.' }, { status: 400 });
         }
 
-        if (stored !== code) {
+        const storedBytes = Buffer.from(stored, 'utf8');
+        const providedBytes = Buffer.from(code, 'utf8');
+        if (storedBytes.length !== providedBytes.length || !crypto.timingSafeEqual(storedBytes, providedBytes)) {
             return NextResponse.json({ error: 'Incorrect code. Please try again.' }, { status: 401 });
         }
 
         // Code matches — delete OTP and mark email as verified in Redis + DB
         await redis.del(otpKey);
         await redis.set(`reg-verified:${normalizedEmail}`, '1', 'EX', 600);
-
-        // Persist in DB so user won't be asked again if they close the tab
-        const blindIndex = createBlindIndex(normalizedEmail);
-        try {
-            await query(
-                `INSERT INTO email_verifications (email_blind_index, verified_at)
-                 VALUES ($1, NOW())
-                 ON CONFLICT (email_blind_index) DO UPDATE SET verified_at = NOW()`,
-                [blindIndex]
-            );
-        } catch {
-            // Table might not exist yet — create it
-            await query(`
-                CREATE TABLE IF NOT EXISTS email_verifications (
-                    email_blind_index TEXT PRIMARY KEY,
-                    verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                )
-            `);
-            await query(
-                `INSERT INTO email_verifications (email_blind_index, verified_at) VALUES ($1, NOW()) ON CONFLICT (email_blind_index) DO UPDATE SET verified_at = NOW()`,
-                [blindIndex]
-            );
-        }
 
         return NextResponse.json({ success: true, message: 'Email verified.' });
 

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { createServerClient } from '@supabase/ssr';
 import { query } from '@/lib/db/db';
+import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = getClientIp(req);
         const limitResult = await rateLimit(`login:${ip}`, 5, 60);
 
         if (!limitResult.success) {
@@ -21,11 +22,17 @@ export async function POST(req: NextRequest) {
 
         const normalizedEmail = email.trim().toLowerCase();
 
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseAnonKey) {
+            return NextResponse.json({ error: 'Authentication service is not configured' }, { status: 503 });
+        }
+
         const response = NextResponse.json({ success: true }, { status: 200 });
 
         const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jokgfcglqqrzfitfnynu.supabase.co',
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_-Nt-MrEXsytqITnY0GAe9Q_lArPek6x',
+            supabaseUrl,
+            supabaseAnonKey,
             {
                 cookies: {
                     getAll() {

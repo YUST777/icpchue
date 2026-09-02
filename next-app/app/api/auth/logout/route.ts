@@ -4,9 +4,15 @@ import { createServerClient } from '@supabase/ssr';
 export async function POST(req: NextRequest) {
     const response = NextResponse.json({ success: true });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return NextResponse.json({ error: 'Authentication service is not configured' }, { status: 503 });
+    }
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jokgfcglqqrzfitfnynu.supabase.co',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_-Nt-MrEXsytqITnY0GAe9Q_lArPek6x',
+        supabaseUrl,
+        supabaseAnonKey,
         {
             cookies: {
                 getAll() {

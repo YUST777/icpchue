@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 /**
  * POST /api/track/navigation
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
         const { page, referrer, sessionId, timeSpent, leftPage } = body;
         if (!page) return NextResponse.json({ ok: false }, { status: 400 });
 
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+        const ip = getClientIp(req);
         const ua = req.headers.get('user-agent') || null;
 
         // Determine page type from path

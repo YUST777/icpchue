@@ -114,6 +114,15 @@ export async function GET(
         const userId = userRow?.id ?? null;
         const applicationId = userRow?.application_id || appRow?.id || null;
 
+        // Mentors may inspect trainees only. Instructor/owner roles can still
+        // use the dossier for staff support, but one mentor must not pivot from
+        // the trainee list into another mentor/admin's private dossier by
+        // guessing an ID.
+        if (mentorUser.role === 'mentor' && userRow?.role &&
+            ['mentor', 'instructor', 'owner'].includes(String(userRow.role))) {
+            return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+        }
+
         if (!appRow && applicationId) {
             const appRes = await query('SELECT * FROM applications WHERE id = $1 LIMIT 1', [applicationId]);
             if (appRes.rows.length > 0) appRow = appRes.rows[0];

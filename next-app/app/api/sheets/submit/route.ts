@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
     try {
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 256 * 1024) {
+            return NextResponse.json({ error: 'Submission payload is too large' }, { status: 413 });
+        }
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = getClientIp(req);
         const limitResult = await rateLimit(`sheet-submit:${ip}`, 5, 60);
         if (!limitResult.success) {
             return NextResponse.json({ error: 'Too many submissions. Please wait a minute.' }, { status: 429 });

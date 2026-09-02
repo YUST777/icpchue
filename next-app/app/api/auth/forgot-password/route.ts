@@ -5,12 +5,18 @@ import { query } from '@/lib/db/db';
 import { sendPasswordResetEmail } from '@/lib/services/email';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { redis } from '@/lib/db/redis';
+import { getClientIp } from '@/lib/security/request';
 
 const TOKEN_TTL = 3600; // 1 hour
+const MAX_BODY_BYTES = 8 * 1024;
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+            return NextResponse.json({ error: 'Request payload is too large.' }, { status: 413 });
+        }
+        const ip = getClientIp(req);
         const limitResult = await rateLimit(`forgot-pwd:${ip}`, 3, 900);
         if (!limitResult.success) {
             return NextResponse.json({ error: 'Too many requests. Please wait before trying again.' }, { status: 429 });
@@ -19,7 +25,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { email } = body;
 
-        if (!email) {
+        if (typeof email !== 'string' || !email || email.length > 254) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 

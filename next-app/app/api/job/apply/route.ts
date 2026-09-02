@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
+
+const MAX_JSON_BYTES = 128 * 1024;
+const ALLOWED_COMMITTEES = new Set(['media', 'mentor', 'organizing', 'instructor']);
+
+function boundedText(value: unknown, max: number): string {
+    return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
 
 export async function POST(req: NextRequest) {
     try {
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > MAX_JSON_BYTES) {
+            return NextResponse.json({ error: 'Application payload is too large.' }, { status: 413 });
+        }
+
+        const ip = getClientIp(req);
+        const rl = await rateLimit(`job-apply:${ip}`, 3, 600);
+        if (!rl.success) return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+
         const body = await req.json();
 
         const {
@@ -34,25 +52,33 @@ export async function POST(req: NextRequest) {
         } = body;
 
         // --- Sanitization & Normalization ---
-        const cleanName = name?.trim();
-        const cleanEmail = email?.toLowerCase().trim();
-        const cleanStudentId = studentId?.trim();
-        const cleanPhone = phone?.trim();
-        const cleanNationalId = nationalId?.trim() || null;
-        let cleanCfHandle = codeforcesHandle?.trim() || null;
+        const cleanName = boundedText(name, 120);
+        const cleanEmail = boundedText(email, 254).toLowerCase();
+        const cleanStudentId = boundedText(studentId, 10);
+        const cleanPhone = boundedText(phone, 32);
+        const cleanNationalId = boundedText(nationalId, 14) || null;
+        let cleanCfHandle = boundedText(codeforcesHandle, 64) || null;
         if (cleanCfHandle) {
             cleanCfHandle = cleanCfHandle.replace(/^https?:\/\/(www\.)?codeforces\.com\/profile\//i, '').replace(/\/$/, '').trim();
         }
-        let cleanPortfolio = portfolioLink?.trim() || null;
+        let cleanPortfolio = boundedText(portfolioLink, 2048) || null;
         if (cleanPortfolio && !/^https?:\/\//i.test(cleanPortfolio)) {
             cleanPortfolio = `https://${cleanPortfolio}`;
+        }
+        if (cleanPortfolio) {
+            try {
+                const portfolioUrl = new URL(cleanPortfolio);
+                if (!['http:', 'https:'].includes(portfolioUrl.protocol)) cleanPortfolio = null;
+            } catch {
+                cleanPortfolio = null;
+            }
         }
 
         // --- Validation ---
         if (!cleanName || cleanName.length < 3) {
             return NextResponse.json({ error: 'الاسم ثلاثي مطلوب' }, { status: 400 });
         }
-        if (!cleanEmail || !cleanEmail.includes('@')) {
+        if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
             return NextResponse.json({ error: 'البريد الإلكتروني غير صالح' }, { status: 400 });
         }
         if (!cleanStudentId || !/^\d{7,10}$/.test(cleanStudentId)) {
@@ -70,7 +96,8 @@ export async function POST(req: NextRequest) {
         if (!academicLevel?.trim()) {
             return NextResponse.json({ error: 'المستوى الدراسي مطلوب' }, { status: 400 });
         }
-        if (!committees || !Array.isArray(committees) || committees.length === 0) {
+        if (!committees || !Array.isArray(committees) || committees.length === 0 || committees.length > ALLOWED_COMMITTEES.size ||
+            committees.some((committee: unknown) => typeof committee !== 'string' || !ALLOWED_COMMITTEES.has(committee))) {
             return NextResponse.json({ error: 'يرجى اختيار لجنة واحدة على الأقل' }, { status: 400 });
         }
 

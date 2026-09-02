@@ -5,8 +5,14 @@ import { checkRateLimit } from '@/lib/cache/simple-rate-limit';
 import { getCachedData } from '@/lib/cache/cache';
 
 export async function GET(req: NextRequest) {
-    const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
-    if (!checkRateLimit(`mirror:${ip}`, 20, 60)) {
+    // The route can invoke the internal mirror service (and puppeteer), so it
+    // must not be exposed as an anonymous proxy. The dashboard API is also
+    // authorized independently because client-side navigation is not a trust
+    // boundary.
+    const user = await verifyAuth(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!checkRateLimit(`mirror:${user.id}`, 20, 60)) {
         return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
     }
 
@@ -18,6 +24,15 @@ export async function GET(req: NextRequest) {
 
     if (!contestId || !problemId) {
         return NextResponse.json({ error: 'Missing contestId or problemId' }, { status: 400 });
+    }
+    if (!/^\d{1,10}$/.test(contestId) || !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(problemId)) {
+        return NextResponse.json({ error: 'Invalid contestId or problemId' }, { status: 400 });
+    }
+    if (!['contest', 'group', 'gym', 'problemset', 'acmsguru'].includes(urlType)) {
+        return NextResponse.json({ error: 'Invalid problem type' }, { status: 400 });
+    }
+    if (groupId && !/^[A-Za-z0-9_-]{1,64}$/.test(groupId)) {
+        return NextResponse.json({ error: 'Invalid group ID' }, { status: 400 });
     }
 
     // 1. Try Redis cache first, then DB (curriculum_problems.content)
@@ -106,4 +121,3 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch from Codeforces Mirror', detail: message }, { status: 500 });
     }
 }
-

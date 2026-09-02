@@ -1,7 +1,12 @@
 const pg = require('pg');
 const { Pool } = pg;
 
-const connectionString = "postgresql://postgres.jokgfcglqqrzfitfnynu:J6cLzUxvmOCtug%40X0@aws-1-eu-west-1.pooler.supabase.com:5432/postgres";
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.error('DATABASE_URL is not set. Load it from a local, untracked environment file.');
+    process.exit(1);
+}
 
 async function main() {
     const pool = new Pool({
