@@ -26,7 +26,11 @@ export async function GET(
             return NextResponse.json({ error: 'Missing student identifier' }, { status: 400 });
         }
 
-        const cacheKey = `dossier:${paramId.toLowerCase().trim()}`;
+        const url = new URL(req.url);
+        const subOffset = parseInt(url.searchParams.get('sub_offset') || '0', 10);
+        const subLimit = parseInt(url.searchParams.get('sub_limit') || '300', 10);
+
+        const cacheKey = `dossier:${paramId.toLowerCase().trim()}:${subOffset}:${subLimit}`;
         const cached = dossierCache.get(cacheKey);
         if (cached && cached.expiresAt > Date.now()) {
             return NextResponse.json(cached.data, {
@@ -116,7 +120,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Queries
+        // 3. Parallel Fetching
         const [
             statsRes,
             streakRes,
@@ -127,6 +131,7 @@ export async function GET(
             userProgressRes,
             heatmapRes,
             subsRes,
+            subsCountRes,
             allUserCodesRes,
             allUserNotesRes,
             customTestsRes,
@@ -171,14 +176,15 @@ export async function GET(
                 FROM submissions 
                 WHERE user_id = $1 
                 ORDER BY submitted_at DESC 
-                LIMIT 100
-            `, [userId]),
+                LIMIT $2 OFFSET $3
+            `, [userId, subLimit, subOffset]),
+            query('SELECT COUNT(*) as total FROM submissions WHERE user_id = $1', [userId]),
             query(`
                 SELECT contest_id, problem_id, code, language, updated_at 
                 FROM user_code 
                 WHERE user_id = $1 
                 ORDER BY updated_at DESC 
-                LIMIT 100
+                LIMIT 150
             `, [userId]),
             query(`
                 SELECT id, contest_id, problem_index, content, updated_at 
@@ -192,11 +198,26 @@ export async function GET(
         ]);
 
         const distinctSolved = parseInt(statsRes.rows[0]?.distinct_solved || '0', 10);
-        const totalSubmissions = parseInt(statsRes.rows[0]?.total_submissions || '0', 10);
+        const totalSubmissions = parseInt(subsCountRes.rows[0]?.total || statsRes.rows[0]?.total_submissions || '0', 10);
         const currentStreak = parseInt(streakRes.rows[0]?.current_streak || '0', 10);
         const maxStreak = parseInt(streakRes.rows[0]?.max_streak || '0', 10);
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
+
+        // Build Sheet and Contest Lookup Maps for Human Labels: "Lv 1 • Sheet B (Loops)"
+        const contestToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+        const sheetIdToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+
+        sheetsRes.rows.forEach(s => {
+            const info = {
+                level: `Lv ${s.level_id || 1}`,
+                sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
+                sheet_name: s.name || '',
+                sheet_id: String(s.id),
+            };
+            sheetIdToSheetMap.set(String(s.id), info);
+            if (s.contest_id) contestToSheetMap.set(String(s.contest_id), info);
+        });
 
         // Build precise problem solved/attempted Sets
         const solvedSet = new Set<string>();
@@ -229,11 +250,17 @@ export async function GET(
 
         // Group curriculum problems strictly by sheet_id
         const problemsBySheetId = new Map<string, any[]>();
+        const problemTitleMap = new Map<string, string>();
+
         allCurriculumProblemsRes.rows.forEach((prob) => {
             const sheetIdStr = String(prob.sheet_id);
             if (!problemsBySheetId.has(sheetIdStr)) problemsBySheetId.set(sheetIdStr, []);
 
             const letter = (prob.problem_letter || '').toUpperCase().trim();
+            if (prob.contest_id && letter) {
+                problemTitleMap.set(`${prob.contest_id}_${letter}`, prob.title);
+            }
+
             let status: 'SOLVED' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
 
             if (
@@ -309,34 +336,59 @@ export async function GET(
             count: parseInt(r.solve_count, 10) || 0,
         }));
 
-        // Recent Submissions
-        const recentSubmissions = subsRes.rows.map((s) => ({
-            id: s.id,
-            problem: `${s.contest_id || ''} ${s.problem_index || ''}`.trim() || `Problem #${s.id}`,
-            contest_id: s.contest_id,
-            problem_index: s.problem_index,
-            sheet_id: s.sheet_id,
-            verdict: s.verdict || 'Accepted',
-            language: s.language || 'C++',
-            time_ms: s.time_ms ?? null,
-            memory_kb: s.memory_kb ?? null,
-            attempts: s.attempt_number || 1,
-            submitted_at: s.submitted_at,
-            time_to_solve_seconds: s.time_to_solve_seconds || 0,
-            paste_events: s.paste_events || 0,
-            tab_switches: s.tab_switches || 0,
-            cf_submission_id: s.cf_submission_id,
-            source_code: s.source_code || '',
-        }));
+        // Recent Submissions with Human Curriculum Labels
+        const recentSubmissions = subsRes.rows.map((s) => {
+            const sheetInfo = (s.sheet_id && sheetIdToSheetMap.get(String(s.sheet_id))) || 
+                              (s.contest_id && contestToSheetMap.get(String(s.contest_id))) || null;
+            
+            const pLetter = (s.problem_index || '').toUpperCase();
+            const pTitle = problemTitleMap.get(`${s.contest_id}_${pLetter}`) || '';
 
-        // Build Code Catalog
+            const label = sheetInfo 
+                ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
+                : `${s.contest_id} ${pLetter}`;
+
+            return {
+                id: s.id,
+                problem: label,
+                problem_title: pTitle,
+                contest_id: s.contest_id,
+                problem_index: s.problem_index,
+                sheet_id: s.sheet_id,
+                sheet_info: sheetInfo,
+                verdict: s.verdict || 'Accepted',
+                language: s.language || 'C++',
+                time_ms: s.time_ms ?? null,
+                memory_kb: s.memory_kb ?? null,
+                attempts: s.attempt_number || 1,
+                submitted_at: s.submitted_at,
+                time_to_solve_seconds: s.time_to_solve_seconds || 0,
+                paste_events: s.paste_events || 0,
+                tab_switches: s.tab_switches || 0,
+                cf_submission_id: s.cf_submission_id,
+                source_code: s.source_code || '',
+            };
+        });
+
+        // Build Code Catalog with Human Labels: "Lv 1 / Sheet B / Problem V"
         const codeEntriesMap = new Map<string, any>();
 
         allUserCodesRes.rows.forEach((uc) => {
             const key = `${uc.contest_id || ''}-${uc.problem_id || ''}`.trim();
             if (key) {
+                const sheetInfo = contestToSheetMap.get(String(uc.contest_id)) || null;
+                const pLetter = (uc.problem_id || '').toUpperCase();
+                const pTitle = problemTitleMap.get(`${uc.contest_id}_${pLetter}`) || '';
+
+                const label = sheetInfo 
+                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
+                    : `${uc.contest_id} ${pLetter}`;
+
                 codeEntriesMap.set(key, {
                     key,
+                    display_label: label,
+                    sheet_name: sheetInfo ? sheetInfo.sheet_name : '',
+                    problem_title: pTitle,
                     contest_id: uc.contest_id,
                     problem_id: uc.problem_id,
                     code: uc.code,
@@ -349,9 +401,20 @@ export async function GET(
         recentSubmissions.forEach((sub) => {
             const key = `${sub.contest_id || ''}-${sub.problem_index || ''}`.trim();
             if (key) {
+                const sheetInfo = sub.sheet_info || contestToSheetMap.get(String(sub.contest_id)) || null;
+                const pLetter = (sub.problem_index || '').toUpperCase();
+                const pTitle = sub.problem_title || problemTitleMap.get(`${sub.contest_id}_${pLetter}`) || '';
+
+                const label = sheetInfo 
+                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
+                    : `${sub.contest_id} ${pLetter}`;
+
                 if (!codeEntriesMap.has(key)) {
                     codeEntriesMap.set(key, {
                         key,
+                        display_label: label,
+                        sheet_name: sheetInfo ? sheetInfo.sheet_name : '',
+                        problem_title: pTitle,
                         contest_id: sub.contest_id,
                         problem_id: sub.problem_index,
                         code: sub.source_code,
@@ -378,7 +441,7 @@ export async function GET(
                 not_started_percentage: Math.min(100, Math.round((notStartedTotal / (totalProblems || 1)) * 100)),
                 current_streak: currentStreak,
                 max_streak: maxStreak,
-                total_submissions: totalSubmissions || recentSubmissions.length,
+                total_submissions: totalSubmissions,
                 submissions_last_7_days: recentSubmissions.filter(s => {
                     const diff = Date.now() - new Date(s.submitted_at).getTime();
                     return diff <= 7 * 24 * 60 * 60 * 1000;
@@ -390,6 +453,7 @@ export async function GET(
             sheet_progress: sheetProgressList,
             heatmap_data: heatmapData,
             recent_submissions: recentSubmissions,
+            submissions_total: totalSubmissions,
             code_catalog: codeCatalog,
             user_notes: allUserNotesRes.rows.map(n => ({
                 id: n.id,

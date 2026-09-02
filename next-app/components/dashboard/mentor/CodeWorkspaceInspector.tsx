@@ -5,6 +5,9 @@ import { Copy, Check, Search, ChevronRight } from 'lucide-react';
 
 interface CodeEntry {
     key: string;
+    display_label?: string;
+    sheet_name?: string;
+    problem_title?: string;
     contest_id: string;
     problem_id: string;
     code: string;
@@ -36,9 +39,13 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
 
     const filteredCatalog = codeCatalog.filter(c => {
         if (!searchQuery) return true;
-        return c.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               c.contest_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               c.problem_id?.toLowerCase().includes(searchQuery.toLowerCase());
+        const q = searchQuery.toLowerCase();
+        return (c.display_label || '').toLowerCase().includes(q) ||
+               (c.problem_title || '').toLowerCase().includes(q) ||
+               (c.sheet_name || '').toLowerCase().includes(q) ||
+               c.key.toLowerCase().includes(q) ||
+               c.contest_id?.toLowerCase().includes(q) ||
+               c.problem_id?.toLowerCase().includes(q);
     });
 
     return (
@@ -51,7 +58,8 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     </span>
                     {activeEntry && (
                         <span className="text-xs font-mono text-[#E8C15A] font-semibold">
-                            ({activeEntry.contest_id} {activeEntry.problem_id})
+                            {activeEntry.display_label || `${activeEntry.contest_id} ${activeEntry.problem_id}`}
+                            {activeEntry.problem_title ? ` (${activeEntry.problem_title})` : ''}
                         </span>
                     )}
                 </div>
@@ -65,14 +73,14 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
 
             {/* Clean 2-Column Layout: Problem Selector + Full Code View */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[400px]">
-                {/* Problems List (4 cols) */}
+                {/* Problems List with clean human labels and hidden scrollbar (4 cols) */}
                 <div className="lg:col-span-4 bg-white/[0.02] border border-white/5 rounded-lg p-2.5 flex flex-col space-y-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 w-3.5 h-3.5" />
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search problem..."
+                            placeholder="Search (e.g. Loops, Lv 1, V)..."
                             className="w-full bg-white/5 border border-white/10 rounded-md pl-8 pr-2 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A]"
                         />
                     </div>
@@ -95,9 +103,16 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                                                 : 'hover:bg-white/5 text-white/70 hover:text-white'
                                         }`}
                                     >
-                                        <span className="font-mono font-semibold">
-                                            {item.contest_id} {item.problem_id}
-                                        </span>
+                                        <div className="truncate pr-1">
+                                            <span className="font-mono font-semibold block text-[11px]">
+                                                {item.display_label || `${item.contest_id} ${item.problem_id}`}
+                                            </span>
+                                            {item.problem_title && (
+                                                <span className="text-[9px] text-white/40 block truncate">
+                                                    {item.problem_title}
+                                                </span>
+                                            )}
+                                        </div>
                                         <ChevronRight size={11} className={isSelected ? 'text-[#E8C15A]' : 'text-white/20'} />
                                     </button>
                                 );
@@ -106,15 +121,15 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     </div>
                 </div>
 
-                {/* Code Window (8 cols) */}
+                {/* Code Window with hidden scrollbar (8 cols) */}
                 <div className="lg:col-span-8 bg-[#0B0B0C] border border-white/5 rounded-lg p-3 flex flex-col justify-between">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
-                        <span className="font-mono text-white/70 text-[11px]">
-                            {activeEntry ? `${activeEntry.contest_id} ${activeEntry.problem_id}` : 'Code Preview'}
+                        <span className="font-mono text-white/70 text-[11px] truncate pr-2">
+                            {activeEntry ? (activeEntry.display_label || `${activeEntry.contest_id} ${activeEntry.problem_id}`) : 'Code Preview'}
                         </span>
                         <button
                             onClick={handleCopy}
-                            className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-[10px] flex items-center gap-1"
+                            className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all text-[10px] flex items-center gap-1 shrink-0"
                         >
                             {copied ? <Check size={11} className="text-[#E8C15A]" /> : <Copy size={11} />}
                             <span>{copied ? 'Copied' : 'Copy'}</span>
