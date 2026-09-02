@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
+import { parseCodeforcesUrl } from '@/lib/services/codeforces-backfill';
 
 interface CacheEntry {
     data: any;
@@ -180,7 +181,7 @@ export async function GET(
                 ORDER BY cl.level_number ASC NULLS LAST, cs.sheet_number ASC, cs.id ASC
             `),
             query(`
-                SELECT id, sheet_id, problem_number, problem_letter, title, contest_id, rating
+                SELECT id, sheet_id, problem_number, problem_letter, title, contest_id, codeforces_url, rating
                 FROM curriculum_problems
                 ORDER BY sheet_id ASC, problem_number ASC, problem_letter ASC
             `),
@@ -250,7 +251,7 @@ export async function GET(
         const contestToSheetMap = new Map<string, { level: string, level_id: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
         const sheetIdToSheetMap = new Map<string, { level: string, level_id: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
 
-        sheetsRes.rows.forEach(s => {
+        sheetsRes.rows.forEach((s: any) => {
             const lvlId = String(s.level_id || 1);
             const info = {
                 level: `Lv ${lvlId}`,
@@ -267,7 +268,7 @@ export async function GET(
         const solvedSet = new Set<string>();
         const attemptedSet = new Set<string>();
 
-        userProgressRes.rows.forEach((p) => {
+        userProgressRes.rows.forEach((p: any) => {
             const sheetIdStr = String(p.sheet_id);
             const raw = String(p.problem_id || '').trim();
             if (!raw || raw === 'null' || raw === 'undefined') return;
@@ -306,17 +307,27 @@ export async function GET(
         // Group curriculum problems strictly by sheet_id
         const problemsBySheetId = new Map<string, any[]>();
         const problemTitleMap = new Map<string, string>();
+        const canonicalContestBySheetId = new Map<string, string>();
+        sheetsRes.rows.forEach((sheet: any) => {
+            if (sheet.contest_id) canonicalContestBySheetId.set(String(sheet.id), String(sheet.contest_id));
+        });
 
-        allCurriculumProblemsRes.rows.forEach((prob) => {
+        allCurriculumProblemsRes.rows.forEach((prob: any) => {
             const sheetIdStr = String(prob.sheet_id);
             if (!problemsBySheetId.has(sheetIdStr)) problemsBySheetId.set(sheetIdStr, []);
 
             const letter = (prob.problem_letter || '').toUpperCase().trim();
-            if (prob.contest_id && letter) {
-                problemTitleMap.set(`${prob.contest_id}_${letter}`, prob.title);
+            const canonicalContestId = parseCodeforcesUrl(prob.codeforces_url)?.contestId ||
+                (prob.contest_id ? String(prob.contest_id) : canonicalContestBySheetId.get(sheetIdStr) || '');
+            const sheetInfo = sheetIdToSheetMap.get(sheetIdStr);
+            if (canonicalContestId && sheetInfo && !contestToSheetMap.has(canonicalContestId)) {
+                contestToSheetMap.set(canonicalContestId, sheetInfo);
+            }
+            if (canonicalContestId && letter) {
+                problemTitleMap.set(`${canonicalContestId}_${letter}`, prob.title);
             }
 
-            const subKey = `${prob.contest_id}_${letter}`;
+            const subKey = `${canonicalContestId}_${letter}`;
             const subData = probSubMap.get(subKey);
 
             let status: 'SOLVED' | 'WRONG_ANSWER' | 'TIME_LIMIT' | 'MEMORY_LIMIT' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
@@ -352,7 +363,7 @@ export async function GET(
                 }
             } else if (
                 solvedSet.has(`${sheetIdStr}_${letter}`) ||
-                solvedSet.has(`cid_${prob.contest_id}_${letter}`) ||
+                solvedSet.has(`cid_${canonicalContestId}_${letter}`) ||
                 solvedSet.has(`${sheetIdStr}_${prob.id}`)
             ) {
                 status = 'SOLVED';
@@ -360,7 +371,7 @@ export async function GET(
                 attempts = 1;
             } else if (
                 attemptedSet.has(`${sheetIdStr}_${letter}`) ||
-                attemptedSet.has(`cid_${prob.contest_id}_${letter}`) ||
+                attemptedSet.has(`cid_${canonicalContestId}_${letter}`) ||
                 attemptedSet.has(`${sheetIdStr}_${prob.id}`)
             ) {
                 status = 'ATTEMPTED';
@@ -373,7 +384,7 @@ export async function GET(
                 problem_number: prob.problem_number,
                 problem_letter: prob.problem_letter,
                 title: prob.title,
-                contest_id: prob.contest_id,
+                contest_id: canonicalContestId || prob.contest_id,
                 rating: prob.rating,
                 status: status,
                 verdict: verdictLabel,
@@ -382,7 +393,7 @@ export async function GET(
         });
 
         let totalAttempted = 0;
-        const sheetProgressList = sheetsRes.rows.map((s) => {
+        const sheetProgressList = sheetsRes.rows.map((s: any) => {
             const sheetIdStr = String(s.id);
             const sheetProblems = problemsBySheetId.get(sheetIdStr) || [];
             
