@@ -31,10 +31,12 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
     const formatDate = (isoString?: string | null) => {
         if (!isoString) return 'Never';
         const d = new Date(isoString);
+        if (isNaN(d.getTime())) return 'Never';
         return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
     };
 
-    const isFlagged = (profile.cheating_flags && profile.cheating_flags > 0) || profile.is_shadow_banned;
+    const isFlagged = (profile.cheating_flags !== undefined && profile.cheating_flags > 0) || profile.is_shadow_banned;
+    const sanitizedTg = (profile.telegram || '').replace(/^@+/, '').trim();
 
     return (
         <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
@@ -51,7 +53,7 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
                         </span>
                         {isFlagged ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded-full">
-                                <ShieldAlert size={10} /> {profile.cheating_flags} Flags
+                                <ShieldAlert size={10} /> {profile.cheating_flags ? `${profile.cheating_flags} Flags` : 'Shadow Banned'}
                             </span>
                         ) : (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/25">
@@ -61,7 +63,7 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/45 mt-1.5">
-                        <span className="truncate max-w-[220px]">{profile.faculty}</span>
+                        <span className="truncate max-w-[160px] sm:max-w-[240px]">{profile.faculty}</span>
                         {profile.codeforces_handle && (
                             <a
                                 href={`https://codeforces.com/profile/${profile.codeforces_handle}`}
@@ -79,14 +81,14 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
                                 <Phone size={10} className="text-[#E8C15A]" /> {profile.phone}
                             </span>
                         )}
-                        {profile.telegram && (
+                        {sanitizedTg && (
                             <a 
-                                href={`https://t.me/${profile.telegram.replace('@', '')}`}
+                                href={`https://t.me/${sanitizedTg}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
                             >
-                                <Send size={10} /> @{profile.telegram.replace('@', '')}
+                                <Send size={10} /> @{sanitizedTg}
                             </a>
                         )}
                     </div>
@@ -94,7 +96,7 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
 
                 {/* Right: Dates & Back */}
                 <div className="flex items-center gap-3 shrink-0 self-end sm:self-center text-xs">
-                    <div className="text-right text-[11px] text-white/40">
+                    <div className="text-right text-[11px] text-white/40 font-mono">
                         <span>Last solve: <strong className="text-[#E8C15A] font-semibold">{formatDate(lastSolveAt)}</strong></span>
                     </div>
                     <Link

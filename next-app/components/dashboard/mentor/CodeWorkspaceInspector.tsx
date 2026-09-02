@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, Search, ChevronRight, Terminal } from 'lucide-react';
 
 interface CodeEntry {
@@ -25,6 +24,12 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
     const [copied, setCopied] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    useEffect(() => {
+        if (!selectedKey && codeCatalog.length > 0) {
+            setSelectedKey(codeCatalog[0].key);
+        }
+    }, [codeCatalog, selectedKey]);
+
     const activeEntry = useMemo(() => {
         return codeCatalog.find(c => c.key === selectedKey) || codeCatalog[0];
     }, [codeCatalog, selectedKey]);
@@ -33,9 +38,12 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
     const codeLines = displayedCode.split('\n');
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(displayedCode);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        navigator.clipboard.writeText(displayedCode).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch((err) => {
+            console.warn('Clipboard write failed:', err);
+        });
     };
 
     const filteredCatalog = codeCatalog.filter(c => {
@@ -44,9 +52,9 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
         return (c.display_label || '').toLowerCase().includes(q) ||
                (c.problem_title || '').toLowerCase().includes(q) ||
                (c.sheet_name || '').toLowerCase().includes(q) ||
-               c.key.toLowerCase().includes(q) ||
-               c.contest_id?.toLowerCase().includes(q) ||
-               c.problem_id?.toLowerCase().includes(q);
+               (c.key || '').toLowerCase().includes(q) ||
+               (c.contest_id || '').toLowerCase().includes(q) ||
+               (c.problem_id || '').toLowerCase().includes(q);
     });
 
     return (

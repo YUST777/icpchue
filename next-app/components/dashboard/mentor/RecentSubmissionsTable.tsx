@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     FileCode2, Clock, CheckCircle2, XCircle, AlertTriangle, 
@@ -42,8 +42,26 @@ export function RecentSubmissionsTable({
     const [activeSubModal, setActiveSubModal] = useState<SubmissionItem | null>(null);
     const [copied, setCopied] = useState(false);
 
-    const getVerdictBadge = (verdict: string) => {
-        const lower = verdict.toLowerCase();
+    // Close on Escape & Lock Body Scroll
+    useEffect(() => {
+        if (!activeSubModal) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveSubModal(null);
+        };
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [activeSubModal]);
+
+    const getVerdictBadge = (verdict?: string) => {
+        const lower = (verdict || '').toLowerCase();
         if (lower.includes('accepted') || lower === 'ac' || lower === 'ok') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/25">
@@ -67,19 +85,25 @@ export function RecentSubmissionsTable({
         }
         return (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/25">
-                <AlertTriangle size={10} /> {verdict}
+                <AlertTriangle size={10} /> {verdict || 'Unknown'}
             </span>
         );
     };
 
     const handleCopy = (code: string) => {
-        navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch((err) => {
+            console.warn('Clipboard write failed:', err);
+        });
     };
 
-    const formatDate = (isoStr: string) => {
+    const formatDate = (isoStr?: string) => {
+        if (!isoStr) return '-';
         const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '-';
         return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     };
 
@@ -91,16 +115,16 @@ export function RecentSubmissionsTable({
                     <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
                         <FileCode2 size={13} />
                     </div>
-                    <h2 className="text-xs font-semibold text-white/90 tracking-tight">Recent Submissions</h2>
+                    <h2 className="text-xs font-semibold text-white/90 tracking-tight">Recent Submissions Feed</h2>
                 </div>
                 <span className="text-[11px] text-white/40 font-mono">
                     {submissions.length} Recorded
                 </span>
             </div>
 
-            {/* Submissions List with hidden scrollbars */}
-            <div className="overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
-                <table className="w-full text-left border-collapse">
+            {/* Submissions List */}
+            <div className="overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 overflow-x-auto">
+                <table className="w-full min-w-[480px] text-left border-collapse">
                     <thead className="sticky top-0 bg-[#121214] z-10">
                         <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium uppercase tracking-wider">
                             <th className="pb-2.5 pl-1.5 font-medium">Problem</th>
@@ -114,14 +138,14 @@ export function RecentSubmissionsTable({
                     <tbody className="divide-y divide-white/[0.04]">
                         {submissions.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="py-8 text-center text-white/35 text-xs">
+                                <td colSpan={6} className="py-8 text-center text-white/35 text-xs font-mono">
                                     No submissions recorded yet.
                                 </td>
                             </tr>
                         ) : (
-                            submissions.map((sub) => (
+                            submissions.map((sub, idx) => (
                                 <tr 
-                                    key={sub.id} 
+                                    key={sub.id || idx} 
                                     onClick={() => setActiveSubModal(sub)}
                                     className="hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors cursor-pointer group"
                                 >
@@ -135,7 +159,7 @@ export function RecentSubmissionsTable({
                                         {getVerdictBadge(sub.verdict)}
                                     </td>
                                     <td className="py-2.5 text-center text-white/50 text-[11px] font-mono">
-                                        {sub.language.split(' ')[0]}
+                                        {(sub.language || 'C++').split(' ')[0]}
                                     </td>
                                     <td className="py-2.5 text-center text-white/60 font-mono text-[11px]">
                                         {sub.time_ms !== null && sub.time_ms !== undefined ? `${sub.time_ms}ms` : '-'}
@@ -174,7 +198,7 @@ export function RecentSubmissionsTable({
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             onClick={() => setActiveSubModal(null)}
-                            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                            className="absolute inset-0 bg-black/75 backdrop-blur-md"
                         />
 
                         {/* Modal Container */}
@@ -214,7 +238,7 @@ export function RecentSubmissionsTable({
                             </div>
 
                             {/* Stat Bar */}
-                            <div className="grid grid-cols-4 gap-2 p-3 bg-black/40 border-b border-white/[0.06] text-xs">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-black/40 border-b border-white/[0.06] text-xs">
                                 <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
                                     <span className="text-white/40 block text-[9px] uppercase font-mono">Language</span>
                                     <span className="font-mono text-white/90 text-[11px] mt-0.5 block truncate">

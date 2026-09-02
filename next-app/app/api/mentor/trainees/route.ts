@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
-import { decrypt } from '@/lib/security/encryption';
+import { decrypt, createBlindIndex } from '@/lib/security/encryption';
 
 // High-speed In-Memory Cache (30s TTL)
 interface CacheEntry {
@@ -9,7 +9,20 @@ interface CacheEntry {
     expiresAt: number;
 }
 const CACHE_TTL_MS = 30 * 1000;
-const traineesCache = new Map<string, CacheEntry>();
+let traineesCache: CacheEntry | null = null;
+
+function normalizeSearchText(text: string): string {
+    if (!text) return '';
+    return text
+        .normalize('NFD')
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // Remove Arabic tashkeel and tatweel
+        .replace(/[أإآ]/g, 'ا')                       // Normalize Alef variants
+        .replace(/ة/g, 'ه')                           // Normalize Teh Marbuta
+        .replace(/ى/g, 'ي')                           // Normalize Alef Maksura
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
 
 export async function GET(req: NextRequest) {
     try {
@@ -18,176 +31,227 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized: Mentor access required' }, { status: 403 });
         }
 
-        const { searchParams } = new URL(req.url);
-        const search = searchParams.get('q')?.toLowerCase().trim() || '';
-        const level = searchParams.get('level') || 'all';
-        const filter = searchParams.get('filter') || 'all';
-        const sortBy = searchParams.get('sort') || 'solved_desc';
+        const url = new URL(req.url);
+        const search = (url.searchParams.get('search') || '').trim();
+        const level = (url.searchParams.get('level') || 'all').trim();
+        const statusFilter = (url.searchParams.get('status') || 'all').trim(); // all | active | stuck | flagged | banned | inactive
+        const sortBy = (url.searchParams.get('sortBy') || 'solves_desc').trim();
+        const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '25', 10) || 25));
 
-        const cacheKey = `${search}:${level}:${filter}:${sortBy}`;
-        const cached = traineesCache.get(cacheKey);
-        if (cached && cached.expiresAt > Date.now()) {
-            return NextResponse.json(cached.data, {
-                headers: { 'X-Cache': 'HIT', 'Cache-Control': 'private, max-age=30' }
+        // 1. Fetch from Cache if fresh
+        let allTrainees: any[] = [];
+        if (traineesCache && traineesCache.expiresAt > Date.now()) {
+            allTrainees = traineesCache.data;
+        } else {
+            // Fast Single-Query with CTEs
+            const result = await query(`
+                WITH user_solve_counts AS (
+                    SELECT 
+                        user_id, 
+                        COUNT(DISTINCT problem_id) as total_solved,
+                        COUNT(CASE WHEN status = 'ATTEMPTED' THEN 1 END) as total_attempted
+                    FROM user_progress 
+                    WHERE status IN ('SOLVED', 'ATTEMPTED')
+                    GROUP BY user_id
+                ),
+                latest_submissions AS (
+                    SELECT 
+                        user_id, 
+                        MAX(submitted_at) as last_submission_at,
+                        COUNT(*) as total_submissions
+                    FROM submissions
+                    GROUP BY user_id
+                )
+                SELECT 
+                    u.id as user_id,
+                    u.email as user_email,
+                    u.codeforces_handle,
+                    u.telegram_username,
+                    u.cheating_flags,
+                    u.is_shadow_banned,
+                    u.created_at as user_created_at,
+                    u.last_login_at,
+                    a.id as application_id,
+                    a.student_id,
+                    a.name as encrypted_name,
+                    a.email as encrypted_email,
+                    a.faculty as encrypted_faculty,
+                    a.student_level,
+                    a.telephone as encrypted_phone,
+                    a.telegram_username as app_telegram,
+                    a.codeforces_profile,
+                    a.has_laptop,
+                    a.season_year,
+                    a.submitted_at,
+                    COALESCE(usc.total_solved, 0) as total_solved,
+                    COALESCE(usc.total_attempted, 0) as total_attempted,
+                    COALESCE(ls.total_submissions, 0) as total_submissions,
+                    ls.last_submission_at,
+                    COALESCE(us.current_streak, 0) as current_streak,
+                    COALESCE(us.max_streak, 0) as max_streak,
+                    us.last_solve_date
+                FROM applications a
+                LEFT JOIN users u ON a.id = u.application_id
+                LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
+                LEFT JOIN latest_submissions ls ON u.id = ls.user_id
+                LEFT JOIN user_streaks us ON u.id = us.user_id
+                WHERE a.status = 'APPROVED' OR u.id IS NOT NULL
+                ORDER BY u.id DESC NULLS LAST
+            `);
+
+            const totalCurriculumProblems = 150;
+            const now = Date.now();
+
+            allTrainees = result.rows.map((row) => {
+                const decryptedName = decrypt(row.encrypted_name) || row.codeforces_handle || `Student #${row.user_id || row.application_id}`;
+                const decryptedSid = decrypt(row.student_id) || row.student_id || `STU-${row.user_id || row.application_id}`;
+                const decryptedEmail = decrypt(row.encrypted_email) || decrypt(row.user_email) || row.user_email || '';
+                const decryptedFaculty = decrypt(row.encrypted_faculty) || 'Computing & Informatics';
+                const decryptedPhone = decrypt(row.encrypted_phone) || '';
+
+                const lastActiveDate = row.last_submission_at || row.last_login_at || row.last_solve_date || row.submitted_at;
+                const lastActiveMs = lastActiveDate ? new Date(lastActiveDate).getTime() : 0;
+                const validLastActiveMs = Number.isFinite(lastActiveMs) && lastActiveMs > 0 ? lastActiveMs : 0;
+                const daysSinceActive = validLastActiveMs ? Math.floor((now - validLastActiveMs) / (1000 * 60 * 60 * 24)) : 999;
+                
+                const totalSolved = parseInt(row.total_solved, 10) || 0;
+                const totalAttempted = parseInt(row.total_attempted, 10) || 0;
+                const isStuck = totalAttempted > 3 && totalSolved < 5;
+                const isInactive = daysSinceActive > 7;
+                const flagsCount = parseInt(row.cheating_flags, 10) || 0;
+                const isBanned = Boolean(row.is_shadow_banned);
+
+                return {
+                    id: row.user_id || row.application_id,
+                    user_id: row.user_id,
+                    application_id: row.application_id,
+                    name: decryptedName,
+                    student_id: decryptedSid,
+                    email: decryptedEmail,
+                    faculty: decryptedFaculty,
+                    phone: decryptedPhone,
+                    telegram: row.telegram_username || row.app_telegram || '',
+                    codeforces_handle: row.codeforces_handle || row.codeforces_profile || '',
+                    academic_level: row.student_level || 'Level 1',
+                    has_laptop: row.has_laptop ?? true,
+                    total_solved: totalSolved,
+                    total_attempted: totalAttempted,
+                    total_submissions: parseInt(row.total_submissions, 10) || 0,
+                    progress_percentage: Math.min(100, Math.round((totalSolved / (totalCurriculumProblems || 1)) * 100)),
+                    current_streak: parseInt(row.current_streak, 10) || 0,
+                    max_streak: parseInt(row.max_streak, 10) || 0,
+                    last_active_at: lastActiveDate,
+                    days_since_active: daysSinceActive,
+                    flags_count: flagsCount,
+                    is_shadow_banned: isBanned,
+                    is_stuck: isStuck,
+                    is_inactive: isInactive,
+                    status_badge: isBanned ? 'BANNED' : (flagsCount > 0 ? 'FLAGGED' : (isStuck ? 'STUCK' : (isInactive ? 'INACTIVE' : 'ACTIVE'))),
+                };
+            });
+
+            traineesCache = {
+                data: allTrainees,
+                expiresAt: Date.now() + CACHE_TTL_MS,
+            };
+        }
+
+        // 2. Client-side Search, Level Filter, Status Filter with Arabic Normalization
+        let filtered = allTrainees;
+
+        if (search) {
+            const normSearch = normalizeSearchText(search);
+            const searchBlindIndex = createBlindIndex(search);
+
+            filtered = filtered.filter((t) => {
+                const normName = normalizeSearchText(t.name);
+                const normSid = normalizeSearchText(t.student_id);
+                const normHandle = normalizeSearchText(t.codeforces_handle);
+                const normEmail = normalizeSearchText(t.email);
+
+                const matchText = normName.includes(normSearch) || 
+                                  normSid.includes(normSearch) || 
+                                  normHandle.includes(normSearch) || 
+                                  normEmail.includes(normSearch);
+
+                return matchText || (searchBlindIndex && (t.student_id === search || t.email === search));
             });
         }
 
-        // Parallel batch queries
-        const [totalProblemsRes, usersRes] = await Promise.all([
-            query('SELECT COUNT(*) as count FROM curriculum_problems'),
-            query(`
-                SELECT 
-                    u.id, 
-                    u.email, 
-                    u.role, 
-                    u.codeforces_handle, 
-                    u.profile_picture, 
-                    u.cheating_flags, 
-                    u.is_shadow_banned, 
-                    u.last_login_at, 
-                    u.created_at,
-                    u.application_id,
-                    a.name AS student_name,
-                    a.student_id,
-                    a.faculty,
-                    a.student_level,
-                    a.telephone,
-                    a.telegram_username,
-                    a.has_laptop,
-                    a.codeforces_profile,
-                    a.leetcode_profile,
-                    COALESCE(s.distinct_solved, 0) as distinct_solved,
-                    COALESCE(s.total_submissions, 0) as total_submissions,
-                    COALESCE(s.total_accepted, 0) as total_accepted,
-                    s.last_solve_at,
-                    COALESCE(st.current_streak, 0) as current_streak,
-                    COALESCE(st.max_streak, 0) as max_streak
-                FROM users u
-                LEFT JOIN applications a ON u.application_id = a.id
-                LEFT JOIN user_solve_stats s ON u.id = s.user_id
-                LEFT JOIN user_streaks st ON u.id = st.user_id
-                WHERE u.role IN ('trainee', 'mentor') OR u.role IS NULL
-                ORDER BY s.distinct_solved DESC NULLS LAST, u.id ASC
-            `)
-        ]);
-
-        const totalCurriculumProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
-        const now = Date.now();
-
-        const trainees = usersRes.rows.map((row) => {
-            const decName = decrypt(row.student_name) || row.codeforces_handle || `Trainee #${row.id}`;
-            const decStudentId = decrypt(row.student_id) || `STU-${row.id}`;
-            const decEmail = decrypt(row.email) || row.email || '';
-            const decFaculty = decrypt(row.faculty) || 'Computing & Informatics';
-            const decPhone = decrypt(row.telephone) || '';
-            const decLevel = row.student_level || 'Level 1';
-
-            const lastLoginMs = row.last_login_at ? new Date(row.last_login_at).getTime() : 0;
-            const daysSinceLogin = lastLoginMs ? Math.floor((now - lastLoginMs) / (1000 * 60 * 60 * 24)) : 999;
-            const isInactive = daysSinceLogin > 7;
-            const isFlagged = (row.cheating_flags && row.cheating_flags > 0) || row.is_shadow_banned === true;
-            const solvedCount = parseInt(row.distinct_solved, 10);
-            const solvePercentage = Math.min(100, Math.round((solvedCount / (totalCurriculumProblems || 1)) * 100));
-
-            return {
-                id: row.id,
-                application_id: row.application_id,
-                name: decName,
-                student_id: decStudentId,
-                email: decEmail,
-                faculty: decFaculty,
-                academic_level: decLevel,
-                phone: decPhone,
-                telegram: row.telegram_username || '',
-                has_laptop: row.has_laptop ?? true,
-                codeforces_handle: row.codeforces_handle || row.codeforces_profile || '',
-                leetcode_profile: row.leetcode_profile || '',
-                role: row.role || 'trainee',
-                solved_count: solvedCount,
-                solve_percentage: solvePercentage,
-                total_submissions: parseInt(row.total_submissions, 10),
-                current_streak: parseInt(row.current_streak, 10),
-                max_streak: parseInt(row.max_streak, 10),
-                cheating_flags: row.cheating_flags || 0,
-                is_shadow_banned: row.is_shadow_banned || false,
-                last_login_at: row.last_login_at,
-                last_solve_at: row.last_solve_at,
-                created_at: row.created_at,
-                is_inactive: isInactive,
-                is_flagged: isFlagged,
-            };
-        });
-
-        // Search & Filters
-        const filtered = trainees.filter((t) => {
-            if (search) {
-                const matchName = t.name.toLowerCase().includes(search);
-                const matchId = t.student_id.toLowerCase().includes(search);
-                const matchHandle = t.codeforces_handle.toLowerCase().includes(search);
-                const matchEmail = t.email.toLowerCase().includes(search);
-                if (!matchName && !matchId && !matchHandle && !matchEmail) return false;
-            }
-
-            if (level !== 'all') {
-                const normalizedLevel = level.toLowerCase();
-                const studentLvl = t.academic_level.toLowerCase();
-                if (!studentLvl.includes(normalizedLevel) && !studentLvl.includes(`l${normalizedLevel}`)) {
-                    return false;
-                }
-            }
-
-            if (filter === 'flagged') return t.is_flagged;
-            if (filter === 'inactive') return t.is_inactive;
-            if (filter === 'active') return !t.is_inactive;
-
-            return true;
-        });
-
-        // Sorting
-        filtered.sort((a, b) => {
-            if (sortBy === 'solved_desc') return b.solved_count - a.solved_count;
-            if (sortBy === 'activity_desc') {
-                const timeA = a.last_solve_at ? new Date(a.last_solve_at).getTime() : 0;
-                const timeB = b.last_solve_at ? new Date(b.last_solve_at).getTime() : 0;
-                return timeB - timeA;
-            }
-            if (sortBy === 'streak_desc') return b.current_streak - a.current_streak;
-            if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
-            return 0;
-        });
-
-        const summary = {
-            total_trainees: trainees.length,
-            active_count: trainees.filter(t => !t.is_inactive).length,
-            inactive_count: trainees.filter(t => t.is_inactive).length,
-            flagged_count: trainees.filter(t => t.is_flagged).length,
-            total_curriculum_problems: totalCurriculumProblems,
-        };
-
-        const responsePayload = {
-            success: true,
-            summary,
-            trainees: filtered,
-        };
-
-        // Cache response
-        traineesCache.set(cacheKey, {
-            data: responsePayload,
-            expiresAt: Date.now() + CACHE_TTL_MS,
-        });
-
-        // Limit cache size to 50 entries
-        if (traineesCache.size > 50) {
-            const oldestKey = traineesCache.keys().next().value;
-            if (oldestKey) traineesCache.delete(oldestKey);
+        if (level && level !== 'all') {
+            const normLevel = normalizeSearchText(level).replace(/\s+/g, '');
+            filtered = filtered.filter((t) => {
+                const sLvl = normalizeSearchText(t.academic_level).replace(/\s+/g, '');
+                return sLvl.includes(normLevel) || sLvl.includes(`l${normLevel}`);
+            });
         }
 
-        return NextResponse.json(responsePayload, {
-            headers: { 'X-Cache': 'MISS', 'Cache-Control': 'private, max-age=30' }
+        if (statusFilter && statusFilter !== 'all') {
+            filtered = filtered.filter((t) => {
+                if (statusFilter === 'active') return !t.is_inactive && !t.is_shadow_banned && t.flags_count === 0;
+                if (statusFilter === 'stuck') return t.is_stuck;
+                if (statusFilter === 'flagged') return t.flags_count > 0;
+                if (statusFilter === 'banned') return t.is_shadow_banned;
+                if (statusFilter === 'inactive') return t.is_inactive;
+                return true;
+            });
+        }
+
+        // 3. Sorting
+        filtered.sort((a, b) => {
+            if (sortBy === 'solves_desc') return b.total_solved - a.total_solved;
+            if (sortBy === 'solves_asc') return a.total_solved - b.total_solved;
+            if (sortBy === 'streak_desc') return b.current_streak - a.current_streak;
+            if (sortBy === 'flags_desc') return b.flags_count - a.flags_count;
+            if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+            if (sortBy === 'recent_active') {
+                const timeA = a.last_active_at ? new Date(a.last_active_at).getTime() : 0;
+                const timeB = b.last_active_at ? new Date(b.last_active_at).getTime() : 0;
+                return timeB - timeA;
+            }
+            return b.total_solved - a.total_solved;
+        });
+
+        // 4. Pagination
+        const totalCount = filtered.length;
+        const totalPages = Math.ceil(totalCount / limit) || 1;
+        const offset = (page - 1) * limit;
+        const paginated = filtered.slice(offset, offset + limit);
+
+        // 5. Aggregate Summary Counts
+        const summary = {
+            total_trainees: allTrainees.length,
+            active_trainees: allTrainees.filter(t => !t.is_inactive && !t.is_shadow_banned).length,
+            stuck_trainees: allTrainees.filter(t => t.is_stuck).length,
+            flagged_trainees: allTrainees.filter(t => t.flags_count > 0 || t.is_shadow_banned).length,
+            inactive_trainees: allTrainees.filter(t => t.is_inactive).length,
+            level_distribution: {
+                level_0: allTrainees.filter(t => t.academic_level.includes('0')).length,
+                level_1: allTrainees.filter(t => t.academic_level.includes('1')).length,
+                level_2: allTrainees.filter(t => t.academic_level.includes('2')).length,
+                level_3: allTrainees.filter(t => t.academic_level.includes('3')).length,
+            }
+        };
+
+        return NextResponse.json({
+            success: true,
+            summary,
+            pagination: {
+                page,
+                limit,
+                total_items: totalCount,
+                total_pages: totalPages,
+            },
+            trainees: paginated,
+        }, {
+            headers: {
+                'Cache-Control': 'private, max-age=30'
+            }
         });
 
     } catch (error: unknown) {
-        console.error('[Mentor API] Error fetching trainees:', error);
+        console.error('[Mentor API] Error fetching trainees directory:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
