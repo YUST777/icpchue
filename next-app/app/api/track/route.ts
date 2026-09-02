@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { pushEvent } from '@/lib/services/track-buffer';
+import { getClientIp } from '@/lib/security/request';
 
 const VALID_ACTIONS = new Set([
     // Core UI actions
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
         }
 
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+        const ip = getClientIp(req);
         const ua = req.headers.get('user-agent') || null;
 
         // Push to Redis buffer — non-blocking, batched flush to Postgres

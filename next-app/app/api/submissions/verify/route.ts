@@ -18,22 +18,49 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Too many verification attempts. Please wait.' }, { status: 429 });
         }
 
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 128 * 1024) {
+            return NextResponse.json({ error: 'Verification payload is too large' }, { status: 413 });
+        }
         const body = await req.json();
         const { 
             contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
-            isExtensionVerified, submissionId, timeMs, memoryKb, cookies
+            cookies
         } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
             return NextResponse.json({ error: 'Missing required fields: contestId, problemIndex, cfHandle' }, { status: 400 });
         }
 
-        const trimmedHandle = cfHandle.trim();
-        if (trimmedHandle.length === 0) {
+        const trimmedHandle = String(cfHandle).trim();
+        if (!/^[A-Za-z0-9_.-]{1,24}$/.test(trimmedHandle)) {
             return NextResponse.json({ error: 'Handle cannot be empty' }, { status: 400 });
         }
 
         const targetContestId = Number(contestId);
+        const normalizedProblemIndex = String(problemIndex).trim().toUpperCase();
+        if (!Number.isSafeInteger(targetContestId) || targetContestId <= 0 ||
+            !/^[A-Z][A-Z0-9]{0,9}$/.test(normalizedProblemIndex)) {
+            return NextResponse.json({ error: 'Invalid contest or problem identifier' }, { status: 400 });
+        }
+        if (sourceCode !== undefined && sourceCode !== null &&
+            (typeof sourceCode !== 'string' || sourceCode.length > 64 * 1024)) {
+            return NextResponse.json({ error: 'Source code is too large' }, { status: 400 });
+        }
+        if (cookies !== undefined && cookies !== null &&
+            (typeof cookies !== 'string' || cookies.length > 16 * 1024)) {
+            return NextResponse.json({ error: 'Invalid Codeforces session data' }, { status: 400 });
+        }
+
+        // A public Codeforces profile is not proof that the caller owns that
+        // handle. Once linked, the account handle is therefore immutable from
+        // this endpoint. A first-time link is allowed only when the bridge
+        // proves ownership from the user's live Codeforces session below.
+        const ownerResult = await query('SELECT codeforces_handle FROM users WHERE id = $1', [user.id]);
+        const linkedHandle = String(ownerResult.rows[0]?.codeforces_handle || '').trim();
+        if (linkedHandle && linkedHandle.toLowerCase() !== trimmedHandle.toLowerCase()) {
+            return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
+        }
         let match = null;
         // Track whether the CF Bridge (the only thing that can read PRIVATE
         // groups on serverless) was actually reachable + returned a usable
@@ -53,7 +80,7 @@ export async function POST(req: NextRequest) {
             const BRIDGE_URL = process.env.CF_BRIDGE_URL || process.env.SCRAPLING_BRIDGE_URL || 'http://cf-bridge:8787';
             const bridgeBody = JSON.stringify({
                 contestId: String(targetContestId),
-                problemIndex: problemIndex.toUpperCase(),
+                problemIndex: normalizedProblemIndex,
                 cookies,
                 urlType: urlType || 'contest',
                 groupId: groupId || null
@@ -61,9 +88,13 @@ export async function POST(req: NextRequest) {
 
             let bridgeRes;
             try {
+                const bridgeSecret = process.env.CF_BRIDGE_SHARED_SECRET;
                 bridgeRes = await fetch(`${BRIDGE_URL}/submissions`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(bridgeSecret ? { Authorization: bridgeSecret } : {}),
+                    },
                     body: bridgeBody
                 });
             } catch (err: any) {
@@ -71,7 +102,10 @@ export async function POST(req: NextRequest) {
                 try {
                     bridgeRes = await fetch(`http://127.0.0.1:8787/submissions`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(process.env.CF_BRIDGE_SHARED_SECRET ? { Authorization: process.env.CF_BRIDGE_SHARED_SECRET } : {}),
+                        },
                         body: bridgeBody
                     });
                 } catch (localErr: any) {
@@ -90,7 +124,7 @@ export async function POST(req: NextRequest) {
                         const isAccepted = sub.verdict?.toUpperCase() === 'ACCEPTED' || sub.verdict === 'OK';
                         const isUserMatch = sub.author?.toLowerCase() === trimmedHandle.toLowerCase();
                         const isProblemMatch = !sub.problemIndex ||
-                            sub.problemIndex.toUpperCase() === problemIndex.toUpperCase();
+                            sub.problemIndex.toUpperCase() === normalizedProblemIndex;
                         return isAccepted && isUserMatch && isProblemMatch;
                     });
 
@@ -114,7 +148,7 @@ export async function POST(req: NextRequest) {
             }
 
             // Try contest.status as fallback
-            if (!match) {
+            if (!match && linkedHandle) {
                 console.log(`[Verify Route] Match not found via Scrapling Bridge. Falling back to contest.status (Contest: ${targetContestId})...`);
                 const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
                 try {
@@ -130,7 +164,7 @@ export async function POST(req: NextRequest) {
                         const cfData = await cfRes.json();
                         if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
                             const rawMatch = cfData.result.find((sub: any) => {
-                                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                                const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
                                 const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
                                 const isUserMatch = 
                                     sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
@@ -157,7 +191,7 @@ export async function POST(req: NextRequest) {
             }
             
             // Try user.status with cookies as fallback
-            if (!match) {
+            if (!match && linkedHandle) {
                 const cfUserUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=100`;
                 try {
                     const cfRes = await fetch(cfUserUrl, {
@@ -173,7 +207,7 @@ export async function POST(req: NextRequest) {
                         if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
                             const rawMatch = cfData.result.find((sub: any) => {
                                 const isContestMatch = Number(sub.contestId) === targetContestId;
-                                const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                                const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
                                 const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
                                 return isContestMatch && isProblemMatch && isAccepted;
                             });
@@ -197,21 +231,10 @@ export async function POST(req: NextRequest) {
             }
         }
         
-        // 2. Pre-verified by Chrome extension fallback
-        if (!match && isExtensionVerified && submissionId) {
-            console.log(`[Verify Route] Submission pre-verified by Chrome Extension: ${submissionId}`);
-            match = {
-                id: Number(submissionId),
-                contestId: targetContestId,
-                timeConsumedMillis: Number(timeMs) || 0,
-                memoryConsumedBytes: (Number(memoryKb) || 0) * 1024,
-                passedTestCount: 15,
-                programmingLanguage: language || 'C++'
-            };
-        }
-        
-        // 3. Standard server-side Codeforces API lookup (unauthenticated public fallback)
-        if (!match) {
+        // 2. Standard server-side Codeforces API lookup. This is safe only for
+        // a handle already linked to the caller; a public handle lookup alone
+        // must never let a caller claim another person's solves.
+        if (!match && linkedHandle) {
             const cfUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=40`;
             
             let cfRes;
@@ -226,7 +249,7 @@ export async function POST(req: NextRequest) {
                 if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
                     const rawMatch = cfData.result.find((sub: any) => {
                         const isContestMatch = Number(sub.contestId) === targetContestId;
-                        const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                        const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
                         const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
                         return isContestMatch && isProblemMatch && isAccepted;
                     });
@@ -245,14 +268,17 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Fallback for Gym / Group submissions using authenticated API
-        if (!match) {
-            console.log(`[Verify Route] Attempting authenticated contest.status fallback for Gym/Group check. Contest: ${targetContestId}, problem: ${problemIndex}`);
+        // 3. Fallback for Gym / Group submissions using the server's
+        // authenticated API. It is still restricted to an already-linked
+        // handle because the API key authenticates the application, not the
+        // student making this request.
+        if (!match && linkedHandle) {
+            console.log(`[Verify Route] Attempting authenticated contest.status fallback for Gym/Group check. Contest: ${targetContestId}, problem: ${normalizedProblemIndex}`);
             try {
                 const privateSubs = await fetchContestSubmissions(targetContestId, 500);
                 if (privateSubs && privateSubs.length > 0) {
                     const privateMatch = privateSubs.find((sub: any) => {
-                        const isProblemMatch = sub.problem?.index?.toUpperCase() === problemIndex.toUpperCase();
+                        const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
                         const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
                         const isUserMatch = 
                             sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
@@ -291,6 +317,14 @@ export async function POST(req: NextRequest) {
                 }, { status: 503 });
             }
 
+            if (!linkedHandle) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Link your Codeforces account first, then verify the submission again.',
+                    code: 'CF_HANDLE_NOT_LINKED'
+                }, { status: 403 });
+            }
+
             return NextResponse.json({
                 success: false,
                 error: `No Accepted (AC) submission found on Codeforces for handle "${trimmedHandle}" and problem ${contestId}${problemIndex}. Please make sure you have submitted the code, it has passed all test cases, and your handle matches.`
@@ -319,12 +353,13 @@ export async function POST(req: NextRequest) {
                 memory_kb = EXCLUDED.memory_kb,
                 source_code = EXCLUDED.source_code,
                 language = EXCLUDED.language
+            WHERE submissions.user_id = EXCLUDED.user_id
             RETURNING id`,
             [
                 user.id,
                 match.id,
                 contestId,
-                problemIndex.toUpperCase(),
+                normalizedProblemIndex,
                 sheetId || null,
                 calculatedTimeMs,
                 calculatedMemoryKb,
@@ -338,9 +373,12 @@ export async function POST(req: NextRequest) {
         );
 
         const savedId = insertResult.rows[0]?.id;
+        if (!savedId) {
+            return NextResponse.json({ error: 'Submission belongs to another account' }, { status: 403 });
+        }
 
         // 5. Update user_progress
-        const trackingProblemId = `${contestId}:${problemIndex.toUpperCase()}`;
+        const trackingProblemId = `${targetContestId}:${normalizedProblemIndex}`;
         await query(`
             INSERT INTO user_progress (user_id, problem_id, sheet_id, status, submission_id, solved_at)
             VALUES ($1, $2, $3, 'SOLVED', $4, $5)
@@ -353,7 +391,7 @@ export async function POST(req: NextRequest) {
             user.id,
             trackingProblemId,
             sheetId || null,
-            match.id,
+            savedId,
             new Date()
         ]);
 

@@ -23,6 +23,8 @@ export interface BackfillBatch {
     accepted?: IncomingBackfillSubmission[];
     /** Public API sync must never fall back to private/group mappings. */
     allowGroup?: boolean;
+    /** Only server-fetched data may award an Accepted progress state. */
+    allowUnverifiedAccepted?: boolean;
 }
 
 interface CurriculumMapping {
@@ -293,11 +295,17 @@ export async function applyBackfillBatches(
             const mappings = resolveMappings(curriculum, batch, contestId, problemIndex);
             if (mappings.length === 0) { skipped++; continue; }
 
+            const rawVerdict = normalizeVerdict(raw.verdict);
+            // Extension payloads are useful for reconstructing attempt history,
+            // but are client-controlled and cannot be evidence of an AC. Only
+            // the server-side Codeforces API path may award SOLVED progress.
+            const acceptedIsTrusted = isAccepted(rawVerdict) &&
+                (batch.allowUnverifiedAccepted === true || batch.allowGroup === false);
             const normalized: NormalizedSubmission = {
                 cfId,
                 contestId,
                 problemIndex,
-                verdict: normalizeVerdict(raw.verdict),
+                verdict: acceptedIsTrusted ? rawVerdict : (isAccepted(rawVerdict) ? 'Unverified Accepted' : rawVerdict),
                 timeMs: Math.max(0, Math.min(2147483647, Number(raw.timeConsumedMillis) || 0)),
                 memoryKb: Math.max(0, Math.min(2147483647, Math.round((Number(raw.memoryConsumedBytes) || 0) / 1024))),
                 language: String(raw.language || 'C++').slice(0, 100),

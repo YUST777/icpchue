@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (error) {
-        return NextResponse.json({ error: 'OAuth Error', details: Object.fromEntries(searchParams.entries()) }, { status: 400 });
+        return NextResponse.json({ error: 'Codeforces OAuth was cancelled or failed.' }, { status: 400 });
     }
 
     if (!code || !CLIENT_ID || !CLIENT_SECRET) {
@@ -145,10 +145,15 @@ export async function GET(req: NextRequest) {
 
                     if (!linkError && linkData?.properties?.hashed_token) {
                         // Use the token to create a session
+                        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+                        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            return NextResponse.json({ error: 'Authentication service is not configured' }, { status: 503 });
+                        }
                         const response = NextResponse.redirect(new URL('/dashboard', siteUrl));
                         const supabase = createServerClient(
-                            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jokgfcglqqrzfitfnynu.supabase.co',
-                            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_-Nt-MrEXsytqITnY0GAe9Q_lArPek6x',
+                            supabaseUrl,
+                            supabaseAnonKey,
                             {
                                 cookies: {
                                     getAll() {

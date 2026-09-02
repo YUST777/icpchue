@@ -6,8 +6,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { redis } from '@/lib/db/redis';
 import { sanitizeInput } from '@/lib/security/validation';
 import { scraperQueue } from '@/lib/db/queue';
+import { getClientIp } from '@/lib/security/request';
 
-const OTP_ENABLED = false;
+// Email ownership is required before an account can be created or linked to
+// an existing application. The verification marker is a short-lived Redis
+// key set only by /api/auth/verify-otp.
+const OTP_ENABLED = true;
 
 function isValidPassword(password: string): boolean {
     if (password.length < 9) return false;
@@ -16,7 +20,7 @@ function isValidPassword(password: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    const ip = getClientIp(req);
     const limitResult = await rateLimit(`register:${ip}`, 5, 3600);
 
     if (!limitResult.success) {
@@ -41,18 +45,15 @@ export async function POST(req: NextRequest) {
         const normalizedEmail = sanitizeInput(email).toLowerCase();
         const emailBlindIndex = createBlindIndex(normalizedEmail);
 
+        if (!/^[^\s@]+@horus\.edu\.eg$/i.test(normalizedEmail)) {
+            return NextResponse.json({ error: 'Use your Horus University email address.' }, { status: 400 });
+        }
+
         // Verification Check — Redis first, DB fallback
         if (OTP_ENABLED) {
             const verified = await redis.get(`reg-verified:${normalizedEmail}`);
             if (!verified) {
-                // Check DB fallback (user verified but Redis key expired)
-                const dbCheck = await query(
-                    'SELECT 1 FROM email_verifications WHERE email_blind_index = $1',
-                    [emailBlindIndex]
-                ).catch(() => ({ rows: [] }));
-                if (dbCheck.rows.length === 0) {
-                    return NextResponse.json({ error: 'Email not verified. Please complete the verification step.' }, { status: 403 });
-                }
+                return NextResponse.json({ error: 'Email not verified. Please complete the verification step.' }, { status: 403 });
             }
         }
 

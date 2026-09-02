@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
     if (!contestId || !index) {
         return NextResponse.json({ error: 'Missing contestId or index' }, { status: 400 });
     }
+    if (!/^\d{1,10}$/.test(contestId) || !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(index)) {
+        return NextResponse.json({ error: 'Invalid contestId or index' }, { status: 400 });
+    }
 
     try {
         const statsMap = await getCachedData<Record<string, ProblemStats>>(CACHE_KEY, TTL, async () => {

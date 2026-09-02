@@ -1,5 +1,37 @@
 import { redis } from '../db/redis';
 
+// Redis is the distributed limiter in production. Keep a bounded local
+// fallback for transient Redis outages so authentication, OTP, upload, and
+// admin endpoints do not silently become unlimited. This is intentionally
+// conservative: each server instance contributes its own limit, while Redis
+// remains authoritative whenever it is healthy.
+const localWindows = new Map<string, { count: number; resetAt: number }>();
+const LOCAL_MAX_KEYS = 5000;
+
+function localRateLimit(key: string, limit: number, windowSeconds: number): RateLimitResult {
+    const now = Date.now();
+    const current = localWindows.get(key);
+    if (!current || current.resetAt <= now) {
+        if (localWindows.size >= LOCAL_MAX_KEYS) {
+            // Evict one expired entry first; if all are active, evict the
+            // oldest insertion to keep attacker-controlled keys bounded.
+            const expired = Array.from(localWindows.entries()).find(([, value]) => value.resetAt <= now);
+            localWindows.delete(expired?.[0] || localWindows.keys().next().value || key);
+        }
+        const next = { count: 1, resetAt: now + windowSeconds * 1000 };
+        localWindows.set(key, next);
+        return { success: true, limit, remaining: Math.max(0, limit - 1), reset: next.resetAt };
+    }
+
+    current.count += 1;
+    return {
+        success: current.count <= limit,
+        limit,
+        remaining: Math.max(0, limit - current.count),
+        reset: current.resetAt,
+    };
+}
+
 export interface RateLimitResult {
     success: boolean;
     limit: number;
@@ -51,12 +83,7 @@ export async function rateLimit(key: string, limit: number, windowSeconds: numbe
             reset: Date.now() + (currentTtl * 1000)
         };
     } catch (error) {
-        console.warn(`[RateLimit] Redis rate limiter failed (check REDIS_HOST settings on Vercel), falling back to bypass:`, error);
-        return {
-            success: true,
-            limit,
-            remaining: 1,
-            reset: Date.now() + (windowSeconds * 1000)
-        };
+        console.warn(`[RateLimit] Redis rate limiter failed; using bounded local fallback:`, error);
+        return localRateLimit(key, limit, windowSeconds);
     }
 }

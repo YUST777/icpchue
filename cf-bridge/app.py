@@ -47,9 +47,11 @@ import re
 import html
 import time
 import logging
+import os
+import secrets
 from typing import Optional, List, Dict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from curl_cffi import requests as cffi_requests
@@ -59,9 +61,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 app = FastAPI(title="ICPC HUE CF Bridge", version="1.0.0")
 
+BRIDGE_SHARED_SECRET = os.getenv("CF_BRIDGE_SHARED_SECRET")
+BRIDGE_ALLOWED_ORIGIN = os.getenv("BRIDGE_ALLOWED_ORIGIN")
+_RATE_LIMIT_WINDOW_SECONDS = 60
+_RATE_LIMIT_MAX_REQUESTS = 30
+_rate_limits: Dict[str, List[float]] = {}
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # The bridge is called server-to-server. Cross-origin browser access is
+    # disabled by default; opt in to one exact origin only when needed.
+    allow_origins=[BRIDGE_ALLOWED_ORIGIN] if BRIDGE_ALLOWED_ORIGIN else [],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -77,12 +87,12 @@ _IMPERSONATE = "chrome120"
 
 
 class SubmissionsRequest(BaseModel):
-    contestId: str
-    problemIndex: Optional[str] = None
-    cookies: str = Field(..., description="Raw Cookie header string from the extension")
-    urlType: str = "contest"  # contest | group | gym
-    groupId: Optional[str] = None
-    count: int = 200
+    contestId: str = Field(..., pattern=r"^\d{1,10}$")
+    problemIndex: Optional[str] = Field(None, pattern=r"^[A-Za-z][A-Za-z0-9]{0,9}$")
+    cookies: str = Field(..., min_length=1, max_length=16 * 1024, description="Raw Cookie header string from the extension")
+    urlType: str = Field("contest", pattern=r"^(contest|group|gym)$")
+    groupId: Optional[str] = Field(None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    count: int = Field(200, ge=1, le=500)
 
 
 class Submission(BaseModel):
@@ -118,6 +128,14 @@ def _clean_cookie_header(raw: str) -> str:
             continue
         out.append(item)
     return "; ".join(out)
+
+
+def _authorize_bridge(authorization: Optional[str]) -> None:
+    """Require a shared secret when one is configured on the deployment."""
+    if BRIDGE_SHARED_SECRET and not authorization:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if BRIDGE_SHARED_SECRET and not secrets.compare_digest(authorization or "", BRIDGE_SHARED_SECRET):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 def _build_status_url(contest_id: str, url_type: str, group_id: Optional[str]) -> str:
@@ -190,7 +208,19 @@ async def health():
 
 
 @app.post("/submissions", response_model=SubmissionsResponse)
-async def get_submissions(req: SubmissionsRequest):
+async def get_submissions(req: SubmissionsRequest, request: Request, authorization: Optional[str] = Header(None)):
+    _authorize_bridge(authorization)
+    now = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+    recent = [stamp for stamp in _rate_limits.get(client_ip, []) if now - stamp < _RATE_LIMIT_WINDOW_SECONDS]
+    if len(recent) >= _RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(status_code=429, detail="Too many requests")
+    recent.append(now)
+    _rate_limits[client_ip] = recent
+    if req.urlType == "group" and not req.groupId:
+        raise HTTPException(status_code=400, detail="groupId is required for group contests")
+    if "\r" in req.cookies or "\n" in req.cookies:
+        raise HTTPException(status_code=400, detail="Invalid cookie header")
     cookie_header = _clean_cookie_header(req.cookies)
     if not cookie_header:
         return SubmissionsResponse(success=False, error="NO_VALID_COOKIES")

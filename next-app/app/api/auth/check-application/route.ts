@@ -4,17 +4,18 @@ import { query } from '@/lib/db/db';
 import { sanitizeInput } from '@/lib/security/validation';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { redis } from '@/lib/db/redis';
+import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = getClientIp(req);
         const limitResult = await rateLimit(`check-app:${ip}`, 10, 60);
         if (!limitResult.success) {
             return NextResponse.json({ error: 'Too many attempts. Please wait.' }, { status: 429 });
         }
 
         const { email } = await req.json();
-        if (!email) {
+        if (typeof email !== 'string' || !email || email.length > 254) {
             return NextResponse.json({ error: 'Email required' }, { status: 400 });
         }
 
@@ -25,15 +26,10 @@ export async function POST(req: NextRequest) {
         // This prevents unauthenticated enumeration of the applications table
         const isVerified = await redis.get(`reg-verified:${normalizedEmail}`);
         if (!isVerified) {
-            // Also accept DB-persisted verification for users who closed the tab
-            const dbVerified = await query(
-                'SELECT 1 FROM email_verifications WHERE email_blind_index = $1',
-                [emailBlindIndex]
-            ).catch(() => ({ rows: [] }));
-            if (dbVerified.rows.length === 0) {
-                // Not verified — return hasApplication: false without revealing anything
-                return NextResponse.json({ hasApplication: false, name: null });
-            }
+            // Verification is intentionally ephemeral. Do not consult a
+            // permanent DB flag: knowing an old email must never be enough to
+            // claim an application later.
+            return NextResponse.json({ hasApplication: false, name: null });
         }
 
         const result = await query(

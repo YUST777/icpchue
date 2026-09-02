@@ -33,6 +33,10 @@ interface CFSubmission {
  */
 export async function POST(req: NextRequest) {
     try {
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 8 * 1024) {
+            return NextResponse.json({ error: 'Invalid request payload' }, { status: 413 });
+        }
         const user = await verifyAuth(req);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

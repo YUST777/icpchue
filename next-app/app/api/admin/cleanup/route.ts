@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import crypto from 'crypto';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 /**
  * POST /api/admin/cleanup
@@ -7,8 +10,16 @@ import { query } from '@/lib/db';
  * Protected by a secret header (for cron jobs).
  */
 export async function POST(req: NextRequest) {
+    // Rate-limit before checking the secret so a missing/incorrect secret
+    // cannot be brute-forced without consuming the limiter budget.
+    const ip = getClientIp(req);
+    const rl = await rateLimit(`admin-cleanup:${ip}`, 3, 300);
+    if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
     const secret = req.headers.get('x-admin-secret');
-    if (!process.env.ADMIN_SECRET_TOKEN || secret !== process.env.ADMIN_SECRET_TOKEN) {
+    const expected = process.env.ADMIN_SECRET_TOKEN;
+    if (!expected || !secret || secret.length !== expected.length ||
+        !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
