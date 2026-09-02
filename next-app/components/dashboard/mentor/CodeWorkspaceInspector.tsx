@@ -25,10 +25,12 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        if (!selectedKey && codeCatalog.length > 0) {
-            setSelectedKey(codeCatalog[0].key);
+        if (codeCatalog.length > 0) {
+            if (!selectedKey || !codeCatalog.some(c => c.key === selectedKey)) {
+                setSelectedKey(codeCatalog[0].key);
+            }
         }
-    }, [codeCatalog, selectedKey]);
+    }, [codeCatalog]);
 
     const activeEntry = useMemo(() => {
         return codeCatalog.find(c => c.key === selectedKey) || codeCatalog[0];
@@ -46,16 +48,18 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
         });
     };
 
-    const filteredCatalog = codeCatalog.filter(c => {
-        if (!searchQuery) return true;
+    const filteredCatalog = useMemo(() => {
+        if (!searchQuery.trim()) return codeCatalog;
         const q = searchQuery.toLowerCase();
-        return (c.display_label || '').toLowerCase().includes(q) ||
-               (c.problem_title || '').toLowerCase().includes(q) ||
-               (c.sheet_name || '').toLowerCase().includes(q) ||
-               (c.key || '').toLowerCase().includes(q) ||
-               (c.contest_id || '').toLowerCase().includes(q) ||
-               (c.problem_id || '').toLowerCase().includes(q);
-    });
+        return codeCatalog.filter(c => {
+            return (c.display_label || '').toLowerCase().includes(q) ||
+                   (c.problem_title || '').toLowerCase().includes(q) ||
+                   (c.sheet_name || '').toLowerCase().includes(q) ||
+                   (c.key || '').toLowerCase().includes(q) ||
+                   (c.contest_id || '').toLowerCase().includes(q) ||
+                   (c.problem_id || '').toLowerCase().includes(q);
+        });
+    }, [codeCatalog, searchQuery]);
 
     return (
         <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
@@ -107,8 +111,9 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                                 return (
                                     <button
                                         key={item.key}
+                                        type="button"
                                         onClick={() => setSelectedKey(item.key)}
-                                        className={`relative w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all active:scale-[0.98] ${
+                                        className={`relative w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${
                                             isSelected
                                                 ? 'text-[#E8C15A] font-semibold bg-[#E8C15A]/10 border border-[#E8C15A]/25'
                                                 : 'text-white/70 hover:text-white hover:bg-white/[0.03] border border-transparent'
@@ -148,7 +153,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
 
                         <button
                             onClick={handleCopy}
-                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0"
+                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
                         >
                             {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
                             <span>{copied ? 'Copied' : 'Copy'}</span>
