@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { redis } from '@/lib/db/redis';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 export async function GET(req: NextRequest) {
     const authResult = await verifyAuth(req);
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
     const userId = user.id;
 
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = getClientIp(req);
         const limitResult = await rateLimit(`news-react:${userId}`, 10, 60);
         if (!limitResult.success) {
             return NextResponse.json({ error: 'Too many reactions. Please slow down.' }, { status: 429 });

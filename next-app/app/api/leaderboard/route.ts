@@ -57,8 +57,12 @@ export async function GET() {
                         codeforces_data,
                         (codeforces_data->>'handle') as handle,
                         COALESCE((codeforces_data->>'rating')::int, 0) as rating
-                    FROM applications 
-                    WHERE codeforces_data IS NOT NULL
+                    FROM applications a
+                    WHERE a.codeforces_data IS NOT NULL
+                      AND NOT EXISTS (
+                          SELECT 1 FROM users linked
+                          WHERE linked.application_id = a.id
+                      )
                     
                     UNION ALL
                     
@@ -96,8 +100,12 @@ export async function GET() {
                             codeforces_data,
                             (codeforces_data->>'handle') as handle,
                             COALESCE((codeforces_data->>'rating')::int, 0) as rating
-                        FROM applications 
-                        WHERE codeforces_data IS NOT NULL
+                        FROM applications a
+                        WHERE a.codeforces_data IS NOT NULL
+                          AND NOT EXISTS (
+                              SELECT 1 FROM users linked
+                              WHERE linked.application_id = a.id
+                          )
                         
                         UNION ALL
                         

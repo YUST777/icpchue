@@ -33,6 +33,10 @@ if (!fs.existsSync(PFPS_DIR)) {
 
 export async function POST(request: NextRequest) {
     try {
+        const contentLength = Number(request.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > MAX_FILE_SIZE + 256 * 1024) {
+            return NextResponse.json({ error: 'Upload payload is too large' }, { status: 413 });
+        }
         // Verify authentication
         const authUser = await verifyAuth(request);
         if (!authUser) {

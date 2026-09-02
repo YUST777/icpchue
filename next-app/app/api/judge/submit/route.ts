@@ -4,6 +4,7 @@ import { query } from '@/lib/db/db';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 // Judge0 Configuration.
 // Defaults to the free public Judge0 CE API (no self-hosted Docker needed on
@@ -79,6 +80,10 @@ function compareOutputs(expected: string, actual: string): boolean {
 
 export async function POST(req: NextRequest) {
     try {
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 768 * 1024) {
+            return NextResponse.json({ error: 'Submission payload is too large' }, { status: 413 });
+        }
         // Verify authentication
         const user = await verifyAuth(req);
         if (!user) {
@@ -133,8 +138,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Get IP address
-        const forwarded = req.headers.get('x-forwarded-for');
-        const ipAddress = forwarded ? forwarded.split(',')[0] : req.headers.get('x-real-ip') || 'unknown';
+        const ipAddress = getClientIp(req);
 
         // Combined pre-check: rate limit + duplicate + attempt count in ONE query
         const normalizedCode = sourceCode.trim();

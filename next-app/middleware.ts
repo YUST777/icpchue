@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { updateSession } from './lib/supabase/middleware';
+import { getClientIp } from './lib/security/request';
 
 // Simple in-memory rate limiter (per instance)
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
@@ -19,6 +20,15 @@ export async function middleware(request: NextRequest) {
             response = await updateSession(request);
         } catch (err) {
             console.error('[Middleware] updateSession error:', err);
+            // Fail closed for dashboard pages if the session check itself
+            // cannot be completed. Rendering a protected shell during an auth
+            // outage makes client-side guards the only line of defense.
+            if (pathname.startsWith('/dashboard')) {
+                const loginUrl = request.nextUrl.clone();
+                loginUrl.pathname = '/login';
+                loginUrl.searchParams.set('redirect', pathname);
+                return NextResponse.redirect(loginUrl);
+            }
             response = NextResponse.next({ request });
         }
     }
@@ -44,7 +54,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // --- 3. Basic Rate Limiting ---
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const ip = getClientIp(request);
 
     if (ip !== 'unknown') {
         const now = Date.now();

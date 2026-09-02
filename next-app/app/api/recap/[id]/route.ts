@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
+import { createBlindIndex } from '@/lib/security/encryption';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,12 +14,29 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
         if (!studentId) {
             return NextResponse.json({ error: 'Student ID required' }, { status: 400 });
         }
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(studentId)) {
+            return NextResponse.json({ error: 'Invalid student ID format' }, { status: 400 });
+        }
 
         // Rate limit: 10 per 60s per IP
-        const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+        const ip = getClientIp(req);
         const ratelimit = await rateLimit(`recap_view:${ip}`, 10, 60);
         if (!ratelimit.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
+        // Recaps are shareable, but a member who disabled public visibility
+        // must not remain discoverable through this separate snapshot table.
+        const visibility = await query(`
+            SELECT u.profile_visibility, u.show_public_profile
+            FROM applications a
+            JOIN users u ON u.application_id = a.id
+            WHERE a.student_id = $1 OR a.student_id_blind_index = $2
+            LIMIT 1
+        `, [studentId, createBlindIndex(studentId)]);
+        if (visibility.rows[0] &&
+            (visibility.rows[0].profile_visibility === 'private' || visibility.rows[0].show_public_profile === false)) {
+            return NextResponse.json({ error: 'This recap is private' }, { status: 403 });
         }
 
         // Read from pre-calculated recap_2025 table
@@ -68,7 +87,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id?: stri
         });
 
     } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: 'Internal Server Error', details: errorMessage }, { status: 500 });
+        console.error('[Recap API] Error:', error instanceof Error ? error.message : error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

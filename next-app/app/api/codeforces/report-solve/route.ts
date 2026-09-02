@@ -5,6 +5,10 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 
 export async function POST(req: NextRequest) {
     try {
+        const contentLength = Number(req.headers.get('content-length') || 0);
+        if (Number.isFinite(contentLength) && contentLength > 16 * 1024) {
+            return NextResponse.json({ error: 'Request payload is too large' }, { status: 413 });
+        }
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,8 +19,11 @@ export async function POST(req: NextRequest) {
 
         const { contestId, problemId, sheetId, status, submissionId } = await req.json();
 
-        if (!contestId || !problemId || !status) {
+        if (typeof contestId !== 'string' || typeof problemId !== 'string' || !status) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+        if (!/^\d{1,10}$/.test(contestId) || !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(problemId)) {
+            return NextResponse.json({ error: 'Invalid problem identifier' }, { status: 400 });
         }
 
         // SECURITY: Only allow 'ATTEMPTED' status from this endpoint.

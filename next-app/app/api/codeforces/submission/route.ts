@@ -5,7 +5,13 @@ import crypto from 'crypto';
 
 const API_KEY = process.env.CF_API_KEY;
 const API_SECRET = process.env.CF_API_SECRET;
+// The lightweight CF bridge is read-only and does not expose /status. Keep
+// submission-status polling on the dedicated submit/status bridge.
 const BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
+const bridgeHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(process.env.CF_BRIDGE_SHARED_SECRET ? { Authorization: process.env.CF_BRIDGE_SHARED_SECRET } : {}),
+});
 
 // ── Server-side status cache ────────────────────────────────────────
 // Prevents hammering CF API when frontend polls every 2-3s
@@ -116,6 +122,21 @@ async function handleSubmissionStatus(req: NextRequest, params: {
     if (!contestId || !submissionId) {
         return NextResponse.json({ error: 'Missing contestId or submissionId' }, { status: 400 });
     }
+    if (!/^\d{1,10}$/.test(contestId) || !/^\d{1,12}$/.test(submissionId)) {
+        return NextResponse.json({ error: 'Invalid contestId or submissionId' }, { status: 400 });
+    }
+    if (!['contest', 'group', 'gym'].includes(urlType)) {
+        return NextResponse.json({ error: 'Invalid contest type' }, { status: 400 });
+    }
+    if (handle && !/^[A-Za-z0-9_.-]{1,24}$/.test(handle)) {
+        return NextResponse.json({ error: 'Invalid Codeforces handle' }, { status: 400 });
+    }
+    if (groupId && !/^[A-Za-z0-9_-]{1,64}$/.test(groupId)) {
+        return NextResponse.json({ error: 'Invalid group ID' }, { status: 400 });
+    }
+    if (cookies && (cookies.length > 16 * 1024 || /[\r\n]/.test(cookies))) {
+        return NextResponse.json({ error: 'Invalid Codeforces session data' }, { status: 400 });
+    }
 
     // Auth & Rate Limit: 120 per 60s per user (verdict polling hits this every 1-2s)
     const user = await verifyAuth(req);
@@ -128,7 +149,9 @@ async function handleSubmissionStatus(req: NextRequest, params: {
 
     try {
         // ── Check server-side cache first ──
-        const cacheKey = `${contestId}:${submissionId}`;
+        // Private bridge responses can contain compilation details. Never
+        // share those cached responses between authenticated users.
+        const cacheKey = `${user.id}:${urlType}:${groupId || ''}:${contestId}:${submissionId}`;
         const cached = statusCache.get(cacheKey);
         if (cached) {
             const age = Date.now() - cached.ts;
@@ -146,7 +169,7 @@ async function handleSubmissionStatus(req: NextRequest, params: {
             try {
                 const bridgeRes = await fetch(`${BRIDGE_URL}/status`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: bridgeHeaders(),
                     body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
                 });
 
@@ -217,7 +240,7 @@ async function handleSubmissionStatus(req: NextRequest, params: {
             try {
                 const bridgeRes = await fetch(`${BRIDGE_URL}/status`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: bridgeHeaders(),
                     body: JSON.stringify({ submissionId, contestId, cookies, urlType, groupId })
                 });
 

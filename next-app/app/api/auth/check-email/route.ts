@@ -1,39 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db/db';
-import { createBlindIndex } from '@/lib/security/encryption';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+        const ip = getClientIp(req);
         const rl = await rateLimit(`check-email:${ip}`, 10, 60);
         if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
         const body = await req.json();
         const { email } = body;
 
-        if (!email) {
+        if (typeof email !== 'string' || !email || email.length > 254) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        const normalizedEmail = email.trim().toLowerCase();
-        const emailBlindIndex = createBlindIndex(normalizedEmail);
-
-        // Check applications table
-        const result = await query(
-            'SELECT id FROM applications WHERE email_blind_index = $1',
-            [emailBlindIndex]
-        );
-
-        // Check users table
-        const userResult = await query(
-            'SELECT id FROM users WHERE email_blind_index = $1',
-            [emailBlindIndex]
-        );
-
+        // Do not reveal whether an address belongs to an account or an
+        // application. That distinction is an unauthenticated account and
+        // student-ID enumeration oracle. Registration/login perform the real
+        // check after email ownership has been established.
         return NextResponse.json({
             success: true,
-            status: result.rows.length > 0 ? (userResult.rows.length > 0 ? 'exists' : 'application_found') : 'not_found',
+            status: 'unknown',
             message: 'Email check completed.'
         });
 

@@ -5,10 +5,11 @@ import { encrypt, createBlindIndex } from '@/lib/security/encryption';
 import { sanitizeInput } from '@/lib/security/validation';
 
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
     // 1. Rate Limiting (Global Redis)
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    const ip = getClientIp(req);
     const limitResult = await rateLimit(`submit_app:${ip}`, 3, 600); // 3 attempts per 10 mins
 
     if (!limitResult.success) {
@@ -37,8 +38,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Get client info
-        let ip = req.headers.get('x-forwarded-for') || 'unknown';
-        if (ip.includes(',')) ip = ip.split(',')[0].trim();
+        let ip = getClientIp(req);
         ip = sanitizeInput(ip).substring(0, 45);
 
         const userAgent = sanitizeInput(req.headers.get('user-agent') || 'unknown').substring(0, 255);

@@ -31,7 +31,9 @@ function createSupabaseFromRequest(req: NextRequest) {
 // ── In-Memory Auth Cache to prevent Supabase API exhaustion during polling ──
 // Submissions poll every 2s. Hitting Supabase Auth API + PostgreSQL every 2s exhausts 
 // Node.js sockets and DB connection pools. Note: Next.js 'standalone' keeps module state.
-const CACHE_TTL_MS = 120 * 1000; // 2 minutes (increased from 60s for less Supabase API calls)
+// Keep role revocations effective quickly. A long auth cache window would let
+// a demoted mentor/admin retain privileged API access after logout/role change.
+const CACHE_TTL_MS = 30 * 1000;
 const MAX_CACHE_SIZE = 500; // Prevent unbounded growth
 const authCache = new Map<string, { user: AuthUser; expiresAt: number }>();
 

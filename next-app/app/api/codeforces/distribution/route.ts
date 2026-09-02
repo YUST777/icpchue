@@ -26,6 +26,9 @@ export async function GET(req: NextRequest) {
     if (!contestId || !problemIndex) {
         return NextResponse.json({ error: 'Missing contestId or problemIndex' }, { status: 400 });
     }
+    if (!/^\d{1,10}$/.test(contestId) || !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(problemIndex)) {
+        return NextResponse.json({ error: 'Invalid contestId or problemIndex' }, { status: 400 });
+    }
 
     const cacheKey = `cf:global-dist:${contestId}-${problemIndex.toUpperCase()}`;
 

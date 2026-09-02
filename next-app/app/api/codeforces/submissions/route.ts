@@ -43,6 +43,18 @@ export async function GET(req: NextRequest) {
     if (!contestId) {
         return NextResponse.json({ error: 'Missing contestId' }, { status: 400 });
     }
+    if (!/^\d{1,10}$/.test(contestId)) {
+        return NextResponse.json({ error: 'Invalid contestId' }, { status: 400 });
+    }
+    if (problemIndex && !/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(problemIndex)) {
+        return NextResponse.json({ error: 'Invalid problem index' }, { status: 400 });
+    }
+    if (!['contest', 'group', 'gym'].includes(urlType)) {
+        return NextResponse.json({ error: 'Invalid contest type' }, { status: 400 });
+    }
+    if (groupId && !/^[A-Za-z0-9_-]{1,64}$/.test(groupId)) {
+        return NextResponse.json({ error: 'Invalid group ID' }, { status: 400 });
+    }
 
     // Auth & Rate Limit: 10 per 60s
     const user = await verifyAuth(req);
@@ -85,7 +97,7 @@ export async function GET(req: NextRequest) {
 
     // Phase 2: Fallback to Scrapling Bridge (Scraping via user's session)
     try {
-        const SCRAPLING_BRIDGE_URL = process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
+        const SCRAPLING_BRIDGE_URL = process.env.CF_BRIDGE_URL || process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
         
         // Only forward Codeforces-related cookies to the bridge, not auth cookies
         const allCookies = req.headers.get('cookie') || '';
@@ -93,14 +105,18 @@ export async function GET(req: NextRequest) {
             .map(c => c.trim())
             .filter(c => {
                 const name = c.split('=')[0]?.toLowerCase() || '';
-                // Only keep CF session cookies, drop Supabase/auth cookies
-                return !name.startsWith('sb-') && !name.startsWith('supabase') && name !== 'authtoken';
+                // Only keep known Codeforces session cookies. Do not relay
+                // arbitrary application cookies to an external bridge.
+                return /^(jsessionid|39ce7|x-user(?:-sha1)?|cf_clearance|rcpc|dotcom-user-token)$/.test(name);
             })
             .join('; ');
 
         const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/submissions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(process.env.CF_BRIDGE_SHARED_SECRET ? { Authorization: process.env.CF_BRIDGE_SHARED_SECRET } : {}),
+            },
             body: JSON.stringify({
                 contestId,
                 problemIndex,
