@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     FileCode2, Clock, CheckCircle2, XCircle, AlertTriangle, 
@@ -41,6 +42,11 @@ export function RecentSubmissionsTable({
 }: RecentSubmissionsTableProps) {
     const [activeSubModal, setActiveSubModal] = useState<SubmissionItem | null>(null);
     const [copied, setCopied] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Close on Escape & Lock Body Scroll
     useEffect(() => {
@@ -106,6 +112,140 @@ export function RecentSubmissionsTable({
         if (isNaN(d.getTime())) return '-';
         return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     };
+
+    const modalContent = (
+        <AnimatePresence>
+            {activeSubModal && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 md:p-8">
+                    {/* Fullscreen Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        onClick={() => setActiveSubModal(null)}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-lg"
+                    />
+
+                    {/* Centered Modal Card */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                        className="relative w-full max-w-2xl bg-[#141416]/95 border border-white/[0.14] rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col z-10 my-auto max-h-[85vh]"
+                    >
+                        {/* Modal Header */}
+                        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+                            <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <div className="w-9 h-9 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20 shrink-0">
+                                    <Terminal size={17} />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <h3 className="text-sm md:text-base font-bold text-white tracking-tight truncate">
+                                            {activeSubModal.problem}
+                                        </h3>
+                                        {getVerdictBadge(activeSubModal.verdict)}
+                                    </div>
+                                    <div className="text-[11px] text-white/45 truncate mt-0.5 font-medium">
+                                        {activeSubModal.problem_title ? `${activeSubModal.problem_title} • ` : ''}
+                                        <span>{formatDate(activeSubModal.submitted_at)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setActiveSubModal(null)}
+                                className="w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
+                                title="Close (Esc)"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        {/* 4-Stat Capsule Strip */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 px-5 py-3 bg-black/40 border-b border-white/[0.06] text-xs">
+                            <div className="bg-white/[0.03] border border-white/[0.05] px-3 py-2 rounded-xl">
+                                <span className="text-white/40 block text-[9px] uppercase font-mono">Language</span>
+                                <span className="font-mono text-white/90 text-xs font-semibold block truncate mt-0.5">
+                                    {activeSubModal.language}
+                                </span>
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/[0.05] px-3 py-2 rounded-xl">
+                                <span className="text-white/40 block text-[9px] uppercase font-mono">Runtime</span>
+                                <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-semibold mt-0.5">
+                                    <Cpu size={12} className="text-blue-400" />
+                                    <span>{activeSubModal.time_ms ?? 0} ms</span>
+                                </div>
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/[0.05] px-3 py-2 rounded-xl">
+                                <span className="text-white/40 block text-[9px] uppercase font-mono">Memory</span>
+                                <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-semibold mt-0.5">
+                                    <HardDrive size={12} className="text-purple-400" />
+                                    <span>{activeSubModal.memory_kb ? `${(activeSubModal.memory_kb / 1024).toFixed(1)} MB` : '-'}</span>
+                                </div>
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/[0.05] px-3 py-2 rounded-xl flex flex-col justify-between">
+                                <span className="text-white/40 block text-[9px] uppercase font-mono">Codeforces</span>
+                                {activeSubModal.cf_submission_id ? (
+                                    <a
+                                        href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-[#E8C15A] hover:underline flex items-center gap-1 font-mono text-xs font-semibold mt-0.5"
+                                    >
+                                        <SiCodeforces size={11} className="text-red-400" />
+                                        <span>#{activeSubModal.cf_submission_id}</span>
+                                        <ExternalLink size={9} />
+                                    </a>
+                                ) : (
+                                    <span className="text-white/40 text-xs font-mono mt-0.5">Platform</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Source Code Container */}
+                        <div className="p-4 flex-1 flex flex-col bg-[#0A0A0C] min-h-[220px] max-h-[50vh] overflow-hidden">
+                            <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-white/[0.06] text-xs">
+                                <span className="text-white/40 text-[11px] font-mono">Source Code</span>
+                                <button
+                                    onClick={() => handleCopy(activeSubModal.source_code || '')}
+                                    className="px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
+                                >
+                                    {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
+                                    <span>{copied ? 'Copied' : 'Copy Code'}</span>
+                                </button>
+                            </div>
+
+                            <div className="font-mono text-xs overflow-y-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden leading-relaxed">
+                                {activeSubModal.source_code ? (
+                                    <div className="flex text-white/85">
+                                        <div className="select-none text-white/20 text-right pr-3.5 border-r border-white/[0.08] space-y-0.5 shrink-0 font-mono text-[11px]">
+                                            {activeSubModal.source_code.split('\n').map((_, i) => (
+                                                <div key={i}>{i + 1}</div>
+                                            ))}
+                                        </div>
+                                        <div className="pl-3.5 space-y-0.5 whitespace-pre flex-1 text-[#E2E2E5]">
+                                            {activeSubModal.source_code.split('\n').map((line, i) => (
+                                                <div key={i} className="hover:bg-white/[0.02] rounded-xs px-1">
+                                                    {line || '\n'}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-white/30 text-xs font-mono">
+                                        No source code recorded for this submission.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
 
     return (
         <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
@@ -187,138 +327,8 @@ export function RecentSubmissionsTable({
                 )}
             </div>
 
-            {/* Apple-grade Glassmorphic Submission Modal */}
-            <AnimatePresence>
-                {activeSubModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-                        {/* Backdrop */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            onClick={() => setActiveSubModal(null)}
-                            className="fixed inset-0 bg-black/80 backdrop-blur-md"
-                        />
-
-                        {/* Modal Dialog Card */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                            transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                            className="relative w-full max-w-2xl max-h-[82vh] bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col z-10 my-auto"
-                        >
-                            {/* Modal Header */}
-                            <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
-                                <div className="flex items-center gap-3 min-w-0 pr-2">
-                                    <div className="w-8 h-8 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20 shrink-0">
-                                        <Terminal size={15} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="text-sm font-semibold text-white tracking-tight truncate">
-                                                {activeSubModal.problem}
-                                            </h3>
-                                            {getVerdictBadge(activeSubModal.verdict)}
-                                        </div>
-                                        <div className="text-[11px] text-white/45 truncate mt-0.5">
-                                            {activeSubModal.problem_title ? `${activeSubModal.problem_title} • ` : ''}
-                                            <span>{formatDate(activeSubModal.submitted_at)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => setActiveSubModal(null)}
-                                    className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
-                                    title="Close (Esc)"
-                                >
-                                    <X size={14} />
-                                </button>
-                            </div>
-
-                            {/* Minimalist 4-Stat Capsule Strip */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 py-2.5 bg-black/40 border-b border-white/[0.06] text-xs">
-                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
-                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Language</span>
-                                    <span className="font-mono text-white/90 text-xs font-medium block truncate mt-0.5">
-                                        {activeSubModal.language}
-                                    </span>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
-                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Runtime</span>
-                                    <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-medium mt-0.5">
-                                        <Cpu size={11} className="text-blue-400" />
-                                        <span>{activeSubModal.time_ms ?? 0} ms</span>
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
-                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Memory</span>
-                                    <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-medium mt-0.5">
-                                        <HardDrive size={11} className="text-purple-400" />
-                                        <span>{activeSubModal.memory_kb ? `${(activeSubModal.memory_kb / 1024).toFixed(1)} MB` : '-'}</span>
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl flex flex-col justify-between">
-                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Codeforces</span>
-                                    {activeSubModal.cf_submission_id ? (
-                                        <a
-                                            href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-[#E8C15A] hover:underline flex items-center gap-1 font-mono text-xs font-medium mt-0.5"
-                                        >
-                                            <SiCodeforces size={10} className="text-red-400" />
-                                            <span>#{activeSubModal.cf_submission_id}</span>
-                                            <ExternalLink size={9} />
-                                        </a>
-                                    ) : (
-                                        <span className="text-white/40 text-xs font-mono mt-0.5">Platform</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Source Code Container */}
-                            <div className="p-3 flex-1 flex flex-col bg-[#0A0A0C] min-h-[220px] max-h-[46vh] overflow-hidden">
-                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
-                                    <span className="text-white/40 text-[11px] font-mono">Source Code</span>
-                                    <button
-                                        onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                        className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
-                                    >
-                                        {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
-                                        <span>{copied ? 'Copied' : 'Copy'}</span>
-                                    </button>
-                                </div>
-
-                                <div className="font-mono text-xs overflow-y-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden leading-relaxed">
-                                    {activeSubModal.source_code ? (
-                                        <div className="flex text-white/85">
-                                            <div className="select-none text-white/20 text-right pr-3.5 border-r border-white/[0.08] space-y-0.5 shrink-0 font-mono text-[11px]">
-                                                {activeSubModal.source_code.split('\n').map((_, i) => (
-                                                    <div key={i}>{i + 1}</div>
-                                                ))}
-                                            </div>
-                                            <div className="pl-3.5 space-y-0.5 whitespace-pre flex-1 text-[#E2E2E5]">
-                                                {activeSubModal.source_code.split('\n').map((line, i) => (
-                                                    <div key={i} className="hover:bg-white/[0.02] rounded-xs px-1">
-                                                        {line || '\n'}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-12 text-white/30 text-xs font-mono">
-                                            No source code recorded for this submission.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Portal to Body for True Fullscreen Overlay */}
+            {mounted && createPortal(modalContent, document.body)}
         </div>
     );
 }
