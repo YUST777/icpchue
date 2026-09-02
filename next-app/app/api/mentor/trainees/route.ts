@@ -93,11 +93,10 @@ export async function GET(req: NextRequest) {
                     COALESCE(us.max_streak, 0) as max_streak,
                     us.last_solve_date
                 FROM applications a
-                LEFT JOIN users u ON a.id = u.application_id
+                LEFT JOIN users u ON (a.id = u.application_id OR (a.email_blind_index IS NOT NULL AND a.email_blind_index = u.email_blind_index))
                 LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
                 LEFT JOIN latest_submissions ls ON u.id = ls.user_id
                 LEFT JOIN user_streaks us ON u.id = us.user_id
-                WHERE a.status = 'APPROVED' OR u.id IS NOT NULL
                 ORDER BY u.id DESC NULLS LAST
             `);
 
