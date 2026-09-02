@@ -504,24 +504,6 @@ function MirrorUI({
         return () => window.removeEventListener("keydown", handleGlobalKeyDown);
     }, [submitting, code, runTests, handleSubmit, navigationBaseUrl, router, isTestPanelVisible, track, contestId, problemId, sheetId, language]);
 
-    // Fallback loading
-    if (loading || !problem || !cfData) {
-        return <MirrorSkeleton />;
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center p-4">
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
-                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-red-400 mb-2">Mirror Failed</h2>
-                    <p className="text-white/60 mb-6">{error || 'Problem not found'}</p>
-                    <Link href={navigationBaseUrl} className="text-[#E8C15A] hover:underline">Return to Sheet</Link>
-                </div>
-            </div>
-        );
-    }
-
     // ─── Stable callbacks for memoized children ───
     const noopAnalyze = useCallback(() => {}, []);
     const openDrawer = useCallback(() => {
@@ -559,6 +541,24 @@ function MirrorUI({
         track({ action: 'handle_save', contestId, problemId, metadata: { handle } });
         setCfHandle(handle);
     }, [track, contestId, problemId, setCfHandle]);
+
+    // Fallback loading
+    if (loading || !problem || !cfData) {
+        return <MirrorSkeleton />;
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center p-4">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-red-400 mb-2">Mirror Failed</h2>
+                    <p className="text-white/60 mb-6">{error || 'Problem not found'}</p>
+                    <Link href={navigationBaseUrl} className="text-[#E8C15A] hover:underline">Return to Sheet</Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <ExtensionGate>

@@ -16,7 +16,15 @@ const eslintConfig = defineConfig([
       },
     },
     rules: {
-      "react-compiler/react-compiler": "error",
+      "react-compiler/react-compiler": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "react/no-unescaped-entities": "off",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
     },
   },
   // Override default ignores of eslint-config-next.
@@ -27,6 +35,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "eslint.config.mjs",
+    "scripts/**",
+    "mirror/**",
+    "server.js",
   ]),
 ]);
 

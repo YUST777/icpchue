@@ -9,32 +9,24 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
 
 // Dynamic import for Lottie to avoid SSR issues
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+const Lottie = dynamic(() => import('lottie-react').then(mod => mod.Lottie), { ssr: false });
 const VirtualLeaderboard = dynamic(() => import('@/components/common/VirtualLeaderboard'), {
     ssr: false,
 });
 
 // Medal animation component
 const MedalAnimation = ({ place }: { place: 1 | 2 | 3 }) => {
-    const [animationData, setAnimationData] = useState<unknown>(null);
-
-    useEffect(() => {
-        const files = {
-            1: '/tgs/1st Place Medal.json',
-            2: '/tgs/2nd Place Medal.json',
-            3: '/tgs/3rd Place Medal.json'
-        };
-        fetchWithCache<any>(files[place], {}, 3600)
-            .then(data => setAnimationData(data))
-            .catch(err => console.error('Failed to load medal animation:', err));
-    }, [place]);
-
-    if (!animationData) return <span className="text-[#E8C15A] font-bold">{place}</span>;
+    const files = {
+        1: '/tgs/1st Place Medal.json',
+        2: '/tgs/2nd Place Medal.json',
+        3: '/tgs/3rd Place Medal.json'
+    };
 
     return (
         <Lottie
-            animationData={animationData}
-            loop={true}
+            src={files[place]}
+            loop
+            autoplay
             style={{ width: 32, height: 32 }}
         />
     );
