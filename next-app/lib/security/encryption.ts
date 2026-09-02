@@ -40,8 +40,15 @@ export const encrypt = (text: string | null | undefined): string | null => {
 
 // ─── Decrypt: cryptr first, legacy CryptoJS fallback ────────────────
 
+const HEX_CIPHERTEXT_REGEX = /^[0-9a-fA-F]{64,}$/;
+
 export const decrypt = (ciphertext: string | null | undefined): string | null => {
     if (!ciphertext) return null;
+
+    // Fast-path: If string contains spaces, non-hex chars, or is standard text, it's plaintext
+    if (ciphertext.includes(' ') || ciphertext.includes('@') || (!HEX_CIPHERTEXT_REGEX.test(ciphertext) && !ciphertext.startsWith('U2FsdGVkX1') && !ciphertext.startsWith('aes256gcm:'))) {
+        return ciphertext;
+    }
 
     // Legacy CryptoJS format starts with "U2FsdGVkX1" (base64 of "Salted__")
     if (ciphertext.startsWith('U2FsdGVkX1')) {
@@ -54,12 +61,11 @@ export const decrypt = (ciphertext: string | null | undefined): string | null =>
     }
 
     // Current format: cryptr (hex string)
-    if (!cryptr) return null;
+    if (!cryptr) return ciphertext;
     try {
         return cryptr.decrypt(ciphertext);
-    } catch (err) {
-        console.error('[decrypt] Failed:', err);
-        return null;
+    } catch {
+        return ciphertext;
     }
 };
 
@@ -79,8 +85,7 @@ function decryptLegacyCryptoJS(b64: string): string | null {
         decipher.setAutoPadding(true);
         const decrypted = Buffer.concat([decipher.update(ct), decipher.final()]);
         return decrypted.toString('utf8') || null;
-    } catch (err) {
-        console.error('[decryptLegacyCryptoJS] Failed:', err);
+    } catch {
         return null;
     }
 }
