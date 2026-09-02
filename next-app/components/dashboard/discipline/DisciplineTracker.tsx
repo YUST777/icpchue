@@ -326,45 +326,20 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                         </div>
                                                     </td>
 
-                                                    {/* Total Time / Missed Cell */}
+                                                    {/* Total Time Cell (Pure Number Input Only) */}
                                                     <td className="p-2 text-center border-r border-white/[0.06]">
-                                                        <div className="flex items-center justify-center gap-1.5">
-                                                            {log?.is_missed ? (
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={isMentorView}
-                                                                    onClick={() => handleSaveLog(weekNum, dayNum, { is_missed: false, total_hours: 1 })}
-                                                                    className="w-10 h-7 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-bold text-xs flex items-center justify-center hover:bg-red-500/25 transition-all cursor-pointer"
-                                                                    title="Missed day (click to change)"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            ) : (
-                                                                <div className="flex items-center justify-center gap-1">
-                                                                    <input
-                                                                        type="number"
-                                                                        min="0"
-                                                                        max="24"
-                                                                        step="0.5"
-                                                                        value={log?.total_hours !== undefined ? log.total_hours : ''}
-                                                                        placeholder="0"
-                                                                        disabled={isMentorView}
-                                                                        onChange={(e) => handleSaveLog(weekNum, dayNum, { total_hours: parseFloat(e.target.value) || 0, is_missed: false })}
-                                                                        className="w-12 h-7 bg-black/40 border border-white/10 rounded-lg text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none"
-                                                                    />
-                                                                    <span className="text-[10px] font-mono text-white/40">h</span>
-                                                                    {!isMentorView && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleSaveLog(weekNum, dayNum, { is_missed: true, total_hours: 0 })}
-                                                                            className="text-[10px] text-white/20 hover:text-red-400 transition-colors px-1"
-                                                                            title="Mark as Missed/Rest (X)"
-                                                                        >
-                                                                            ✕
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                                        <div className="flex items-center justify-center">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="24"
+                                                                step="any"
+                                                                value={log?.total_hours !== undefined && log?.total_hours !== null ? log.total_hours : ''}
+                                                                placeholder="0"
+                                                                disabled={isMentorView}
+                                                                onChange={(e) => handleSaveLog(weekNum, dayNum, { total_hours: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) })}
+                                                                className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                                                            />
                                                         </div>
                                                     </td>
 
