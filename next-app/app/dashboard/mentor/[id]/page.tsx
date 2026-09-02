@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, Clock, Circle, Search, Layers } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, Clock, Circle, Search } from 'lucide-react';
 import { TraineeHeroHeader } from '@/components/dashboard/mentor/TraineeHeroHeader';
 import { TraineeMetricCards } from '@/components/dashboard/mentor/TraineeMetricCards';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
@@ -25,14 +25,19 @@ export default function TraineeDossierPage() {
     const [progressSearch, setProgressSearch] = useState('');
     const [selectedLevelId, setSelectedLevelId] = useState<string>('1');
 
+    // Submissions pagination
+    const [submissionsList, setSubmissionsList] = useState<any[]>([]);
+    const [loadingMoreSubs, setLoadingMoreSubs] = useState(false);
+
     const fetchDossier = async () => {
         if (!studentIdParam) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/mentor/trainee/${studentIdParam}`);
+            const res = await fetch(`/api/mentor/trainee/${studentIdParam}?sub_limit=100&sub_offset=0`);
             if (res.ok) {
                 const resData = await res.json();
                 setData(resData);
+                setSubmissionsList(resData.recent_submissions || []);
             } else if (res.status === 403) {
                 router.replace('/dashboard');
             }
@@ -43,6 +48,24 @@ export default function TraineeDossierPage() {
         }
     };
 
+    const loadMoreSubmissions = async () => {
+        if (loadingMoreSubs || !studentIdParam) return;
+        setLoadingMoreSubs(true);
+        try {
+            const offset = submissionsList.length;
+            const res = await fetch(`/api/mentor/trainee/${studentIdParam}?sub_limit=100&sub_offset=${offset}`);
+            if (res.ok) {
+                const resData = await res.json();
+                const newSubs = resData.recent_submissions || [];
+                setSubmissionsList(prev => [...prev, ...newSubs]);
+            }
+        } catch (err) {
+            console.error('Failed to load more submissions:', err);
+        } finally {
+            setLoadingMoreSubs(false);
+        }
+    };
+
     useEffect(() => {
         fetchDossier();
     }, [studentIdParam]);
@@ -50,18 +73,6 @@ export default function TraineeDossierPage() {
     const toggleSheet = (id: number | string) => {
         setExpandedSheetId(expandedSheetId === id ? null : id);
     };
-
-    // Extract unique levels available
-    const availableLevels = useMemo(() => {
-        if (!data?.sheet_progress) return [];
-        const map = new Map<string, string>();
-        data.sheet_progress.forEach((s: any) => {
-            if (s.level_id) {
-                map.set(String(s.level_id), s.level_name || `Level ${s.level_id}`);
-            }
-        });
-        return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-    }, [data?.sheet_progress]);
 
     const filteredSheets = useMemo(() => {
         if (!data?.sheet_progress) return [];
@@ -120,12 +131,14 @@ export default function TraineeDossierPage() {
         metrics, 
         sheet_progress, 
         heatmap_data, 
-        recent_submissions, 
         code_catalog, 
         user_notes, 
         flagged_problems, 
-        behavioral_analysis 
+        behavioral_analysis,
+        submissions_total
     } = data;
+
+    const hasMoreSubmissions = submissionsList.length < (submissions_total || 0);
 
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
@@ -159,65 +172,63 @@ export default function TraineeDossierPage() {
                             <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_id) === '1') || []} />
                         </div>
                         <div className="lg:col-span-6">
-                            <RecentSubmissionsTable submissions={recent_submissions || []} />
+                            <RecentSubmissionsTable 
+                                submissions={submissionsList.slice(0, 15)} 
+                            />
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Tab 2: Full Curriculum Progress Breakdown with Dropdown Sheets, Level Filter & Search Bar */}
+            {/* Tab 2: Full Curriculum Progress Breakdown with Minimalist Level Switcher & Search Bar */}
             {activeTab === 'progress' && (
-                <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-4 space-y-3 shadow-md">
+                <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3.5 space-y-3 shadow-md">
+                    {/* Minimalist Top Control Bar (No verbose titles) */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/5">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-xs font-bold text-white tracking-wider uppercase">
-                                Curriculum Progress Breakdown
-                            </h2>
-                            {/* Level Filter Switcher */}
-                            <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10 text-xs">
-                                <button
-                                    onClick={() => setSelectedLevelId('1')}
-                                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                                        selectedLevelId === '1' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
-                                    }`}
-                                >
-                                    Level 1
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('2')}
-                                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                                        selectedLevelId === '2' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
-                                    }`}
-                                >
-                                    Level 2
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('3')}
-                                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                                        selectedLevelId === '3' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
-                                    }`}
-                                >
-                                    Level 3
-                                </button>
-                                <button
-                                    onClick={() => setSelectedLevelId('all')}
-                                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                                        selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
-                                    }`}
-                                >
-                                    All
-                                </button>
-                            </div>
+                        {/* Minimalist Level Pills */}
+                        <div className="flex items-center bg-[#0B0B0C] rounded-lg p-0.5 border border-white/10 text-xs">
+                            <button
+                                onClick={() => setSelectedLevelId('1')}
+                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                                    selectedLevelId === '1' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                }`}
+                            >
+                                Lv 1
+                            </button>
+                            <button
+                                onClick={() => setSelectedLevelId('2')}
+                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                                    selectedLevelId === '2' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                }`}
+                            >
+                                Lv 2
+                            </button>
+                            <button
+                                onClick={() => setSelectedLevelId('3')}
+                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                                    selectedLevelId === '3' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                }`}
+                            >
+                                Lv 3
+                            </button>
+                            <button
+                                onClick={() => setSelectedLevelId('all')}
+                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                                    selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                }`}
+                            >
+                                All
+                            </button>
                         </div>
 
-                        {/* Clean Search Bar */}
-                        <div className="relative w-full sm:w-64">
+                        {/* Minimalist Search Bar */}
+                        <div className="relative w-full sm:w-72">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 w-3.5 h-3.5" />
                             <input
                                 value={progressSearch}
                                 onChange={(e) => setProgressSearch(e.target.value)}
-                                placeholder="Filter sheet or problem..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
+                                placeholder="Search sheet or problem..."
+                                className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
                             />
                         </div>
                     </div>
@@ -319,10 +330,15 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 3: Submissions Feed */}
+            {/* Tab 3: Submissions Feed with Pagination and Modal Preview */}
             {activeTab === 'submissions' && (
                 <div className="space-y-3">
-                    <RecentSubmissionsTable submissions={recent_submissions || []} />
+                    <RecentSubmissionsTable 
+                        submissions={submissionsList}
+                        onLoadMore={loadMoreSubmissions}
+                        hasMore={hasMoreSubmissions}
+                        loadingMore={loadingMoreSubs}
+                    />
                 </div>
             )}
 
