@@ -149,6 +149,7 @@ export default function TraineeDossierPage() {
     const renderProblemBadge = (prob: any) => {
         const st = prob.status;
         const attempts = prob.attempts > 0 ? ` (#${prob.attempts})` : '';
+        const cfUrl = prob.cf_url || (prob.contest_id && prob.problem_letter ? `https://codeforces.com/contest/${prob.contest_id}/problem/${prob.problem_letter}` : null);
 
         if (st === 'SOLVED') {
             return (
@@ -156,10 +157,37 @@ export default function TraineeDossierPage() {
                     <div className="flex items-center gap-2 truncate pr-1">
                         <CheckCircle2 size={13} className="text-[#E8C15A] shrink-0" />
                         <span className="font-bold text-[#E8C15A]">{prob.problem_letter}.</span>
-                        <span className="truncate font-medium">{prob.title}</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-[#E8C15A] hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-[#E8C15A] shrink-0">
                         Accepted{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        if (prob.is_stuck) {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-orange-500/15 border-orange-500/35 text-white transition-all shadow-[0_0_12px_rgba(249,115,22,0.15)]">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <AlertTriangle size={13} className="text-orange-400 shrink-0" />
+                        <span className="font-bold text-orange-400">{prob.problem_letter}.</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-orange-300 hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-orange-400 shrink-0 bg-orange-500/20 px-1.5 py-0.5 rounded border border-orange-500/30">
+                        Stuck{attempts}
                     </span>
                 </div>
             );
@@ -171,7 +199,13 @@ export default function TraineeDossierPage() {
                     <div className="flex items-center gap-2 truncate pr-1">
                         <XCircle size={13} className="text-red-400 shrink-0" />
                         <span className="font-bold text-red-400">{prob.problem_letter}.</span>
-                        <span className="truncate font-medium">{prob.title}</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-red-300 hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-red-400 shrink-0">
                         Wrong Answer{attempts}
@@ -186,7 +220,13 @@ export default function TraineeDossierPage() {
                     <div className="flex items-center gap-2 truncate pr-1">
                         <Clock size={13} className="text-amber-400 shrink-0" />
                         <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
-                        <span className="truncate font-medium">{prob.title}</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-amber-300 hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
                         Time Limit{attempts}
@@ -201,7 +241,13 @@ export default function TraineeDossierPage() {
                     <div className="flex items-center gap-2 truncate pr-1">
                         <AlertTriangle size={13} className="text-purple-400 shrink-0" />
                         <span className="font-bold text-purple-400">{prob.problem_letter}.</span>
-                        <span className="truncate font-medium">{prob.title}</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-purple-300 hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-purple-300 shrink-0">
                         {st === 'MEMORY_LIMIT' ? 'Memory Limit' : 'Runtime Error'}{attempts}
@@ -216,22 +262,33 @@ export default function TraineeDossierPage() {
                     <div className="flex items-center gap-2 truncate pr-1">
                         <Clock size={13} className="text-amber-400 shrink-0" />
                         <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
-                        <span className="truncate font-medium">{prob.title}</span>
+                        {cfUrl ? (
+                            <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-amber-300 hover:underline" title="Open on Codeforces">
+                                {prob.title}
+                            </a>
+                        ) : (
+                            <span className="truncate font-medium">{prob.title}</span>
+                        )}
                     </div>
-                    <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
+                    <span className="text-[10px] font-mono font-semibold text-amber-400/80 shrink-0">
                         Attempted{attempts}
                     </span>
                 </div>
             );
         }
 
-        // NOT_STARTED
         return (
-            <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-white/[0.015] border-white/5 text-white/40 transition-all">
+            <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-white/[0.02] border-white/[0.04] text-white/50 transition-all">
                 <div className="flex items-center gap-2 truncate pr-1">
-                    <Circle size={11} className="text-white/20 shrink-0" />
-                    <span className="font-bold text-white/50">{prob.problem_letter}.</span>
-                    <span className="truncate font-medium">{prob.title}</span>
+                    <div className="w-3 h-3 rounded-full border border-white/20 shrink-0" />
+                    <span className="font-bold text-white/40">{prob.problem_letter}.</span>
+                    {cfUrl ? (
+                        <a href={cfUrl} target="_blank" rel="noreferrer" className="truncate font-medium hover:text-white/80 hover:underline" title="Open on Codeforces">
+                            {prob.title}
+                        </a>
+                    ) : (
+                        <span className="truncate font-medium">{prob.title}</span>
+                    )}
                 </div>
                 <span className="text-[10px] font-mono text-white/30 shrink-0">
                     Not Started
@@ -257,6 +314,8 @@ export default function TraineeDossierPage() {
 
             {/* 3. Tab Contents */}
 
+            {/* 3. Tab Contents */}
+
             {/* Tab 1: Overview */}
             {activeTab === 'overview' && (
                 <div className="space-y-3">
@@ -266,7 +325,17 @@ export default function TraineeDossierPage() {
                     {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <div className="lg:col-span-6">
-                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_id || 1) === '1') || []} />
+                            <SheetProgressBreakdown 
+                                sheets={
+                                    sheet_progress?.filter((s: any) => {
+                                        const lvlStr = String(s.level_id || s.level_number || 1);
+                                        const studentLvl = profile.academic_level?.match(/\d+/)?.[0] || '1';
+                                        return lvlStr === studentLvl;
+                                    })?.length 
+                                        ? sheet_progress.filter((s: any) => String(s.level_id || s.level_number || 1) === (profile.academic_level?.match(/\d+/)?.[0] || '1'))
+                                        : (sheet_progress?.slice(0, 8) || [])
+                                } 
+                            />
                         </div>
                         <div className="lg:col-span-6">
                             <RecentSubmissionsTable 
@@ -294,14 +363,14 @@ export default function TraineeDossierPage() {
                         {/* Minimalist Controls: Ultra-Thin Level Pills & Search */}
                         <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-1">
-                                {(['1', '2', '3', 'all'] as const).map((lvl) => {
+                                {(['0', '1', '2', '3', 'all'] as const).map((lvl) => {
                                     const label = lvl === 'all' ? 'All' : `Lv ${lvl}`;
                                     const isActive = selectedLevelId === lvl;
                                     return (
                                         <button
                                             key={lvl}
                                             onClick={() => setSelectedLevelId(lvl)}
-                                            className={`px-2 py-0.5 rounded-md text-[11px] transition-all ${
+                                            className={`px-2 py-0.5 rounded-md text-[11px] transition-all cursor-pointer ${
                                                 isActive
                                                     ? 'text-[#E8C15A] bg-[#E8C15A]/10 border border-[#E8C15A]/30 font-medium'
                                                     : 'text-white/40 hover:text-white/80 border border-transparent'
