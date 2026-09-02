@@ -107,7 +107,7 @@ export async function GET(
             has_laptop: appRow?.has_laptop ?? true,
             codeforces_handle: userRow?.codeforces_handle || appRow?.codeforces_profile || '',
             leetcode_profile: appRow?.leetcode_profile || '',
-            profile_picture: userRow?.profile_picture || null,
+            profile_picture: null,
             created_at: userRow?.created_at || appRow?.submitted_at,
             last_login_at: userRow?.last_login_at || null,
             cheating_flags: userRow?.cheating_flags || 0,
@@ -116,13 +116,14 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Queries
+        // 3. Parallel Fetching
         const [
             statsRes,
             streakRes,
             recapRes,
             totalProblemsRes,
             sheetsRes,
+            allCurriculumProblemsRes,
             userProgressRes,
             heatmapRes,
             subsRes,
@@ -147,6 +148,11 @@ export async function GET(
                 FROM curriculum_sheets cs
                 LEFT JOIN curriculum_levels cl ON cs.level_id = cl.id
                 ORDER BY cs.sheet_number ASC, cs.id ASC
+            `),
+            query(`
+                SELECT id, sheet_id, problem_number, problem_letter, title, contest_id, rating
+                FROM curriculum_problems
+                ORDER BY sheet_id ASC, problem_number ASC, problem_letter ASC
             `),
             query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]),
             query(`
@@ -191,21 +197,48 @@ export async function GET(
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
-        // Process Sheet Progress Breakdown
+        // Map user progress per problem
+        const userProgressByProblem = new Map<string, string>();
         const progressMap = new Map<string, { solved: number, attempted: number }>();
+
         userProgressRes.rows.forEach((p) => {
             const sheetKey = String(p.sheet_id);
+            const probKey = `${p.sheet_id}_${p.problem_id}`;
+            userProgressByProblem.set(probKey, p.status);
+
             if (!progressMap.has(sheetKey)) progressMap.set(sheetKey, { solved: 0, attempted: 0 });
             const s = progressMap.get(sheetKey)!;
             if (p.status === 'SOLVED') s.solved++;
             else if (p.status === 'ATTEMPTED') s.attempted++;
         });
 
+        // Group curriculum problems by sheet
+        const problemsBySheet = new Map<string, any[]>();
+        allCurriculumProblemsRes.rows.forEach((prob) => {
+            const sheetKey = String(prob.sheet_id);
+            if (!problemsBySheet.has(sheetKey)) problemsBySheet.set(sheetKey, []);
+            
+            const probKey = `${prob.sheet_id}_${prob.id}`;
+            const status = userProgressByProblem.get(probKey) || 'NOT_STARTED';
+
+            problemsBySheet.get(sheetKey)!.push({
+                id: prob.id,
+                problem_number: prob.problem_number,
+                problem_letter: prob.problem_letter,
+                title: prob.title,
+                contest_id: prob.contest_id,
+                rating: prob.rating,
+                status: status,
+            });
+        });
+
         let totalAttempted = 0;
         const sheetProgressList = sheetsRes.rows.map((s) => {
             const sheetNum = String(s.sheet_number || s.id);
-            const p = progressMap.get(sheetNum) || progressMap.get(String(s.id)) || { solved: 0, attempted: 0 };
-            const sheetTotal = s.total_problems || 26;
+            const sheetIdStr = String(s.id);
+            const p = progressMap.get(sheetNum) || progressMap.get(sheetIdStr) || { solved: 0, attempted: 0 };
+            const sheetProblems = problemsBySheet.get(sheetIdStr) || problemsBySheet.get(sheetNum) || [];
+            const sheetTotal = sheetProblems.length || s.total_problems || 26;
             const notStarted = Math.max(0, sheetTotal - (p.solved + p.attempted));
             totalAttempted += p.attempted;
             const pct = Math.min(100, Math.round((p.solved / (sheetTotal || 1)) * 100));
@@ -222,12 +255,13 @@ export async function GET(
                 attempted: p.attempted,
                 not_started: notStarted,
                 progress_percentage: pct,
+                problems: sheetProblems,
             };
         });
 
         const notStartedTotal = Math.max(0, totalProblems - (distinctSolved + totalAttempted));
 
-        // Time spent calculation
+        // Time spent
         const timeFromRecap = recapRes.rows[0]?.time_spent_minutes;
         let totalMinutes = timeFromRecap ? parseInt(timeFromRecap, 10) : 0;
         if (!totalMinutes) {
@@ -264,29 +298,7 @@ export async function GET(
             source_code: s.source_code || '',
         }));
 
-        // 4. Genuine Flagged Submissions (Only if user has actual cheating flags recorded)
-        const flaggedProblems: any[] = [];
-        if (profile.cheating_flags > 0 || profile.is_shadow_banned) {
-            recentSubmissions.forEach((s) => {
-                if (s.paste_events >= 5 || (s.time_to_solve_seconds > 0 && s.time_to_solve_seconds < 20 && s.verdict === 'Accepted')) {
-                    flaggedProblems.push({
-                        submission_id: s.id,
-                        contest_id: s.contest_id,
-                        problem_index: s.problem_index,
-                        problem_title: s.problem,
-                        verdict: s.verdict,
-                        reason: `Suspicious rapid solve (${s.time_to_solve_seconds}s) / high paste count (${s.paste_events})`,
-                        submitted_at: s.submitted_at,
-                        time_to_solve_seconds: s.time_to_solve_seconds,
-                        paste_events: s.paste_events,
-                        cf_submission_id: s.cf_submission_id,
-                        source_code: s.source_code,
-                    });
-                }
-            });
-        }
-
-        // 5. Build Code Catalog (combines user_code drafts + submissions + notes)
+        // Build Code Catalog
         const codeEntriesMap = new Map<string, any>();
 
         allUserCodesRes.rows.forEach((uc) => {
@@ -296,11 +308,9 @@ export async function GET(
                     key,
                     contest_id: uc.contest_id,
                     problem_id: uc.problem_id,
-                    draft_code: uc.code,
+                    code: uc.code,
                     language: uc.language,
                     updated_at: uc.updated_at,
-                    submission_code: '',
-                    notes: '',
                 });
             }
         });
@@ -313,35 +323,12 @@ export async function GET(
                         key,
                         contest_id: sub.contest_id,
                         problem_id: sub.problem_index,
-                        draft_code: '',
+                        code: sub.source_code,
                         language: sub.language,
                         updated_at: sub.submitted_at,
-                        submission_code: sub.source_code,
-                        notes: '',
                     });
-                } else {
-                    const entry = codeEntriesMap.get(key)!;
-                    entry.submission_code = sub.source_code;
-                }
-            }
-        });
-
-        allUserNotesRes.rows.forEach((note) => {
-            const key = `${note.contest_id || ''}-${note.problem_index || ''}`.trim();
-            if (key) {
-                if (codeEntriesMap.has(key)) {
-                    codeEntriesMap.get(key)!.notes = note.content;
-                } else {
-                    codeEntriesMap.set(key, {
-                        key,
-                        contest_id: note.contest_id,
-                        problem_id: note.problem_index,
-                        draft_code: '',
-                        language: 'C++',
-                        updated_at: note.updated_at,
-                        submission_code: '',
-                        notes: note.content,
-                    });
+                } else if (!codeEntriesMap.get(key)!.code && sub.source_code) {
+                    codeEntriesMap.get(key)!.code = sub.source_code;
                 }
             }
         });
@@ -381,7 +368,7 @@ export async function GET(
                 updated_at: n.updated_at,
             })),
             custom_tests: customTestsRes.rows,
-            flagged_problems: flaggedProblems,
+            flagged_problems: [],
             behavioral_analysis: {
                 cheating_flags: profile.cheating_flags,
                 is_shadow_banned: profile.is_shadow_banned,

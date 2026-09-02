@@ -11,7 +11,7 @@ export const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'progress', label: 'Progress Matrix', icon: BarChart3 },
     { id: 'submissions', label: 'Submissions', icon: FileCode2 },
-    { id: 'workspace', label: 'Code & Notes', icon: Terminal },
+    { id: 'workspace', label: 'Code Inspector', icon: Terminal },
     { id: 'notes', label: 'Student Notes', icon: FileText },
     { id: 'flags', label: 'Warnings & Flags', icon: AlertTriangle },
 ] as const;
@@ -28,7 +28,7 @@ export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTa
     const visibleTabs = TABS.filter(t => t.id !== 'flags' || flagsCount > 0);
 
     return (
-        <div className="border-b border-white/10 overflow-x-auto scrollbar-hide flex gap-1 bg-[#121214]/80 p-1.5 rounded-xl backdrop-blur-md">
+        <div className="border-b border-white/10 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex gap-1 bg-[#121214]/80 p-1.5 rounded-xl backdrop-blur-md">
             {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;

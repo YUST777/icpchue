@@ -56,7 +56,7 @@ export function RecentSubmissionsTable({ submissions, onSelectSubmission }: Rece
 
     return (
         <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3.5 shadow-md flex flex-col h-full">
-            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/5">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
                 <div className="flex items-center gap-2">
                     <div className="p-1 rounded bg-[#E8C15A]/10 text-[#E8C15A]">
                         <FileCode2 size={14} />
@@ -66,7 +66,7 @@ export function RecentSubmissionsTable({ submissions, onSelectSubmission }: Rece
                 <span className="text-[10px] text-white/40 font-medium">Last {submissions.length} Submissions</span>
             </div>
 
-            <div className="overflow-y-auto max-h-[260px] scrollbar-thin flex-1">
+            <div className="overflow-y-auto max-h-[280px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
                 <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 bg-[#121214] z-10">
                         <tr className="text-white/40 border-b border-white/5 font-semibold text-[10px] uppercase">

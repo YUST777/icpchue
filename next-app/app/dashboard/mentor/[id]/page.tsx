@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, Clock, Circle } from 'lucide-react';
 import { TraineeHeroHeader } from '@/components/dashboard/mentor/TraineeHeroHeader';
 import { TraineeMetricCards } from '@/components/dashboard/mentor/TraineeMetricCards';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
@@ -21,6 +21,7 @@ export default function TraineeDossierPage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabId>('overview');
+    const [expandedSheetId, setExpandedSheetId] = useState<number | string | null>(null);
 
     const fetchDossier = async () => {
         if (!studentIdParam) return;
@@ -44,10 +45,14 @@ export default function TraineeDossierPage() {
         fetchDossier();
     }, [studentIdParam]);
 
+    const toggleSheet = (id: number | string) => {
+        setExpandedSheetId(expandedSheetId === id ? null : id);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto">
-                <div className="h-16 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
+                <div className="h-14 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                     {[1, 2, 3, 4, 5, 6].map(i => (
                         <div key={i} className="h-14 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
@@ -90,7 +95,7 @@ export default function TraineeDossierPage() {
 
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
-            {/* 1. Sleek Compact Hero Bar */}
+            {/* 1. Sleek Compact Hero Bar (No Avatar Photo) */}
             <TraineeHeroHeader 
                 profile={profile} 
                 lastSolveAt={metrics.last_solve_at} 
@@ -114,7 +119,7 @@ export default function TraineeDossierPage() {
                     {/* Full-Width Expansive Activity Heatmap in Yellow/Gold */}
                     <ActivityHeatmap90Days data={heatmap_data || []} />
 
-                    {/* Split: Sheet Progress + Recent Submissions */}
+                    {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <div className="lg:col-span-6">
                             <SheetProgressBreakdown sheets={sheet_progress || []} />
@@ -126,27 +131,100 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 2: Progress Matrix */}
+            {/* Tab 2: Full Curriculum Progress Breakdown with Dropdown Sheets */}
             {activeTab === 'progress' && (
-                <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-4 space-y-3">
-                    <h2 className="text-xs font-bold text-white tracking-wider uppercase">Full Curriculum Progress Breakdown</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        {sheet_progress.map((sheet: any) => (
-                            <div key={sheet.id} className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-1.5">
-                                <div className="flex items-center justify-between text-xs">
-                                    <div>
-                                        <span className="font-bold text-[#E8C15A] mr-1.5">{sheet.sheet_letter}</span>
-                                        <span className="text-white font-semibold">{sheet.name}</span>
+                <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-4 space-y-3 shadow-md">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                        <h2 className="text-xs font-bold text-white tracking-wider uppercase">
+                            Full Curriculum Progress Breakdown
+                        </h2>
+                        <span className="text-[11px] text-white/40">Click any sheet to inspect solved and pending problems</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {sheet_progress.map((sheet: any, index: number) => {
+                            const isExpanded = expandedSheetId === (sheet.id || index);
+                            const solvedPct = Math.min(100, Math.round((sheet.solved / (sheet.total_problems || 1)) * 100));
+                            const attemptedPct = Math.min(100, Math.round((sheet.attempted / (sheet.total_problems || 1)) * 100));
+
+                            return (
+                                <div key={sheet.id || index} className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden transition-all">
+                                    {/* Sheet Header Row */}
+                                    <div 
+                                        onClick={() => toggleSheet(sheet.id || index)}
+                                        className="p-3 flex flex-wrap items-center justify-between cursor-pointer hover:bg-white/[0.03] transition-colors gap-2"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            {isExpanded ? (
+                                                <ChevronDown size={14} className="text-[#E8C15A] shrink-0" />
+                                            ) : (
+                                                <ChevronRight size={14} className="text-white/40 shrink-0" />
+                                            )}
+                                            <span className="font-bold text-[#E8C15A] text-xs">{sheet.sheet_letter}</span>
+                                            <span className="text-white font-semibold text-xs truncate">{sheet.name}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <div className="text-xs text-white/60">
+                                                <strong className="text-[#E8C15A] font-bold">{sheet.solved}</strong>
+                                                <span>/{sheet.total_problems} Solved</span>
+                                            </div>
+                                            <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden flex">
+                                                {solvedPct > 0 && (
+                                                    <div style={{ width: `${solvedPct}%` }} className="h-full bg-[#E8C15A]" />
+                                                )}
+                                                {attemptedPct > 0 && (
+                                                    <div style={{ width: `${attemptedPct}%` }} className="h-full bg-amber-400" />
+                                                )}
+                                            </div>
+                                            <span className="text-xs font-bold text-white w-8 text-right">
+                                                {solvedPct}%
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span className="font-bold text-[#E8C15A]">
-                                        {sheet.solved}/{sheet.total_problems} ({sheet.progress_percentage}%)
-                                    </span>
+
+                                    {/* Expanded Problems Grid */}
+                                    {isExpanded && sheet.problems && sheet.problems.length > 0 && (
+                                        <div className="p-3 bg-black/40 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                            {sheet.problems.map((p: any) => {
+                                                const isSolved = p.status === 'SOLVED';
+                                                const isAttempted = p.status === 'ATTEMPTED';
+
+                                                return (
+                                                    <div 
+                                                        key={p.id}
+                                                        className={`p-2 rounded-lg text-xs flex items-center justify-between border transition-all ${
+                                                            isSolved
+                                                                ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white'
+                                                                : isAttempted
+                                                                ? 'bg-amber-500/10 border-amber-500/30 text-white/90'
+                                                                : 'bg-white/[0.02] border-white/5 text-white/40'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-2 truncate pr-1">
+                                                            {isSolved ? (
+                                                                <CheckCircle2 size={12} className="text-[#E8C15A] shrink-0" />
+                                                            ) : isAttempted ? (
+                                                                <Clock size={12} className="text-amber-400 shrink-0" />
+                                                            ) : (
+                                                                <Circle size={10} className="text-white/20 shrink-0" />
+                                                            )}
+                                                            <span className="font-bold text-[#E8C15A]">{p.problem_letter}.</span>
+                                                            <span className="truncate font-medium">{p.title}</span>
+                                                        </div>
+                                                        <span className={`text-[9px] font-bold uppercase shrink-0 ${
+                                                            isSolved ? 'text-[#E8C15A]' : isAttempted ? 'text-amber-400' : 'text-white/30'
+                                                        }`}>
+                                                            {isSolved ? 'Solved' : isAttempted ? 'Attempted' : 'Not Started'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden flex">
-                                    <div style={{ width: `${sheet.progress_percentage}%` }} className="h-full bg-[#E8C15A]" />
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -158,13 +236,10 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 4: Code & Notes Workspace */}
+            {/* Tab 4: Clean Code Inspector */}
             {activeTab === 'workspace' && (
                 <div className="space-y-3">
-                    <CodeWorkspaceInspector 
-                        codeCatalog={code_catalog || []} 
-                        userNotes={user_notes || []} 
-                    />
+                    <CodeWorkspaceInspector codeCatalog={code_catalog || []} />
                 </div>
             )}
 
