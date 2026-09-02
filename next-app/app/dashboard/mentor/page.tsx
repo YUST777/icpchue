@@ -55,7 +55,8 @@ export default function MentorTraineesDirectoryPage() {
     const [search, setSearch] = useState('');
     const [levelFilter, setLevelFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'inactive' | 'active' | 'stuck'>('all');
-    const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'streak_desc' | 'name_asc'>('solves_desc');
+    const [timeRange, setTimeRange] = useState('all');
+    const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'oldest_active' | 'streak_desc' | 'name_asc'>('solves_desc');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -73,6 +74,7 @@ export default function MentorTraineesDirectoryPage() {
             if (search) params.set('search', search);
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (statusFilter !== 'all') params.set('status', statusFilter);
+            if (timeRange !== 'all') params.set('timeRange', timeRange);
             if (sortBy) params.set('sortBy', sortBy);
 
             const res = await fetch(`/api/mentor/trainees?${params.toString()}`, {
@@ -97,7 +99,7 @@ export default function MentorTraineesDirectoryPage() {
             fetchTrainees();
         }, 200);
         return () => clearTimeout(timer);
-    }, [search, levelFilter, statusFilter, sortBy]);
+    }, [search, levelFilter, statusFilter, timeRange, sortBy]);
 
     const formatLastActive = (isoStr?: string | null) => {
         if (!isoStr) return 'Never';
@@ -219,6 +221,25 @@ export default function MentorTraineesDirectoryPage() {
                         <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                     </div>
 
+                    {/* Time Window Filter */}
+                    <div className="relative">
+                        <select
+                            value={timeRange}
+                            onChange={(e) => setTimeRange(e.target.value)}
+                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
+                        >
+                            <option value="all">All Time</option>
+                            <option value="24h">Active (Last 24h)</option>
+                            <option value="3d">Active (Last 3 Days)</option>
+                            <option value="7d">Active (Last 7 Days)</option>
+                            <option value="30d">Active (Last 30 Days)</option>
+                            <option value="inactive_7d">Inactive (&gt; 7 Days)</option>
+                            <option value="inactive_14d">Inactive (&gt; 14 Days)</option>
+                            <option value="inactive_30d">Inactive (&gt; 30 Days)</option>
+                        </select>
+                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                    </div>
+
                     {/* Sort By */}
                     <div className="relative">
                         <select
@@ -227,7 +248,8 @@ export default function MentorTraineesDirectoryPage() {
                             className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
                         >
                             <option value="solves_desc">Most Solved</option>
-                            <option value="recent_active">Recent Activity</option>
+                            <option value="recent_active">Recently Active</option>
+                            <option value="oldest_active">Least Active (Slipping)</option>
                             <option value="streak_desc">Highest Streak</option>
                             <option value="name_asc">Name (A-Z)</option>
                         </select>
