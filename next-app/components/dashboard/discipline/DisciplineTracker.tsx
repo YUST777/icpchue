@@ -42,6 +42,11 @@ interface DisciplineTrackerProps {
     traineeName?: string;
 }
 
+const TOTAL_WEEKS = 8;
+const DAYS_PER_WEEK = 7;
+// Program start date: August 30, 2026 (matching training schedule)
+const PROGRAM_START_DATE = new Date(2026, 7, 30, 0, 0, 0);
+
 // Clean local number input component that doesn't fight the user's cursor or force decimals
 function TimeInputCell({
     value,
