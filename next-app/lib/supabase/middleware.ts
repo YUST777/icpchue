@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Routes that require authentication — redirect to /login if no valid session
+const PROTECTED_PREFIXES = ['/dashboard'];
+
+// Routes that authenticated users should NOT see — redirect to /dashboard
+const AUTH_ONLY_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'];
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -44,13 +50,38 @@ export async function updateSession(request: NextRequest) {
         }
     );
 
+    // ── SERVER-SIDE AUTH GATE ────────────────────────────────
+    // This runs on EVERY request in the Edge middleware, BEFORE the page renders.
+    // It blocks unauthenticated users from /dashboard/* at the server level.
+    const pathname = request.nextUrl.pathname;
+
+    let hasValidSession = false;
     try {
-        await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
+        hasValidSession = !!user;
     } catch (e) {
-        // Auth refresh failed — continue with stale session rather than crashing
+        // Auth refresh failed — treat as unauthenticated
         if (e instanceof Error) {
             console.warn('[Middleware] Auth refresh failed:', e.message);
         }
+        hasValidSession = false;
+    }
+
+    // 1. Protected routes: no session → redirect to /login
+    const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
+    if (isProtected && !hasValidSession) {
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = '/login';
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+    }
+
+    // 2. Auth pages: has session → redirect to /dashboard (don't show login to logged-in users)
+    const isAuthPage = AUTH_ONLY_PAGES.some(page => pathname === page);
+    if (isAuthPage && hasValidSession) {
+        const dashUrl = request.nextUrl.clone();
+        dashUrl.pathname = '/dashboard';
+        return NextResponse.redirect(dashUrl);
     }
 
     return supabaseResponse;
