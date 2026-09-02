@@ -41,8 +41,8 @@ export function getPool(): pg.Pool {
         // to prevent (EMAXCONNSESSION) max clients reached errors.
         max: 5,
         min: 0,
-        idleTimeoutMillis: 5000,
-        connectionTimeoutMillis: 5000,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
         statement_timeout: 8000, // Kill queries that take > 8s
         query_timeout: 8000,
         allowExitOnIdle: true,
@@ -57,12 +57,12 @@ export function getPool(): pg.Pool {
     return pool;
 }
 
-export async function query(text: string, params?: unknown[]) {
+export async function query<T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
     const pool = getPool();
-    return pool.query(text, params);
+    return pool.query<T>(text, params);
 }
 
-export async function withTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     const pool = getPool();
     const client = await pool.connect();
     try {
@@ -71,7 +71,9 @@ export async function withTransaction<T>(fn: (client: pg.PoolClient) => Promise<
         await client.query('COMMIT');
         return result;
     } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query('ROLLBACK').catch((rbErr) => {
+            console.error('[DB] Rollback error:', rbErr?.message);
+        });
         throw error;
     } finally {
         client.release();

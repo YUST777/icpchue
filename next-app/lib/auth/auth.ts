@@ -51,7 +51,9 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
     try {
         // Build a cache key from Supabase auth cookies
         const allCookies = req.cookies.getAll();
-        const authCookies = allCookies.filter(c => c.name.includes('sb-') && c.name.includes('-auth-token'));
+        const authCookies = allCookies
+            .filter(c => c.name.includes('sb-') && c.name.includes('-auth-token'))
+            .sort((a, b) => a.name.localeCompare(b.name));
         
         // If there are no auth cookies, user is definitely not logged in
         if (authCookies.length === 0) return null;

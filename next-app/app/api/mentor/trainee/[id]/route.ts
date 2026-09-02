@@ -21,14 +21,18 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized: Mentor access required' }, { status: 403 });
         }
 
-        const { id: paramId } = await params;
-        if (!paramId) {
+        const { id: rawParamId } = await params;
+        if (!rawParamId) {
             return NextResponse.json({ error: 'Missing student identifier' }, { status: 400 });
         }
 
+        const paramId = decodeURIComponent(rawParamId).trim();
+
         const url = new URL(req.url);
-        const subOffset = parseInt(url.searchParams.get('sub_offset') || '0', 10);
-        const subLimit = parseInt(url.searchParams.get('sub_limit') || '300', 10);
+        const rawOffset = parseInt(url.searchParams.get('sub_offset') || '0', 10);
+        const rawLimit = parseInt(url.searchParams.get('sub_limit') || '100', 10);
+        const subOffset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+        const subLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 100;
 
         const cacheKey = `dossier:${paramId.toLowerCase().trim()}:${subOffset}:${subLimit}`;
         const cached = dossierCache.get(cacheKey);
@@ -38,16 +42,24 @@ export async function GET(
             });
         }
 
-        // 1. Locate User by User ID or Student ID or CF Handle or Blind Index
+        // 1. Locate User by Numeric ID, STU-<id>, CF Handle, Blind Index, or Decrypted values
         let userRow: any = null;
         let appRow: any = null;
 
+        let candidateUserId: string | null = null;
         if (/^\d+$/.test(paramId)) {
-            const byUserId = await query('SELECT * FROM users WHERE id = $1 LIMIT 1', [paramId]);
+            candidateUserId = paramId;
+        } else {
+            const stuMatch = paramId.match(/^STU-(\d+)$/i);
+            if (stuMatch) candidateUserId = stuMatch[1];
+        }
+
+        if (candidateUserId) {
+            const byUserId = await query('SELECT * FROM users WHERE id = $1 LIMIT 1', [candidateUserId]);
             if (byUserId.rows.length > 0) {
                 userRow = byUserId.rows[0];
             } else {
-                const byAppStudentId = await query('SELECT * FROM applications WHERE student_id = $1 LIMIT 1', [paramId]);
+                const byAppStudentId = await query('SELECT * FROM applications WHERE student_id = $1 LIMIT 1', [candidateUserId]);
                 if (byAppStudentId.rows.length > 0) {
                     appRow = byAppStudentId.rows[0];
                     const uRes = await query('SELECT * FROM users WHERE application_id = $1 LIMIT 1', [appRow.id]);
@@ -89,8 +101,8 @@ export async function GET(
             return NextResponse.json({ error: 'Student not found' }, { status: 404 });
         }
 
-        const userId = userRow?.id;
-        const applicationId = userRow?.application_id || appRow?.id;
+        const userId = userRow?.id ?? null;
+        const applicationId = userRow?.application_id || appRow?.id || null;
 
         if (!appRow && applicationId) {
             const appRes = await query('SELECT * FROM applications WHERE id = $1 LIMIT 1', [applicationId]);
@@ -99,10 +111,11 @@ export async function GET(
 
         // 2. Profile Details
         const profile = {
-            id: userId,
+            id: userId || applicationId,
+            user_id: userId,
             application_id: applicationId,
-            name: decrypt(appRow?.name) || userRow?.codeforces_handle || `Student #${userId}`,
-            student_id: decrypt(appRow?.student_id) || appRow?.student_id || `STU-${userId}`,
+            name: decrypt(appRow?.name) || userRow?.codeforces_handle || `Student #${userId || applicationId}`,
+            student_id: decrypt(appRow?.student_id) || appRow?.student_id || `STU-${userId || applicationId}`,
             email: decrypt(appRow?.email) || decrypt(userRow?.email) || userRow?.email || '',
             phone: decrypt(appRow?.telephone) || '',
             telegram: appRow?.telegram_username || userRow?.telegram_username || '',
@@ -120,7 +133,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Fetching with Calculated Real Attempts
+        // 3. Parallel Fetching with Safe User Null Guard
         const [
             statsRes,
             streakRes,
@@ -137,9 +150,9 @@ export async function GET(
             customTestsRes,
             sumTimeRes
         ] = await Promise.all([
-            query('SELECT * FROM user_solve_stats WHERE user_id = $1 LIMIT 1', [userId]),
-            query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]),
-            query('SELECT * FROM recap_2025 WHERE student_id = $1 OR username = $2 LIMIT 1', [profile.student_id, profile.codeforces_handle]),
+            userId ? query('SELECT * FROM user_solve_stats WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
+            query('SELECT * FROM recap_2025 WHERE student_id = $1 OR (username = $2 AND $2 != \'\') LIMIT 1', [profile.student_id, profile.codeforces_handle || '']),
             query('SELECT COUNT(*) as count FROM curriculum_problems'),
             query(`
                 SELECT 
@@ -150,24 +163,25 @@ export async function GET(
                     cs.total_problems, 
                     cs.contest_id,
                     cs.level_id,
+                    cl.level_number,
                     cl.name as level_name
                 FROM curriculum_sheets cs
                 LEFT JOIN curriculum_levels cl ON cs.level_id = cl.id
-                ORDER BY cs.level_id ASC, cs.sheet_number ASC, cs.id ASC
+                ORDER BY cl.level_number ASC NULLS LAST, cs.sheet_number ASC, cs.id ASC
             `),
             query(`
                 SELECT id, sheet_id, problem_number, problem_letter, title, contest_id, rating
                 FROM curriculum_problems
                 ORDER BY sheet_id ASC, problem_number ASC, problem_letter ASC
             `),
-            query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]),
-            query(`
+            userId ? query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`
                 SELECT solve_date, solve_count 
                 FROM daily_solves 
                 WHERE user_id = $1 AND solve_date >= CURRENT_DATE - INTERVAL '365 days'
                 ORDER BY solve_date ASC
-            `, [userId]),
-            query(`
+            `, [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`
                 WITH ranked_subs AS (
                     SELECT 
                         id, contest_id, problem_index, sheet_id, verdict, 
@@ -176,32 +190,32 @@ export async function GET(
                         cf_submission_id, source_code,
                         ROW_NUMBER() OVER (
                             PARTITION BY user_id, contest_id, problem_index 
-                            ORDER BY submitted_at ASC
+                            ORDER BY submitted_at ASC, id ASC
                         ) as real_attempt
                     FROM submissions 
                     WHERE user_id = $1
                 )
                 SELECT * FROM ranked_subs 
-                ORDER BY submitted_at DESC 
+                ORDER BY submitted_at DESC, id DESC 
                 LIMIT $2 OFFSET $3
-            `, [userId, subLimit, subOffset]),
-            query('SELECT COUNT(*) as total FROM submissions WHERE user_id = $1', [userId]),
-            query(`
+            `, [userId, subLimit, subOffset]) : Promise.resolve({ rows: [] }),
+            userId ? query('SELECT COUNT(*) as total FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total: '0' }] }),
+            userId ? query(`
                 SELECT contest_id, problem_id, code, language, updated_at 
                 FROM user_code 
                 WHERE user_id = $1 
                 ORDER BY updated_at DESC 
                 LIMIT 150
-            `, [userId]),
-            query(`
+            `, [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`
                 SELECT id, contest_id, problem_index, content, updated_at 
                 FROM user_notes 
                 WHERE user_id = $1 
                 ORDER BY updated_at DESC 
                 LIMIT 100
-            `, [userId]),
-            query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]),
-            query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId])
+            `, [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total_sec: '0' }] })
         ]);
 
         const distinctSolved = parseInt(statsRes.rows[0]?.distinct_solved || '0', 10);
@@ -212,12 +226,14 @@ export async function GET(
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
         // Build Sheet and Contest Lookup Maps
-        const contestToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
-        const sheetIdToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+        const contestToSheetMap = new Map<string, { level: string, level_number: number, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+        const sheetIdToSheetMap = new Map<string, { level: string, level_number: number, sheet_letter: string, sheet_name: string, sheet_id: string }>();
 
         sheetsRes.rows.forEach(s => {
+            const levelNum = s.level_number !== undefined && s.level_number !== null ? Number(s.level_number) : (s.level_id !== undefined ? Number(s.level_id) : 1);
             const info = {
-                level: `Lv ${s.level_id || 1}`,
+                level: `Lv ${levelNum}`,
+                level_number: levelNum,
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 sheet_name: s.name || '',
                 sheet_id: String(s.id),
@@ -226,32 +242,30 @@ export async function GET(
             if (s.contest_id) contestToSheetMap.set(String(s.contest_id), info);
         });
 
-        // Build precise problem solved/attempted Sets
+        // Build precise problem solved/attempted Sets with safe split guards
         const solvedSet = new Set<string>();
         const attemptedSet = new Set<string>();
 
         userProgressRes.rows.forEach((p) => {
             const sheetIdStr = String(p.sheet_id);
-            const raw = String(p.problem_id).trim();
+            const raw = String(p.problem_id || '').trim();
+            if (!raw || raw === 'null' || raw === 'undefined') return;
 
-            if (p.status === 'SOLVED') {
-                solvedSet.add(`${sheetIdStr}_${raw}`);
-                if (raw.includes(':')) {
-                    const [cid, letter] = raw.split(':');
-                    solvedSet.add(`${sheetIdStr}_${letter.toUpperCase()}`);
-                    solvedSet.add(`cid_${cid}_${letter.toUpperCase()}`);
-                } else if (/^[A-Za-z]+$/.test(raw)) {
-                    solvedSet.add(`${sheetIdStr}_${raw.toUpperCase()}`);
+            const isSolved = p.status === 'SOLVED';
+            const targetSet = isSolved ? solvedSet : (p.status === 'ATTEMPTED' ? attemptedSet : null);
+            if (!targetSet) return;
+
+            targetSet.add(`${sheetIdStr}_${raw}`);
+            if (raw.includes(':')) {
+                const parts = raw.split(':');
+                const cid = parts[0]?.trim();
+                const letter = parts[1]?.trim()?.toUpperCase();
+                if (letter) {
+                    targetSet.add(`${sheetIdStr}_${letter}`);
+                    if (cid) targetSet.add(`cid_${cid}_${letter}`);
                 }
-            } else if (p.status === 'ATTEMPTED') {
-                attemptedSet.add(`${sheetIdStr}_${raw}`);
-                if (raw.includes(':')) {
-                    const [cid, letter] = raw.split(':');
-                    attemptedSet.add(`${sheetIdStr}_${letter.toUpperCase()}`);
-                    attemptedSet.add(`cid_${cid}_${letter.toUpperCase()}`);
-                } else if (/^[A-Za-z]+$/.test(raw)) {
-                    attemptedSet.add(`${sheetIdStr}_${raw.toUpperCase()}`);
-                }
+            } else if (/^[A-Za-z0-9]+$/.test(raw)) {
+                targetSet.add(`${sheetIdStr}_${raw.toUpperCase()}`);
             }
         });
 
@@ -313,6 +327,7 @@ export async function GET(
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 name: s.name,
                 level_id: s.level_id,
+                level_number: s.level_number ?? (s.level_id !== undefined ? s.level_id : 1),
                 level_name: s.level_name || 'Level 1',
                 contest_id: s.contest_id,
                 total_problems: sheetTotal,
@@ -343,7 +358,7 @@ export async function GET(
             count: parseInt(r.solve_count, 10) || 0,
         }));
 
-        // Recent Submissions with REAL Calculated Attempt Numbers
+        // Recent Submissions with REAL Calculated Attempt Numbers and Tie-Breakers
         const recentSubmissions = subsRes.rows.map((s) => {
             const sheetInfo = (s.sheet_id && sheetIdToSheetMap.get(String(s.sheet_id))) || 
                               (s.contest_id && contestToSheetMap.get(String(s.contest_id))) || null;

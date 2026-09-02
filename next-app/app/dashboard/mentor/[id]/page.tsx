@@ -16,7 +16,8 @@ import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProble
 export default function TraineeDossierPage() {
     const params = useParams();
     const router = useRouter();
-    const studentIdParam = params?.id as string;
+    const rawIdParam = params?.id as string;
+    const studentIdParam = rawIdParam ? decodeURIComponent(rawIdParam) : '';
 
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ export default function TraineeDossierPage() {
     const [progressSearch, setProgressSearch] = useState('');
     const [selectedLevelId, setSelectedLevelId] = useState<string>('1');
 
-    // Submissions pagination
+    // Submissions pagination with deduplication
     const [submissionsList, setSubmissionsList] = useState<any[]>([]);
     const [loadingMoreSubs, setLoadingMoreSubs] = useState(false);
 
@@ -33,7 +34,7 @@ export default function TraineeDossierPage() {
         if (!studentIdParam) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/mentor/trainee/${studentIdParam}?sub_limit=100&sub_offset=0`);
+            const res = await fetch(`/api/mentor/trainee/${encodeURIComponent(studentIdParam)}?sub_limit=100&sub_offset=0`);
             if (res.ok) {
                 const resData = await res.json();
                 setData(resData);
@@ -53,11 +54,15 @@ export default function TraineeDossierPage() {
         setLoadingMoreSubs(true);
         try {
             const offset = submissionsList.length;
-            const res = await fetch(`/api/mentor/trainee/${studentIdParam}?sub_limit=100&sub_offset=${offset}`);
+            const res = await fetch(`/api/mentor/trainee/${encodeURIComponent(studentIdParam)}?sub_limit=100&sub_offset=${offset}`);
             if (res.ok) {
                 const resData = await res.json();
                 const newSubs = resData.recent_submissions || [];
-                setSubmissionsList(prev => [...prev, ...newSubs]);
+                setSubmissionsList(prev => {
+                    const existingIds = new Set(prev.map(s => s.id));
+                    const uniqueNew = newSubs.filter((s: any) => !existingIds.has(s.id));
+                    return [...prev, ...uniqueNew];
+                });
             }
         } catch (err) {
             console.error('Failed to load more submissions:', err);
@@ -79,14 +84,20 @@ export default function TraineeDossierPage() {
         let list = data.sheet_progress;
 
         if (selectedLevelId !== 'all') {
-            list = list.filter((s: any) => String(s.level_id) === selectedLevelId);
+            list = list.filter((s: any) => String(s.level_number ?? s.level_id) === selectedLevelId);
         }
 
         if (progressSearch.trim()) {
             const q = progressSearch.toLowerCase();
             list = list.filter((s: any) => {
-                const matchSheet = s.name.toLowerCase().includes(q) || s.sheet_letter.toLowerCase().includes(q);
-                const matchProb = s.problems?.some((p: any) => p.title.toLowerCase().includes(q) || p.problem_letter.toLowerCase().includes(q));
+                const name = (s.name || '').toLowerCase();
+                const letter = (s.sheet_letter || '').toLowerCase();
+                const matchSheet = name.includes(q) || letter.includes(q);
+                const matchProb = s.problems?.some((p: any) => {
+                    const pTitle = (p.title || '').toLowerCase();
+                    const pLetter = (p.problem_letter || '').toLowerCase();
+                    return pTitle.includes(q) || pLetter.includes(q);
+                });
                 return matchSheet || matchProb;
             });
         }
@@ -145,17 +156,17 @@ export default function TraineeDossierPage() {
             {/* 1. Sleek Compact Hero Bar */}
             <TraineeHeroHeader 
                 profile={profile} 
-                lastSolveAt={metrics.last_solve_at} 
+                lastSolveAt={metrics?.last_solve_at} 
             />
 
             {/* 2. Compact 6 KPI Metric Stat Cards */}
-            <TraineeMetricCards metrics={metrics} />
+            <TraineeMetricCards metrics={metrics || {}} />
 
             {/* 3. Navigation Tabs */}
             <TraineeTabNav 
                 activeTab={activeTab} 
                 onChange={setActiveTab} 
-                flagsCount={behavioral_analysis.cheating_flags || 0}
+                flagsCount={behavioral_analysis?.cheating_flags || 0}
             />
 
             {/* 4. Tab Contents */}
@@ -169,7 +180,7 @@ export default function TraineeDossierPage() {
                     {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <div className="lg:col-span-6">
-                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_id) === '1') || []} />
+                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_number ?? s.level_id) === '1') || []} />
                         </div>
                         <div className="lg:col-span-6">
                             <RecentSubmissionsTable 
@@ -182,39 +193,39 @@ export default function TraineeDossierPage() {
 
             {/* Tab 2: Full Curriculum Progress Breakdown with Minimalist Level Switcher & Search Bar */}
             {activeTab === 'progress' && (
-                <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3.5 space-y-3 shadow-md">
-                    {/* Minimalist Top Control Bar (No verbose titles) */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/5">
+                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-md backdrop-blur-xl">
+                    {/* Minimalist Top Control Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/[0.06]">
                         {/* Minimalist Level Pills */}
-                        <div className="flex items-center bg-[#0B0B0C] rounded-lg p-0.5 border border-white/10 text-xs">
+                        <div className="flex items-center bg-[#0B0B0C] rounded-xl p-0.5 border border-white/10 text-xs">
                             <button
                                 onClick={() => setSelectedLevelId('1')}
-                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
-                                    selectedLevelId === '1' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedLevelId === '1' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
                                 }`}
                             >
                                 Lv 1
                             </button>
                             <button
                                 onClick={() => setSelectedLevelId('2')}
-                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
-                                    selectedLevelId === '2' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedLevelId === '2' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
                                 }`}
                             >
                                 Lv 2
                             </button>
                             <button
                                 onClick={() => setSelectedLevelId('3')}
-                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
-                                    selectedLevelId === '3' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedLevelId === '3' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
                                 }`}
                             >
                                 Lv 3
                             </button>
                             <button
                                 onClick={() => setSelectedLevelId('all')}
-                                className={`px-3 py-1 rounded-md font-semibold transition-all ${
-                                    selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black shadow-xs' : 'text-white/60 hover:text-white'
+                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
                                 }`}
                             >
                                 All
@@ -228,28 +239,31 @@ export default function TraineeDossierPage() {
                                 value={progressSearch}
                                 onChange={(e) => setProgressSearch(e.target.value)}
                                 placeholder="Search sheet or problem..."
-                                className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
+                                className="w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         {filteredSheets.length === 0 ? (
-                            <div className="text-center py-8 text-xs text-white/30">
+                            <div className="text-center py-8 text-xs text-white/30 font-mono">
                                 No sheets or problems matched your filter.
                             </div>
                         ) : (
                             filteredSheets.map((sheet: any, index: number) => {
                                 const isExpanded = expandedSheetId === (sheet.id || index) || Boolean(progressSearch.trim());
-                                const solvedPct = Math.min(100, Math.round((sheet.solved / (sheet.total_problems || 1)) * 100));
-                                const attemptedPct = Math.min(100, Math.round((sheet.attempted / (sheet.total_problems || 1)) * 100));
+                                const total = sheet.total_problems || 0;
+                                const solved = sheet.solved || 0;
+                                const attempted = sheet.attempted || 0;
+                                const solvedPct = total > 0 ? Math.min(100, Math.max(0, Math.round((solved / total) * 100))) : 0;
+                                const attemptedPct = total > 0 ? Math.min(100, Math.max(0, Math.round((attempted / total) * 100))) : 0;
 
                                 return (
-                                    <div key={sheet.id || index} className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden transition-all">
+                                    <div key={sheet.id || index} className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-all">
                                         {/* Sheet Header Row */}
                                         <div 
                                             onClick={() => toggleSheet(sheet.id || index)}
-                                            className="p-3 flex flex-wrap items-center justify-between cursor-pointer hover:bg-white/[0.03] transition-colors gap-2"
+                                            className="p-3 flex flex-wrap items-center justify-between cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors gap-2"
                                         >
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 {isExpanded ? (
@@ -266,8 +280,8 @@ export default function TraineeDossierPage() {
 
                                             <div className="flex items-center gap-3 shrink-0">
                                                 <div className="text-xs text-white/60">
-                                                    <strong className="text-[#E8C15A] font-bold">{sheet.solved}</strong>
-                                                    <span>/{sheet.total_problems} Solved</span>
+                                                    <strong className="text-[#E8C15A] font-bold">{solved}</strong>
+                                                    <span>/{total} Solved</span>
                                                 </div>
                                                 <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden flex">
                                                     {solvedPct > 0 && (
@@ -285,7 +299,7 @@ export default function TraineeDossierPage() {
 
                                         {/* Expanded Problems Grid */}
                                         {isExpanded && sheet.problems && sheet.problems.length > 0 && (
-                                            <div className="p-3 bg-black/40 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                            <div className="p-3 bg-black/40 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                                 {sheet.problems.map((p: any) => {
                                                     const isSolved = p.status === 'SOLVED';
                                                     const isAttempted = p.status === 'ATTEMPTED';
@@ -330,7 +344,7 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 3: Submissions Feed with Pagination and Modal Preview */}
+            {/* Tab 3: Submissions Feed */}
             {activeTab === 'submissions' && (
                 <div className="space-y-3">
                     <RecentSubmissionsTable 
@@ -361,7 +375,7 @@ export default function TraineeDossierPage() {
                 <div className="space-y-3">
                     <FlaggedProblemsView 
                         flaggedProblems={flagged_problems || []} 
-                        totalFlags={behavioral_analysis.cheating_flags || 0}
+                        totalFlags={behavioral_analysis?.cheating_flags || 0}
                         isShadowBanned={profile.is_shadow_banned || false}
                         cfHandle={profile.codeforces_handle}
                     />
