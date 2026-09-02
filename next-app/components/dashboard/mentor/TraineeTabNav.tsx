@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
     LayoutDashboard, BarChart3, FileCode2, Terminal, 
-    AlertTriangle 
+    ShieldAlert 
 } from 'lucide-react';
 
 export const TABS = [
@@ -11,7 +11,7 @@ export const TABS = [
     { id: 'progress', label: 'Progress Matrix', icon: BarChart3 },
     { id: 'submissions', label: 'Submissions', icon: FileCode2 },
     { id: 'workspace', label: 'Code Inspector', icon: Terminal },
-    { id: 'flags', label: 'Warnings & Flags', icon: AlertTriangle },
+    { id: 'flags', label: 'Cheating Flags', icon: ShieldAlert },
 ] as const;
 
 export type TabId = typeof TABS[number]['id'];
@@ -23,11 +23,9 @@ interface TraineeTabNavProps {
 }
 
 export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTabNavProps) {
-    const visibleTabs = TABS.filter(t => t.id !== 'flags' || flagsCount > 0 || activeTab === 'flags');
-
     return (
         <div className="border-b border-white/[0.08] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex gap-1 bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
-            {visibleTabs.map((tab) => {
+            {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
