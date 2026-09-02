@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
         const search = (url.searchParams.get('search') || '').trim();
         const level = (url.searchParams.get('level') || 'all').trim();
         const statusFilter = (url.searchParams.get('status') || 'all').trim(); // all | active | stuck | flagged | banned | inactive
+        const timeRange = (url.searchParams.get('timeRange') || 'all').trim(); // all | 24h | 3d | 7d | 30d | inactive_7d | inactive_14d | inactive_30d
         const sortBy = (url.searchParams.get('sortBy') || 'solves_desc').trim();
         const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
         const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '25', 10) || 25));
@@ -198,6 +199,19 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        if (timeRange && timeRange !== 'all') {
+            filtered = filtered.filter((t) => {
+                if (timeRange === '24h' || timeRange === 'today') return t.days_since_active <= 1;
+                if (timeRange === '3d') return t.days_since_active <= 3;
+                if (timeRange === '7d' || timeRange === 'week') return t.days_since_active <= 7;
+                if (timeRange === '30d' || timeRange === 'month') return t.days_since_active <= 30;
+                if (timeRange === 'inactive_7d') return t.days_since_active > 7;
+                if (timeRange === 'inactive_14d') return t.days_since_active > 14;
+                if (timeRange === 'inactive_30d') return t.days_since_active > 30;
+                return true;
+            });
+        }
+
         // 3. Sorting
         filtered.sort((a, b) => {
             if (sortBy === 'solves_desc') return b.total_solved - a.total_solved;
@@ -209,6 +223,11 @@ export async function GET(req: NextRequest) {
                 const timeA = a.last_active_at ? new Date(a.last_active_at).getTime() : 0;
                 const timeB = b.last_active_at ? new Date(b.last_active_at).getTime() : 0;
                 return timeB - timeA;
+            }
+            if (sortBy === 'oldest_active') {
+                const timeA = a.last_active_at ? new Date(a.last_active_at).getTime() : 0;
+                const timeB = b.last_active_at ? new Date(b.last_active_at).getTime() : 0;
+                return timeA - timeB;
             }
             return b.total_solved - a.total_solved;
         });
