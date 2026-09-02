@@ -215,7 +215,18 @@ export async function GET(
                 LIMIT 100
             `, [userId]) : Promise.resolve({ rows: [] }),
             userId ? query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]) : Promise.resolve({ rows: [] }),
-            userId ? query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total_sec: '0' }] })
+            userId ? query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total_sec: '0' }] }),
+            userId ? query(`
+                SELECT 
+                    contest_id, 
+                    problem_index, 
+                    COUNT(*) as total_attempts,
+                    BOOL_OR(LOWER(verdict) LIKE '%accepted%' OR LOWER(verdict) = 'ok' OR LOWER(verdict) = 'ac') as has_ac,
+                    (ARRAY_AGG(verdict ORDER BY submitted_at DESC))[1] as latest_verdict
+                FROM submissions 
+                WHERE user_id = $1 
+                GROUP BY contest_id, problem_index
+            `, [userId]) : Promise.resolve({ rows: [] })
         ]);
 
         const distinctSolved = parseInt(statsRes.rows[0]?.distinct_solved || '0', 10);
@@ -269,6 +280,20 @@ export async function GET(
             }
         });
 
+        // Map submissions verdicts by contest_id + problem_index
+        const probSubMap = new Map<string, { total_attempts: number, has_ac: boolean, latest_verdict: string }>();
+        const problemVerdictsRes = argumentsResults[argumentsResults.length - 1] || { rows: [] };
+        problemVerdictsRes.rows?.forEach((row: any) => {
+            if (row.contest_id && row.problem_index) {
+                const key = `${row.contest_id}_${row.problem_index.toUpperCase().trim()}`;
+                probSubMap.set(key, {
+                    total_attempts: parseInt(row.total_attempts || '1', 10),
+                    has_ac: Boolean(row.has_ac),
+                    latest_verdict: row.latest_verdict || '',
+                });
+            }
+        });
+
         // Group curriculum problems strictly by sheet_id
         const problemsBySheetId = new Map<string, any[]>();
         const problemTitleMap = new Map<string, string>();
@@ -282,20 +307,56 @@ export async function GET(
                 problemTitleMap.set(`${prob.contest_id}_${letter}`, prob.title);
             }
 
-            let status: 'SOLVED' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
+            const subKey = `${prob.contest_id}_${letter}`;
+            const subData = probSubMap.get(subKey);
 
-            if (
+            let status: 'SOLVED' | 'WRONG_ANSWER' | 'TIME_LIMIT' | 'MEMORY_LIMIT' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
+            let verdictLabel = 'Not Started';
+            let attempts = 0;
+
+            if (subData) {
+                attempts = subData.total_attempts;
+                if (subData.has_ac) {
+                    status = 'SOLVED';
+                    verdictLabel = 'Accepted';
+                } else {
+                    const lowerV = (subData.latest_verdict || '').toLowerCase();
+                    if (lowerV.includes('wrong') || lowerV.includes('wa')) {
+                        status = 'WRONG_ANSWER';
+                        verdictLabel = subData.latest_verdict;
+                    } else if (lowerV.includes('time') || lowerV.includes('tle')) {
+                        status = 'TIME_LIMIT';
+                        verdictLabel = 'Time Limit Exceeded';
+                    } else if (lowerV.includes('memory') || lowerV.includes('mle')) {
+                        status = 'MEMORY_LIMIT';
+                        verdictLabel = 'Memory Limit Exceeded';
+                    } else if (lowerV.includes('runtime') || lowerV.includes('rte')) {
+                        status = 'RUNTIME_ERROR';
+                        verdictLabel = 'Runtime Error';
+                    } else if (lowerV.includes('compil') || lowerV.includes('ce')) {
+                        status = 'COMPILATION_ERROR';
+                        verdictLabel = 'Compilation Error';
+                    } else {
+                        status = 'ATTEMPTED';
+                        verdictLabel = subData.latest_verdict || 'Attempted';
+                    }
+                }
+            } else if (
                 solvedSet.has(`${sheetIdStr}_${letter}`) ||
                 solvedSet.has(`cid_${prob.contest_id}_${letter}`) ||
                 solvedSet.has(`${sheetIdStr}_${prob.id}`)
             ) {
                 status = 'SOLVED';
+                verdictLabel = 'Accepted';
+                attempts = 1;
             } else if (
                 attemptedSet.has(`${sheetIdStr}_${letter}`) ||
                 attemptedSet.has(`cid_${prob.contest_id}_${letter}`) ||
                 attemptedSet.has(`${sheetIdStr}_${prob.id}`)
             ) {
                 status = 'ATTEMPTED';
+                verdictLabel = 'Attempted';
+                attempts = 1;
             }
 
             problemsBySheetId.get(sheetIdStr)!.push({
@@ -306,6 +367,8 @@ export async function GET(
                 contest_id: prob.contest_id,
                 rating: prob.rating,
                 status: status,
+                verdict: verdictLabel,
+                attempts: attempts,
             });
         });
 
