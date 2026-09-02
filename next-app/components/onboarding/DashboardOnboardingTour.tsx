@@ -4,10 +4,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { driver, type DriveStep } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { renderToString } from 'react-dom/server';
-import {
-    LayoutDashboard, User, Trophy, Play, BookOpen, Bell,
-    Map, Sparkles, MonitorPlay
-} from 'lucide-react';
+import { LayoutDashboard, User, Trophy, Play, BookOpen } from 'lucide-react';
 
 // ============================================================================
 // DASHBOARD ONBOARDING TOUR — جولة تعريفية للداشبورد
@@ -118,16 +115,6 @@ export default function DashboardOnboardingTour({
                 popover: {
                     title: `<span class="align-middle">الروماب والمنافسة</span>${renderIcon(Trophy)}`,
                     description: '<p dir="rtl">من هنا تقدر تتابع الرودماب وتتنافس مع باقي طلاب حورس! شوف مين الأول وحاول تسبقهم.</p>',
-                    side: (isMobile ? 'top' : 'right') as 'top' | 'right',
-                    align: 'center' as const,
-                },
-            },
-            // Step 6: News
-            {
-                element: isMobile ? '#mobile-nav-news' : '#onboarding-nav-news',
-                popover: {
-                    title: `<span class="align-middle">الأخبار والتحديثات</span>${renderIcon(Bell)}`,
-                    description: '<p dir="rtl">أخيراً، تابع أخبار التيم من التاب دي عشان ماتفوتكش أي مسابقة أو تحديث مهم. بالتوفيق يا بطل! 🚀</p>',
                     side: (isMobile ? 'top' : 'right') as 'top' | 'right',
                     align: 'center' as const,
                 },
