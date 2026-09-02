@@ -144,10 +144,11 @@ export async function GET(
                     cs.name, 
                     cs.total_problems, 
                     cs.contest_id,
+                    cs.level_id,
                     cl.name as level_name
                 FROM curriculum_sheets cs
                 LEFT JOIN curriculum_levels cl ON cs.level_id = cl.id
-                ORDER BY cs.sheet_number ASC, cs.id ASC
+                ORDER BY cs.level_id ASC, cs.sheet_number ASC, cs.id ASC
             `),
             query(`
                 SELECT id, sheet_id, problem_number, problem_letter, title, contest_id, rating
@@ -197,44 +198,59 @@ export async function GET(
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
-        // Map user progress accurately across all problem ID variants
-        const progressLookup = new Map<string, string>();
-        const progressCountMap = new Map<string, { solved: number, attempted: number }>();
+        // Build precise problem solved/attempted Sets
+        const solvedSet = new Set<string>();
+        const attemptedSet = new Set<string>();
 
         userProgressRes.rows.forEach((p) => {
-            const sheetKey = String(p.sheet_id);
-            const rawProbId = String(p.problem_id).trim();
+            const sheetIdStr = String(p.sheet_id);
+            const raw = String(p.problem_id).trim();
 
-            progressLookup.set(`${sheetKey}_${rawProbId}`, p.status);
-
-            if (rawProbId.includes(':')) {
-                const [cid, letter] = rawProbId.split(':');
-                progressLookup.set(`${sheetKey}_${letter.toUpperCase()}`, p.status);
-                progressLookup.set(`cid_${cid}_${letter.toUpperCase()}`, p.status);
-            } else if (/^[A-Za-z]+$/.test(rawProbId)) {
-                progressLookup.set(`${sheetKey}_${rawProbId.toUpperCase()}`, p.status);
+            if (p.status === 'SOLVED') {
+                solvedSet.add(`${sheetIdStr}_${raw}`);
+                if (raw.includes(':')) {
+                    const [cid, letter] = raw.split(':');
+                    solvedSet.add(`${sheetIdStr}_${letter.toUpperCase()}`);
+                    solvedSet.add(`cid_${cid}_${letter.toUpperCase()}`);
+                } else if (/^[A-Za-z]+$/.test(raw)) {
+                    solvedSet.add(`${sheetIdStr}_${raw.toUpperCase()}`);
+                }
+            } else if (p.status === 'ATTEMPTED') {
+                attemptedSet.add(`${sheetIdStr}_${raw}`);
+                if (raw.includes(':')) {
+                    const [cid, letter] = raw.split(':');
+                    attemptedSet.add(`${sheetIdStr}_${letter.toUpperCase()}`);
+                    attemptedSet.add(`cid_${cid}_${letter.toUpperCase()}`);
+                } else if (/^[A-Za-z]+$/.test(raw)) {
+                    attemptedSet.add(`${sheetIdStr}_${raw.toUpperCase()}`);
+                }
             }
-
-            if (!progressCountMap.has(sheetKey)) progressCountMap.set(sheetKey, { solved: 0, attempted: 0 });
-            const s = progressCountMap.get(sheetKey)!;
-            if (p.status === 'SOLVED') s.solved++;
-            else if (p.status === 'ATTEMPTED') s.attempted++;
         });
 
-        // Group curriculum problems by sheet with resolved status
-        const problemsBySheet = new Map<string, any[]>();
+        // Group curriculum problems strictly by sheet_id
+        const problemsBySheetId = new Map<string, any[]>();
         allCurriculumProblemsRes.rows.forEach((prob) => {
-            const sheetKey = String(prob.sheet_id);
-            if (!problemsBySheet.has(sheetKey)) problemsBySheet.set(sheetKey, []);
-            
-            const letter = (prob.problem_letter || '').toUpperCase().trim();
-            const status = progressLookup.get(`${sheetKey}_${letter}`) ||
-                           progressLookup.get(`cid_${prob.contest_id}_${letter}`) ||
-                           progressLookup.get(`${sheetKey}_${prob.id}`) ||
-                           progressLookup.get(`${sheetKey}_${prob.contest_id}:${letter}`) ||
-                           'NOT_STARTED';
+            const sheetIdStr = String(prob.sheet_id);
+            if (!problemsBySheetId.has(sheetIdStr)) problemsBySheetId.set(sheetIdStr, []);
 
-            problemsBySheet.get(sheetKey)!.push({
+            const letter = (prob.problem_letter || '').toUpperCase().trim();
+            let status: 'SOLVED' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
+
+            if (
+                solvedSet.has(`${sheetIdStr}_${letter}`) ||
+                solvedSet.has(`cid_${prob.contest_id}_${letter}`) ||
+                solvedSet.has(`${sheetIdStr}_${prob.id}`)
+            ) {
+                status = 'SOLVED';
+            } else if (
+                attemptedSet.has(`${sheetIdStr}_${letter}`) ||
+                attemptedSet.has(`cid_${prob.contest_id}_${letter}`) ||
+                attemptedSet.has(`${sheetIdStr}_${prob.id}`)
+            ) {
+                status = 'ATTEMPTED';
+            }
+
+            problemsBySheetId.get(sheetIdStr)!.push({
                 id: prob.id,
                 problem_number: prob.problem_number,
                 problem_letter: prob.problem_letter,
@@ -247,29 +263,27 @@ export async function GET(
 
         let totalAttempted = 0;
         const sheetProgressList = sheetsRes.rows.map((s) => {
-            const sheetNum = String(s.sheet_number || s.id);
             const sheetIdStr = String(s.id);
-            const p = progressCountMap.get(sheetNum) || progressCountMap.get(sheetIdStr) || { solved: 0, attempted: 0 };
-            const sheetProblems = problemsBySheet.get(sheetIdStr) || problemsBySheet.get(sheetNum) || [];
+            const sheetProblems = problemsBySheetId.get(sheetIdStr) || [];
             
-            // Count actual solved from problem statuses if count is available
-            const actualSolved = sheetProblems.filter(pr => pr.status === 'SOLVED').length || p.solved;
-            const actualAttempted = sheetProblems.filter(pr => pr.status === 'ATTEMPTED').length || p.attempted;
+            const solvedCount = sheetProblems.filter(pr => pr.status === 'SOLVED').length;
+            const attemptedCount = sheetProblems.filter(pr => pr.status === 'ATTEMPTED').length;
             const sheetTotal = sheetProblems.length || s.total_problems || 26;
-            const notStarted = Math.max(0, sheetTotal - (actualSolved + actualAttempted));
-            totalAttempted += actualAttempted;
-            const pct = Math.min(100, Math.round((actualSolved / (sheetTotal || 1)) * 100));
+            const notStarted = Math.max(0, sheetTotal - (solvedCount + attemptedCount));
+            totalAttempted += attemptedCount;
+            const pct = Math.min(100, Math.round((solvedCount / (sheetTotal || 1)) * 100));
 
             return {
                 id: s.id,
                 sheet_number: s.sheet_number,
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 name: s.name,
+                level_id: s.level_id,
                 level_name: s.level_name || 'Level 1',
                 contest_id: s.contest_id,
                 total_problems: sheetTotal,
-                solved: actualSolved,
-                attempted: actualAttempted,
+                solved: solvedCount,
+                attempted: attemptedCount,
                 not_started: notStarted,
                 progress_percentage: pct,
                 problems: sheetProblems,
