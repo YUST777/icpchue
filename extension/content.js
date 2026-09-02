@@ -1,11 +1,11 @@
 /**
- * Verdict Helper Extension v1.1.0 — Content Script
+ * Verdict Helper Extension v1.2.0 — Content Script
  *
  * Bridges window.postMessage (from the icpchue page) ↔ chrome.runtime.sendMessage
  * (to the background service worker). Also injects a marker element so the page
  * knows the extension is installed.
  *
- * v1.1.0: the extension reads the user's submissions itself (from their own
+ * v1.2.0: the extension reads the user's submissions itself (from their own
  * browser/IP) and returns only the result — cookies never leave the browser and
  * no local/remote bridge is contacted.
  */
@@ -14,7 +14,7 @@
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.1.0');
+    marker.setAttribute('data-version', '1.2.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();
@@ -78,7 +78,7 @@ window.addEventListener('message', async (event) => {
     }
 
     // ── Get Contest Submissions (backfill) ──
-    // Reads ALL of the user's Accepted submissions across one whole contest/
+    // Reads ALL of the user's submissions across one whole contest/
     // sheet (every problem, paginated) and returns them. Used by the Settings
     // "backfill" button to recover unmarked progress. No cookies leave the
     // browser. A requestId echoes back so the page can correlate many contests.

@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.1.0 — Background Service Worker
+ * Verdict Helper Extension v1.2.0 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.1.0';
+const EXT_VERSION = '1.2.0';
 
 // How many of the user's most-recent submissions (for the problem) to scan.
 const SCAN_LAST_N = 5;
@@ -171,6 +171,18 @@ function parseFirstInt(text) {
     return m ? parseInt(m[1], 10) : 0;
 }
 
+function parseSubmissionTime(body) {
+    // Codeforces renders the absolute submission time in a title/data-time
+    // attribute even when the visible value is relative ("2 hours ago").
+    const attr = body.match(/(?:data-time|data-timestamp|title)=["']([^"']+)["']/i);
+    if (!attr) return null;
+    const raw = attr[1];
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric > 4102444800 ? Math.floor(numeric / 1000) : Math.floor(numeric);
+    const parsed = Date.parse(raw);
+    return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000);
+}
+
 /**
  * Parse the Codeforces status datatable rows.
  * Columns (group/contest "/my" view):
@@ -214,6 +226,7 @@ function parseStatusTable(html) {
             timeConsumedMillis: parseFirstInt(timeCell),
             memoryConsumedBytes: parseFirstInt(memCell) * 1024,
             language: langCell.trim(),
+            creationTimeSeconds: parseSubmissionTime(body),
         });
     }
     return rows;
@@ -303,9 +316,9 @@ function getContestMyUrl(contestId, urlType, groupId, page) {
 }
 
 /**
- * Fetch ALL of the user's Accepted submissions across a whole contest/sheet
- * (every problem at once), paginating until no new rows. Returns the BEST
- * (first-seen / fastest) AC per problem index.
+ * Fetch ALL of the user's submissions across a whole contest/sheet (every
+ * problem at once), paginating until no new rows. Returns the complete verdict
+ * history plus the BEST (fastest) AC per problem index.
  *
  * Runs in the user's browser (residential IP + their CF session).
  */
@@ -376,6 +389,7 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
                 timeConsumedMillis: r.timeConsumedMillis || 0,
                 memoryConsumedBytes: r.memoryConsumedBytes || 0,
                 language: r.language || '',
+                creationTimeSeconds: r.creationTimeSeconds || undefined,
             });
 
             if (isAcceptedVerdict(r.verdict)) {
@@ -398,6 +412,7 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
         timeConsumedMillis: r.timeConsumedMillis || 0,
         memoryConsumedBytes: r.memoryConsumedBytes || 0,
         language: r.language || '',
+        creationTimeSeconds: r.creationTimeSeconds || undefined,
     }));
 
     return {

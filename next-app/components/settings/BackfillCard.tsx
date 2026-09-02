@@ -19,13 +19,13 @@ interface SheetPlan {
 type Phase = 'idle' | 'planning' | 'running' | 'done' | 'error';
 
 // Ask the extension (via the content-script bridge) for ALL of the user's
-// Accepted submissions in one contest. Resolves with the result message.
+// All submissions in one contest. Resolves with the result message.
 function askExtensionForContest(
     contestId: string,
     urlType: string,
     groupId: string | null,
     timeoutMs = 30000
-): Promise<{ success: boolean; accepted?: any[]; handle?: string | null; error?: string }> {
+): Promise<{ success: boolean; accepted?: any[]; submissions?: any[]; handle?: string | null; error?: string }> {
     return new Promise((resolve) => {
         const requestId = `${contestId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -48,7 +48,7 @@ function askExtensionForContest(
         window.addEventListener('message', handler);
         window.postMessage({
             type: 'VERDICT_GET_CONTEST_SUBMISSIONS',
-            payload: { requestId, contestId, urlType, groupId, maxPages: 10 }
+            payload: { requestId, contestId, urlType, groupId, maxPages: 50 }
         }, '*');
     });
 }
@@ -75,7 +75,8 @@ export default function BackfillCard() {
         setPhase('planning');
         cancelRef.current = false;
 
-        // 1. Get the plan: all sheets with unsolved problems.
+        // 1. Get the plan: all curriculum Codeforces targets. The plan includes
+        // solved sheets because their historical WAs still count as tries.
         let plan: SheetPlan[];
         try {
             const res = await fetch('/api/codeforces/backfill-plan', { credentials: 'include' });
@@ -103,51 +104,56 @@ export default function BackfillCard() {
 
         let solvedTotal = 0;
 
-        // 2. For each sheet, ask the extension for that contest's ACs, then post
-        //    the matches to the backfill endpoint. Sequential to be gentle on
-        //    Codeforces (avoids rate-limiting the user's own session).
-        for (let i = 0; i < plan.length; i++) {
-            if (cancelRef.current) break;
-            const sheet = plan[i];
-            setCurrentSheet(sheet.sheetName);
-
-            const extResult = await askExtensionForContest(sheet.contestId, sheet.urlType, sheet.groupId);
-
-            if (extResult.success && Array.isArray(extResult.accepted) && extResult.accepted.length > 0) {
-                // Only send ACs for problems still unsolved in this sheet.
-                const unsolvedSet = new Set(sheet.unsolved.map(s => s.toUpperCase()));
-                const relevant = extResult.accepted.filter((a: any) =>
-                    unsolvedSet.has(String(a.problemIndex || '').toUpperCase())
-                );
-
-                if (relevant.length > 0) {
-                    try {
-                        const res = await fetch('/api/codeforces/backfill', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                                sheetId: sheet.sheetId,
-                                contestId: sheet.contestId,
-                                urlType: sheet.urlType,
-                                groupId: sheet.groupId,
-                                cfHandle: extResult.handle || undefined,
-                                accepted: relevant,
-                                submissions: extResult.submissions || [],
-                            })
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            solvedTotal += data.solved || 0;
-                            setTotalSolved(solvedTotal);
-                        }
-                    } catch {
-                        // Skip this sheet on error, keep going.
-                    }
+        // Scan each unique contest once. A single request then imports every
+        // verdict (including failed attempts) for every matching sheet.
+        const targets = Array.from(new Map(
+            plan.map(sheet => [`${sheet.urlType}|${sheet.groupId || ''}|${sheet.contestId}`, sheet])
+        ).values());
+        const batches: any[] = [];
+        let discoveredHandle: string | null = null;
+        let cursor = 0;
+        const worker = async () => {
+            while (cursor < targets.length && !cancelRef.current) {
+                const sheet = targets[cursor++];
+                setCurrentSheet(sheet.sheetName);
+                const extResult = await askExtensionForContest(sheet.contestId, sheet.urlType, sheet.groupId);
+                if (extResult.success) {
+                    if (extResult.handle) discoveredHandle = extResult.handle;
+                    batches.push({
+                        contestId: sheet.contestId,
+                        urlType: sheet.urlType,
+                        groupId: sheet.groupId,
+                        submissions: extResult.submissions || [],
+                        accepted: extResult.accepted || [],
+                    });
                 }
+                setProgress({ done: Math.min(cursor, targets.length), total: targets.length });
             }
+        };
+        await Promise.all(Array.from({ length: Math.min(3, targets.length) }, () => worker()));
 
-            setProgress({ done: i + 1, total: plan.length });
+        if (!cancelRef.current && targets.length > 0 && batches.length === 0) {
+            setError('The extension could not read any Codeforces contests. Check that you are logged in and try again.');
+            setPhase('error');
+            return;
+        }
+        if (!cancelRef.current && batches.length > 0) {
+            try {
+                const res = await fetch('/api/codeforces/backfill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ batches, cfHandle: discoveredHandle }),
+                });
+                if (!res.ok) throw new Error('save failed');
+                const data = await res.json();
+                solvedTotal += data.newlySolved || data.solved || 0;
+                setTotalSolved(solvedTotal);
+            } catch {
+                setError('The history was read, but the server could not save it. Please try again.');
+                setPhase('error');
+                return;
+            }
         }
 
         setCurrentSheet('');
@@ -164,8 +170,8 @@ export default function BackfillCard() {
                 Backfill from Codeforces
             </h3>
             <p className="text-sm text-[#A0A0A0] mb-4">
-                Already solved problems on Codeforces directly? Pull all your Accepted
-                submissions across every sheet and mark them solved here — in one click.
+                Already solved or attempted problems on Codeforces directly? Pull your
+                complete verdict history across every sheet and keep tries accurate.
             </p>
 
             {!hasExtension ? (
@@ -219,7 +225,7 @@ export default function BackfillCard() {
                         <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">
                             <CheckCircle2 size={18} className="shrink-0" />
                             {totalSolved > 0
-                                ? <span>Done — marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved from your Codeforces history.</span>
+                                ? <span>Done — marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved and imported the full verdict history.</span>
                                 : <span>All caught up — no new solved problems found.</span>}
                         </div>
                     )}
