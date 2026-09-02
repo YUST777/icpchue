@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, HelpCircle, Zap } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -34,25 +33,6 @@ export default function DashboardHome() {
         <div className="w-full max-w-[100vw] animate-fade-in space-y-5 pb-4 md:pb-0">
             {/* Dashboard Onboarding Tour */}
             <DashboardOnboardingTour forceShow={forceShowTour} onComplete={() => setForceShowTour(false)} delay={1500} />
-
-            {/* New feature announcement */}
-            <Link
-                href="/dashboard/settings#codeforces-backfill"
-                className="group relative block overflow-hidden rounded-2xl border border-[#E8C15A]/35 bg-gradient-to-r from-[#E8C15A]/15 via-[#171514] to-[#121212] p-4 shadow-[0_0_28px_rgba(232,193,90,0.1)] transition-all hover:border-[#E8C15A]/70 hover:shadow-[0_0_34px_rgba(232,193,90,0.18)] md:p-5"
-            >
-                <div className="pointer-events-none absolute -right-10 -top-16 h-40 w-40 rounded-full bg-[#E8C15A]/10 blur-3xl transition-all group-hover:bg-[#E8C15A]/20" />
-                <div className="relative flex items-center gap-3 md:gap-4">
-                    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8C15A]/40 bg-[#E8C15A]/15 text-[#E8C15A]">
-                        <Zap size={22} />
-                        <span className="absolute -right-3 -top-2 rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[9px] font-black leading-none text-[#0B0B0C] shadow-[0_0_12px_rgba(232,193,90,0.6)]">NEW</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-[#F2F2F2] md:text-base">Accurate tries are here</p>
-                        <p className="mt-0.5 text-xs text-[#B6A878] md:text-sm">Sync your full Codeforces history automatically every six hours.</p>
-                    </div>
-                    <ArrowRight size={18} className="shrink-0 text-[#E8C15A] transition-transform group-hover:translate-x-1" />
-                </div>
-            </Link>
 
             {/* Hero Section */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 lg:gap-16">
