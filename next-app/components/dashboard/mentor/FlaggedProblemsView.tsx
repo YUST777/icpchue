@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ShieldAlert, AlertTriangle, ExternalLink, Clock, Copy, Code } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, ExternalLink, Clock, Copy, Code, CheckCircle2 } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
 interface FlaggedProblemItem {
@@ -33,104 +33,130 @@ export function FlaggedProblemsView({
 }: FlaggedProblemsViewProps) {
     const formatDate = (isoStr: string) => {
         const d = new Date(isoStr);
-        return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     };
 
+    const count = totalFlags || flaggedProblems.length;
+
     return (
-        <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-4 shadow-xl space-y-4">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-white/5 gap-2">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400">
-                        <ShieldAlert size={18} />
+        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl space-y-4">
+            {/* Minimalist Widget Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+                        <ShieldAlert size={13} />
                     </div>
-                    <div>
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-                            Integrity Flags & Problem Audit Trail
-                        </h2>
-                        <span className="text-[11px] text-white/40">
-                            Detailed forensics for all {totalFlags || flaggedProblems.length} flagged submissions
-                        </span>
-                    </div>
+                    <h2 className="text-xs font-semibold text-white/90 tracking-tight">
+                        Integrity Flags & Audit Trail
+                    </h2>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {isShadowBanned && (
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
                             Shadow Banned
                         </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
-                        {totalFlags || flaggedProblems.length} Active Flags
-                    </span>
+                    {count > 0 ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 font-mono">
+                            {count} Active Flags
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/25">
+                            <CheckCircle2 size={10} /> Clean
+                        </span>
+                    )}
                 </div>
             </div>
 
-            {/* List of Flagged Problems */}
-            <div className="space-y-3">
-                {flaggedProblems.length === 0 ? (
-                    <div className="text-center py-10 bg-white/[0.02] border border-white/5 rounded-xl text-white/40 space-y-1">
-                        <p className="text-sm font-semibold text-white">No Suspicious Problems Flagged</p>
-                        <p className="text-xs">All submissions follow regular solving and keystroke patterns.</p>
+            {/* Content List */}
+            {flaggedProblems.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
+                        <CheckCircle2 size={20} />
                     </div>
-                ) : (
-                    flaggedProblems.map((p, idx) => (
+                    <p className="text-xs font-semibold text-white">No Flagged Submissions</p>
+                    <p className="text-[11px] text-white/40 max-w-sm">
+                        This trainee has no integrity warnings, abnormal solve times, or clipboard paste anomalies recorded.
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {flaggedProblems.map((fp, index) => (
                         <div
-                            key={p.submission_id || idx}
-                            className="bg-white/[0.02] border border-red-500/20 hover:border-red-500/40 rounded-xl p-3.5 space-y-2.5 transition-all"
+                            key={fp.submission_id || index}
+                            className="bg-black/30 border border-red-500/20 rounded-xl p-4 space-y-3 hover:border-red-500/40 transition-colors"
                         >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#E8C15A]/10 text-[#E8C15A] font-mono">
-                                        Contest {p.contest_id} • Problem {p.problem_index}
+                                    <span className="font-mono text-xs font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+                                        Contest {fp.contest_id} • Problem {fp.problem_index}
                                     </span>
-                                    <span className="text-xs text-white/80 font-bold">{p.problem_title}</span>
+                                    <span className="text-xs font-semibold text-white">
+                                        {fp.problem_title}
+                                    </span>
                                 </div>
-
-                                <div className="flex items-center gap-2 text-[11px] text-white/50">
-                                    <Clock size={11} />
-                                    <span>{formatDate(p.submitted_at)}</span>
-                                </div>
+                                <span className="text-[11px] font-mono text-white/40">
+                                    {formatDate(fp.submitted_at)}
+                                </span>
                             </div>
 
-                            {/* Violation Reason */}
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 flex items-start gap-2 text-xs text-red-200">
-                                <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-white/[0.02] p-2.5 rounded-lg border border-white/5 font-mono">
                                 <div>
-                                    <strong className="text-red-300 font-bold mr-1">Detected Anomaly:</strong>
-                                    <span>{p.reason}</span>
+                                    <span className="text-white/40 text-[10px] block">Verdict</span>
+                                    <span className="font-bold text-red-400">{fp.verdict}</span>
+                                </div>
+                                <div>
+                                    <span className="text-white/40 text-[10px] block">Solve Speed</span>
+                                    <span className="text-white/80">
+                                        {fp.time_to_solve_seconds ? `${fp.time_to_solve_seconds}s` : 'N/A'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-white/40 text-[10px] block">Paste Events</span>
+                                    <span className="text-amber-400">
+                                        {fp.paste_events ? `${fp.paste_events} Pastes` : '0'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-white/40 text-[10px] block">Codeforces</span>
+                                    {fp.cf_submission_id ? (
+                                        <a
+                                            href={`https://codeforces.com/group/MWSDmqGsZm/contest/${fp.contest_id}/submission/${fp.cf_submission_id}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-[#E8C15A] hover:underline flex items-center gap-1"
+                                        >
+                                            <SiCodeforces size={11} className="text-red-400" />
+                                            <span>#{fp.cf_submission_id}</span>
+                                            <ExternalLink size={9} />
+                                        </a>
+                                    ) : (
+                                        <span className="text-white/40">-</span>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Telemetry & Links */}
-                            <div className="flex flex-wrap items-center justify-between text-xs text-white/60 pt-1">
-                                <div className="flex items-center gap-4 text-[11px]">
-                                    {p.time_to_solve_seconds ? (
-                                        <span>Solve Speed: <strong className="text-white">{p.time_to_solve_seconds}s</strong></span>
-                                    ) : null}
-                                    {p.paste_events ? (
-                                        <span>Paste Events: <strong className="text-red-300">{p.paste_events}</strong></span>
-                                    ) : null}
-                                    <span>Verdict: <strong className="text-emerald-400">{p.verdict}</strong></span>
-                                </div>
-
-                                {p.cf_submission_id && (
-                                    <a
-                                        href={`https://codeforces.com/group/MWSDmqGsZm/contest/${p.contest_id}/submission/${p.cf_submission_id}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 text-[11px] text-[#E8C15A] hover:underline"
-                                    >
-                                        <SiCodeforces size={11} className="text-red-400" />
-                                        <span>View Codeforces Submission #{p.cf_submission_id}</span>
-                                        <ExternalLink size={9} />
-                                    </a>
-                                )}
+                            <div className="bg-red-500/5 border border-red-500/15 p-2.5 rounded-lg text-xs text-red-300 flex items-start gap-2">
+                                <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                                <span>{fp.reason || 'Flagged by automated telemetry analysis'}</span>
                             </div>
+
+                            {fp.source_code && (
+                                <div className="mt-2">
+                                    <div className="text-[10px] text-white/40 font-mono mb-1 uppercase tracking-wider">
+                                        Flagged Code Snippet
+                                    </div>
+                                    <pre className="p-3 bg-[#0A0A0C] border border-white/5 rounded-lg font-mono text-[11px] text-white/80 overflow-x-auto max-h-40 [scrollbar-width:none]">
+                                        {fp.source_code}
+                                    </pre>
+                                </div>
+                            )}
                         </div>
-                    ))
-                )}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
