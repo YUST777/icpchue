@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { parseCodeforcesUrl } from '@/lib/services/codeforces-backfill';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +12,8 @@ export const dynamic = 'force-dynamic';
  * Builds the plan for a full "backfill from Codeforces" run: every training
  * sheet/contest the curriculum contains, with the (contestId, groupId, urlType)
  * needed to read it, plus the list of problem indices the user has NOT solved
- * yet. The Settings "backfill" button asks the extension to read each contest's
- * submissions (from the user's own browser/IP) and posts the found ACs back to
- * /api/codeforces/backfill.
- *
- * Sheets where the user has already solved every problem are omitted (nothing
- * to backfill) — this keeps the run efficient.
+ * yet. All targets are returned even when solved: the tries system needs the
+ * complete historical verdict stream, not only new ACs.
  */
 
 // Derive { urlType, groupId } from a Codeforces contest URL.
@@ -68,6 +65,8 @@ export async function GET(req: NextRequest) {
                 l.level_number    AS level_number,
                 l.slug            AS level_slug,
                 p.problem_letter  AS problem_letter,
+                p.contest_id      AS problem_contest_id,
+                p.codeforces_url  AS codeforces_url,
                 up.status         AS status
             FROM curriculum_sheets s
             JOIN curriculum_levels l ON s.level_id = l.id
@@ -94,15 +93,21 @@ export async function GET(req: NextRequest) {
         }>();
 
         for (const row of result.rows) {
-            const key = String(row.sheet_id);
+            const problemTarget = parseCodeforcesUrl(row.codeforces_url);
+            const canonicalContestId = String(problemTarget?.contestId || row.problem_contest_id || row.contest_id || '').trim();
+            if (!canonicalContestId) continue;
+            // A sheet can contain legacy links from more than one contest. Do
+            // not let the first row hide the other contest's submissions.
+            const key = `${row.sheet_id}|${canonicalContestId}|${problemTarget?.urlType || ''}|${problemTarget?.groupId || row.group_id || ''}`;
             if (!sheetsMap.has(key)) {
-                const { urlType, groupId } = deriveFromUrl(row.contest_url, row.group_id);
+                const fromProblemUrl = problemTarget;
+                const { urlType, groupId } = fromProblemUrl || deriveFromUrl(row.contest_url, row.group_id);
                 sheetsMap.set(key, {
-                    sheetId: key,
+                    sheetId: String(row.sheet_id),
                     sheetName: row.sheet_name,
                     sheetSlug: row.sheet_slug,
                     levelSlug: row.level_slug,
-                    contestId: String(row.contest_id),
+                    contestId: canonicalContestId,
                     urlType,
                     groupId,
                     unsolved: [],
@@ -119,8 +124,10 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // Only return sheets that still have something to backfill.
-        const sheets = Array.from(sheetsMap.values()).filter(s => s.unsolved.length > 0);
+        // Return every Codeforces target, including fully solved sheets. The
+        // tries view needs failed attempts for problems that were later
+        // solved, so filtering those sheets would silently lose history.
+        const sheets = Array.from(sheetsMap.values());
 
         const totalUnsolved = sheets.reduce((acc, s) => acc + s.unsolved.length, 0);
 

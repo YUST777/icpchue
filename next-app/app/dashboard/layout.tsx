@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
+import AutoBackfillTrigger from '@/components/codeforces/AutoBackfillTrigger';
 
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '' }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string }) {
     const [showTooltip, setShowTooltip] = useState(false);
@@ -87,6 +88,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [transitionsEnabled, setTransitionsEnabled] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+
+    // This is intentionally client-triggered: serverless functions may be
+    // terminated as soon as /api/auth/me responds, so background work belongs
+    // to the authenticated browser lifecycle.
 
     // Initial check and resize listener for mobile state
     useEffect(() => {
@@ -284,6 +289,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     );
     return (
         <div dir="ltr" className="relative min-h-screen bg-[#0B0B0C] text-[#DCDCDC] font-sans selection:bg-[#CFA144] selection:text-[#121212] w-full max-w-[100vw]">
+            <AutoBackfillTrigger />
 
             {/* Mobile Header (hidden on problem page) */}
             {!isProblemPage && (
