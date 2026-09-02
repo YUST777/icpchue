@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Code, Zap, Globe, Trophy, PlayCircle, Facebook, Linkedin, Calendar } from 'lucide-react';
+import { ChevronRight, Code, Zap, Globe, Trophy, PlayCircle, Calendar } from 'lucide-react';
+import { FaFacebook as Facebook, FaLinkedin as Linkedin } from 'react-icons/fa6';
 import Image from 'next/image';
 import Link from 'next/link';
 
