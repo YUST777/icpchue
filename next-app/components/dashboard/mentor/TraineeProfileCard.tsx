@@ -4,8 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { 
     Phone, Send, ShieldAlert, CheckCircle2, 
-    ArrowLeft, ExternalLink, Clock, CircleDashed, 
-    Flame, Code2, Timer
+    ArrowLeft, ExternalLink
 } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
@@ -70,48 +69,36 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
             value: solved.toString(),
             subtext: `${solvedPct}% of curriculum`,
             subtextColor: 'text-[#E8C15A]',
-            icon: <CheckCircle2 className="w-3.5 h-3.5 text-[#E8C15A]" />,
-            badgeBg: 'bg-[#E8C15A]/10',
         },
         {
             title: 'Attempted',
             value: attempted.toString(),
             subtext: `${attemptedPct}% pending`,
             subtextColor: 'text-amber-400',
-            icon: <Clock className="w-3.5 h-3.5 text-amber-400" />,
-            badgeBg: 'bg-amber-500/10',
         },
         {
             title: 'Not Started',
             value: notStarted.toString(),
             subtext: `${notStartedPct}% remaining`,
             subtextColor: 'text-white/40',
-            icon: <CircleDashed className="w-3.5 h-3.5 text-white/40" />,
-            badgeBg: 'bg-white/5',
         },
         {
             title: 'Current Streak',
             value: `${currentStreak}d`,
             subtext: `Best: ${maxStreak}d`,
             subtextColor: 'text-[#E8C15A]',
-            icon: <Flame className="w-3.5 h-3.5 text-[#E8C15A]" />,
-            badgeBg: 'bg-[#E8C15A]/10',
         },
         {
             title: 'Submissions',
             value: totalSubs.toString(),
             subtext: `7d: ${last7d}`,
             subtextColor: 'text-blue-400',
-            icon: <Code2 className="w-3.5 h-3.5 text-blue-400" />,
-            badgeBg: 'bg-blue-500/10',
         },
         {
             title: 'Time Spent',
             value: timeSpent,
             subtext: 'This season',
             subtextColor: 'text-purple-400',
-            icon: <Timer className="w-3.5 h-3.5 text-purple-400" />,
-            badgeBg: 'bg-purple-500/10',
         },
     ];
 
@@ -193,21 +180,16 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
             {/* Subtle Divider */}
             <div className="border-t border-white/[0.06]" />
 
-            {/* Bottom Row: 6 KPI Metric Capsules embedded inside the same widget */}
+            {/* Bottom Row: 6 KPI Metric Blocks (Clean Typographic Minimalist, No SVGs) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
                 {kpiMetrics.map((card) => (
                     <div
                         key={card.title}
                         className="bg-black/30 border border-white/[0.04] hover:border-white/[0.1] rounded-xl p-3 flex flex-col justify-between transition-all group"
                     >
-                        <div className="flex items-center justify-between mb-1 min-w-0">
-                            <span className="text-[10px] uppercase font-semibold tracking-wider text-white/40 truncate pr-1">
-                                {card.title}
-                            </span>
-                            <div className={`p-1 rounded-md ${card.badgeBg} shrink-0`}>
-                                {card.icon}
-                            </div>
-                        </div>
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-white/40 truncate block mb-1">
+                            {card.title}
+                        </span>
                         <div>
                             <div className="text-lg sm:text-xl font-bold text-white tracking-tight">
                                 {card.value}
