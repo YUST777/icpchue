@@ -3,17 +3,16 @@ import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
 
-// High-speed In-Memory Cache (30s TTL per student)
 interface CacheEntry {
     data: any;
     expiresAt: number;
 }
-const CACHE_TTL_MS = 30 * 1000;
+
 const dossierCache = new Map<string, CacheEntry>();
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const mentorUser = await verifyMentor(req);
@@ -21,12 +20,13 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized: Mentor access required' }, { status: 403 });
         }
 
-        const { id: rawParamId } = await params;
-        if (!rawParamId) {
-            return NextResponse.json({ error: 'Missing student identifier' }, { status: 400 });
+        const resolvedParams = await context.params;
+        const rawParam = resolvedParams?.id;
+        if (!rawParam) {
+            return NextResponse.json({ error: 'Student identifier required' }, { status: 400 });
         }
 
-        const paramId = decodeURIComponent(rawParamId).trim();
+        const paramId = decodeURIComponent(rawParam).trim();
 
         const url = new URL(req.url);
         const rawOffset = parseInt(url.searchParams.get('sub_offset') || '0', 10);
@@ -62,7 +62,10 @@ export async function GET(
                 const byAppStudentId = await query('SELECT * FROM applications WHERE student_id = $1 LIMIT 1', [candidateUserId]);
                 if (byAppStudentId.rows.length > 0) {
                     appRow = byAppStudentId.rows[0];
-                    const uRes = await query('SELECT * FROM users WHERE application_id = $1 LIMIT 1', [appRow.id]);
+                    const uRes = await query(
+                        'SELECT * FROM users WHERE application_id = $1 OR email_blind_index = $2 OR (email = $3 AND $3 IS NOT NULL) LIMIT 1', 
+                        [appRow.id, appRow.email_blind_index, appRow.email]
+                    );
                     if (uRes.rows.length > 0) userRow = uRes.rows[0];
                 }
             }
@@ -79,18 +82,24 @@ export async function GET(
                 userRow = byHandle.rows[0];
             } else if (byBlindIndex.rows.length > 0) {
                 appRow = byBlindIndex.rows[0];
-                const uRes = await query('SELECT * FROM users WHERE application_id = $1 LIMIT 1', [appRow.id]);
+                const uRes = await query(
+                    'SELECT * FROM users WHERE application_id = $1 OR email_blind_index = $2 OR (email = $3 AND $3 IS NOT NULL) LIMIT 1', 
+                    [appRow.id, appRow.email_blind_index, appRow.email]
+                );
                 if (uRes.rows.length > 0) userRow = uRes.rows[0];
             }
         }
 
         if (!userRow && !appRow) {
-            const appCheck = await query('SELECT id, student_id, name, email, faculty, student_level, telephone, telegram_username, has_laptop, codeforces_profile, leetcode_profile, season_year, submitted_at FROM applications ORDER BY id DESC LIMIT 500');
+            const appCheck = await query('SELECT id, student_id, name, email, email_blind_index, faculty, student_level, telephone, telegram_username, has_laptop, codeforces_profile, leetcode_profile, season_year, submitted_at FROM applications ORDER BY id DESC LIMIT 500');
             for (const a of appCheck.rows) {
                 const decSid = decrypt(a.student_id);
-                if (decSid === paramId) {
+                if (decSid === paramId || a.student_id === paramId) {
                     appRow = a;
-                    const uRes = await query('SELECT * FROM users WHERE application_id = $1 LIMIT 1', [a.id]);
+                    const uRes = await query(
+                        'SELECT * FROM users WHERE application_id = $1 OR email_blind_index = $2 OR (email = $3 AND $3 IS NOT NULL) LIMIT 1', 
+                        [a.id, a.email_blind_index, a.email]
+                    );
                     if (uRes.rows.length > 0) userRow = uRes.rows[0];
                     break;
                 }
@@ -133,7 +142,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Fetching with Safe User Null Guard
+        // 3. Parallel Fetching with Verified Schema
         const [
             statsRes,
             streakRes,
@@ -148,9 +157,10 @@ export async function GET(
             allUserCodesRes,
             allUserNotesRes,
             customTestsRes,
-            sumTimeRes
+            sumTimeRes,
+            problemVerdictsRes
         ] = await Promise.all([
-            userId ? query('SELECT * FROM user_solve_stats WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query('SELECT COUNT(*) as distinct_solved, MAX(submitted_at) as last_solve_at, COUNT(*) as total_submissions FROM submissions WHERE user_id = $1 AND (LOWER(verdict) LIKE \'%accepted%\' OR LOWER(verdict) = \'ok\' OR LOWER(verdict) = \'ac\')', [userId]) : Promise.resolve({ rows: [] }),
             userId ? query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
             query('SELECT * FROM recap_2025 WHERE student_id = $1 OR (username = $2 AND $2 != \'\') LIMIT 1', [profile.student_id, profile.codeforces_handle || '']),
             query('SELECT COUNT(*) as count FROM curriculum_problems'),
@@ -282,7 +292,6 @@ export async function GET(
 
         // Map submissions verdicts by contest_id + problem_index
         const probSubMap = new Map<string, { total_attempts: number, has_ac: boolean, latest_verdict: string }>();
-        const problemVerdictsRes = argumentsResults[argumentsResults.length - 1] || { rows: [] };
         problemVerdictsRes.rows?.forEach((row: any) => {
             if (row.contest_id && row.problem_index) {
                 const key = `${row.contest_id}_${row.problem_index.toUpperCase().trim()}`;
@@ -378,7 +387,7 @@ export async function GET(
             const sheetProblems = problemsBySheetId.get(sheetIdStr) || [];
             
             const solvedCount = sheetProblems.filter(pr => pr.status === 'SOLVED').length;
-            const attemptedCount = sheetProblems.filter(pr => pr.status === 'ATTEMPTED').length;
+            const attemptedCount = sheetProblems.filter(pr => pr.status !== 'SOLVED' && pr.status !== 'NOT_STARTED').length;
             const sheetTotal = sheetProblems.length || s.total_problems || 26;
             const notStarted = Math.max(0, sheetTotal - (solvedCount + attemptedCount));
             totalAttempted += attemptedCount;
@@ -391,187 +400,149 @@ export async function GET(
                 name: s.name,
                 level_id: s.level_id,
                 level_number: s.level_number ?? (s.level_id !== undefined ? s.level_id : 1),
-                level_name: s.level_name || 'Level 1',
+                level_name: s.level_name || (s.level_id === '1' ? 'Level 1' : s.level_id === '2' ? 'Level 2' : 'Level 3'),
                 contest_id: s.contest_id,
                 total_problems: sheetTotal,
                 solved: solvedCount,
                 attempted: attemptedCount,
                 not_started: notStarted,
-                progress_percentage: pct,
+                percentage: pct,
                 problems: sheetProblems,
             };
         });
 
         const notStartedTotal = Math.max(0, totalProblems - (distinctSolved + totalAttempted));
+        const solvedPct = totalProblems > 0 ? Math.min(100, Math.round((distinctSolved / totalProblems) * 100)) : 0;
+        const attemptedPct = totalProblems > 0 ? Math.min(100, Math.round((totalAttempted / totalProblems) * 100)) : 0;
+        const notStartedPct = totalProblems > 0 ? Math.max(0, 100 - (solvedPct + attemptedPct)) : 0;
 
-        // Time spent
-        const timeFromRecap = recapRes.rows[0]?.time_spent_minutes;
-        let totalMinutes = timeFromRecap ? parseInt(timeFromRecap, 10) : 0;
-        if (!totalMinutes) {
-            const totalSec = parseInt(sumTimeRes.rows[0]?.total_sec || '0', 10);
-            totalMinutes = Math.round(totalSec / 60) || Math.round(distinctSolved * 18);
-        }
-        const hoursSpent = Math.floor(totalMinutes / 60);
-        const minsSpent = totalMinutes % 60;
-        const timeSpentStr = `${hoursSpent}h ${minsSpent}m`;
+        const totalSec = parseInt(sumTimeRes.rows[0]?.total_sec || '0', 10);
+        const hours = Math.floor(totalSec / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        const timeSpentStr = totalSec > 0 ? `${hours}h ${mins}m` : '0h 0m';
 
-        // Heatmap Data
-        const heatmapData = heatmapRes.rows.map((r) => ({
-            date: r.solve_date instanceof Date ? r.solve_date.toISOString().slice(0, 10) : String(r.solve_date),
-            count: parseInt(r.solve_count, 10) || 0,
-        }));
+        // 4. Metrics Payload
+        const metrics = {
+            problems_solved: distinctSolved,
+            solved_percentage: solvedPct,
+            attempted: totalAttempted,
+            attempted_percentage: attemptedPct,
+            not_started: notStartedTotal,
+            not_started_percentage: notStartedPct,
+            current_streak: currentStreak,
+            max_streak: maxStreak,
+            total_submissions: totalSubmissions,
+            submissions_last_7_days: 0,
+            time_spent_seconds: totalSec,
+            time_spent_str: timeSpentStr,
+            last_solve_at: lastSolveAt,
+            accuracy_rate: totalSubmissions > 0 ? Math.round((distinctSolved / totalSubmissions) * 100) : 0,
+        };
 
-        // Recent Submissions with REAL Calculated Attempt Numbers and Tie-Breakers
-        const recentSubmissions = subsRes.rows.map((s) => {
-            const sheetInfo = (s.sheet_id && sheetIdToSheetMap.get(String(s.sheet_id))) || 
-                              (s.contest_id && contestToSheetMap.get(String(s.contest_id))) || null;
-            
-            const pLetter = (s.problem_index || '').toUpperCase();
-            const pTitle = problemTitleMap.get(`${s.contest_id}_${pLetter}`) || '';
+        // 5. Recent Submissions List
+        const recentSubmissions = subsRes.rows.map((sub: any) => {
+            const contestIdStr = sub.contest_id ? String(sub.contest_id) : '';
+            const sheetIdStr = sub.sheet_id ? String(sub.sheet_id) : '';
+            const sheetLookup = contestToSheetMap.get(contestIdStr) || sheetIdToSheetMap.get(sheetIdStr);
 
-            const label = sheetInfo 
-                ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
-                : `${s.contest_id} ${pLetter}`;
+            const letter = (sub.problem_index || '').toUpperCase().trim();
+            const titleLookup = problemTitleMap.get(`${contestIdStr}_${letter}`) || '';
 
             return {
-                id: s.id,
-                problem: label,
-                problem_title: pTitle,
-                contest_id: s.contest_id,
-                problem_index: s.problem_index,
-                sheet_id: s.sheet_id,
-                sheet_info: sheetInfo,
-                verdict: s.verdict || 'Accepted',
-                language: s.language || 'C++',
-                time_ms: s.time_ms ?? null,
-                memory_kb: s.memory_kb ?? null,
-                attempts: parseInt(s.real_attempt || '1', 10),
-                submitted_at: s.submitted_at,
-                time_to_solve_seconds: s.time_to_solve_seconds || 0,
-                paste_events: s.paste_events || 0,
-                tab_switches: s.tab_switches || 0,
-                cf_submission_id: s.cf_submission_id,
-                source_code: s.source_code || '',
+                id: sub.id,
+                contest_id: sub.contest_id,
+                problem_index: sub.problem_index,
+                problem: sub.contest_id ? `${sub.contest_id} ${sub.problem_index}` : `Problem #${sub.id}`,
+                problem_title: titleLookup,
+                sheet_id: sub.sheet_id,
+                sheet_info: sheetLookup ? {
+                    level: sheetLookup.level,
+                    sheet_letter: sheetLookup.sheet_letter,
+                    sheet_name: sheetLookup.sheet_name
+                } : undefined,
+                verdict: sub.verdict || 'Accepted',
+                language: sub.language || 'C++',
+                time_ms: sub.time_ms ?? null,
+                memory_kb: sub.memory_kb ?? null,
+                attempts: parseInt(sub.real_attempt || '1', 10),
+                submitted_at: sub.submitted_at,
+                cf_submission_id: sub.cf_submission_id,
+                source_code: sub.source_code || '',
             };
         });
 
-        // Build Code Catalog
-        const codeEntriesMap = new Map<string, any>();
-
-        allUserCodesRes.rows.forEach((uc) => {
-            const key = `${uc.contest_id || ''}-${uc.problem_id || ''}`.trim();
-            if (key) {
-                const sheetInfo = contestToSheetMap.get(String(uc.contest_id)) || null;
-                const pLetter = (uc.problem_id || '').toUpperCase();
-                const pTitle = problemTitleMap.get(`${uc.contest_id}_${pLetter}`) || '';
-
-                const label = sheetInfo 
-                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
-                    : `${uc.contest_id} ${pLetter}`;
-
-                codeEntriesMap.set(key, {
-                    key,
-                    display_label: label,
-                    sheet_name: sheetInfo ? sheetInfo.sheet_name : '',
-                    problem_title: pTitle,
-                    contest_id: uc.contest_id,
-                    problem_id: uc.problem_id,
-                    code: uc.code,
-                    language: uc.language,
-                    updated_at: uc.updated_at,
-                });
-            }
+        // 6. Flagged Problems Forensics
+        const flaggedSubs = recentSubmissions.filter((s: any) => {
+            const rawSub = subsRes.rows.find((r: any) => r.id === s.id);
+            return rawSub?.paste_events > 5 || (rawSub?.time_to_solve_seconds && rawSub?.time_to_solve_seconds < 15 && rawSub?.verdict?.toLowerCase().includes('accepted'));
         });
 
-        recentSubmissions.forEach((sub) => {
-            const key = `${sub.contest_id || ''}-${sub.problem_index || ''}`.trim();
-            if (key) {
-                const sheetInfo = sub.sheet_info || contestToSheetMap.get(String(sub.contest_id)) || null;
-                const pLetter = (sub.problem_index || '').toUpperCase();
-                const pTitle = sub.problem_title || problemTitleMap.get(`${sub.contest_id}_${pLetter}`) || '';
-
-                const label = sheetInfo 
-                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${pLetter}`
-                    : `${sub.contest_id} ${pLetter}`;
-
-                if (!codeEntriesMap.has(key)) {
-                    codeEntriesMap.set(key, {
-                        key,
-                        display_label: label,
-                        sheet_name: sheetInfo ? sheetInfo.sheet_name : '',
-                        problem_title: pTitle,
-                        contest_id: sub.contest_id,
-                        problem_id: sub.problem_index,
-                        code: sub.source_code,
-                        language: sub.language,
-                        updated_at: sub.submitted_at,
-                    });
-                } else if (!codeEntriesMap.get(key)!.code && sub.source_code) {
-                    codeEntriesMap.get(key)!.code = sub.source_code;
-                }
-            }
+        const flaggedProblems = flaggedSubs.map((sub: any) => {
+            const rawSub = subsRes.rows.find((r: any) => r.id === sub.id);
+            return {
+                submission_id: sub.id,
+                contest_id: sub.contest_id,
+                problem_index: sub.problem_index,
+                problem_title: sub.problem_title || `${sub.contest_id} ${sub.problem_index}`,
+                verdict: sub.verdict,
+                reason: rawSub?.paste_events > 5 ? `Excessive Paste Events (${rawSub.paste_events} pastes)` : 'Abnormally Fast Solve Time (< 15s)',
+                submitted_at: sub.submitted_at,
+                time_to_solve_seconds: rawSub?.time_to_solve_seconds,
+                paste_events: rawSub?.paste_events || 0,
+                cf_submission_id: sub.cf_submission_id,
+                source_code: sub.source_code,
+            };
         });
 
-        const codeCatalog = Array.from(codeEntriesMap.values());
+        // 7. Heatmap
+        const heatmapData = heatmapRes.rows.map((row: any) => ({
+            date: row.solve_date ? new Date(row.solve_date).toISOString().slice(0, 10) : '',
+            count: parseInt(row.solve_count || '0', 10),
+        })).filter((d: any) => Boolean(d.date));
+
+        // 8. Code Catalog
+        const codeCatalog = allUserCodesRes.rows.map((c: any) => ({
+            problem_id: c.problem_id || `${c.contest_id}_code`,
+            contest_id: c.contest_id,
+            code: c.code,
+            language: c.language,
+            updated_at: c.updated_at,
+        }));
+
+        // 9. Notes & Workspaces
+        const userNotes = allUserNotesRes.rows.map((n: any) => ({
+            id: n.id,
+            contest_id: n.contest_id,
+            problem_index: n.problem_index,
+            content: n.content,
+            updated_at: n.updated_at,
+        }));
 
         const responsePayload = {
-            success: true,
             profile,
-            metrics: {
-                problems_solved: distinctSolved,
-                solved_percentage: Math.min(100, Math.round((distinctSolved / (totalProblems || 1)) * 100)),
-                attempted: totalAttempted,
-                attempted_percentage: Math.min(100, Math.round((totalAttempted / (totalProblems || 1)) * 100)),
-                not_started: notStartedTotal,
-                not_started_percentage: Math.min(100, Math.round((notStartedTotal / (totalProblems || 1)) * 100)),
-                current_streak: currentStreak,
-                max_streak: maxStreak,
-                total_submissions: totalSubmissions,
-                submissions_last_7_days: recentSubmissions.filter(s => {
-                    const diff = Date.now() - new Date(s.submitted_at).getTime();
-                    return diff <= 7 * 24 * 60 * 60 * 1000;
-                }).length,
-                time_spent_str: timeSpentStr,
-                time_spent_minutes: totalMinutes,
-                last_solve_at: lastSolveAt,
-            },
+            metrics,
             sheet_progress: sheetProgressList,
-            heatmap_data: heatmapData,
             recent_submissions: recentSubmissions,
             submissions_total: totalSubmissions,
+            flagged_problems: flaggedProblems,
+            heatmap_data: heatmapData,
             code_catalog: codeCatalog,
-            user_notes: allUserNotesRes.rows.map(n => ({
-                id: n.id,
-                contest_id: n.contest_id,
-                problem_index: n.problem_index,
-                content: n.content,
-                updated_at: n.updated_at,
-            })),
-            custom_tests: customTestsRes.rows,
-            flagged_problems: [],
+            user_notes: userNotes,
             behavioral_analysis: {
-                cheating_flags: profile.cheating_flags,
-                is_shadow_banned: profile.is_shadow_banned,
-                total_flagged_count: profile.cheating_flags,
-            }
+                cheating_flags: flaggedProblems.length || profile.cheating_flags || 0,
+                risk_score: flaggedProblems.length > 3 ? 'HIGH' : flaggedProblems.length > 0 ? 'MEDIUM' : 'LOW',
+            },
         };
 
+        // Cache for 30s
         dossierCache.set(cacheKey, {
             data: responsePayload,
-            expiresAt: Date.now() + CACHE_TTL_MS,
+            expiresAt: Date.now() + 30000,
         });
 
-        if (dossierCache.size > 100) {
-            const oldestKey = dossierCache.keys().next().value;
-            if (oldestKey) dossierCache.delete(oldestKey);
-        }
-
-        return NextResponse.json(responsePayload, {
-            headers: { 'X-Cache': 'MISS', 'Cache-Control': 'private, max-age=30' }
-        });
-
-    } catch (error: unknown) {
-        console.error('[Mentor API] Error fetching trainee dossier:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json(responsePayload);
+    } catch (error: any) {
+        console.error('Mentor Trainee API Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
     }
 }
