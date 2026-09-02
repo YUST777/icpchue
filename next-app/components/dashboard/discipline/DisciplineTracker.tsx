@@ -121,8 +121,6 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
     const [summary, setSummary] = useState<{ total_hours: number; active_days: number; mentor_reviews: number; total_entries: number } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [savingKey, setSavingKey] = useState<string | null>(null);
-    const [savedSuccessKey, setSavedSuccessKey] = useState<string | null>(null);
     const [selectedWeek, setSelectedWeek] = useState<number | 'all'>('all');
     const [activeEditCell, setActiveEditCell] = useState<{ week: number; day: number; field: 'tasks' | 'comment' | 'mentor' } | null>(null);
     const [editBuffer, setEditBuffer] = useState('');
@@ -160,9 +158,8 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
     // Save a specific log day
     const handleSaveLog = async (week: number, day: number, updates: Partial<DisciplineLog>) => {
-        const key = `${week}_${day}`;
-        setSavingKey(key);
         try {
+            const key = `${week}_${day}`;
             const current = logsMap.get(key) || {
                 user_id: targetUserId || 0,
                 week_number: week,
@@ -199,13 +196,9 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                     const filtered = prev.filter(l => !(l.week_number === week && l.day_number === day));
                     return [...filtered, updatedLog];
                 });
-                setSavedSuccessKey(key);
-                setTimeout(() => setSavedSuccessKey(null), 2500);
             }
         } catch (err) {
             console.error('Failed to save log:', err);
-        } finally {
-            setSavingKey(null);
         }
     };
 
@@ -398,8 +391,6 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                             const dayNum = dayIdx + 1;
                                             const key = `${weekNum}_${dayNum}`;
                                             const log = logsMap.get(key);
-                                            const isSaving = savingKey === key;
-                                            const isSaved = savedSuccessKey === key;
 
                                             // Calculate calendar date and midnight unlock status
                                             const dayOffset = (weekNum - 1) * 7 + (dayNum - 1);
@@ -409,7 +400,8 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                             // Unlocks at 12:00 AM (00:00:00) on that day
                                             const unlockTimestamp = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0).getTime();
                                             const isUnlocked = isMentorView || Date.now() >= unlockTimestamp;
-                                            const displayDate = log?.log_date || defaultDateStr;
+                                            // Always show clean formatted date — never raw ISO
+                                            const displayDate = defaultDateStr;
 
                                             return (
                                                 <tr 
