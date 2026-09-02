@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, Clock, Circle, Search } from 'lucide-react';
+import { 
+    AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, 
+    Clock, Circle, Search, BarChart3 
+} from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
 import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgressBreakdown';
@@ -180,56 +183,67 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 2: Full Curriculum Progress Breakdown with Minimalist Level Switcher & Search Bar */}
+            {/* Tab 2: Full Curriculum Progress Matrix with Minimalist Header & Level Pills */}
             {activeTab === 'progress' && (
-                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-md backdrop-blur-xl">
-                    {/* Minimalist Top Control Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-white/[0.06]">
-                        {/* Minimalist Level Pills */}
-                        <div className="flex items-center bg-[#0B0B0C] rounded-xl p-0.5 border border-white/10 text-xs">
-                            <button
-                                onClick={() => setSelectedLevelId('1')}
-                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedLevelId === '1' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
-                                }`}
-                            >
-                                Lv 1
-                            </button>
-                            <button
-                                onClick={() => setSelectedLevelId('2')}
-                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedLevelId === '2' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
-                                }`}
-                            >
-                                Lv 2
-                            </button>
-                            <button
-                                onClick={() => setSelectedLevelId('3')}
-                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedLevelId === '3' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
-                                }`}
-                            >
-                                Lv 3
-                            </button>
-                            <button
-                                onClick={() => setSelectedLevelId('all')}
-                                className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black font-semibold shadow-xs' : 'text-white/60 hover:text-white'
-                                }`}
-                            >
-                                All
-                            </button>
+                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+                    {/* Minimalist Widget Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/[0.06]">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                                <BarChart3 size={13} />
+                            </div>
+                            <h2 className="text-xs font-semibold text-white/90 tracking-tight">
+                                Curriculum Progress Matrix
+                            </h2>
                         </div>
 
-                        {/* Minimalist Search Bar */}
-                        <div className="relative w-full sm:w-72">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 w-3.5 h-3.5" />
-                            <input
-                                value={progressSearch}
-                                onChange={(e) => setProgressSearch(e.target.value)}
-                                placeholder="Search sheet or problem..."
-                                className="w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
-                            />
+                        {/* Minimalist Controls: Sleek Level Pills & Search */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center bg-[#0B0B0C] rounded-lg p-0.5 border border-white/10 text-[11px]">
+                                <button
+                                    onClick={() => setSelectedLevelId('1')}
+                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
+                                        selectedLevelId === '1' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
+                                    }`}
+                                >
+                                    Lv 1
+                                </button>
+                                <button
+                                    onClick={() => setSelectedLevelId('2')}
+                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
+                                        selectedLevelId === '2' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
+                                    }`}
+                                >
+                                    Lv 2
+                                </button>
+                                <button
+                                    onClick={() => setSelectedLevelId('3')}
+                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
+                                        selectedLevelId === '3' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
+                                    }`}
+                                >
+                                    Lv 3
+                                </button>
+                                <button
+                                    onClick={() => setSelectedLevelId('all')}
+                                    className={`px-2 py-0.5 rounded-md font-medium transition-all ${
+                                        selectedLevelId === 'all' ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white'
+                                    }`}
+                                >
+                                    All
+                                </button>
+                            </div>
+
+                            {/* Minimalist Search Bar */}
+                            <div className="relative w-full sm:w-56">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 w-3 h-3" />
+                                <input
+                                    value={progressSearch}
+                                    onChange={(e) => setProgressSearch(e.target.value)}
+                                    placeholder="Search sheet or problem..."
+                                    className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-7 pr-2.5 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
+                                />
+                            </div>
                         </div>
                     </div>
 
