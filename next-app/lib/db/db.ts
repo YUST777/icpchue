@@ -21,6 +21,11 @@ export function getPool(): pg.Pool {
     }
 
     // Fix for Supabase Transaction Pooler + Local Dev
+    // Port 6543 is Transaction Mode (supports high concurrency without EMAXCONNSESSION).
+    if (connectionString.includes('pooler.supabase.com:5432')) {
+        connectionString = connectionString.replace('pooler.supabase.com:5432', 'pooler.supabase.com:6543');
+    }
+
     // The ?sslmode=require conflicts with ssl: { rejectUnauthorized: false }
     if (connectionString.includes('sslmode=require')) {
         connectionString = connectionString.replace('?sslmode=require', '');
@@ -32,14 +37,15 @@ export function getPool(): pg.Pool {
         ssl: {
             rejectUnauthorized: false
         },
-        // Serverless: tiny pool per instance (the DB-side pooler does the real
-        // pooling). Long-running server: a larger warm pool is fine.
-        max: IS_SERVERLESS ? 1 : 25,
+        // Supabase pooler limit is 15 connections max. Keep pool small (max: 5)
+        // to prevent (EMAXCONNSESSION) max clients reached errors.
+        max: 5,
         min: 0,
-        idleTimeoutMillis: IS_SERVERLESS ? 10000 : 30000,
-        connectionTimeoutMillis: 10000,
-        statement_timeout: 15000, // Kill queries that take > 15s
-        query_timeout: 15000,
+        idleTimeoutMillis: 5000,
+        connectionTimeoutMillis: 5000,
+        statement_timeout: 8000, // Kill queries that take > 8s
+        query_timeout: 8000,
+        allowExitOnIdle: true,
     });
 
     // Prevent unhandled errors from crashing the process
