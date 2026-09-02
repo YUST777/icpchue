@@ -226,14 +226,14 @@ export async function GET(
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
         // Build Sheet and Contest Lookup Maps
-        const contestToSheetMap = new Map<string, { level: string, level_number: number, sheet_letter: string, sheet_name: string, sheet_id: string }>();
-        const sheetIdToSheetMap = new Map<string, { level: string, level_number: number, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+        const contestToSheetMap = new Map<string, { level: string, level_id: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
+        const sheetIdToSheetMap = new Map<string, { level: string, level_id: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
 
         sheetsRes.rows.forEach(s => {
-            const levelNum = s.level_number !== undefined && s.level_number !== null ? Number(s.level_number) : (s.level_id !== undefined ? Number(s.level_id) : 1);
+            const lvlId = String(s.level_id || 1);
             const info = {
-                level: `Lv ${levelNum}`,
-                level_number: levelNum,
+                level: `Lv ${lvlId}`,
+                level_id: lvlId,
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 sheet_name: s.name || '',
                 sheet_id: String(s.id),
