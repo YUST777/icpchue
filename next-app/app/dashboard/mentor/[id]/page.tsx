@@ -50,7 +50,7 @@ export default function TraineeDossierPage() {
                 <div className="h-16 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                     {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-16 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
+                        <div key={i} className="h-14 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
                     ))}
                 </div>
                 <div className="h-64 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
@@ -90,7 +90,7 @@ export default function TraineeDossierPage() {
 
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
-            {/* 1. Compact Hero Bar */}
+            {/* 1. Sleek Compact Hero Bar */}
             <TraineeHeroHeader 
                 profile={profile} 
                 lastSolveAt={metrics.last_solve_at} 
@@ -158,7 +158,7 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 4: Dedicated Code & Workspaces Inspector */}
+            {/* Tab 4: Code & Notes Workspace */}
             {activeTab === 'workspace' && (
                 <div className="space-y-3">
                     <CodeWorkspaceInspector 
@@ -175,14 +175,7 @@ export default function TraineeDossierPage() {
                 </div>
             )}
 
-            {/* Tab 6: Full-Width Activity Heatmap */}
-            {activeTab === 'activity' && (
-                <div className="space-y-3">
-                    <ActivityHeatmap90Days data={heatmap_data || []} />
-                </div>
-            )}
-
-            {/* Tab 7: Warnings & Flags Audit Trail */}
+            {/* Tab 6: Warnings & Flags Audit Trail */}
             {activeTab === 'flags' && (
                 <div className="space-y-3">
                     <FlaggedProblemsView 
