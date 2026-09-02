@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, Shield, GraduationCap
+    ChevronRight, ChevronLeft, Shield, GraduationCap, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
@@ -226,6 +226,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname === '/dashboard/leaderboard') return 'Leaderboard';
         if (pathname === '/dashboard/achievements') return 'Achievements';
         if (pathname === '/dashboard/news') return 'Team News';
+        if (pathname === '/dashboard/discipline') return 'Self Discipline';
         if (pathname === '/dashboard/mentor' || pathname.startsWith('/dashboard/mentor/')) return 'Mentor Panel';
         if (pathname === '/dashboard/settings') return 'Settings';
         if (pathname === '/dashboard/admin') return 'Admin';
@@ -383,6 +384,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             className="text-lg font-medium"
                                         />
                                         <NavItem
+                                            icon={<Flame size={32} />}
+                                            label="Self Discipline"
+                                            active={activePage === 'Self Discipline'}
+                                            onClick={() => handleNav('/dashboard/discipline')}
+                                            className="text-lg font-medium"
+                                        />
+                                        <NavItem
                                             icon={<Settings size={32} />}
                                             label="Settings"
                                             active={activePage === 'Settings'}
@@ -481,6 +489,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                             <NavItem id="onboarding-nav-news" collapsed={isSidebarCollapsed} icon={<Bell size={20} />} label="Team News" active={activePage === 'Team News'} onClick={() => handleNav('/dashboard/news')} />
+                            <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
