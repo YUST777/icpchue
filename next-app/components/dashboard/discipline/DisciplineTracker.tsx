@@ -42,10 +42,67 @@ interface DisciplineTrackerProps {
     traineeName?: string;
 }
 
-const TOTAL_WEEKS = 8;
-const DAYS_PER_WEEK = 7;
-// Program start date: August 30, 2026 (matching training schedule)
-const PROGRAM_START_DATE = new Date(2026, 7, 30, 0, 0, 0);
+// Clean local number input component that doesn't fight the user's cursor or force decimals
+function TimeInputCell({
+    value,
+    disabled,
+    onSave,
+}: {
+    value: number | string | null | undefined;
+    disabled?: boolean;
+    onSave: (hours: number | null) => void;
+}) {
+    const [text, setText] = useState<string>(() => (value !== null && value !== undefined && value !== '' ? String(value) : ''));
+
+    useEffect(() => {
+        setText(value !== null && value !== undefined && value !== '' ? String(value) : '');
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        // Allow empty string or valid decimal number (e.g. "", "1", "1.", "1.5", ".5")
+        if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+            setText(val);
+        }
+    };
+
+    const handleBlur = () => {
+        if (text === '' || text.trim() === '' || text === '.') {
+            onSave(null);
+            setText('');
+        } else {
+            const parsed = parseFloat(text);
+            if (!isNaN(parsed) && parsed >= 0) {
+                const clean = Math.min(24, Math.max(0, parsed));
+                onSave(clean);
+                setText(String(clean));
+            } else {
+                onSave(null);
+                setText('');
+            }
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
+        }
+    };
+
+    return (
+        <input
+            type="text"
+            inputMode="decimal"
+            value={text}
+            placeholder=""
+            disabled={disabled}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none transition-colors"
+        />
+    );
+}
 
 export default function DisciplineTracker({ targetUserId, isMentorView = false, traineeName }: DisciplineTrackerProps) {
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
@@ -341,19 +398,13 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                     <td className="p-2 text-center border-r border-white/[0.06]">
                                                         {isUnlocked ? (
                                                             <div className="flex items-center justify-center">
-                                                                <input
-                                                                    type="number"
-                                                                    min="0"
-                                                                    max="24"
-                                                                    step="any"
-                                                                    value={log?.total_hours !== undefined && log?.total_hours !== null ? log.total_hours : ''}
-                                                                    placeholder=""
+                                                                <TimeInputCell
+                                                                    value={log?.total_hours}
                                                                     disabled={isMentorView}
-                                                                    onChange={(e) => handleSaveLog(weekNum, dayNum, { 
-                                                                        total_hours: e.target.value === '' ? null : parseFloat(e.target.value),
+                                                                    onSave={(hours) => handleSaveLog(weekNum, dayNum, { 
+                                                                        total_hours: hours,
                                                                         is_missed: false 
                                                                     })}
-                                                                    className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
                                                                 />
                                                             </div>
                                                         ) : (

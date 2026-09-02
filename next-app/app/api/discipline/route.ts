@@ -55,7 +55,10 @@ export async function GET(req: NextRequest) {
             ORDER BY week_number ASC, day_number ASC
         `, [effectiveUserId]);
 
-        const existingLogs = logsRes.rows;
+        const existingLogs = logsRes.rows.map(row => ({
+            ...row,
+            total_hours: (row.total_hours === null || row.total_hours === undefined) ? null : Number(row.total_hours),
+        }));
         const totalHours = existingLogs.reduce((sum, l) => sum + (l.is_missed ? 0 : Number(l.total_hours || 0)), 0);
         const activeDays = existingLogs.filter(l => !l.is_missed && Number(l.total_hours) > 0).length;
         const mentorReviewsCount = existingLogs.filter(l => Boolean(l.mentor_comment && l.mentor_comment.trim())).length;
