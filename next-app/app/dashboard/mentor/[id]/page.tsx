@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
     AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, 
-    Clock, Circle, Search, BarChart3 
+    XCircle, Clock, Circle, Search, BarChart3, HardDrive 
 } from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
@@ -146,6 +146,100 @@ export default function TraineeDossierPage() {
 
     const hasMoreSubmissions = submissionsList.length < (submissions_total || 0);
 
+    const renderProblemBadge = (prob: any) => {
+        const st = prob.status;
+        const attempts = prob.attempts > 0 ? ` (#${prob.attempts})` : '';
+
+        if (st === 'SOLVED') {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white transition-all">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <CheckCircle2 size={13} className="text-[#E8C15A] shrink-0" />
+                        <span className="font-bold text-[#E8C15A]">{prob.problem_letter}.</span>
+                        <span className="truncate font-medium">{prob.title}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-[#E8C15A] shrink-0">
+                        Accepted{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        if (st === 'WRONG_ANSWER') {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-red-500/10 border-red-500/30 text-white transition-all">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <XCircle size={13} className="text-red-400 shrink-0" />
+                        <span className="font-bold text-red-400">{prob.problem_letter}.</span>
+                        <span className="truncate font-medium">{prob.title}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-red-400 shrink-0">
+                        Wrong Answer{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        if (st === 'TIME_LIMIT') {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/30 text-white transition-all">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <Clock size={13} className="text-amber-400 shrink-0" />
+                        <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
+                        <span className="truncate font-medium">{prob.title}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
+                        Time Limit{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        if (st === 'MEMORY_LIMIT' || st === 'RUNTIME_ERROR') {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-purple-500/10 border-purple-500/30 text-white transition-all">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <AlertTriangle size={13} className="text-purple-400 shrink-0" />
+                        <span className="font-bold text-purple-400">{prob.problem_letter}.</span>
+                        <span className="truncate font-medium">{prob.title}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-purple-300 shrink-0">
+                        {st === 'MEMORY_LIMIT' ? 'Memory Limit' : 'Runtime Error'}{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        if (st === 'ATTEMPTED') {
+            return (
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/25 text-white/90 transition-all">
+                    <div className="flex items-center gap-2 truncate pr-1">
+                        <Clock size={13} className="text-amber-400 shrink-0" />
+                        <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
+                        <span className="truncate font-medium">{prob.title}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
+                        Attempted{attempts}
+                    </span>
+                </div>
+            );
+        }
+
+        // NOT_STARTED
+        return (
+            <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-white/[0.015] border-white/5 text-white/40 transition-all">
+                <div className="flex items-center gap-2 truncate pr-1">
+                    <Circle size={11} className="text-white/20 shrink-0" />
+                    <span className="font-bold text-white/50">{prob.problem_letter}.</span>
+                    <span className="truncate font-medium">{prob.title}</span>
+                </div>
+                <span className="text-[10px] font-mono text-white/30 shrink-0">
+                    Not Started
+                </span>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
@@ -285,43 +379,14 @@ export default function TraineeDossierPage() {
                                             </div>
                                         </div>
 
-                                        {/* Expanded Problems Grid */}
+                                        {/* Expanded Problems Grid (Showing exact situation / verdict for every problem) */}
                                         {isExpanded && sheet.problems && sheet.problems.length > 0 && (
                                             <div className="p-3 bg-black/40 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                                {sheet.problems.map((p: any) => {
-                                                    const isSolved = p.status === 'SOLVED';
-                                                    const isAttempted = p.status === 'ATTEMPTED';
-
-                                                    return (
-                                                        <div 
-                                                            key={p.id}
-                                                            className={`p-2 rounded-lg text-xs flex items-center justify-between border transition-all ${
-                                                                isSolved
-                                                                    ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white'
-                                                                    : isAttempted
-                                                                    ? 'bg-amber-500/10 border-amber-500/30 text-white/90'
-                                                                    : 'bg-white/[0.02] border-white/5 text-white/40'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center gap-2 truncate pr-1">
-                                                                {isSolved ? (
-                                                                    <CheckCircle2 size={12} className="text-[#E8C15A] shrink-0" />
-                                                                ) : isAttempted ? (
-                                                                    <Clock size={12} className="text-amber-400 shrink-0" />
-                                                                ) : (
-                                                                    <Circle size={10} className="text-white/20 shrink-0" />
-                                                                )}
-                                                                <span className="font-bold text-[#E8C15A]">{p.problem_letter}.</span>
-                                                                <span className="truncate font-medium">{p.title}</span>
-                                                            </div>
-                                                            <span className={`text-[9px] font-bold uppercase shrink-0 ${
-                                                                isSolved ? 'text-[#E8C15A]' : isAttempted ? 'text-amber-400' : 'text-white/30'
-                                                            }`}>
-                                                                {isSolved ? 'Solved' : isAttempted ? 'Attempted' : 'Not Started'}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
+                                                {sheet.problems.map((p: any) => (
+                                                    <React.Fragment key={p.id}>
+                                                        {renderProblemBadge(p)}
+                                                    </React.Fragment>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
