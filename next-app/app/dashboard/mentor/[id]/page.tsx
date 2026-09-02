@@ -13,6 +13,7 @@ import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHea
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
 import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
+import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
 
 export default function TraineeDossierPage() {
     const params = useParams();
@@ -455,6 +456,17 @@ export default function TraineeDossierPage() {
                             })
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Tab: Self Discipline Study Log */}
+            {activeTab === 'discipline' && (
+                <div className="space-y-3">
+                    <DisciplineTracker 
+                        targetUserId={profile.user_id} 
+                        isMentorView={true} 
+                        traineeName={profile.name} 
+                    />
                 </div>
             )}
 

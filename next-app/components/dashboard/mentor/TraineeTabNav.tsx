@@ -3,12 +3,13 @@
 import React from 'react';
 import { 
     LayoutDashboard, BarChart3, FileCode2, Terminal, 
-    ShieldAlert 
+    ShieldAlert, Flame
 } from 'lucide-react';
 
 export const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'progress', label: 'Progress Matrix', icon: BarChart3 },
+    { id: 'discipline', label: 'Study Log', icon: Flame },
     { id: 'submissions', label: 'Submissions', icon: FileCode2 },
     { id: 'workspace', label: 'Code Inspector', icon: Terminal },
     { id: 'flags', label: 'Cheating Flags', icon: ShieldAlert },
