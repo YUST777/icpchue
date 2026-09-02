@@ -120,7 +120,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Fetching
+        // 3. Parallel Fetching with Calculated Real Attempts
         const [
             statsRes,
             streakRes,
@@ -168,13 +168,20 @@ export async function GET(
                 ORDER BY solve_date ASC
             `, [userId]),
             query(`
-                SELECT 
-                    id, contest_id, problem_index, sheet_id, verdict, 
-                    language, time_ms, memory_kb, attempt_number, 
-                    submitted_at, time_to_solve_seconds, paste_events, 
-                    tab_switches, cf_submission_id, source_code
-                FROM submissions 
-                WHERE user_id = $1 
+                WITH ranked_subs AS (
+                    SELECT 
+                        id, contest_id, problem_index, sheet_id, verdict, 
+                        language, time_ms, memory_kb, submitted_at, 
+                        time_to_solve_seconds, paste_events, tab_switches, 
+                        cf_submission_id, source_code,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY user_id, contest_id, problem_index 
+                            ORDER BY submitted_at ASC
+                        ) as real_attempt
+                    FROM submissions 
+                    WHERE user_id = $1
+                )
+                SELECT * FROM ranked_subs 
                 ORDER BY submitted_at DESC 
                 LIMIT $2 OFFSET $3
             `, [userId, subLimit, subOffset]),
@@ -204,7 +211,7 @@ export async function GET(
         const lastSolveAt = statsRes.rows[0]?.last_solve_at || streakRes.rows[0]?.last_solve_date;
         const totalProblems = parseInt(totalProblemsRes.rows[0]?.count || '150', 10);
 
-        // Build Sheet and Contest Lookup Maps for Human Labels: "Lv 1 • Sheet B (Loops)"
+        // Build Sheet and Contest Lookup Maps
         const contestToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
         const sheetIdToSheetMap = new Map<string, { level: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
 
@@ -336,7 +343,7 @@ export async function GET(
             count: parseInt(r.solve_count, 10) || 0,
         }));
 
-        // Recent Submissions with Human Curriculum Labels
+        // Recent Submissions with REAL Calculated Attempt Numbers
         const recentSubmissions = subsRes.rows.map((s) => {
             const sheetInfo = (s.sheet_id && sheetIdToSheetMap.get(String(s.sheet_id))) || 
                               (s.contest_id && contestToSheetMap.get(String(s.contest_id))) || null;
@@ -360,7 +367,7 @@ export async function GET(
                 language: s.language || 'C++',
                 time_ms: s.time_ms ?? null,
                 memory_kb: s.memory_kb ?? null,
-                attempts: s.attempt_number || 1,
+                attempts: parseInt(s.real_attempt || '1', 10),
                 submitted_at: s.submitted_at,
                 time_to_solve_seconds: s.time_to_solve_seconds || 0,
                 paste_events: s.paste_events || 0,
@@ -370,7 +377,7 @@ export async function GET(
             };
         });
 
-        // Build Code Catalog with Human Labels: "Lv 1 / Sheet B / Problem V"
+        // Build Code Catalog
         const codeEntriesMap = new Map<string, any>();
 
         allUserCodesRes.rows.forEach((uc) => {

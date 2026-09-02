@@ -19,10 +19,23 @@
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Bulletproof Global Scrollbar Suppression Across All Browsers */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
 html {
   font-family: var(--font-sans);
   font-feature-settings: "rlig" 1, "calt" 1;
   background-color: #000000;
+  scrollbar-width: none !important;
 }
 
 html[dir="rtl"] {
@@ -36,6 +49,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  scrollbar-width: none !important;
 }
 
 /* Ensure navbar fits on mobile */
