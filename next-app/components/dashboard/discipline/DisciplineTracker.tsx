@@ -47,7 +47,7 @@ const DAYS_PER_WEEK = 7;
 // Program start date: August 30, 2026 (matching training schedule)
 const PROGRAM_START_DATE = new Date(2026, 7, 30, 0, 0, 0);
 
-// Clean local number input component that doesn't fight the user's cursor or force decimals
+// Clean local number input component with instant debounced auto-save as user types
 function TimeInputCell({
     value,
     disabled,
@@ -58,20 +58,35 @@ function TimeInputCell({
     onSave: (hours: number | null) => void;
 }) {
     const [text, setText] = useState<string>(() => (value !== null && value !== undefined && value !== '' ? String(value) : ''));
+    const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        setText(value !== null && value !== undefined && value !== '' ? String(value) : '');
+        const externalStr = value !== null && value !== undefined && value !== '' ? String(value) : '';
+        if (text !== externalStr && (value !== (text === '' ? null : parseFloat(text)))) {
+            setText(externalStr);
+        }
     }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-        // Allow empty string or valid decimal number (e.g. "", "1", "1.", "1.5", ".5")
         if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
             setText(val);
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => {
+                if (val === '' || val.trim() === '' || val === '.') {
+                    onSave(null);
+                } else {
+                    const parsed = parseFloat(val);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                        onSave(Math.min(24, Math.max(0, parsed)));
+                    }
+                }
+            }, 300);
         }
     };
 
     const handleBlur = () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
         if (text === '' || text.trim() === '' || text === '.') {
             onSave(null);
             setText('');
@@ -88,12 +103,6 @@ function TimeInputCell({
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            (e.target as HTMLInputElement).blur();
-        }
-    };
-
     return (
         <input
             type="text"
@@ -103,7 +112,6 @@ function TimeInputCell({
             disabled={disabled}
             onChange={handleChange}
             onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
             className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none transition-colors"
         />
     );
@@ -201,6 +209,8 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         }
     };
 
+    const modalDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+
     const openTextModal = (week: number, day: number, field: 'tasks' | 'comment' | 'mentor') => {
         const key = `${week}_${day}`;
         const log = logsMap.get(key);
@@ -209,15 +219,54 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         setActiveEditCell({ week, day, field });
     };
 
-    const saveTextModal = async () => {
+    const handleModalTextChange = (text: string) => {
+        setEditBuffer(text);
         if (!activeEditCell) return;
         const { week, day, field } = activeEditCell;
-        const updates: Partial<DisciplineLog> = {};
-        if (field === 'tasks') updates.done_tasks = editBuffer;
-        if (field === 'comment') updates.student_comment = editBuffer;
-        if (field === 'mentor') updates.mentor_comment = editBuffer;
 
-        await handleSaveLog(week, day, updates);
+        // Optimistic local state update
+        setLogs(prev => {
+            const existing = prev.find(l => l.week_number === week && l.day_number === day);
+            const updated: DisciplineLog = existing ? {
+                ...existing,
+                ...(field === 'tasks' ? { done_tasks: text } : {}),
+                ...(field === 'comment' ? { student_comment: text } : {}),
+                ...(field === 'mentor' ? { mentor_comment: text } : {}),
+            } : {
+                user_id: targetUserId || 0,
+                week_number: week,
+                day_number: day,
+                log_date: new Date().toISOString().split('T')[0],
+                total_hours: null,
+                is_missed: false,
+                done_tasks: field === 'tasks' ? text : '',
+                student_comment: field === 'comment' ? text : '',
+                mentor_comment: field === 'mentor' ? text : '',
+            };
+            return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), updated];
+        });
+
+        // Instant debounced save on each word/character
+        if (modalDebounceRef.current) clearTimeout(modalDebounceRef.current);
+        modalDebounceRef.current = setTimeout(() => {
+            const updates: Partial<DisciplineLog> = {};
+            if (field === 'tasks') updates.done_tasks = text;
+            if (field === 'comment') updates.student_comment = text;
+            if (field === 'mentor') updates.mentor_comment = text;
+            handleSaveLog(week, day, updates);
+        }, 250);
+    };
+
+    const closeTextModal = () => {
+        if (modalDebounceRef.current) clearTimeout(modalDebounceRef.current);
+        if (activeEditCell) {
+            const { week, day, field } = activeEditCell;
+            const updates: Partial<DisciplineLog> = {};
+            if (field === 'tasks') updates.done_tasks = editBuffer;
+            if (field === 'comment') updates.student_comment = editBuffer;
+            if (field === 'mentor') updates.mentor_comment = editBuffer;
+            handleSaveLog(week, day, updates);
+        }
         setActiveEditCell(null);
     };
 
@@ -491,18 +540,6 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                                 <Edit3 size={11} className="text-[#E8C15A]/40 group-hover:text-[#E8C15A] shrink-0 mt-0.5" />
                                                             )}
                                                         </div>
-
-                                                        {/* Status Indicators */}
-                                                        {isSaving && (
-                                                            <span className="absolute right-2 top-2 text-[10px] font-mono text-amber-400 animate-pulse">
-                                                                Saving...
-                                                            </span>
-                                                        )}
-                                                        {isSaved && (
-                                                            <span className="absolute right-2 top-2 text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                                                                <Check size={10} /> Saved
-                                                            </span>
-                                                        )}
                                                     </td>
                                                 </tr>
                                             );
@@ -515,11 +552,11 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 </div>
             </div>
 
-            {/* 3. Ultra-Minimalist Modal for Editing Entries */}
+            {/* 3. Ultra-Minimalist Modal for Editing Entries (Live Auto-Saving) */}
             {activeEditCell && (
                 <div 
                     className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-                    onClick={() => setActiveEditCell(null)}
+                    onClick={closeTextModal}
                 >
                     <div 
                         className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] animate-scale-in"
@@ -541,7 +578,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setActiveEditCell(null)}
+                                onClick={closeTextModal}
                                 className="w-6 h-6 rounded-lg text-white/30 hover:text-white hover:bg-white/5 flex items-center justify-center text-xs transition-colors cursor-pointer"
                             >
                                 ✕
@@ -552,14 +589,10 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                         <div>
                             <textarea
                                 value={editBuffer}
-                                onChange={(e) => setEditBuffer(e.target.value)}
+                                onChange={(e) => handleModalTextChange(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                                        e.preventDefault();
-                                        saveTextModal();
-                                    }
                                     if (e.key === 'Escape') {
-                                        setActiveEditCell(null);
+                                        closeTextModal();
                                     }
                                 }}
                                 autoFocus
@@ -577,26 +610,14 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                         </div>
 
                         {/* Minimal Footer */}
-                        <div className="flex items-center justify-between pt-1">
-                            <span className="text-[10px] text-white/30 font-mono hidden sm:inline">
-                                ⌘ + Enter to save
-                            </span>
-                            <div className="flex items-center gap-2 ml-auto">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveEditCell(null)}
-                                    className="px-3 py-1.5 rounded-xl text-white/40 hover:text-white text-xs transition-colors cursor-pointer font-medium"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={saveTextModal}
-                                    className="px-3.5 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-[0_2px_10px_rgba(232,193,90,0.2)] flex items-center gap-1.5 cursor-pointer active:scale-95"
-                                >
-                                    <Check size={12} /> Save Entry
-                                </button>
-                            </div>
+                        <div className="flex items-center justify-end pt-1">
+                            <button
+                                type="button"
+                                onClick={closeTextModal}
+                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-[0_2px_10px_rgba(232,193,90,0.2)] flex items-center gap-1.5 cursor-pointer active:scale-95"
+                            >
+                                <Check size={12} /> Done
+                            </button>
                         </div>
                     </div>
                 </div>
