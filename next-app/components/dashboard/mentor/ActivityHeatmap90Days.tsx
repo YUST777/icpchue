@@ -8,7 +8,6 @@ interface ActivityHeatmapProps {
 }
 
 export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
-    // Generate last 90 days grid (13 weeks x 7 days)
     const { calendarGrid, totalSolves, monthLabels } = useMemo(() => {
         const dataMap = new Map<string, number>();
         let sum = 0;
@@ -22,7 +21,6 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
         const monthSet = new Set<string>();
         const labels: { name: string; colIndex: number }[] = [];
 
-        // 91 days (13 full weeks)
         for (let i = 90; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
@@ -33,7 +31,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             days.push({
                 date: dateStr,
                 count,
-                dayOfWeek: d.getDay(), // 0 = Sun, 1 = Mon ...
+                dayOfWeek: d.getDay(),
                 month: monthName,
             });
 
@@ -43,7 +41,6 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             }
         }
 
-        // Group into weeks (columns)
         const weeks: { date: string; count: number }[][] = [];
         let currentWeek: { date: string; count: number }[] = [];
         days.forEach((day, idx) => {
@@ -58,66 +55,64 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
     }, [data]);
 
     const getIntensityClass = (count: number) => {
-        if (count === 0) return 'bg-white/[0.04] border border-white/[0.03]';
-        if (count <= 2) return 'bg-emerald-900/60 border border-emerald-700/50 text-emerald-200';
-        if (count <= 5) return 'bg-emerald-600 border border-emerald-500 text-white';
-        return 'bg-emerald-400 border border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]';
+        if (count === 0) return 'bg-white/[0.04] border border-white/[0.02]';
+        if (count <= 2) return 'bg-emerald-900/60 border border-emerald-700/50';
+        if (count <= 5) return 'bg-emerald-600 border border-emerald-500';
+        return 'bg-emerald-400 border border-emerald-300 shadow-[0_0_6px_rgba(52,211,153,0.4)]';
     };
 
     return (
-        <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-5 shadow-xl backdrop-blur-md flex flex-col h-full">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                        <Activity size={16} />
+        <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3.5 shadow-md flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
+                <div className="flex items-center gap-1.5">
+                    <div className="p-1 rounded bg-emerald-500/10 text-emerald-400">
+                        <Activity size={14} />
                     </div>
-                    <h2 className="text-base font-bold text-white tracking-tight">Activity Heatmap (Last 90 Days)</h2>
+                    <h2 className="text-xs font-bold text-white tracking-tight uppercase">90-Day Activity Heatmap</h2>
                 </div>
-                <span className="text-xs font-semibold text-emerald-400">{totalSolves} Solves recorded</span>
+                <span className="text-[10px] font-semibold text-emerald-400">{totalSolves} Solves</span>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center">
-                {/* Month header labels */}
-                <div className="flex text-[10px] text-white/40 font-medium mb-1.5 pl-6 gap-6">
+            <div className="flex flex-col justify-center py-1">
+                {/* Month labels */}
+                <div className="flex text-[9px] text-white/40 font-medium mb-1 pl-4 gap-6">
                     {monthLabels.map((m, i) => (
                         <span key={i}>{m.name}</span>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {/* Day labels (Mon, Wed, Fri) */}
-                    <div className="flex flex-col justify-between text-[9px] text-white/30 h-28 pr-1 font-mono">
-                        <span>Mon</span>
-                        <span>Wed</span>
-                        <span>Fri</span>
-                        <span>Sun</span>
+                <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col justify-between text-[8px] text-white/30 h-20 pr-0.5 font-mono">
+                        <span>M</span>
+                        <span>W</span>
+                        <span>F</span>
+                        <span>S</span>
                     </div>
 
-                    {/* 13-week grid */}
-                    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide py-1">
+                    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                         {calendarGrid.map((week, wIdx) => (
-                            <div key={wIdx} className="flex flex-col gap-1.5">
+                            <div key={wIdx} className="flex flex-col gap-1">
                                 {week.map((day) => (
                                     <div
                                         key={day.date}
-                                        title={`${day.date}: ${day.count} problem${day.count === 1 ? '' : 's'} solved`}
-                                        className={`w-3.5 h-3.5 rounded-sm transition-all duration-200 hover:scale-125 cursor-pointer ${getIntensityClass(day.count)}`}
+                                        title={`${day.date}: ${day.count} solves`}
+                                        className={`w-2.5 h-2.5 rounded-xs transition-transform hover:scale-125 cursor-pointer ${getIntensityClass(day.count)}`}
                                     />
                                 ))}
                             </div>
                         ))}
                     </div>
                 </div>
+            </div>
 
-                {/* Heatmap Legend */}
-                <div className="flex items-center justify-end gap-1.5 mt-4 text-[10px] text-white/40">
-                    <span>Less</span>
-                    <div className="w-2.5 h-2.5 rounded-sm bg-white/[0.04]" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-900/60" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-600" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.5)]" />
-                    <span>More</span>
-                </div>
+            {/* Legend */}
+            <div className="flex items-center justify-end gap-1 mt-2 text-[9px] text-white/40 border-t border-white/5 pt-1.5">
+                <span>Less</span>
+                <div className="w-2 h-2 rounded-xs bg-white/[0.04]" />
+                <div className="w-2 h-2 rounded-xs bg-emerald-900/60" />
+                <div className="w-2 h-2 rounded-xs bg-emerald-600" />
+                <div className="w-2 h-2 rounded-xs bg-emerald-400" />
+                <span>More</span>
             </div>
         </div>
     );
