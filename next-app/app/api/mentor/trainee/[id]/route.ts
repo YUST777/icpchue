@@ -500,14 +500,63 @@ export async function GET(
             count: parseInt(row.solve_count || '0', 10),
         })).filter((d: any) => Boolean(d.date));
 
-        // 8. Code Catalog
-        const codeCatalog = allUserCodesRes.rows.map((c: any) => ({
-            problem_id: c.problem_id || `${c.contest_id}_code`,
-            contest_id: c.contest_id,
-            code: c.code,
-            language: c.language,
-            updated_at: c.updated_at,
-        }));
+        // 8. Code Catalog (Deduplicated with Lv / Sheet / Letter labels and unique keys)
+        const seenCatalogKeys = new Set<string>();
+        const codeCatalog: any[] = [];
+
+        // 8a. From user_code drafts
+        allUserCodesRes.rows.forEach((c: any) => {
+            const cid = String(c.contest_id || '').trim();
+            const letter = String(c.problem_id || '').replace(/^.*?:/, '').toUpperCase().trim();
+            const comboKey = `${cid}_${letter}`;
+            if (!seenCatalogKeys.has(comboKey) && c.code) {
+                seenCatalogKeys.add(comboKey);
+                const sheetInfo = contestToSheetMap.get(cid);
+                const title = problemTitleMap.get(`${cid}_${letter}`);
+                const displayLabel = sheetInfo 
+                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` 
+                    : `${cid} ${letter}`;
+
+                codeCatalog.push({
+                    key: `draft_${comboKey}`,
+                    contest_id: cid,
+                    problem_id: letter,
+                    display_label: displayLabel,
+                    sheet_name: sheetInfo?.sheet_name,
+                    problem_title: title,
+                    code: c.code,
+                    language: c.language || 'C++',
+                    updated_at: c.updated_at,
+                });
+            }
+        });
+
+        // 8b. From submissions with source_code
+        subsRes.rows.forEach((s: any) => {
+            const cid = String(s.contest_id || '').trim();
+            const letter = String(s.problem_index || '').toUpperCase().trim();
+            const comboKey = `${cid}_${letter}`;
+            if (!seenCatalogKeys.has(comboKey) && s.source_code) {
+                seenCatalogKeys.add(comboKey);
+                const sheetInfo = contestToSheetMap.get(cid);
+                const title = problemTitleMap.get(`${cid}_${letter}`);
+                const displayLabel = sheetInfo 
+                    ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` 
+                    : `${cid} ${letter}`;
+
+                codeCatalog.push({
+                    key: `sub_${comboKey}`,
+                    contest_id: cid,
+                    problem_id: letter,
+                    display_label: displayLabel,
+                    sheet_name: sheetInfo?.sheet_name,
+                    problem_title: title,
+                    code: s.source_code,
+                    language: s.language || 'C++',
+                    updated_at: s.submitted_at,
+                });
+            }
+        });
 
         // 9. Notes & Workspaces
         const userNotes = allUserNotesRes.rows.map((n: any) => ({
