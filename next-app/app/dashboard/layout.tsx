@@ -407,13 +407,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             className="text-lg font-medium"
                                             badge="NEW"
                                         />
-                                        <NavItem
-                                            icon={<Settings size={32} />}
-                                            label="Settings"
-                                            active={activePage === 'Settings'}
-                                            onClick={() => handleNav('/dashboard/settings')}
-                                            className="text-lg font-medium"
-                                        />
                                         {isMentor && (
                                             <NavItem
                                                 icon={<GraduationCap size={32} />}
@@ -506,7 +499,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                             <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} badge="NEW" />
-                            <NavItem id="onboarding-nav-settings" collapsed={isSidebarCollapsed} icon={<Settings size={20} />} label="Settings" active={activePage === 'Settings'} onClick={() => handleNav('/dashboard/settings')} />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
