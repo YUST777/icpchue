@@ -120,7 +120,9 @@ export async function POST(req: NextRequest) {
             effectiveUserId = parseInt(target_user_id, 10);
         }
 
-        const hours = is_missed ? 0 : Math.max(0, Math.min(24, parseFloat(total_hours) || 0));
+        const hours = (total_hours === null || total_hours === undefined || total_hours === '') 
+            ? null 
+            : Math.max(0, Math.min(24, parseFloat(total_hours) || 0));
         const parsedDate = log_date ? new Date(log_date) : new Date();
         const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 
