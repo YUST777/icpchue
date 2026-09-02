@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, Clock, Circle, Search } from 'lucide-react';
-import { TraineeHeroHeader } from '@/components/dashboard/mentor/TraineeHeroHeader';
-import { TraineeMetricCards } from '@/components/dashboard/mentor/TraineeMetricCards';
+import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
 import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgressBreakdown';
 import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHeatmap90Days';
@@ -107,13 +106,8 @@ export default function TraineeDossierPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto">
-                <div className="h-14 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-14 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
-                    ))}
-                </div>
-                <div className="h-64 bg-[#121214] border border-white/5 rounded-xl animate-pulse" />
+                <div className="h-44 bg-[#121214] border border-white/5 rounded-2xl animate-pulse" />
+                <div className="h-64 bg-[#121214] border border-white/5 rounded-2xl animate-pulse" />
             </div>
         );
     }
@@ -151,23 +145,20 @@ export default function TraineeDossierPage() {
 
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
-            {/* 1. Sleek Compact Hero Bar */}
-            <TraineeHeroHeader 
+            {/* 1. Single Unified Profile & KPI Bento Widget */}
+            <TraineeProfileCard 
                 profile={profile} 
-                lastSolveAt={metrics?.last_solve_at} 
+                metrics={metrics || {}} 
             />
 
-            {/* 2. Compact 6 KPI Metric Stat Cards */}
-            <TraineeMetricCards metrics={metrics || {}} />
-
-            {/* 3. Navigation Tabs */}
+            {/* 2. Navigation Tabs */}
             <TraineeTabNav 
                 activeTab={activeTab} 
                 onChange={setActiveTab} 
                 flagsCount={behavioral_analysis?.cheating_flags || 0}
             />
 
-            {/* 4. Tab Contents */}
+            {/* 3. Tab Contents */}
 
             {/* Tab 1: Overview */}
             {activeTab === 'overview' && (
