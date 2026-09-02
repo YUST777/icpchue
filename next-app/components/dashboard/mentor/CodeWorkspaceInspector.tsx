@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Copy, Check, Search, ChevronRight, Terminal, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { 
+    Copy, Check, Search, ChevronRight, Terminal, 
+    CheckCircle2, XCircle, Clock, AlertTriangle, Download, ExternalLink 
+} from 'lucide-react';
 
 interface CodeEntry {
     key: string;
@@ -15,6 +18,7 @@ interface CodeEntry {
     verdict?: string;
     status?: string;
     attempts?: number;
+    cf_problem_url?: string;
     updated_at: string;
 }
 
@@ -84,6 +88,19 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
         });
     };
 
+    const handleDownload = () => {
+        if (!displayedCode) return;
+        const ext = (activeEntry?.language || '').toLowerCase().includes('py') ? 'py' : 'cpp';
+        const label = (activeEntry?.display_label || `${activeEntry?.contest_id}_${activeEntry?.problem_id}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const blob = new Blob([displayedCode], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${label}_solution.${ext}`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const getVerdictMiniBadge = (entry?: CodeEntry) => {
         if (!entry) return null;
         const v = (entry.verdict || '').toLowerCase();
@@ -132,6 +149,8 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
         { id: 'draft', label: 'Draft' },
     ];
 
+    const cfUrl = activeEntry?.cf_problem_url || (activeEntry?.contest_id && activeEntry?.problem_id ? `https://codeforces.com/contest/${activeEntry.contest_id}/problem/${activeEntry.problem_id}` : undefined);
+
     return (
         <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
             {/* Header: Left Title & Right Verdict Filter Pill Selector */}
@@ -153,7 +172,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     )}
                 </div>
 
-                {/* Right Corner: Sleek Verdict Filter Pills (Replaced static cpp) */}
+                {/* Right Corner: Sleek Verdict Filter Pills */}
                 <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/[0.06]">
                     {filterButtons.map((btn) => {
                         const isActive = verdictFilter === btn.id;
@@ -191,8 +210,8 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
 
                     <div className="space-y-1 overflow-y-auto max-h-[350px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
                         {filteredCatalog.length === 0 ? (
-                            <div className="text-center py-8 text-xs text-white/30 font-mono">
-                                No problems found for filter.
+                            <div className="text-center py-12 text-xs text-white/30 font-mono">
+                                No code drafts or submissions found.
                             </div>
                         ) : (
                             filteredCatalog.map((item) => {
@@ -231,8 +250,8 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
 
                 {/* Code Window (8 cols) */}
                 <div className="lg:col-span-8 bg-[#0A0A0C] border border-white/[0.06] rounded-xl p-3.5 flex flex-col justify-between shadow-inner">
-                    <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/[0.06] text-xs">
-                        <div className="flex items-center gap-2 truncate pr-2">
+                    <div className="flex flex-wrap items-center justify-between pb-2.5 mb-2.5 border-b border-white/[0.06] text-xs gap-2">
+                        <div className="flex items-center gap-2 truncate pr-2 min-w-0">
                             <span className="font-mono text-white/90 text-xs font-semibold truncate">
                                 {activeEntry ? (activeEntry.display_label || `${activeEntry.contest_id} ${activeEntry.problem_id}`) : 'Code Preview'}
                             </span>
@@ -249,13 +268,38 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                             )}
                         </div>
 
-                        <button
-                            onClick={handleCopy}
-                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
-                        >
-                            {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
-                            <span>{copied ? 'Copied' : 'Copy'}</span>
-                        </button>
+                        {/* Actions: Open on CF, Download .cpp, Copy */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {cfUrl && (
+                                <a
+                                    href={cfUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1 border border-white/[0.06] font-mono"
+                                    title="Open problem on Codeforces"
+                                >
+                                    <span>CF</span>
+                                    <ExternalLink size={10} className="text-white/40" />
+                                </a>
+                            )}
+
+                            <button
+                                onClick={handleDownload}
+                                className="px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1 border border-white/[0.06] cursor-pointer"
+                                title="Download solution code"
+                            >
+                                <Download size={11} />
+                                <span className="hidden sm:inline">Download</span>
+                            </button>
+
+                            <button
+                                onClick={handleCopy}
+                                className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
+                            >
+                                {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
+                                <span>{copied ? 'Copied' : 'Copy'}</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="font-mono text-xs overflow-x-auto max-h-[340px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 leading-relaxed">

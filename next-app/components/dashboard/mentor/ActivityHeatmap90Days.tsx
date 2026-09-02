@@ -92,6 +92,21 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
         return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const handleTileInteraction = (day: { date: string; count: number }, target: HTMLElement) => {
+        const rect = target.getBoundingClientRect();
+        const screenW = typeof window !== 'undefined' ? window.innerWidth : 1000;
+        // Clamp tooltip X coordinate so it never overflows screen edges
+        const rawX = rect.left + rect.width / 2;
+        const clampedX = Math.max(75, Math.min(screenW - 75, rawX));
+
+        setHoveredDay({
+            date: day.date,
+            count: day.count,
+            x: clampedX,
+            y: rect.top,
+        });
+    };
+
     const tooltipElement = (hoveredDay && mounted) ? createPortal(
         <div
             style={{
@@ -102,7 +117,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                 pointerEvents: 'none',
                 zIndex: 999999,
             }}
-            className="bg-[#18181B] border border-white/20 rounded-xl px-3 py-1.5 shadow-[0_12px_28px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col items-center gap-0.5"
+            className="bg-[#18181B] border border-white/20 rounded-xl px-3 py-1.5 shadow-[0_12px_28px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col items-center gap-0.5 animate-in fade-in duration-100"
         >
             <div className="text-[11px] font-bold font-mono">
                 {hoveredDay.count > 0 ? (
@@ -171,16 +186,9 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                                     {week.map((day) => (
                                         <div
                                             key={day.date}
-                                            onMouseEnter={(e) => {
-                                                const rect = e.currentTarget.getBoundingClientRect();
-                                                setHoveredDay({
-                                                    date: day.date,
-                                                    count: day.count,
-                                                    x: rect.left + rect.width / 2,
-                                                    y: rect.top,
-                                                });
-                                            }}
+                                            onMouseEnter={(e) => handleTileInteraction(day, e.currentTarget)}
                                             onMouseLeave={() => setHoveredDay(null)}
+                                            onClick={(e) => handleTileInteraction(day, e.currentTarget)}
                                             className={`aspect-square w-full min-w-[10px] max-w-[14px] rounded-xs transition-transform hover:scale-125 cursor-pointer ${getIntensityClass(day.count)}`}
                                         />
                                     ))}
@@ -204,7 +212,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                 </div>
             </div>
 
-            {/* Portal-rendered Tooltip (Immune to parent backdrop-blur / overflow containing block traps) */}
+            {/* Portal-rendered Tooltip */}
             {tooltipElement}
         </div>
     );
