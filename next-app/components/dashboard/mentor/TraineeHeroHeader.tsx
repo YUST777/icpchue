@@ -37,39 +37,39 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
     const isFlagged = (profile.cheating_flags && profile.cheating_flags > 0) || profile.is_shadow_banned;
 
     return (
-        <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3 shadow-sm backdrop-blur-md">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                {/* Identity without photo */}
+        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                {/* Identity info */}
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-base font-bold text-white truncate">{profile.name}</h1>
-                        <span className="font-mono text-[11px] text-white/60 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                        <h1 className="text-base font-semibold text-white tracking-tight truncate">{profile.name}</h1>
+                        <span className="font-mono text-[11px] text-white/50 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
                             {profile.student_id}
                         </span>
-                        <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/20">
+                        <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2.5 py-0.5 rounded-full border border-[#E8C15A]/25">
                             {profile.academic_level}
                         </span>
                         {isFlagged ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded-full">
                                 <ShieldAlert size={10} /> {profile.cheating_flags} Flags
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-1.5 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/25">
                                 <CheckCircle2 size={10} /> Clean
                             </span>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-white/50 mt-1">
-                        <span className="truncate max-w-[200px]">{profile.faculty}</span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/45 mt-1.5">
+                        <span className="truncate max-w-[220px]">{profile.faculty}</span>
                         {profile.codeforces_handle && (
                             <a
                                 href={`https://codeforces.com/profile/${profile.codeforces_handle}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-white/80 hover:text-white font-semibold"
+                                className="inline-flex items-center gap-1 text-white/75 hover:text-white transition-colors font-medium"
                             >
-                                <SiCodeforces className="text-red-400" size={10} />
+                                <SiCodeforces className="text-red-400" size={11} />
                                 <span>{profile.codeforces_handle}</span>
                                 <ExternalLink size={9} className="text-white/30" />
                             </a>
@@ -84,7 +84,7 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
                                 href={`https://t.me/${profile.telegram.replace('@', '')}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                                className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
                             >
                                 <Send size={10} /> @{profile.telegram.replace('@', '')}
                             </a>
@@ -99,7 +99,7 @@ export function TraineeHeroHeader({ profile, lastSolveAt }: TraineeHeroHeaderPro
                     </div>
                     <Link
                         href="/dashboard/mentor"
-                        className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold transition-all border border-white/10 flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white text-xs font-medium transition-all border border-white/[0.08] flex items-center gap-1.5"
                     >
                         <ArrowLeft size={13} />
                         <span>All Trainees</span>
