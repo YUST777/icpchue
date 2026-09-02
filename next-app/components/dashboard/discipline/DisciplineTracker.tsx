@@ -452,38 +452,55 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 </div>
             </div>
 
-            {/* 3. Modal for comfortable editing of long text (Done Tasks / Student Comment / Mentor Feedback) */}
+            {/* 3. Ultra-Minimalist Modal for Editing Entries */}
             {activeEditCell && (
-                <div className="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-[#121214] border border-white/10 rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl animate-scale-in">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div 
+                    className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+                    onClick={() => setActiveEditCell(null)}
+                >
+                    <div 
+                        className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] animate-scale-in"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Minimal Header */}
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="p-1 rounded bg-[#E8C15A]/10 text-[#E8C15A]">
-                                    <Edit3 size={14} />
+                                <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-md border border-[#E8C15A]/20">
+                                    W{activeEditCell.week} · Day {activeEditCell.day}
                                 </span>
-                                <h3 className="text-xs font-bold text-white uppercase font-mono tracking-wider">
-                                    Week {activeEditCell.week} • Day {activeEditCell.day} - {
-                                        activeEditCell.field === 'tasks' 
-                                            ? 'Done + Time / Topics' 
-                                            : activeEditCell.field === 'comment' 
-                                                ? 'Student Reflection / Notes' 
-                                                : 'Mentor Guidance Feedback'
-                                    }
-                                </h3>
+                                <span className="text-xs font-medium text-white/90">
+                                    {activeEditCell.field === 'tasks' 
+                                        ? 'Completed Topics & Tasks' 
+                                        : activeEditCell.field === 'comment' 
+                                            ? 'Daily Reflection' 
+                                            : 'Mentor Guidance Feedback'}
+                                </span>
                             </div>
                             <button
+                                type="button"
                                 onClick={() => setActiveEditCell(null)}
-                                className="text-white/40 hover:text-white text-xs p-1"
+                                className="w-6 h-6 rounded-lg text-white/30 hover:text-white hover:bg-white/5 flex items-center justify-center text-xs transition-colors cursor-pointer"
                             >
                                 ✕
                             </button>
                         </div>
 
+                        {/* Textarea */}
                         <div>
                             <textarea
                                 value={editBuffer}
                                 onChange={(e) => setEditBuffer(e.target.value)}
-                                rows={6}
+                                onKeyDown={(e) => {
+                                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                                        e.preventDefault();
+                                        saveTextModal();
+                                    }
+                                    if (e.key === 'Escape') {
+                                        setActiveEditCell(null);
+                                    }
+                                }}
+                                autoFocus
+                                rows={5}
                                 dir="auto"
                                 placeholder={
                                     activeEditCell.field === 'tasks'
@@ -492,25 +509,31 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                             ? 'e.g. مطبق فوق ال 30 ساعة، بدات من الساعة 5... راحت علي نومة'
                                             : 'Write mentor feedback, praise, or study recommendations...'
                                 }
-                                className="w-full bg-[#0B0B0C] border border-white/10 rounded-xl p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#E8C15A] transition-colors resize-none font-sans"
+                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
                             />
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setActiveEditCell(null)}
-                                className="px-3 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white text-xs transition-colors cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={saveTextModal}
-                                className="px-4 py-1.5 rounded-lg bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                            >
-                                <Save size={12} /> Save Entry
-                            </button>
+                        {/* Minimal Footer */}
+                        <div className="flex items-center justify-between pt-1">
+                            <span className="text-[10px] text-white/30 font-mono hidden sm:inline">
+                                ⌘ + Enter to save
+                            </span>
+                            <div className="flex items-center gap-2 ml-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveEditCell(null)}
+                                    className="px-3 py-1.5 rounded-xl text-white/40 hover:text-white text-xs transition-colors cursor-pointer font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={saveTextModal}
+                                    className="px-3.5 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-[0_2px_10px_rgba(232,193,90,0.2)] flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <Check size={12} /> Save Entry
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
