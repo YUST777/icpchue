@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
  * Tracks page navigation + device context automatically.
  * Records every page visit with time spent, and sends device info once per session.
  */
-export function usePageTracking() {
+export function usePageTracking(enabled = true) {
     const pathname = usePathname();
     const enterTimeRef = useRef(Date.now());
     const lastPathRef = useRef<string | null>(null);
@@ -15,6 +15,7 @@ export function usePageTracking() {
 
     // Send device context once per session
     useEffect(() => {
+        if (!enabled) return;
         if (contextSentRef.current) return;
         contextSentRef.current = true;
 
@@ -55,10 +56,11 @@ export function usePageTracking() {
             }),
             keepalive: true,
         }).catch(() => {});
-    }, []);
+    }, [enabled]);
 
     // Track page navigation
     useEffect(() => {
+        if (!enabled) return;
         const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
 
         // Record leaving old page (debounced, non-blocking)
@@ -111,10 +113,11 @@ export function usePageTracking() {
             clearTimeout(timer);
             window.removeEventListener('beforeunload', handleUnload);
         };
-    }, [pathname]);
+    }, [enabled, pathname]);
 
     // Track JS errors
     useEffect(() => {
+        if (!enabled) return;
         const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
 
         const handleError = (event: ErrorEvent) => {
@@ -162,10 +165,11 @@ export function usePageTracking() {
             window.removeEventListener('error', handleError);
             window.removeEventListener('unhandledrejection', handleUnhandledRejection);
         };
-    }, [pathname]);
+    }, [enabled, pathname]);
 
     // Track online/offline transitions
     useEffect(() => {
+        if (!enabled) return;
         const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
 
         const handleOnline = () => {
@@ -193,5 +197,5 @@ export function usePageTracking() {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [pathname]);
+    }, [enabled, pathname]);
 }

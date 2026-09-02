@@ -79,7 +79,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     // Track page navigation across all dashboard pages
-    usePageTracking();
+    // Telemetry is only enabled after the Supabase session has been resolved.
+    // This avoids firing protected tracking requests during the initial auth
+    // loading state (or after an auth failure), which otherwise creates noisy
+    // 401s and can capture third-party extension errors on the login page.
+    usePageTracking(isAuthenticated && !loading);
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
