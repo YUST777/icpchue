@@ -27,11 +27,10 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
         {
             title: 'Problems Solved',
             value: metrics.problems_solved.toString(),
-            subtext: `${metrics.solved_percentage}% assigned`,
-            subtextColor: 'text-emerald-400',
-            icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
-            borderHover: 'hover:border-emerald-500/40',
-            badgeBg: 'bg-emerald-500/10',
+            subtext: `${metrics.solved_percentage}% of curriculum`,
+            subtextColor: 'text-[#E8C15A]',
+            icon: <CheckCircle2 className="w-3.5 h-3.5 text-[#E8C15A]" />,
+            badgeBg: 'bg-[#E8C15A]/10',
         },
         {
             title: 'Attempted',
@@ -39,17 +38,15 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
             subtext: `${metrics.attempted_percentage}% pending`,
             subtextColor: 'text-amber-400',
             icon: <Clock className="w-3.5 h-3.5 text-amber-400" />,
-            borderHover: 'hover:border-amber-500/40',
             badgeBg: 'bg-amber-500/10',
         },
         {
             title: 'Not Started',
             value: metrics.not_started.toString(),
-            subtext: `${metrics.not_started_percentage}% left`,
-            subtextColor: 'text-red-400',
-            icon: <CircleDashed className="w-3.5 h-3.5 text-red-400" />,
-            borderHover: 'hover:border-red-500/40',
-            badgeBg: 'bg-red-500/10',
+            subtext: `${metrics.not_started_percentage}% remaining`,
+            subtextColor: 'text-white/40',
+            icon: <CircleDashed className="w-3.5 h-3.5 text-white/40" />,
+            badgeBg: 'bg-white/5',
         },
         {
             title: 'Current Streak',
@@ -57,7 +54,6 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
             subtext: `Best: ${metrics.max_streak}d`,
             subtextColor: 'text-[#E8C15A]',
             icon: <Flame className="w-3.5 h-3.5 text-[#E8C15A]" />,
-            borderHover: 'hover:border-[#E8C15A]/40',
             badgeBg: 'bg-[#E8C15A]/10',
         },
         {
@@ -66,7 +62,6 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
             subtext: `7d: ${metrics.submissions_last_7_days}`,
             subtextColor: 'text-blue-400',
             icon: <Code2 className="w-3.5 h-3.5 text-blue-400" />,
-            borderHover: 'hover:border-blue-500/40',
             badgeBg: 'bg-blue-500/10',
         },
         {
@@ -75,7 +70,6 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
             subtext: 'This season',
             subtextColor: 'text-purple-400',
             icon: <Timer className="w-3.5 h-3.5 text-purple-400" />,
-            borderHover: 'hover:border-purple-500/40',
             badgeBg: 'bg-purple-500/10',
         },
     ];
@@ -85,21 +79,21 @@ export function TraineeMetricCards({ metrics }: MetricCardsProps) {
             {cards.map((card) => (
                 <div
                     key={card.title}
-                    className={`bg-[#121214] border border-white/[0.08] ${card.borderHover} rounded-xl p-3 flex flex-col justify-between transition-all group backdrop-blur-md`}
+                    className="bg-[#121214]/90 border border-white/[0.08] hover:border-white/[0.14] rounded-2xl p-3.5 flex flex-col justify-between transition-all backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] group"
                 >
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] uppercase font-bold tracking-wider text-white/40 truncate">
+                    <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-white/40 truncate">
                             {card.title}
                         </span>
-                        <div className={`p-1 rounded ${card.badgeBg} shrink-0`}>
+                        <div className={`p-1.5 rounded-lg ${card.badgeBg} shrink-0`}>
                             {card.icon}
                         </div>
                     </div>
                     <div>
-                        <div className="text-lg font-black text-white tracking-tight">
+                        <div className="text-xl font-semibold text-white tracking-tight">
                             {card.value}
                         </div>
-                        <div className={`text-[10px] ${card.subtextColor} font-medium truncate`}>
+                        <div className={`text-[11px] font-mono ${card.subtextColor} mt-0.5 truncate`}>
                             {card.subtext}
                         </div>
                     </div>

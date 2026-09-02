@@ -18,12 +18,11 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             if (d.count > 0) active++;
         });
 
-        // Generate 365 days / 52 full weeks for an expansive full-width grid
+        // 52 full weeks for an expansive full-width grid
         const today = new Date();
         const days: { date: string; count: number; dayOfWeek: number; month: string }[] = [];
         const monthMap = new Map<string, number>();
 
-        // 52 weeks = 364 days
         for (let i = 363; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
@@ -64,7 +63,6 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
         };
     }, [data]);
 
-    // Brand Gold / Yellow color intensities
     const getIntensityClass = (count: number) => {
         if (count === 0) return 'bg-white/[0.03] border border-white/[0.02]';
         if (count === 1) return 'bg-[#E8C15A]/25 border border-[#E8C15A]/35';
@@ -74,38 +72,37 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
     };
 
     return (
-        <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-4 shadow-md flex flex-col w-full">
-            {/* Header with KPI Metrics */}
-            <div className="flex flex-wrap items-center justify-between pb-3 mb-3 border-b border-white/5 gap-2">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A]">
-                        <Flame size={16} />
+        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col w-full">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between pb-3 mb-2 border-b border-white/[0.06] gap-2">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                        <Flame size={13} />
                     </div>
                     <div>
-                        <h2 className="text-xs font-bold text-white uppercase tracking-wider">
-                            Activity Heatmap (Past Year)
+                        <h2 className="text-xs font-semibold text-white/90 tracking-tight">
+                            Yearly Practice Consistency
                         </h2>
-                        <span className="text-[10px] text-white/40">Daily solve frequency & practice consistency</span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs font-semibold">
-                    <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 font-mono">
                         <span className="text-white/40 text-[10px] uppercase">Solves:</span>
-                        <span className="text-[#E8C15A] font-bold">{totalSolves}</span>
+                        <span className="text-[#E8C15A] font-semibold">{totalSolves}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-white/40 text-[10px] uppercase">Active Days:</span>
-                        <span className="text-white font-bold">{activeDays}</span>
+                    <div className="flex items-center gap-1.5 font-mono">
+                        <span className="text-white/40 text-[10px] uppercase">Active:</span>
+                        <span className="text-white/90 font-semibold">{activeDays}d</span>
                     </div>
                 </div>
             </div>
 
             {/* Expansive Full-Width Heatmap Grid */}
-            <div className="w-full overflow-x-auto scrollbar-thin py-2">
+            <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-2">
                 <div className="min-w-[720px]">
                     {/* Month labels along the top */}
-                    <div className="flex text-[10px] text-white/40 font-medium mb-1 pl-6 justify-between pr-2">
+                    <div className="flex text-[10px] text-white/40 font-mono mb-1 pl-6 justify-between pr-2">
                         {monthLabels.map((m, i) => (
                             <span key={i}>{m.name}</span>
                         ))}
@@ -138,10 +135,10 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
                 </div>
             </div>
 
-            {/* Footer Legend */}
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[10px] text-white/40">
+            {/* Legend */}
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-white/40 font-mono">
                 <span className="flex items-center gap-1">
-                    <Sparkles size={11} className="text-[#E8C15A]" /> Gold tiles represent active solve sessions
+                    <Sparkles size={11} className="text-[#E8C15A]" /> Gold tiles represent active practice days
                 </span>
                 <div className="flex items-center gap-1.5">
                     <span>Less</span>

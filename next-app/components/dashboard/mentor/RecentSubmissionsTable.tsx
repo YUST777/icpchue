@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
     FileCode2, Clock, CheckCircle2, XCircle, AlertTriangle, 
-    X, Copy, Check, ExternalLink, Cpu, HardDrive
+    X, Copy, Check, ExternalLink, Cpu, HardDrive, Terminal
 } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
@@ -45,27 +46,27 @@ export function RecentSubmissionsTable({
         const lower = verdict.toLowerCase();
         if (lower.includes('accepted') || lower === 'ac' || lower === 'ok') {
             return (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/25">
                     <CheckCircle2 size={10} /> Accepted
                 </span>
             );
         }
         if (lower.includes('wrong') || lower.includes('wa')) {
             return (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-400 border border-red-500/25">
                     <XCircle size={10} /> Wrong Answer
                 </span>
             );
         }
         if (lower.includes('time') || lower.includes('tle')) {
             return (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25">
                     <Clock size={10} /> Time Limit
                 </span>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/25">
                 <AlertTriangle size={10} /> {verdict}
             </span>
         );
@@ -83,34 +84,37 @@ export function RecentSubmissionsTable({
     };
 
     return (
-        <div className="bg-[#121214] border border-white/[0.08] rounded-xl p-3.5 shadow-md flex flex-col h-full">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
-                <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-[#E8C15A]/10 text-[#E8C15A]">
-                        <FileCode2 size={14} />
+        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                        <FileCode2 size={13} />
                     </div>
-                    <h2 className="text-xs font-bold text-white tracking-wider uppercase">Recent Submissions Feed</h2>
+                    <h2 className="text-xs font-semibold text-white/90 tracking-tight">Recent Submissions</h2>
                 </div>
-                <span className="text-[10px] text-white/40 font-medium">Showing {submissions.length} Submissions</span>
+                <span className="text-[11px] text-white/40 font-mono">
+                    {submissions.length} Recorded
+                </span>
             </div>
 
-            {/* Submissions Table with hidden browser scrollbar */}
+            {/* Submissions List with hidden scrollbars */}
             <div className="overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-[#121214] z-10">
-                        <tr className="text-white/40 border-b border-white/5 font-semibold text-[10px] uppercase">
-                            <th className="pb-2 pl-1">Problem</th>
-                            <th className="pb-2 text-center">Curriculum</th>
-                            <th className="pb-2 text-left">Verdict</th>
-                            <th className="pb-2 text-center">Lang</th>
-                            <th className="pb-2 text-center">Time</th>
-                            <th className="pb-2 pr-1 text-right">Attempt</th>
+                        <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium uppercase tracking-wider">
+                            <th className="pb-2.5 pl-1.5 font-medium">Problem</th>
+                            <th className="pb-2.5 text-center font-medium">Curriculum</th>
+                            <th className="pb-2.5 text-left font-medium">Verdict</th>
+                            <th className="pb-2.5 text-center font-medium">Language</th>
+                            <th className="pb-2.5 text-center font-medium">Time</th>
+                            <th className="pb-2.5 pr-1.5 text-right font-medium">Attempt</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
+                    <tbody className="divide-y divide-white/[0.04]">
                         {submissions.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="py-6 text-center text-white/40 text-xs">
+                                <td colSpan={6} className="py-8 text-center text-white/35 text-xs">
                                     No submissions recorded yet.
                                 </td>
                             </tr>
@@ -119,25 +123,24 @@ export function RecentSubmissionsTable({
                                 <tr 
                                     key={sub.id} 
                                     onClick={() => setActiveSubModal(sub)}
-                                    className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                                    title="Click to view full submission code & details"
+                                    className="hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors cursor-pointer group"
                                 >
-                                    <td className="py-2 pl-1 font-semibold text-white group-hover:text-[#E8C15A] transition-colors text-[11px] truncate max-w-[150px]">
+                                    <td className="py-2.5 pl-1.5 font-medium text-white/90 group-hover:text-[#E8C15A] transition-colors text-xs truncate max-w-[150px]">
                                         {sub.problem}
                                     </td>
-                                    <td className="py-2 text-center text-white/60 font-mono text-[10px]">
+                                    <td className="py-2.5 text-center text-white/50 font-mono text-[11px]">
                                         {sub.sheet_info ? `${sub.sheet_info.level} / Sheet ${sub.sheet_info.sheet_letter}` : (sub.sheet_id ? `Sheet ${sub.sheet_id}` : '-')}
                                     </td>
-                                    <td className="py-2">
+                                    <td className="py-2.5">
                                         {getVerdictBadge(sub.verdict)}
                                     </td>
-                                    <td className="py-2 text-center text-white/50 text-[10px]">
+                                    <td className="py-2.5 text-center text-white/50 text-[11px] font-mono">
                                         {sub.language.split(' ')[0]}
                                     </td>
-                                    <td className="py-2 text-center text-white/60 font-mono text-[10px]">
+                                    <td className="py-2.5 text-center text-white/60 font-mono text-[11px]">
                                         {sub.time_ms !== null && sub.time_ms !== undefined ? `${sub.time_ms}ms` : '-'}
                                     </td>
-                                    <td className="py-2 pr-1 text-right font-bold text-white/80 text-[11px]">
+                                    <td className="py-2.5 pr-1.5 text-right font-mono text-white/70 text-xs">
                                         #{sub.attempts || 1}
                                     </td>
                                 </tr>
@@ -148,126 +151,149 @@ export function RecentSubmissionsTable({
 
                 {/* Load More Button */}
                 {hasMore && (
-                    <div className="p-2 text-center border-t border-white/5">
+                    <div className="p-3 text-center border-t border-white/[0.06]">
                         <button
                             onClick={onLoadMore}
                             disabled={loadingMore}
-                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg text-xs font-semibold transition-all border border-white/5 disabled:opacity-50"
+                            className="px-4 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white rounded-xl text-xs font-medium transition-all border border-white/[0.08] disabled:opacity-50"
                         >
-                            {loadingMore ? 'Loading next 100...' : 'Load Next 100 Submissions'}
+                            {loadingMore ? 'Loading...' : 'Load Next 100 Submissions'}
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Submission Code & Detail Modal */}
-            {activeSubModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-[#121214] border border-white/15 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-                        {/* Modal Header */}
-                        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A]">
-                                    <FileCode2 size={18} />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-sm font-bold text-white">{activeSubModal.problem}</h3>
-                                        {getVerdictBadge(activeSubModal.verdict)}
+            {/* Apple-grade Glassmorphic Submission Modal */}
+            <AnimatePresence>
+                {activeSubModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={() => setActiveSubModal(null)}
+                            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                        />
+
+                        {/* Modal Container */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+                            transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                            className="relative w-full max-w-2xl bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col max-h-[85vh] z-10"
+                        >
+                            {/* Header */}
+                            <div className="p-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
+                                        <Terminal size={16} />
                                     </div>
-                                    <span className="text-[11px] text-white/50">
-                                        {activeSubModal.problem_title ? `${activeSubModal.problem_title} • ` : ''}
-                                        {formatDate(activeSubModal.submitted_at)}
-                                    </span>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold text-white tracking-tight">
+                                                {activeSubModal.problem}
+                                            </h3>
+                                            {getVerdictBadge(activeSubModal.verdict)}
+                                        </div>
+                                        <span className="text-[11px] text-white/45">
+                                            {activeSubModal.problem_title ? `${activeSubModal.problem_title} • ` : ''}
+                                            {formatDate(activeSubModal.submitted_at)}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <button
-                                onClick={() => setActiveSubModal(null)}
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        {/* Diagnostics Stat Row */}
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-3 bg-black/40 border-b border-white/5 text-xs">
-                            <div className="bg-white/5 p-2 rounded-lg">
-                                <span className="text-white/40 block text-[9px] uppercase">Language</span>
-                                <span className="font-semibold text-white mt-0.5 block">{activeSubModal.language}</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded-lg">
-                                <span className="text-white/40 block text-[9px] uppercase">Execution Time</span>
-                                <div className="flex items-center gap-1 font-semibold text-white mt-0.5">
-                                    <Cpu size={12} className="text-blue-400" />
-                                    <span>{activeSubModal.time_ms ?? 0} ms</span>
-                                </div>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded-lg">
-                                <span className="text-white/40 block text-[9px] uppercase">Memory</span>
-                                <div className="flex items-center gap-1 font-semibold text-white mt-0.5">
-                                    <HardDrive size={12} className="text-purple-400" />
-                                    <span>{activeSubModal.memory_kb ? `${(activeSubModal.memory_kb / 1024).toFixed(1)} MB` : '-'}</span>
-                                </div>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded-lg flex flex-col justify-between">
-                                <span className="text-white/40 block text-[9px] uppercase">Codeforces</span>
-                                {activeSubModal.cf_submission_id ? (
-                                    <a
-                                        href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-[#E8C15A] hover:underline flex items-center gap-1 font-semibold text-[11px]"
-                                    >
-                                        <SiCodeforces size={11} className="text-red-400" />
-                                        <span>#{activeSubModal.cf_submission_id}</span>
-                                        <ExternalLink size={9} />
-                                    </a>
-                                ) : (
-                                    <span className="text-white/50 text-[11px]">Platform</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Source Code Box */}
-                        <div className="p-3 flex-1 flex flex-col bg-[#0B0B0C] overflow-hidden min-h-[260px]">
-                            <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-xs">
-                                <span className="text-white/50 text-[11px] font-mono">Source Code</span>
                                 <button
-                                    onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                    className="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5"
+                                    onClick={() => setActiveSubModal(null)}
+                                    className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.06]"
                                 >
-                                    {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
-                                    <span>{copied ? 'Copied' : 'Copy Code'}</span>
+                                    <X size={14} />
                                 </button>
                             </div>
 
-                            <div className="font-mono text-xs overflow-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                {activeSubModal.source_code ? (
-                                    <div className="flex text-white/90">
-                                        <div className="select-none text-white/25 text-right pr-3 border-r border-white/10 space-y-0.5 shrink-0">
-                                            {activeSubModal.source_code.split('\n').map((_, i) => (
-                                                <div key={i}>{i + 1}</div>
-                                            ))}
-                                        </div>
-                                        <div className="pl-3 space-y-0.5 whitespace-pre flex-1 text-[#E0E0E0]">
-                                            {activeSubModal.source_code.split('\n').map((line, i) => (
-                                                <div key={i} className="hover:bg-white/[0.03]">
-                                                    {line || '\n'}
-                                                </div>
-                                            ))}
-                                        </div>
+                            {/* Stat Bar */}
+                            <div className="grid grid-cols-4 gap-2 p-3 bg-black/40 border-b border-white/[0.06] text-xs">
+                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
+                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Language</span>
+                                    <span className="font-mono text-white/90 text-[11px] mt-0.5 block truncate">
+                                        {activeSubModal.language}
+                                    </span>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
+                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Execution</span>
+                                    <div className="flex items-center gap-1 font-mono text-white/90 text-[11px] mt-0.5">
+                                        <Cpu size={11} className="text-blue-400" />
+                                        <span>{activeSubModal.time_ms ?? 0} ms</span>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-12 text-white/30 text-xs">
-                                        No source code recorded for this submission.
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
+                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Memory</span>
+                                    <div className="flex items-center gap-1 font-mono text-white/90 text-[11px] mt-0.5">
+                                        <HardDrive size={11} className="text-purple-400" />
+                                        <span>{activeSubModal.memory_kb ? `${(activeSubModal.memory_kb / 1024).toFixed(1)} MB` : '-'}</span>
                                     </div>
-                                )}
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl flex flex-col justify-between">
+                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Codeforces</span>
+                                    {activeSubModal.cf_submission_id ? (
+                                        <a
+                                            href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-[#E8C15A] hover:underline flex items-center gap-1 font-mono text-[11px]"
+                                        >
+                                            <SiCodeforces size={10} className="text-red-400" />
+                                            <span>#{activeSubModal.cf_submission_id}</span>
+                                            <ExternalLink size={8} />
+                                        </a>
+                                    ) : (
+                                        <span className="text-white/40 text-[11px] font-mono">Platform</span>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Source Code View */}
+                            <div className="p-3 flex-1 flex flex-col bg-[#0A0A0C] overflow-hidden min-h-[280px]">
+                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
+                                    <span className="text-white/40 text-[11px] font-mono">Source Code</span>
+                                    <button
+                                        onClick={() => handleCopy(activeSubModal.source_code || '')}
+                                        className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06]"
+                                    >
+                                        {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
+                                        <span>{copied ? 'Copied' : 'Copy'}</span>
+                                    </button>
+                                </div>
+
+                                <div className="font-mono text-[11px] overflow-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                    {activeSubModal.source_code ? (
+                                        <div className="flex text-white/85 leading-relaxed">
+                                            <div className="select-none text-white/20 text-right pr-3.5 border-r border-white/[0.08] space-y-0.5 shrink-0 font-mono text-[11px]">
+                                                {activeSubModal.source_code.split('\n').map((_, i) => (
+                                                    <div key={i}>{i + 1}</div>
+                                                ))}
+                                            </div>
+                                            <div className="pl-3.5 space-y-0.5 whitespace-pre flex-1 text-[#E2E2E5]">
+                                                {activeSubModal.source_code.split('\n').map((line, i) => (
+                                                    <div key={i} className="hover:bg-white/[0.02] rounded-xs px-1">
+                                                        {line || '\n'}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12 text-white/30 text-xs font-mono">
+                                            No source code recorded for this submission.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 }
