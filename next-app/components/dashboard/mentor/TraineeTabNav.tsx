@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
     LayoutDashboard, BarChart3, FileCode2, Terminal, 
-    FileText, AlertTriangle 
+    AlertTriangle 
 } from 'lucide-react';
 
 export const TABS = [
@@ -12,7 +11,6 @@ export const TABS = [
     { id: 'progress', label: 'Progress Matrix', icon: BarChart3 },
     { id: 'submissions', label: 'Submissions', icon: FileCode2 },
     { id: 'workspace', label: 'Code Inspector', icon: Terminal },
-    { id: 'notes', label: 'Student Notes', icon: FileText },
     { id: 'flags', label: 'Warnings & Flags', icon: AlertTriangle },
 ] as const;
 
@@ -36,10 +34,10 @@ export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTa
                     <button
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
-                        className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all active:scale-[0.98] ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all active:scale-[0.98] ${
                             isActive
-                                ? 'text-[#E8C15A] bg-[#E8C15A]/10 shadow-[inset_0_1px_0_rgba(232,193,90,0.2)]'
-                                : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'
+                                ? 'text-[#E8C15A] bg-[#E8C15A]/15 font-semibold shadow-[inset_0_1px_0_rgba(232,193,90,0.25)] border border-[#E8C15A]/25'
+                                : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04] border border-transparent'
                         }`}
                     >
                         <Icon size={14} className={isActive ? 'text-[#E8C15A]' : 'text-white/40'} />
@@ -48,13 +46,6 @@ export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTa
                             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
                                 {flagsCount}
                             </span>
-                        )}
-                        {isActive && (
-                            <motion.div
-                                layoutId="activeTraineeTabPill"
-                                className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#E8C15A] rounded-full shadow-[0_0_8px_#E8C15A]"
-                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                            />
                         )}
                     </button>
                 );
