@@ -257,24 +257,30 @@ export default function MentorTraineesDirectoryPage() {
                     </div>
 
                     {/* View Switcher */}
-                    <div className="flex items-center bg-[#0B0B0C] p-1 rounded-xl border border-white/10">
+                    <div className="flex items-center bg-[#0B0B0C] p-0.5 rounded-xl border border-white/10 shrink-0">
                         <button
+                            type="button"
                             onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                                viewMode === 'grid' ? 'bg-white/10 text-[#E8C15A]' : 'text-white/40 hover:text-white'
+                            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                                viewMode === 'grid'
+                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shadow-xs'
+                                    : 'text-white/40 hover:text-white/80 border border-transparent'
                             }`}
                             title="Grid View"
                         >
-                            <LayoutGrid size={14} />
+                            <LayoutGrid size={13} />
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('table')}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                                viewMode === 'table' ? 'bg-white/10 text-[#E8C15A]' : 'text-white/40 hover:text-white'
+                            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                                viewMode === 'table'
+                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shadow-xs'
+                                    : 'text-white/40 hover:text-white/80 border border-transparent'
                             }`}
                             title="Table View"
                         >
-                            <Table size={14} />
+                            <Table size={13} />
                         </button>
                     </div>
                 </div>
