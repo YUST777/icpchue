@@ -116,7 +116,7 @@ export async function GET(
             cohort_group: 'Group A',
         };
 
-        // 3. Parallel Batch Fetching
+        // 3. Parallel Queries
         const [
             statsRes,
             streakRes,
@@ -149,14 +149,12 @@ export async function GET(
                 ORDER BY cs.sheet_number ASC, cs.id ASC
             `),
             query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]),
-            // Full rolling year (365 days) daily solves for expansive heatmap
             query(`
                 SELECT solve_date, solve_count 
                 FROM daily_solves 
                 WHERE user_id = $1 AND solve_date >= CURRENT_DATE - INTERVAL '365 days'
                 ORDER BY solve_date ASC
             `, [userId]),
-            // All submissions for this user
             query(`
                 SELECT 
                     id, contest_id, problem_index, sheet_id, verdict, 
@@ -168,21 +166,19 @@ export async function GET(
                 ORDER BY submitted_at DESC 
                 LIMIT 100
             `, [userId]),
-            // All code drafts the student has ever typed
             query(`
                 SELECT contest_id, problem_id, code, language, updated_at 
                 FROM user_code 
                 WHERE user_id = $1 
                 ORDER BY updated_at DESC 
-                LIMIT 50
+                LIMIT 100
             `, [userId]),
-            // All notes written by student
             query(`
                 SELECT id, contest_id, problem_index, content, updated_at 
                 FROM user_notes 
                 WHERE user_id = $1 
                 ORDER BY updated_at DESC 
-                LIMIT 50
+                LIMIT 100
             `, [userId]),
             query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]),
             query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId])
@@ -231,7 +227,7 @@ export async function GET(
 
         const notStartedTotal = Math.max(0, totalProblems - (distinctSolved + totalAttempted));
 
-        // Time spent
+        // Time spent calculation
         const timeFromRecap = recapRes.rows[0]?.time_spent_minutes;
         let totalMinutes = timeFromRecap ? parseInt(timeFromRecap, 10) : 0;
         if (!totalMinutes) {
@@ -242,7 +238,7 @@ export async function GET(
         const minsSpent = totalMinutes % 60;
         const timeSpentStr = `${hoursSpent}h ${minsSpent}m`;
 
-        // Heatmap Data (Full rolling year)
+        // Heatmap Data
         const heatmapData = heatmapRes.rows.map((r) => ({
             date: r.solve_date instanceof Date ? r.solve_date.toISOString().slice(0, 10) : String(r.solve_date),
             count: parseInt(r.solve_count, 10) || 0,
@@ -268,46 +264,29 @@ export async function GET(
             source_code: s.source_code || '',
         }));
 
-        // 4. Detailed Flagged Problems Detection & Forensics
+        // 4. Genuine Flagged Submissions (Only if user has actual cheating flags recorded)
         const flaggedProblems: any[] = [];
-        const isStarterCode = (code: string) => {
-            if (!code) return true;
-            const stripped = code.replace(/\s+/g, '');
-            return stripped === '#include<bits/stdc++.h>usingnamespacestd;intmain(){ios_base::sync_with_stdio(0);cin.tie(0);return0;}' ||
-                   stripped === '#include<iostream>usingnamespacestd;intmain(){return0;}' ||
-                   stripped.length < 100;
-        };
+        if (profile.cheating_flags > 0 || profile.is_shadow_banned) {
+            recentSubmissions.forEach((s) => {
+                if (s.paste_events >= 5 || (s.time_to_solve_seconds > 0 && s.time_to_solve_seconds < 20 && s.verdict === 'Accepted')) {
+                    flaggedProblems.push({
+                        submission_id: s.id,
+                        contest_id: s.contest_id,
+                        problem_index: s.problem_index,
+                        problem_title: s.problem,
+                        verdict: s.verdict,
+                        reason: `Suspicious rapid solve (${s.time_to_solve_seconds}s) / high paste count (${s.paste_events})`,
+                        submitted_at: s.submitted_at,
+                        time_to_solve_seconds: s.time_to_solve_seconds,
+                        paste_events: s.paste_events,
+                        cf_submission_id: s.cf_submission_id,
+                        source_code: s.source_code,
+                    });
+                }
+            });
+        }
 
-        recentSubmissions.forEach((s) => {
-            const isAc = s.verdict === 'Accepted';
-            let flagReason = '';
-
-            if (isAc && isStarterCode(s.source_code) && s.attempts === 1) {
-                flagReason = 'Submitted starter template on platform while Codeforces marked Accepted (Pasted external code)';
-            } else if (isAc && s.time_to_solve_seconds > 0 && s.time_to_solve_seconds < 45) {
-                flagReason = `Extremely rapid solve (${s.time_to_solve_seconds}s from opening problem)`;
-            } else if (s.paste_events >= 4) {
-                flagReason = `Multiple bulk paste events (${s.paste_events} pastes detected in editor)`;
-            }
-
-            if (flagReason) {
-                flaggedProblems.push({
-                    submission_id: s.id,
-                    contest_id: s.contest_id,
-                    problem_index: s.problem_index,
-                    problem_title: s.problem,
-                    verdict: s.verdict,
-                    reason: flagReason,
-                    submitted_at: s.submitted_at,
-                    time_to_solve_seconds: s.time_to_solve_seconds,
-                    paste_events: s.paste_events,
-                    cf_submission_id: s.cf_submission_id,
-                    source_code: s.source_code,
-                });
-            }
-        });
-
-        // 5. Code Inspector Problem Index (Merge user_code drafts + submissions)
+        // 5. Build Code Catalog (combines user_code drafts + submissions + notes)
         const codeEntriesMap = new Map<string, any>();
 
         allUserCodesRes.rows.forEach((uc) => {
@@ -349,8 +328,21 @@ export async function GET(
 
         allUserNotesRes.rows.forEach((note) => {
             const key = `${note.contest_id || ''}-${note.problem_index || ''}`.trim();
-            if (key && codeEntriesMap.has(key)) {
-                codeEntriesMap.get(key)!.notes = note.content;
+            if (key) {
+                if (codeEntriesMap.has(key)) {
+                    codeEntriesMap.get(key)!.notes = note.content;
+                } else {
+                    codeEntriesMap.set(key, {
+                        key,
+                        contest_id: note.contest_id,
+                        problem_id: note.problem_index,
+                        draft_code: '',
+                        language: 'C++',
+                        updated_at: note.updated_at,
+                        submission_code: '',
+                        notes: note.content,
+                    });
+                }
             }
         });
 
@@ -381,13 +373,19 @@ export async function GET(
             heatmap_data: heatmapData,
             recent_submissions: recentSubmissions,
             code_catalog: codeCatalog,
-            user_notes: allUserNotesRes.rows,
+            user_notes: allUserNotesRes.rows.map(n => ({
+                id: n.id,
+                contest_id: n.contest_id,
+                problem_index: n.problem_index,
+                content: n.content,
+                updated_at: n.updated_at,
+            })),
             custom_tests: customTestsRes.rows,
             flagged_problems: flaggedProblems,
             behavioral_analysis: {
-                cheating_flags: Math.max(profile.cheating_flags, flaggedProblems.length),
+                cheating_flags: profile.cheating_flags,
                 is_shadow_banned: profile.is_shadow_banned,
-                total_flagged_count: flaggedProblems.length,
+                total_flagged_count: profile.cheating_flags,
             }
         };
 
