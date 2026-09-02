@@ -190,110 +190,111 @@ export function RecentSubmissionsTable({
             {/* Apple-grade Glassmorphic Submission Modal */}
             <AnimatePresence>
                 {activeSubModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
                         {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.15 }}
                             onClick={() => setActiveSubModal(null)}
-                            className="absolute inset-0 bg-black/75 backdrop-blur-md"
+                            className="fixed inset-0 bg-black/80 backdrop-blur-md"
                         />
 
-                        {/* Modal Container */}
+                        {/* Modal Dialog Card */}
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                            initial={{ opacity: 0, scale: 0.96, y: 8 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 8 }}
                             transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                            className="relative w-full max-w-2xl bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col max-h-[85vh] z-10"
+                            className="relative w-full max-w-2xl max-h-[82vh] bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col z-10 my-auto"
                         >
-                            {/* Header */}
-                            <div className="p-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
-                                        <Terminal size={16} />
+                            {/* Modal Header */}
+                            <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+                                <div className="flex items-center gap-3 min-w-0 pr-2">
+                                    <div className="w-8 h-8 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20 shrink-0">
+                                        <Terminal size={15} />
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-semibold text-white tracking-tight">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h3 className="text-sm font-semibold text-white tracking-tight truncate">
                                                 {activeSubModal.problem}
                                             </h3>
                                             {getVerdictBadge(activeSubModal.verdict)}
                                         </div>
-                                        <span className="text-[11px] text-white/45">
+                                        <div className="text-[11px] text-white/45 truncate mt-0.5">
                                             {activeSubModal.problem_title ? `${activeSubModal.problem_title} • ` : ''}
-                                            {formatDate(activeSubModal.submitted_at)}
-                                        </span>
+                                            <span>{formatDate(activeSubModal.submitted_at)}</span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={() => setActiveSubModal(null)}
-                                    className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.06]"
+                                    className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
+                                    title="Close (Esc)"
                                 >
                                     <X size={14} />
                                 </button>
                             </div>
 
-                            {/* Stat Bar */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-black/40 border-b border-white/[0.06] text-xs">
-                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
+                            {/* Minimalist 4-Stat Capsule Strip */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 py-2.5 bg-black/40 border-b border-white/[0.06] text-xs">
+                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
                                     <span className="text-white/40 block text-[9px] uppercase font-mono">Language</span>
-                                    <span className="font-mono text-white/90 text-[11px] mt-0.5 block truncate">
+                                    <span className="font-mono text-white/90 text-xs font-medium block truncate mt-0.5">
                                         {activeSubModal.language}
                                     </span>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
-                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Execution</span>
-                                    <div className="flex items-center gap-1 font-mono text-white/90 text-[11px] mt-0.5">
+                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
+                                    <span className="text-white/40 block text-[9px] uppercase font-mono">Runtime</span>
+                                    <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-medium mt-0.5">
                                         <Cpu size={11} className="text-blue-400" />
                                         <span>{activeSubModal.time_ms ?? 0} ms</span>
                                     </div>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl">
+                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl">
                                     <span className="text-white/40 block text-[9px] uppercase font-mono">Memory</span>
-                                    <div className="flex items-center gap-1 font-mono text-white/90 text-[11px] mt-0.5">
+                                    <div className="flex items-center gap-1 font-mono text-white/90 text-xs font-medium mt-0.5">
                                         <HardDrive size={11} className="text-purple-400" />
                                         <span>{activeSubModal.memory_kb ? `${(activeSubModal.memory_kb / 1024).toFixed(1)} MB` : '-'}</span>
                                     </div>
                                 </div>
-                                <div className="bg-white/[0.03] border border-white/[0.04] p-2 rounded-xl flex flex-col justify-between">
+                                <div className="bg-white/[0.03] border border-white/[0.04] px-2.5 py-1.5 rounded-xl flex flex-col justify-between">
                                     <span className="text-white/40 block text-[9px] uppercase font-mono">Codeforces</span>
                                     {activeSubModal.cf_submission_id ? (
                                         <a
                                             href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="text-[#E8C15A] hover:underline flex items-center gap-1 font-mono text-[11px]"
+                                            className="text-[#E8C15A] hover:underline flex items-center gap-1 font-mono text-xs font-medium mt-0.5"
                                         >
                                             <SiCodeforces size={10} className="text-red-400" />
                                             <span>#{activeSubModal.cf_submission_id}</span>
-                                            <ExternalLink size={8} />
+                                            <ExternalLink size={9} />
                                         </a>
                                     ) : (
-                                        <span className="text-white/40 text-[11px] font-mono">Platform</span>
+                                        <span className="text-white/40 text-xs font-mono mt-0.5">Platform</span>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Source Code View */}
-                            <div className="p-3 flex-1 flex flex-col bg-[#0A0A0C] overflow-hidden min-h-[280px]">
+                            {/* Source Code Container */}
+                            <div className="p-3 flex-1 flex flex-col bg-[#0A0A0C] min-h-[220px] max-h-[46vh] overflow-hidden">
                                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
                                     <span className="text-white/40 text-[11px] font-mono">Source Code</span>
                                     <button
                                         onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                        className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06]"
+                                        className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
                                     >
                                         {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
                                         <span>{copied ? 'Copied' : 'Copy'}</span>
                                     </button>
                                 </div>
 
-                                <div className="font-mono text-[11px] overflow-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                <div className="font-mono text-xs overflow-y-auto flex-1 p-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden leading-relaxed">
                                     {activeSubModal.source_code ? (
-                                        <div className="flex text-white/85 leading-relaxed">
+                                        <div className="flex text-white/85">
                                             <div className="select-none text-white/20 text-right pr-3.5 border-r border-white/[0.08] space-y-0.5 shrink-0 font-mono text-[11px]">
                                                 {activeSubModal.source_code.split('\n').map((_, i) => (
                                                     <div key={i}>{i + 1}</div>
