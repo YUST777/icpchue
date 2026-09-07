@@ -177,7 +177,7 @@ export function useCodeforcesSubmission({
                                 batches: [{
                                     sheetId: sheetId || null,
                                     contestId,
-                                    problemIndex,
+                                    problemIndex: problemId,
                                     urlType,
                                     groupId: groupId || null,
                                     submissions,
