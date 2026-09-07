@@ -47,49 +47,10 @@ export async function GET() {
         };
 
         const leaderboard = await getCachedData('leaderboard:codeforces', 300, async () => {
-            // Optimized query: Move rating extraction and sorting to database
-            // We use a CTE to combine and then sort/limit efficiently
+            // Deduplicate handles in the database, then return only the top 500.
+            // Keep this as one request: the previous implementation executed an
+            // identical, unused query before the result that was actually returned.
             const result = await query(`
-                WITH combined_users AS (
-                    SELECT 
-                        name, 
-                        codeforces_profile,
-                        codeforces_data,
-                        (codeforces_data->>'handle') as handle,
-                        COALESCE((codeforces_data->>'rating')::int, 0) as rating
-                    FROM applications a
-                    WHERE a.codeforces_data IS NOT NULL
-                      AND NOT EXISTS (
-                          SELECT 1 FROM users linked
-                          WHERE linked.application_id = a.id
-                      )
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        COALESCE(a.name, u.email) as name,
-                        u.codeforces_handle as codeforces_profile,
-                        u.codeforces_data,
-                        u.codeforces_handle as handle,
-                        COALESCE((u.codeforces_data->>'rating')::int, 0) as rating
-                    FROM users u
-                    LEFT JOIN applications a ON u.application_id = a.id
-                    WHERE u.codeforces_data IS NOT NULL
-                      AND (u.show_on_cf_leaderboard = TRUE OR u.show_on_cf_leaderboard IS NULL)
-                      AND (u.is_shadow_banned IS NULL OR u.is_shadow_banned = FALSE)
-                )
-                SELECT DISTINCT ON (handle) *
-                FROM combined_users
-                WHERE rating > 0
-                ORDER BY handle, rating DESC
-            `);
-
-            // Since DISTINCT ON requires the first ORDER BY to match the DISTINCT column,
-            // we sort by handle first, then rating. To get the actual top users, 
-            // we sort in memory (on a much smaller dataset) or use a subquery.
-            // A subquery is cleaner:
-            
-            const finalResult = await query(`
                 SELECT * FROM (
                     SELECT DISTINCT ON (handle) 
                         name, codeforces_profile, codeforces_data, handle, rating
@@ -127,7 +88,7 @@ export async function GET() {
                 LIMIT 500
             `);
 
-            return finalResult.rows.map((row: any) => {
+            return result.rows.map((row: any) => {
                 const data = row.codeforces_data || {};
                 return {
                     name: getShortName(row.name),

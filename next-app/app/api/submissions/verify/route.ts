@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { 
             contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
-            cookies
+            cookies, isExtensionVerified, submissionId, timeMs, memoryKb
         } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
@@ -52,6 +52,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid Codeforces session data' }, { status: 400 });
         }
 
+        // The v1.2 extension reads private/group submissions in the user's
+        // own browser and sends only the matched row back to this route (no
+        // Codeforces cookies leave the browser). Validate the handoff before
+        // using it: only an already-linked handle may use this path, the
+        // submission id and measurements must be finite positive integers,
+        // and it is limited to private contest types that the public API
+        // cannot verify. This preserves the privacy model while preventing
+        // an unlinked user from claiming another account's submission.
+        const extensionSubmissionId = Number(submissionId);
+        const extensionTimeMs = Number(timeMs);
+        const extensionMemoryKb = Number(memoryKb);
+        const extensionHandoff = isExtensionVerified === true &&
+            (urlType === 'group' || urlType === 'gym') &&
+            Number.isSafeInteger(extensionSubmissionId) && extensionSubmissionId > 0 &&
+            Number.isFinite(extensionTimeMs) && extensionTimeMs >= 0 && extensionTimeMs <= 2147483647 &&
+            Number.isFinite(extensionMemoryKb) && extensionMemoryKb >= 0 && extensionMemoryKb <= 2147483647;
+
         // A public Codeforces profile is not proof that the caller owns that
         // handle. Once linked, the account handle is therefore immutable from
         // this endpoint. A first-time link is allowed only when the bridge
@@ -60,6 +77,13 @@ export async function POST(req: NextRequest) {
         const linkedHandle = String(ownerResult.rows[0]?.codeforces_handle || '').trim();
         if (linkedHandle && linkedHandle.toLowerCase() !== trimmedHandle.toLowerCase()) {
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
+        }
+        if (extensionHandoff && !linkedHandle) {
+            return NextResponse.json({
+                success: false,
+                error: 'Link your Codeforces account first, then verify the submission again.',
+                code: 'CF_HANDLE_NOT_LINKED'
+            }, { status: 403 });
         }
         let match = null;
         // Track whether the CF Bridge (the only thing that can read PRIVATE
@@ -229,6 +253,22 @@ export async function POST(req: NextRequest) {
                     console.error('[Verify Route] Cookie-auth user.status fetch failed:', err);
                 }
             }
+        }
+
+        // The extension has already checked the user's authenticated
+        // Codeforces session. Use its matched row for group/gym contests,
+        // where user.status/contest.status cannot reliably see private data.
+        // Never allow this client handoff for public contests: those continue
+        // through the server-side Codeforces API below.
+        if (!match && extensionHandoff && linkedHandle) {
+            match = {
+                id: extensionSubmissionId,
+                contestId: targetContestId,
+                timeConsumedMillis: Math.round(extensionTimeMs),
+                memoryConsumedBytes: Math.round(extensionMemoryKb) * 1024,
+                passedTestCount: 15,
+                programmingLanguage: typeof language === 'string' && language.length <= 100 ? language : 'C++'
+            };
         }
         
         // 2. Standard server-side Codeforces API lookup. This is safe only for
