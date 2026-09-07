@@ -12,6 +12,7 @@ export interface IncomingBackfillSubmission {
     details?: string | null;
     creationTimeSeconds?: number;
     submittedAt?: string | Date | null;
+    sourceCode?: string | null;
 }
 
 export interface BackfillBatch {
@@ -53,6 +54,7 @@ interface NormalizedSubmission {
     timeMs: number;
     memoryKb: number;
     language: string;
+    sourceCode: string | null;
     details: string | null;
     submittedAt: Date | null;
     mappings: CurriculumMapping[];
@@ -322,6 +324,9 @@ export async function applyBackfillBatches(
                 timeMs: Math.max(0, Math.min(2147483647, Number(raw.timeConsumedMillis) || 0)),
                 memoryKb: Math.max(0, Math.min(2147483647, Math.round((Number(raw.memoryConsumedBytes) || 0) / 1024))),
                 language: String(raw.language || 'C++').slice(0, 100),
+                sourceCode: typeof raw.sourceCode === 'string' && raw.sourceCode.length <= 64 * 1024
+                    ? raw.sourceCode
+                    : null,
                 details: rawVerdict !== String(raw.verdict || '').trim() ? String(raw.verdict || '').trim().slice(0, 500) : null,
                 submittedAt: parseSubmittedAt(raw),
                 mappings,
@@ -343,7 +348,7 @@ export async function applyBackfillBatches(
     return withTransaction(async (client) => {
         const localIds = new Map<number, number>();
         let newlyInserted = 0;
-        // 4,000 rows stays below Postgres' 65,535-parameter limit (14 columns)
+        // 4,000 rows stays below Postgres' 65,535-parameter limit (15 values)
         // while minimizing statement-level solve-stat recalculations.
         const chunkSize = 4000;
 
@@ -353,11 +358,11 @@ export async function applyBackfillBatches(
             const placeholders: string[] = [];
 
             chunk.forEach((record, offset) => {
-                const p = offset * 14;
+                const p = offset * 15;
                 // Codeforces' group HTML sometimes omits an absolute time;
                 // keep that value NULL until a later API/extension run supplies
                 // it rather than inventing a misleading current timestamp.
-                placeholders.push(`($${p + 1}, 'codeforces', $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}, $${p + 7}, $${p + 8}, $${p + 9}, $${p + 10}, $${p + 11}, $${p + 12}, $${p + 13}, $${p + 14})`);
+                placeholders.push(`($${p + 1}, 'codeforces', $${p + 2}, $${p + 3}, $${p + 4}, $${p + 5}, $${p + 6}, $${p + 7}, $${p + 8}, $${p + 9}, $${p + 10}, $${p + 11}, $${p + 12}, $${p + 13}, $${p + 14}, $${p + 15})`);
                 const primaryMapping = record.mappings[0];
                 values.push(
                     userId,
@@ -372,6 +377,7 @@ export async function applyBackfillBatches(
                     record.timeMs,
                     record.memoryKb,
                     record.language,
+                    record.sourceCode,
                     cfHandle,
                     primaryMapping.urlType,
                     primaryMapping.groupId,
@@ -383,7 +389,7 @@ export async function applyBackfillBatches(
             const result = await client.query(`
                 INSERT INTO submissions (
                     user_id, source, cf_submission_id, contest_id, problem_index, sheet_id,
-                    verdict, time_ms, memory_kb, language, cf_handle, url_type, group_id,
+                    verdict, time_ms, memory_kb, language, source_code, cf_handle, url_type, group_id,
                     submitted_at, details
                 ) VALUES ${placeholders.join(', ')}
                 ON CONFLICT (cf_submission_id) DO UPDATE SET
@@ -391,6 +397,7 @@ export async function applyBackfillBatches(
                     time_ms = EXCLUDED.time_ms,
                     memory_kb = EXCLUDED.memory_kb,
                     language = EXCLUDED.language,
+                    source_code = COALESCE(EXCLUDED.source_code, submissions.source_code),
                     cf_handle = COALESCE(EXCLUDED.cf_handle, submissions.cf_handle),
                     submitted_at = COALESCE(EXCLUDED.submitted_at, submissions.submitted_at),
                     details = COALESCE(EXCLUDED.details, submissions.details)
@@ -400,6 +407,7 @@ export async function applyBackfillBatches(
                     submissions.time_ms IS DISTINCT FROM EXCLUDED.time_ms OR
                     submissions.memory_kb IS DISTINCT FROM EXCLUDED.memory_kb OR
                     submissions.language IS DISTINCT FROM EXCLUDED.language OR
+                    (EXCLUDED.source_code IS NOT NULL AND submissions.source_code IS DISTINCT FROM EXCLUDED.source_code) OR
                     (EXCLUDED.cf_handle IS NOT NULL AND submissions.cf_handle IS DISTINCT FROM EXCLUDED.cf_handle) OR
                     (EXCLUDED.submitted_at IS NOT NULL AND submissions.submitted_at IS DISTINCT FROM EXCLUDED.submitted_at)
                   )
