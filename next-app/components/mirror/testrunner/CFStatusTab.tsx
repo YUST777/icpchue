@@ -183,7 +183,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         </>
                     ) : (
                         <>
-                            <CheckCircle2 size={14} /> Check &amp; Sync my AC
+                            <CheckCircle2 size={14} /> Check &amp; Sync attempts
                         </>
                     )}
                 </button>
