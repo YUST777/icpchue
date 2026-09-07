@@ -326,6 +326,11 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                                 <>Running test {cfStatus.testNumber}...</>
                             )}
                         </div>
+                        {cfStatus.status === 'done' && cfStatus.substatus && cfStatus.verdict !== 'Submitted' && (
+                            <div className="text-xs opacity-70 mt-1">
+                                {cfStatus.substatus}
+                            </div>
+                        )}
                         {cfStatus.status === 'submitting' && cfStatus.progress !== undefined && (
                             <div className="mt-2 w-full bg-[#333] rounded-full h-1.5 overflow-hidden">
                                 <div

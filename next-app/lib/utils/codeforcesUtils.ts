@@ -26,6 +26,8 @@ export function getSubmitUrl(contestId: string, problemId: string, urlType: stri
 
 export function mapVerdict(v: string | null): string {
     if (!v) return 'In queue';
+    const raw = String(v).trim();
+    const normalized = raw.toUpperCase().replace(/[\s-]+/g, '_');
     const map: Record<string, string> = {
         'OK': 'Accepted',
         'WRONG_ANSWER': 'Wrong Answer',
@@ -38,7 +40,18 @@ export function mapVerdict(v: string | null): string {
         'SKIPPED': 'Skipped',
         'PARTIAL': 'Partial'
     };
-    return map[v] || v;
+    if (map[normalized]) return map[normalized];
+
+    // The Codeforces HTML table appends details such as "on test 1". Keep
+    // the UI/database verdict buckets stable while retaining the full row in
+    // the synced history for mentors.
+    if (normalized.includes('WRONG_ANSWER')) return 'Wrong Answer';
+    if (normalized.includes('TIME_LIMIT_EXCEEDED')) return 'Time Limit Exceeded';
+    if (normalized.includes('MEMORY_LIMIT_EXCEEDED')) return 'Memory Limit Exceeded';
+    if (normalized.includes('RUNTIME_ERROR')) return 'Runtime Error';
+    if (normalized.includes('COMPILATION_ERROR')) return 'Compilation Error';
+    if (normalized === 'ACCEPTED') return 'Accepted';
+    return raw;
 }
 
 export function getNavigationBaseUrl(contestId: string, urlType: string, groupId?: string): string {

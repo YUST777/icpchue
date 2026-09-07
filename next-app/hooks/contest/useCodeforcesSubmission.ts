@@ -1,15 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
-import { mapLanguageToExtension, getProblemDescriptionUrl, getSubmitUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
-
-const FINAL_VERDICTS = new Set([
-    'OK', 'WRONG_ANSWER', 'TIME_LIMIT_EXCEEDED', 'MEMORY_LIMIT_EXCEEDED',
-    'RUNTIME_ERROR', 'COMPILATION_ERROR', 'CHALLENGED', 'SKIPPED', 'PARTIAL',
-    'IDLENESS_LIMIT_EXCEEDED', 'SECURITY_VIOLATED', 'CRASHED',
-    'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded',
-    'Runtime Error', 'Compilation Error', 'Challenged', 'Skipped', 'Partial',
-    'Idleness Limit Exceeded', 'Compilation error', 'Wrong answer', 'Time limit exceeded', 'Memory limit exceeded'
-]);
+import { mapLanguageToExtension, getSubmitUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
 
 interface UseCodeforcesSubmissionParams {
     code: string;
@@ -138,7 +129,14 @@ export function useCodeforcesSubmission({
                 window.removeEventListener('message', handleExtensionResponse);
                 clearTimeout(safetyTimer);
 
-                const { success, accepted, handle: resolvedHandle, error } = event.data;
+                const {
+                    success,
+                    accepted,
+                    latest,
+                    submissions = [],
+                    handle: resolvedHandle,
+                    error
+                } = event.data;
 
                 if (!success) {
                     const messages: Record<string, string> = {
@@ -155,18 +153,67 @@ export function useCodeforcesSubmission({
                     return;
                 }
 
-                if (!accepted) {
+                if (!latest && (!Array.isArray(submissions) || submissions.length === 0)) {
                     setCfStatus({
                         status: 'error',
                         substatus: 'verify-pending',
-                        error: `No Accepted (AC) submission found in your last few submissions for problem ${problemId}. Submit and get AC on Codeforces first, then sync.`
+                        error: `No Codeforces submission was found for problem ${problemId}. Submit an attempt first, then sync.`
                     });
                     setSubmitting(false);
                     return;
                 }
 
-                // Found an AC in the user's own recent submissions. Persist it.
                 try {
+                    // Persist the complete history first. This is what powers
+                    // the tries column and mentor view, including a latest WA
+                    // even when the problem was solved in an earlier attempt.
+                    if (Array.isArray(submissions) && submissions.length > 0) {
+                        const backfillRes = await fetch('/api/codeforces/backfill', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                cfHandle: resolvedHandle || cfHandle,
+                                batches: [{
+                                    sheetId: sheetId || null,
+                                    contestId,
+                                    problemIndex,
+                                    urlType,
+                                    groupId: groupId || null,
+                                    submissions,
+                                    accepted: accepted ? [accepted] : [],
+                                }],
+                            }),
+                        });
+                        const backfillData = await backfillRes.json().catch(() => ({}));
+                        if (!backfillRes.ok || !backfillData.success || backfillData.matchingSubmissions === 0) {
+                            throw new Error('Found your Codeforces history, but failed to save it. Please try again.');
+                        }
+                    }
+
+                    // An Accepted row still goes through the ownership-checked
+                    // verification route so the explicit sync records the
+                    // source code and the canonical solved submission. For a
+                    // failed latest row, the history save above is sufficient;
+                    // show its real verdict instead of claiming no AC exists.
+                    if (!accepted) {
+                        const latestSubmission = latest || submissions[0];
+                        const rawLatestVerdict = String(latestSubmission?.verdict || 'Unknown');
+                        const latestVerdict = mapVerdict(rawLatestVerdict);
+                        const failedTestMatch = rawLatestVerdict.match(/(?:pre)?test\s+(\d+)/i);
+                        setCfStatus({
+                            status: 'done',
+                            verdict: latestVerdict,
+                            substatus: `Recorded ${submissions.length} Codeforces attempt${submissions.length === 1 ? '' : 's'} for this problem.`,
+                            time: latestSubmission?.timeConsumedMillis || 0,
+                            memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
+                            submissionId: latestSubmission?.id,
+                            failedTestCase: failedTestMatch ? Number(failedTestMatch[1]) : undefined,
+                        });
+                        setSubmitting(false);
+                        return;
+                    }
+
                     const verifyRes = await fetch('/api/submissions/verify', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

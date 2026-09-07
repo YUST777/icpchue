@@ -29,7 +29,7 @@ import { useCodeforcesSubmission } from '@/hooks/contest/useCodeforcesSubmission
 import { useLocalTestRunner } from '@/hooks/contest/useLocalTestRunner';
 import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
 import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
-import { fetchWithCache } from '@/lib/cache/api-cache';
+import { fetchWithCache, invalidatePath } from '@/lib/cache/api-cache';
 import { useTrack } from '@/hooks/useTrack';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
@@ -406,10 +406,15 @@ function MirrorUI({
     // Auto-refresh submissions when a new one is done
     useEffect(() => {
         if (cfStatus?.status === 'done') {
+            const params = new URLSearchParams();
+            if (sheetId) params.set('sheetId', sheetId);
+            params.set('problemId', problemId);
+            if (contestId) params.set('contestId', contestId);
+            invalidatePath(`/api/submissions?${params}`);
             fetchSubmissions();
             fetchAnalyticsData(true);
         }
-    }, [cfStatus?.status, fetchSubmissions, fetchAnalyticsData]);
+    }, [cfStatus?.status, fetchSubmissions, fetchAnalyticsData, sheetId, problemId, contestId]);
 
     const { result, runTests, submitting: testSubmitting } = useLocalTestRunner({
         code,

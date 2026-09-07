@@ -12,19 +12,21 @@
  * So this extension does the read itself:
  *   1. Resolve the logged-in user's OWN handle from their CF session
  *      (NOT from icpchue's DB — we trust the live Codeforces session only).
- *   2. Fetch the LAST 5 submissions for the given problem from the user's
- *      "/my" status page (residential IP + cookies => passes Cloudflare).
- *   3. Parse them in-browser and return just the result (no cookies, no raw
- *      HTML) to the page. The page forwards the found submission to icpchue
- *      to mark the problem solved.
+ *   2. Fetch the complete paginated submission history for the given problem
+ *      from the user's "/my" status page (residential IP + cookies => passes
+ *      Cloudflare).
+ *   3. Parse it in-browser and return only structured submission rows (no
+ *      cookies, no raw HTML). The page imports every attempt so mentors see
+ *      accurate tries, while an AC still marks the problem solved.
  *
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
 const EXT_VERSION = '1.3.0';
 
-// How many of the user's most-recent submissions (for the problem) to scan.
-const SCAN_LAST_N = 5;
+// A Codeforces status page contains at most 50 rows. This cap supports up to
+// 2,500 attempts for one problem while preventing an accidental infinite scan.
+const MAX_PROBLEM_HISTORY_PAGES = 50;
 
 // ─── Handle cache ────────────────────────────────────────────────────
 let handleCache = {
@@ -139,7 +141,7 @@ async function checkLogin() {
 }
 
 // ─── Submissions URL ─────────────────────────────────────────────────
-function getStatusUrl(contestId, urlType, groupId, problemIndex) {
+function getStatusUrl(contestId, urlType, groupId, problemIndex, page = 1) {
     let base;
     if (urlType === 'gym') {
         base = `https://codeforces.com/gym/${contestId}/my`;
@@ -148,9 +150,8 @@ function getStatusUrl(contestId, urlType, groupId, problemIndex) {
     } else {
         base = `https://codeforces.com/contest/${contestId}/my`;
     }
-    if (problemIndex) {
-        base += `?problemIndex=${encodeURIComponent(String(problemIndex).toUpperCase())}`;
-    }
+    if (page > 1) base += `/page/${page}`;
+    if (problemIndex) base += `?problemIndex=${encodeURIComponent(String(problemIndex).toUpperCase())}`;
     return base;
 }
 
@@ -238,7 +239,7 @@ function isAcceptedVerdict(v) {
 }
 
 /**
- * Fetch the user's last submissions for a problem and find an AC.
+ * Fetch the user's complete submission history for a problem and find an AC.
  * Runs entirely in the user's browser (residential IP + their CF cookies).
  */
 async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
@@ -248,56 +249,73 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
         return { success: false, error: 'NOT_LOGGED_IN' };
     }
 
-    // 2. Fetch the status page (CF filters by problemIndex server-side).
-    const url = getStatusUrl(contestId, urlType, groupId, problemIndex);
-    let html;
-    try {
-        const res = await fetch(url, {
-            credentials: 'include',
-            headers: {
-                'User-Agent': navigator.userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            },
-        });
-        if (!res.ok) {
-            return { success: false, error: `HTTP_${res.status}` };
-        }
-        html = await res.text();
-    } catch (err) {
-        return { success: false, error: `FETCH_FAILED: ${err.message}` };
-    }
-
-    if (html.includes('<title>Just a moment...</title>')) {
-        return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
-    }
-    if (!html.includes('status-frame-datatable')) {
-        if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
-            return { success: false, error: 'NOT_LOGGED_IN' };
-        }
-        return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
-    }
-
-    // 3. Parse, keep only this user's rows for this problem, scan the last N.
-    const all = parseStatusTable(html);
+    // 2. Fetch every page. Codeforces applies problemIndex server-side, so
+    // this scans one problem's history instead of the entire contest history.
     const handleLc = (login.handle || '').toLowerCase();
     const wantIdx = problemIndex ? String(problemIndex).toUpperCase() : null;
+    const byId = new Map();
+    let pagesRead = 0;
 
-    let mine = all.filter(r => {
-        const byUser = !handleLc || (r.author || '').toLowerCase() === handleLc;
-        const byProblem = !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx;
-        return byUser && byProblem;
-    });
+    for (let page = 1; page <= MAX_PROBLEM_HISTORY_PAGES; page++) {
+        const url = getStatusUrl(contestId, urlType, groupId, problemIndex, page);
+        let html;
+        try {
+            const res = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'User-Agent': navigator.userAgent,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                },
+            });
+            if (!res.ok) {
+                if (page > 1) break;
+                return { success: false, error: `HTTP_${res.status}` };
+            }
+            html = await res.text();
+        } catch (err) {
+            if (page > 1) break;
+            return { success: false, error: `FETCH_FAILED: ${err.message}` };
+        }
 
-    // The "/my" page is already newest-first; scan only the last N submissions.
-    const recent = mine.slice(0, SCAN_LAST_N);
-    const ac = recent.find(r => isAcceptedVerdict(r.verdict));
+        if (html.includes('<title>Just a moment...</title>')) {
+            return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
+        }
+        if (!html.includes('status-frame-datatable')) {
+            if (page === 1) {
+                if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
+                    return { success: false, error: 'NOT_LOGGED_IN' };
+                }
+                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
+            }
+            break;
+        }
+
+        const allRows = parseStatusTable(html);
+        const pageRows = allRows.filter(r => {
+            const byUser = !handleLc || (r.author || '').toLowerCase() === handleLc;
+            const byProblem = !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx;
+            return byUser && byProblem;
+        });
+        if (allRows.length === 0) break;
+
+        pagesRead++;
+        for (const row of pageRows) byId.set(row.id, row);
+        if (allRows.length < 50) break;
+    }
+
+    // Keep the order deterministic even if Codeforces repeated a row across a
+    // page boundary while a new submission was being judged.
+    const submissions = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+    const ac = submissions.find(r => isAcceptedVerdict(r.verdict)) || null;
 
     return {
         success: true,
         handle: login.handle || null,
-        accepted: ac || null,
-        scanned: recent.length,
-        submissions: recent,
+        accepted: ac,
+        latest: submissions[0] || null,
+        scanned: submissions.length,
+        submissions,
+        pagesRead,
     };
 }
 

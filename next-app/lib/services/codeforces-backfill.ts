@@ -210,7 +210,18 @@ function isAccepted(verdict: string) {
 export function normalizeVerdict(verdict?: string) {
     const raw = String(verdict || '').trim();
     if (!raw) return 'Unknown';
-    return FINAL_VERDICTS[raw.toUpperCase()] || raw;
+    const upper = raw.toUpperCase();
+    const exact = FINAL_VERDICTS[upper];
+    if (exact) return exact;
+
+    // Codeforces' HTML status table includes the failed test in the verdict
+    // text (for example, "Wrong answer on test 1"). Store a stable verdict in
+    // the database so tries/mentor filters do not split one verdict into many
+    // labels. The live sync UI can still show the detailed original text.
+    const prefix = Object.entries(FINAL_VERDICTS).find(([key]) =>
+        upper.startsWith(`${key} ON TEST`) || upper.startsWith(`${key} ON PRETEST`)
+    );
+    return prefix?.[1] || raw;
 }
 
 function parseSubmittedAt(raw: IncomingBackfillSubmission): Date | null {
