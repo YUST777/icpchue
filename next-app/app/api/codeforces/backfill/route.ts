@@ -70,17 +70,31 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Codeforces handle is required' }, { status: 400 });
         }
 
-        const batches: BackfillBatch[] = requestedBatches.map((batch: any) => ({
-            sheetId: batch?.sheetId == null ? null : String(batch.sheetId),
-            contestId: batch?.contestId,
-            urlType: batch?.urlType,
-            groupId: batch?.groupId == null ? null : String(batch.groupId),
-            accepted: Array.isArray(batch?.accepted) ? batch.accepted : [],
-            submissions: Array.isArray(batch?.submissions) ? batch.submissions : [],
-            // This endpoint receives data read from the user's authenticated
-            // browser, so group contests are explicitly allowed.
-            allowGroup: true,
-        }));
+        // Group/gym rows can only be read from the user's authenticated
+        // Codeforces browser session. Once the handle is already linked to
+        // this account, allow the browser result to award SOLVED as well as
+        // reconstructing attempts. Public API syncs use the separate
+        // auto-backfill route and never set this flag.
+        const linkedBrowserHandle = Boolean(userHandle) &&
+            finalHandle.toLowerCase() === String(userHandle || '').toLowerCase();
+
+        const batches: BackfillBatch[] = requestedBatches.map((batch: any) => {
+            const urlType = batch?.urlType === 'group' || batch?.urlType === 'gym'
+                ? batch.urlType
+                : 'contest';
+            return {
+                sheetId: batch?.sheetId == null ? null : String(batch.sheetId),
+                contestId: batch?.contestId,
+                urlType,
+                groupId: batch?.groupId == null ? null : String(batch.groupId),
+                accepted: Array.isArray(batch?.accepted) ? batch.accepted : [],
+                submissions: Array.isArray(batch?.submissions) ? batch.submissions : [],
+                // This endpoint receives data read from the user's authenticated
+                // browser, so group contests are explicitly allowed.
+                allowGroup: true,
+                allowUnverifiedAccepted: linkedBrowserHandle && (urlType === 'group' || urlType === 'gym'),
+            };
+        });
 
         const index = await loadCurriculumIndex();
         const result = await applyBackfillBatches(user.id, finalHandle || null, batches, index);
