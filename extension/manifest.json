@@ -23,7 +23,9 @@
         "*://icpchue.xyz/*",
         "*://*.icpchue.xyz/*",
         "*://verdict.run/*",
-        "*://*.verdict.run/*"
+        "*://*.verdict.run/*",
+        "*://localhost/*",
+        "*://127.0.0.1/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -52,7 +54,9 @@
         "*://icpchue.xyz/*",
         "*://*.icpchue.xyz/*",
         "*://verdict.run/*",
-        "*://*.verdict.run/*"
+        "*://*.verdict.run/*",
+        "*://localhost/*",
+        "*://127.0.0.1/*"
       ]
     }
   ],
