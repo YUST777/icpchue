@@ -202,9 +202,13 @@ export function useCodeforcesSubmission({
                         const latestVerdict = mapVerdict(rawLatestVerdict);
                         const failedTestMatch = rawLatestVerdict.match(/(?:pre)?test\s+(\d+)/i);
                         setCfStatus({
-                            status: 'done',
+                            // Keep the sync panel available so the student can
+                            // submit a fix and check again, while still showing
+                            // the real failed verdict instead of "no AC".
+                            status: 'error',
                             verdict: latestVerdict,
-                            substatus: `Recorded ${submissions.length} Codeforces attempt${submissions.length === 1 ? '' : 's'} for this problem.`,
+                            substatus: 'verify-pending',
+                            error: `Latest Codeforces result: ${latestVerdict}. Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'} for this problem; it is not solved yet.`,
                             time: latestSubmission?.timeConsumedMillis || 0,
                             memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
                             submissionId: latestSubmission?.id,
