@@ -28,6 +28,10 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
     useEffect(() => {
         try {
+            // When the extension is installed, the live Codeforces session is
+            // authoritative. Do not render a handle remembered from an older
+            // session while the extension is still checking logout state.
+            if (document.getElementById('verdict-extension-installed')) return;
             const saved = localStorage.getItem('verdict-cf-handle');
             if (saved) setHandleInput(saved);
         } catch {}
