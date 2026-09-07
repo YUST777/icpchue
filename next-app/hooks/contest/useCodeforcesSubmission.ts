@@ -164,9 +164,15 @@ export function useCodeforcesSubmission({
                 }
 
                 try {
+                    const latestSubmission = latest || submissions[0];
+                    const rawLatestVerdict = String(latestSubmission?.verdict || 'Unknown');
+                    const latestVerdict = mapVerdict(rawLatestVerdict);
+                    const failedTestMatch = rawLatestVerdict.match(/(?:pre)?test\s+(\d+)/i);
+
                     // Persist the complete history first. This is what powers
-                    // the tries column and mentor view, including a latest WA
-                    // even when the problem was solved in an earlier attempt.
+                    // the tries column and mentor view. Every row carries its
+                    // own verdict, language, measurements, timestamp and exact
+                    // source when Codeforces makes it available.
                     if (Array.isArray(submissions) && submissions.length > 0) {
                         const backfillRes = await fetch('/api/codeforces/backfill', {
                             method: 'POST',
@@ -197,10 +203,6 @@ export function useCodeforcesSubmission({
                     // failed latest row, the history save above is sufficient;
                     // show its real verdict instead of claiming no AC exists.
                     if (!accepted) {
-                        const latestSubmission = latest || submissions[0];
-                        const rawLatestVerdict = String(latestSubmission?.verdict || 'Unknown');
-                        const latestVerdict = mapVerdict(rawLatestVerdict);
-                        const failedTestMatch = rawLatestVerdict.match(/(?:pre)?test\s+(\d+)/i);
                         setCfStatus({
                             // Keep the sync panel available so the student can
                             // submit a fix and check again, while still showing
@@ -225,8 +227,8 @@ export function useCodeforcesSubmission({
                             contestId,
                             problemIndex: problemId,
                             cfHandle: resolvedHandle || cfHandle,
-                            sourceCode: code,
-                            language: mapLanguageToExtension(language),
+                            sourceCode: accepted.sourceCode || null,
+                            language: accepted.language || mapLanguageToExtension(language),
                             sheetId: sheetId || null,
                             urlType,
                             groupId: groupId || null,
@@ -242,13 +244,29 @@ export function useCodeforcesSubmission({
                     if (verifyRes.ok) {
                         const data = await verifyRes.json();
                         if (data.success) {
-                            setCfStatus({
-                                status: 'done',
-                                verdict: 'Accepted',
-                                time: data.timeMs || accepted.timeConsumedMillis || 0,
-                                memory: data.memoryKb || Math.round((accepted.memoryConsumedBytes || 0) / 1024),
-                                submissionId: data.submissionId || accepted.id
-                            });
+                            const latestIsAccepted = latestSubmission?.id === accepted.id ||
+                                latestVerdict === 'Accepted';
+                            if (latestIsAccepted) {
+                                setCfStatus({
+                                    status: 'done',
+                                    verdict: latestVerdict,
+                                    time: latestSubmission?.timeConsumedMillis || data.timeMs || 0,
+                                    memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
+                                    submissionId: latestSubmission?.id || accepted.id,
+                                    substatus: `Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'} for this problem.`,
+                                });
+                            } else {
+                                setCfStatus({
+                                    status: 'error',
+                                    verdict: latestVerdict,
+                                    substatus: 'verify-pending',
+                                    error: `Latest Codeforces result: ${latestVerdict}. Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'}; this problem remains solved from an earlier Accepted submission.`,
+                                    time: latestSubmission?.timeConsumedMillis || 0,
+                                    memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
+                                    submissionId: latestSubmission?.id,
+                                    failedTestCase: failedTestMatch ? Number(failedTestMatch[1]) : undefined,
+                                });
+                            }
                         } else {
                             setCfStatus({
                                 status: 'error',
