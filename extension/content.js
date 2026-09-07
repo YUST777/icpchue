@@ -77,6 +77,32 @@ window.addEventListener('message', async (event) => {
         }
     }
 
+    // ── Get one submission's source code on demand ──
+    // Status pages do not include source code. Read only the selected
+    // submission page in the user's authenticated browser; cookies and raw
+    // HTML never leave the extension.
+    if (type === 'VERDICT_GET_SUBMISSION_SOURCE') {
+        const requestId = (payload && payload.requestId) || null;
+        try {
+            const { contestId, urlType, groupId, submissionId } = payload || {};
+            const result = await chrome.runtime.sendMessage({
+                type: 'GET_CF_SUBMISSION_SOURCE',
+                contestId,
+                urlType,
+                groupId,
+                submissionId,
+            });
+            window.postMessage({ type: 'VERDICT_SUBMISSION_SOURCE_RESULT', requestId, ...result }, '*');
+        } catch (err) {
+            window.postMessage({
+                type: 'VERDICT_SUBMISSION_SOURCE_RESULT',
+                requestId,
+                success: false,
+                error: err.message || 'Extension error',
+            }, '*');
+        }
+    }
+
     // ── Get Contest Submissions (backfill) ──
     // Reads ALL of the user's submissions across one whole contest/
     // sheet (every problem, paginated) and returns them. Used by the Settings
