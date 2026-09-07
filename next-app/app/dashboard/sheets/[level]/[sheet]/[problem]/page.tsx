@@ -405,7 +405,12 @@ function MirrorUI({
 
     // Auto-refresh submissions when a new one is done
     useEffect(() => {
-        if (cfStatus?.status === 'done') {
+        // A failed Codeforces attempt is intentionally represented as an
+        // error state so the sync panel stays available. It is still a
+        // successful history import and must invalidate the submissions list.
+        const historyRecorded = cfStatus?.status === 'done' ||
+            (cfStatus?.status === 'error' && Boolean(cfStatus.verdict));
+        if (historyRecorded) {
             const params = new URLSearchParams();
             if (sheetId) params.set('sheetId', sheetId);
             params.set('problemId', problemId);
@@ -414,7 +419,7 @@ function MirrorUI({
             fetchSubmissions();
             fetchAnalyticsData(true);
         }
-    }, [cfStatus?.status, fetchSubmissions, fetchAnalyticsData, sheetId, problemId, contestId]);
+    }, [cfStatus?.status, cfStatus?.verdict, fetchSubmissions, fetchAnalyticsData, sheetId, problemId, contestId]);
 
     const { result, runTests, submitting: testSubmitting } = useLocalTestRunner({
         code,
