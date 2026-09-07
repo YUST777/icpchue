@@ -151,7 +151,11 @@ export default function BackfillCard() {
                 const data = await res.json();
                 solvedTotal += data.newlySolved || data.solved || 0;
                 setTotalSolved(solvedTotal);
-                setTotalAttempts(Number(data.matchingSubmissions) || 0);
+                // `matchingSubmissions` is the size of the incoming history,
+                // not the number of rows added by this run. The API's
+                // `newlyInserted` count is idempotent because submissions are
+                // upserted by their Codeforces submission id.
+                setTotalAttempts(Number(data.newlyInserted) || 0);
             } catch {
                 setError('The history was read, but the server could not save it. Please try again.');
                 setPhase('error');
@@ -232,8 +236,8 @@ export default function BackfillCard() {
                         <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">
                             <CheckCircle2 size={18} className="shrink-0" />
                             {totalAttempts > 0
-                                ? <span>Done — imported <strong>{totalAttempts}</strong> attempt{totalAttempts !== 1 ? 's' : ''}{totalSolved > 0 && <> and marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved</>}.</span>
-                                : <span>All caught up — no Codeforces attempts found for the eligible sheets.</span>}
+                                ? <span>Done — imported <strong>{totalAttempts}</strong> new attempt{totalAttempts !== 1 ? 's' : ''}{totalSolved > 0 && <> and marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved</>}.</span>
+                                : <span>Already up to date — no new attempts were added.</span>}
                         </div>
                     )}
 
