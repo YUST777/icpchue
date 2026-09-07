@@ -96,7 +96,7 @@ async function checkLogin(allowRecentVerification = false) {
         // that the extension verified moments ago so dozens of sheets do not
         // each fetch the homepage. Popup/account checks never use this path,
         // and each status page still rejects a logged-out session.
-        if (allowRecentVerification && handleCache.handle &&
+        if (allowRecentVerification && currentSessionKey && handleCache.handle &&
             handleCache.sessionKey === currentSessionKey &&
             Date.now() - handleCache.verifiedAt < VERIFIED_SESSION_CACHE_MS) {
             return { loggedIn: true, handle: handleCache.handle };
