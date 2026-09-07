@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
             SELECT s.*, COUNT(*) OVER() AS total_count
             FROM submissions s
             WHERE ${conditions.join(' AND ')}
-            ORDER BY s.submitted_at DESC
+            ORDER BY s.submitted_at DESC NULLS LAST, s.cf_submission_id DESC NULLS LAST, s.id DESC
             LIMIT $${pLimit} OFFSET $${pOffset}
         `;
         const result = await query(dataQuery, params);

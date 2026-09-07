@@ -210,13 +210,13 @@ export async function GET(
                         cf_submission_id, source_code,
                         ROW_NUMBER() OVER (
                             PARTITION BY user_id, contest_id, problem_index 
-                            ORDER BY submitted_at ASC, id ASC
+                            ORDER BY submitted_at ASC NULLS LAST, cf_submission_id ASC NULLS LAST, id ASC
                         ) as real_attempt
                     FROM submissions 
                     WHERE user_id = $1
                 )
                 SELECT * FROM ranked_subs 
-                ORDER BY submitted_at DESC, id DESC 
+                ORDER BY submitted_at DESC NULLS LAST, cf_submission_id DESC NULLS LAST, id DESC
                 LIMIT $2 OFFSET $3
             `, [userId, subLimit, subOffset]) : Promise.resolve({ rows: [] }),
             userId ? query('SELECT COUNT(*) as total FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total: '0' }] }),
@@ -242,7 +242,7 @@ export async function GET(
                     problem_index, 
                     COUNT(*) as total_attempts,
                     BOOL_OR(LOWER(verdict) LIKE '%accepted%' OR LOWER(verdict) = 'ok' OR LOWER(verdict) = 'ac') as has_ac,
-                    (ARRAY_AGG(verdict ORDER BY submitted_at DESC))[1] as latest_verdict
+                    (ARRAY_AGG(verdict ORDER BY submitted_at DESC NULLS LAST, cf_submission_id DESC NULLS LAST, id DESC))[1] as latest_verdict
                 FROM submissions 
                 WHERE user_id = $1 
                 GROUP BY contest_id, problem_index
