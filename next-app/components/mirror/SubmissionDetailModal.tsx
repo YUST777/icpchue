@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, RotateCcw, Check, ExternalLink, Clock, MemoryStick, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Submission } from './types';
 
 interface SubmissionDetailModalProps {
     isOpen: boolean;
@@ -27,14 +26,19 @@ export default function SubmissionDetailModal({
     const [submission, setSubmission] = useState<any>(null);
     const [copied, setCopied] = useState(false);
     const [sourceLoading, setSourceLoading] = useState(false);
+    const [sourceError, setSourceError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && submissionId) {
+            setSourceError(null);
+            setSourceLoading(false);
             fetchSubmission();
         } else {
             setSubmission(null);
+            setSourceLoading(false);
+            setSourceError(null);
         }
-    }, [isOpen, submissionId]);
+    }, [isOpen, submissionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchSubmission = async () => {
         setLoading(true);
@@ -43,27 +47,8 @@ export default function SubmissionDetailModal({
             const data = await res.json();
             if (data.success) {
                 setSubmission(data);
-                if (!data.sourceCode && data.cfSubmissionId && document.getElementById('verdict-extension-installed')) {
-                    setSourceLoading(true);
-                    const requestId = `source-${data.cfSubmissionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                    const onMessage = (event: MessageEvent) => {
-                        if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSION_SOURCE_RESULT' || event.data.requestId !== requestId) return;
-                        cleanup();
-                        if (event.data.success && event.data.sourceCode) {
-                            setSubmission((current: any) => current ? { ...current, sourceCode: event.data.sourceCode } : current);
-                        }
-                    };
-                    const cleanup = () => {
-                        window.clearTimeout(timer);
-                        window.removeEventListener('message', onMessage);
-                        setSourceLoading(false);
-                    };
-                    const timer = window.setTimeout(cleanup, 15_000);
-                    window.addEventListener('message', onMessage);
-                    window.postMessage({
-                        type: 'VERDICT_GET_SUBMISSION_SOURCE',
-                        payload: { requestId, contestId, urlType, groupId: groupId || null, submissionId: data.cfSubmissionId },
-                    }, '*');
+                if (!data.sourceCode && data.cfSubmissionId) {
+                    requestSource(data);
                 }
             }
         } catch (err) {
@@ -71,6 +56,61 @@ export default function SubmissionDetailModal({
         } finally {
             setLoading(false);
         }
+    };
+
+    const requestSource = (submissionData: any) => {
+        if (typeof window === 'undefined') return;
+        if (!document.getElementById('verdict-extension-installed')) {
+            setSourceError('Install or update Verdict Helper, then refresh this page to load Codeforces source.');
+            return;
+        }
+
+        setSourceLoading(true);
+        setSourceError(null);
+        const requestId = `source-${submissionData.cfSubmissionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        let timer = 0;
+        const cleanup = () => {
+            window.clearTimeout(timer);
+            window.removeEventListener('message', onMessage);
+            setSourceLoading(false);
+        };
+        const onMessage = (event: MessageEvent) => {
+            if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSION_SOURCE_RESULT' || event.data.requestId !== requestId) return;
+            cleanup();
+            if (event.data.success && typeof event.data.sourceCode === 'string') {
+                setSubmission((current: any) => current ? { ...current, sourceCode: event.data.sourceCode } : current);
+                // Persist the exact Codeforces source so the student and mentor
+                // see the same code on later opens, without sending cookies.
+                fetch(`/api/submissions/cf/${submissionData.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ sourceCode: event.data.sourceCode }),
+                }).catch(() => {});
+            } else {
+                const errors: Record<string, string> = {
+                    NOT_LOGGED_IN: 'Log into Codeforces in this browser to load the source.',
+                    CLOUDFLARE_CHALLENGE: 'Open Codeforces once, complete any challenge, then try again.',
+                    SOURCE_NOT_AVAILABLE: 'Codeforces did not make source available for this submission.',
+                };
+                setSourceError(errors[event.data.error] || 'Could not load source from Codeforces. Use “CF Original”.');
+            }
+        };
+        window.addEventListener('message', onMessage);
+        window.postMessage({
+            type: 'VERDICT_GET_SUBMISSION_SOURCE',
+            payload: {
+                requestId,
+                contestId: submissionData.contestId || contestId,
+                urlType: submissionData.urlType || urlType,
+                groupId: submissionData.groupId || groupId || null,
+                submissionId: submissionData.cfSubmissionId,
+            },
+        }, '*');
+        timer = window.setTimeout(() => {
+            cleanup();
+            setSourceError('The extension did not respond. Reload the page and try again.');
+        }, 15_000);
     };
 
     const handleCopy = () => {
@@ -202,7 +242,7 @@ export default function SubmissionDetailModal({
                                     <pre className="p-4 bg-[#111] rounded-xl border border-white/5 text-[11px] font-mono leading-relaxed overflow-x-auto max-h-[400px] custom-scrollbar text-gray-300">
                                         <code>{submission.sourceCode || (sourceLoading
                                             ? '// Loading source from Codeforces…'
-                                            : '// Source code is unavailable for this submission. Open “CF Original” to view it on Codeforces.')}</code>
+                                            : `// ${sourceError || 'Source code is unavailable. Open “CF Original” to view it on Codeforces.'}`)}</code>
                                     </pre>
                                 </div>
                             </div>

@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.3.0 — Background Service Worker
+ * Verdict Helper Extension v1.3.1 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -22,11 +22,12 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.3.0';
+const EXT_VERSION = '1.3.1';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
 const MAX_PROBLEM_HISTORY_PAGES = 50;
+const CF_FETCH_TIMEOUT_MS = 12_000;
 
 // ─── Handle cache ────────────────────────────────────────────────────
 let handleCache = {
@@ -161,28 +162,44 @@ function getSubmissionUrl(contestId, urlType, groupId, submissionId) {
     return `https://codeforces.com/contest/${contestId}/submission/${submissionId}`;
 }
 
-async function getSubmissionSource({ contestId, urlType, groupId, submissionId }) {
-    const login = await checkLogin();
-    if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
+async function fetchWithTimeout(url, options = {}, timeoutMs = CF_FETCH_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId }) {
     if (!Number.isSafeInteger(Number(submissionId)) || Number(submissionId) <= 0) {
         return { success: false, error: 'INVALID_SUBMISSION_ID' };
     }
     try {
-        const res = await fetch(getSubmissionUrl(contestId, urlType, groupId, submissionId), {
+        const res = await fetchWithTimeout(getSubmissionUrl(contestId, urlType, groupId, submissionId), {
             credentials: 'include',
             headers: {
-                'User-Agent': navigator.userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             },
         });
         if (!res.ok) return { success: false, error: `HTTP_${res.status}` };
         const html = await res.text();
         if (html.includes('<title>Just a moment...</title>')) return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
+        if (html.includes('Login into Codeforces') || /\/enter\b/.test(res.url)) {
+            return { success: false, error: 'NOT_LOGGED_IN' };
+        }
         const sourceCode = parseSourceCode(html);
         return sourceCode ? { success: true, sourceCode } : { success: false, error: 'SOURCE_NOT_AVAILABLE' };
     } catch (err) {
-        return { success: false, error: err.message || 'FETCH_FAILED' };
+        return { success: false, error: err.name === 'AbortError' ? 'FETCH_TIMEOUT' : (err.message || 'FETCH_FAILED') };
     }
+}
+
+async function getSubmissionSource(params) {
+    const login = await checkLogin();
+    if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
+    return fetchSubmissionSource(params);
 }
 
 // ─── HTML parsing (service worker has no DOMParser, use regex) ───────
@@ -362,7 +379,16 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
 
     // Keep the order deterministic even if Codeforces repeated a row across a
     // page boundary while a new submission was being judged.
-    const submissions = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+    const history = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+    // Fetch only the latest source during sync. This keeps a 500-attempt
+    // history fast and guarantees the UI can immediately show the last code.
+    // Older attempts are still fully tracked by verdict/metadata and their
+    // exact source is fetched and persisted when that row is opened.
+    const submissions = history;
+    if (submissions[0]) {
+        const source = await fetchSubmissionSource({ contestId, urlType, groupId, submissionId: submissions[0].id });
+        if (source.success && source.sourceCode) submissions[0].sourceCode = source.sourceCode;
+    }
     const ac = submissions.find(r => isAcceptedVerdict(r.verdict)) || null;
 
     return {
