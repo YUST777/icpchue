@@ -155,6 +155,36 @@ function getStatusUrl(contestId, urlType, groupId, problemIndex, page = 1) {
     return base;
 }
 
+function getSubmissionUrl(contestId, urlType, groupId, submissionId) {
+    if (urlType === 'gym') return `https://codeforces.com/gym/${contestId}/submission/${submissionId}`;
+    if (urlType === 'group' && groupId) return `https://codeforces.com/group/${groupId}/contest/${contestId}/submission/${submissionId}`;
+    return `https://codeforces.com/contest/${contestId}/submission/${submissionId}`;
+}
+
+async function getSubmissionSource({ contestId, urlType, groupId, submissionId }) {
+    const login = await checkLogin();
+    if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
+    if (!Number.isSafeInteger(Number(submissionId)) || Number(submissionId) <= 0) {
+        return { success: false, error: 'INVALID_SUBMISSION_ID' };
+    }
+    try {
+        const res = await fetch(getSubmissionUrl(contestId, urlType, groupId, submissionId), {
+            credentials: 'include',
+            headers: {
+                'User-Agent': navigator.userAgent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            },
+        });
+        if (!res.ok) return { success: false, error: `HTTP_${res.status}` };
+        const html = await res.text();
+        if (html.includes('<title>Just a moment...</title>')) return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
+        const sourceCode = parseSourceCode(html);
+        return sourceCode ? { success: true, sourceCode } : { success: false, error: 'SOURCE_NOT_AVAILABLE' };
+    } catch (err) {
+        return { success: false, error: err.message || 'FETCH_FAILED' };
+    }
+}
+
 // ─── HTML parsing (service worker has no DOMParser, use regex) ───────
 function stripTags(s) {
     return s
@@ -165,6 +195,28 @@ function stripTags(s) {
         .replace(/&amp;/g, '&')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function decodeHtml(s) {
+    return String(s || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&apos;/gi, "'")
+        .replace(/&amp;/gi, '&')
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)));
+}
+
+function parseSourceCode(html) {
+    const match = html.match(/<pre\b(?=[^>]*\bid=["']program-source-text["'])[^>]*>([\s\S]*?)<\/pre>/i) ||
+        html.match(/<pre\b(?=[^>]*\bclass=["'][^"']*program-source[^"']*["'])[^>]*>([\s\S]*?)<\/pre>/i);
+    if (!match) return null;
+    const source = decodeHtml(match[1]).replace(/\r\n/g, '\n');
+    return source ? source.slice(0, 64 * 1024) : null;
 }
 
 function parseFirstInt(text) {
@@ -470,6 +522,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             problemIndex: message.problemIndex,
             urlType: message.urlType || 'contest',
             groupId: message.groupId || null,
+        }).then(sendResponse).catch(err => {
+            sendResponse({ success: false, error: err.message || 'EXTENSION_ERROR' });
+        });
+        return true;
+    }
+
+    if (message.type === 'GET_CF_SUBMISSION_SOURCE') {
+        getSubmissionSource({
+            contestId: message.contestId,
+            urlType: message.urlType || 'contest',
+            groupId: message.groupId || null,
+            submissionId: message.submissionId,
         }).then(sendResponse).catch(err => {
             sendResponse({ success: false, error: err.message || 'EXTENSION_ERROR' });
         });

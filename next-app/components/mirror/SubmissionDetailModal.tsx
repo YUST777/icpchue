@@ -9,19 +9,24 @@ interface SubmissionDetailModalProps {
     onClose: () => void;
     submissionId: number | null;
     contestId: string;
+    urlType?: string;
+    groupId?: string;
     onRestoreCode: (code: string) => void;
 }
 
 export default function SubmissionDetailModal({ 
     isOpen, 
     onClose, 
-    submissionId, 
+    submissionId,
     contestId,
+    urlType = 'contest',
+    groupId,
     onRestoreCode 
 }: SubmissionDetailModalProps) {
     const [loading, setLoading] = useState(false);
     const [submission, setSubmission] = useState<any>(null);
     const [copied, setCopied] = useState(false);
+    const [sourceLoading, setSourceLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && submissionId) {
@@ -38,6 +43,28 @@ export default function SubmissionDetailModal({
             const data = await res.json();
             if (data.success) {
                 setSubmission(data);
+                if (!data.sourceCode && data.cfSubmissionId && document.getElementById('verdict-extension-installed')) {
+                    setSourceLoading(true);
+                    const requestId = `source-${data.cfSubmissionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    const onMessage = (event: MessageEvent) => {
+                        if (event.source !== window || event.data?.type !== 'VERDICT_SUBMISSION_SOURCE_RESULT' || event.data.requestId !== requestId) return;
+                        cleanup();
+                        if (event.data.success && event.data.sourceCode) {
+                            setSubmission((current: any) => current ? { ...current, sourceCode: event.data.sourceCode } : current);
+                        }
+                    };
+                    const cleanup = () => {
+                        window.clearTimeout(timer);
+                        window.removeEventListener('message', onMessage);
+                        setSourceLoading(false);
+                    };
+                    const timer = window.setTimeout(cleanup, 15_000);
+                    window.addEventListener('message', onMessage);
+                    window.postMessage({
+                        type: 'VERDICT_GET_SUBMISSION_SOURCE',
+                        payload: { requestId, contestId, urlType, groupId: groupId || null, submissionId: data.cfSubmissionId },
+                    }, '*');
+                }
             }
         } catch (err) {
             console.error('Failed to fetch submission details:', err);
@@ -156,8 +183,12 @@ export default function SubmissionDetailModal({
                                             {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                                             {copied ? 'Copied!' : 'Copy'}
                                         </button>
-                                        <a 
-                                            href={`https://codeforces.com/contest/${contestId}/submission/${submission.cfSubmissionId}`}
+                                        <a
+                                            href={urlType === 'group' && groupId
+                                                ? `https://codeforces.com/group/${groupId}/contest/${contestId}/submission/${submission.cfSubmissionId}`
+                                                : urlType === 'gym'
+                                                    ? `https://codeforces.com/gym/${contestId}/submission/${submission.cfSubmissionId}`
+                                                    : `https://codeforces.com/contest/${contestId}/submission/${submission.cfSubmissionId}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 border border-[#E8C15A]/20 rounded-lg text-xs text-[#E8C15A] transition-all"
@@ -169,7 +200,9 @@ export default function SubmissionDetailModal({
                                 </div>
                                 <div className="relative group">
                                     <pre className="p-4 bg-[#111] rounded-xl border border-white/5 text-[11px] font-mono leading-relaxed overflow-x-auto max-h-[400px] custom-scrollbar text-gray-300">
-                                        <code>{submission.sourceCode}</code>
+                                        <code>{submission.sourceCode || (sourceLoading
+                                            ? '// Loading source from Codeforces…'
+                                            : '// Source code is unavailable for this submission. Open “CF Original” to view it on Codeforces.')}</code>
                                     </pre>
                                 </div>
                             </div>
