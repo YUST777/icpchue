@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid Codeforces session data' }, { status: 400 });
         }
 
-        // The v1.2 extension reads private/group submissions in the user's
+        // The v1.3 extension reads private/group submissions in the user's
         // own browser and sends only the matched row back to this route (no
         // Codeforces cookies leave the browser). Validate the handoff before
         // using it: only an already-linked handle may use this path, the
