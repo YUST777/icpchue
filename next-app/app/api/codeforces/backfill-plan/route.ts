@@ -16,29 +16,6 @@ export const dynamic = 'force-dynamic';
  * complete historical verdict stream, not only new ACs.
  */
 
-// Derive { urlType, groupId } from a Codeforces contest URL.
-// e.g. https://codeforces.com/group/MWSDmqGsZm/contest/219158  -> group, MWSDmqGsZm
-//      https://codeforces.com/gym/104000                       -> gym, null
-//      https://codeforces.com/contest/1700                     -> contest, null
-function deriveFromUrl(contestUrl: string | null, fallbackGroupId: string | null) {
-    let urlType: 'contest' | 'group' | 'gym' = 'contest';
-    let groupId: string | null = fallbackGroupId || null;
-
-    if (contestUrl) {
-        const groupMatch = contestUrl.match(/\/group\/([^/]+)\//);
-        if (groupMatch) {
-            urlType = 'group';
-            groupId = groupMatch[1];
-        } else if (/\/gym\//.test(contestUrl)) {
-            urlType = 'gym';
-        }
-    } else if (fallbackGroupId) {
-        urlType = 'group';
-    }
-
-    return { urlType, groupId };
-}
-
 export async function GET(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
@@ -74,7 +51,7 @@ export async function GET(req: NextRequest) {
             LEFT JOIN user_progress up
                 ON up.user_id = $1
                AND up.problem_id = (s.contest_id || ':' || p.problem_letter)
-            WHERE s.contest_id IS NOT NULL
+            WHERE p.codeforces_url IS NOT NULL OR s.contest_url IS NOT NULL
             ORDER BY l.level_number ASC, s.sheet_number ASC, p.problem_number ASC
         `, [user.id]);
 
@@ -93,23 +70,27 @@ export async function GET(req: NextRequest) {
         }>();
 
         for (const row of result.rows) {
-            const problemTarget = parseCodeforcesUrl(row.codeforces_url);
-            const canonicalContestId = String(problemTarget?.contestId || row.problem_contest_id || row.contest_id || '').trim();
+            const problemUrl = String(row.codeforces_url || '').trim();
+            const problemTarget = parseCodeforcesUrl(problemUrl);
+            // A problem URL is authoritative. Skip VJudge/non-CF rows instead
+            // of falling back to the sheet's numeric contest id.
+            if (problemUrl && !problemTarget) continue;
+            const target = problemTarget || parseCodeforcesUrl(row.contest_url);
+            if (!target) continue;
+            const canonicalContestId = String(target.contestId).trim();
             if (!canonicalContestId) continue;
             // A sheet can contain legacy links from more than one contest. Do
             // not let the first row hide the other contest's submissions.
-            const key = `${row.sheet_id}|${canonicalContestId}|${problemTarget?.urlType || ''}|${problemTarget?.groupId || row.group_id || ''}`;
+            const key = `${row.sheet_id}|${canonicalContestId}|${target.urlType}|${target.groupId || ''}`;
             if (!sheetsMap.has(key)) {
-                const fromProblemUrl = problemTarget;
-                const { urlType, groupId } = fromProblemUrl || deriveFromUrl(row.contest_url, row.group_id);
                 sheetsMap.set(key, {
                     sheetId: String(row.sheet_id),
                     sheetName: row.sheet_name,
                     sheetSlug: row.sheet_slug,
                     levelSlug: row.level_slug,
                     contestId: canonicalContestId,
-                    urlType,
-                    groupId,
+                    urlType: target.urlType,
+                    groupId: target.groupId,
                     unsolved: [],
                     solvedCount: 0,
                     totalCount: 0,

@@ -59,6 +59,7 @@ export default function BackfillCard() {
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [currentSheet, setCurrentSheet] = useState<string>('');
     const [totalSolved, setTotalSolved] = useState(0);
+    const [totalAttempts, setTotalAttempts] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const cancelRef = useRef(false);
 
@@ -72,6 +73,7 @@ export default function BackfillCard() {
     const run = useCallback(async () => {
         setError(null);
         setTotalSolved(0);
+        setTotalAttempts(0);
         setPhase('planning');
         cancelRef.current = false;
 
@@ -149,6 +151,7 @@ export default function BackfillCard() {
                 const data = await res.json();
                 solvedTotal += data.newlySolved || data.solved || 0;
                 setTotalSolved(solvedTotal);
+                setTotalAttempts(Number(data.matchingSubmissions) || 0);
             } catch {
                 setError('The history was read, but the server could not save it. Please try again.');
                 setPhase('error');
@@ -227,9 +230,9 @@ export default function BackfillCard() {
                     {phase === 'done' && (
                         <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">
                             <CheckCircle2 size={18} className="shrink-0" />
-                            {totalSolved > 0
-                                ? <span>Done — marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved and imported the full verdict history.</span>
-                                : <span>All caught up — no new solved problems found.</span>}
+                            {totalAttempts > 0
+                                ? <span>Done — imported <strong>{totalAttempts}</strong> attempt{totalAttempts !== 1 ? 's' : ''}{totalSolved > 0 && <> and marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved</>}.</span>
+                                : <span>All caught up — no Codeforces attempts found for the eligible sheets.</span>}
                         </div>
                     )}
 
