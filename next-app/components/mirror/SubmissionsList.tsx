@@ -36,8 +36,10 @@ const NOTE_COLORS = [
 ];
 
 function timeAgo(dateStr: string): string {
+    if (!dateStr) return 'Time unavailable';
     const now = Date.now();
     const then = new Date(dateStr).getTime();
+    if (!Number.isFinite(then) || then <= 0) return 'Time unavailable';
     const diff = Math.max(0, now - then);
     const sec = Math.floor(diff / 1000);
     if (sec < 60) return 'just now';
@@ -331,8 +333,14 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
                         <span className="text-xs text-[#999] text-right">{formatMemory(sub.memoryKb)}</span>
                         
                         <span className="text-xs text-right tabular-nums">
-                            <span className={vType === 'accepted' ? 'text-[#2cbb5d]' : 'text-[#999]'}>{sub.testCasesPassed || 0}</span>
-                            <span className="text-[#444]">/{sub.totalTestCases || 0}</span>
+                            {sub.testCasesPassed == null || sub.totalTestCases == null ? (
+                                <span className="text-[#555]" title="Codeforces does not expose test totals in submission history">—</span>
+                            ) : (
+                                <>
+                                    <span className={vType === 'accepted' ? 'text-[#2cbb5d]' : 'text-[#999]'}>{sub.testCasesPassed}</span>
+                                    <span className="text-[#444]">/{sub.totalTestCases}</span>
+                                </>
+                            )}
                         </span>
 
                         <div className="pl-4 min-w-0" onClick={(e) => { e.stopPropagation(); setNoteModalData(sub); }}>
