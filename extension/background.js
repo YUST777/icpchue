@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.3.1 — Background Service Worker
+ * Verdict Helper Extension v1.3.2 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.3.1';
+const EXT_VERSION = '1.3.2';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
@@ -241,7 +241,7 @@ function parseFirstInt(text) {
     return m ? parseInt(m[1], 10) : 0;
 }
 
-function parseSubmissionTime(body) {
+function parseSubmissionTime(body, visibleWhen = '') {
     // Codeforces renders the absolute submission time in a title/data-time
     // attribute even when the visible value is relative ("2 hours ago").
     const attrs = body.matchAll(/(?:data-time|data-timestamp|data-livestamp|title)=["']([^"']+)["']/gi);
@@ -255,6 +255,14 @@ function parseSubmissionTime(body) {
         const parsed = Date.parse(raw);
         if (!Number.isNaN(parsed)) return Math.floor(parsed / 1000);
     }
+
+    // Some Codeforces layouts put the absolute date only in the visible
+    // second column (for example "Sep/07/2026 17:18") and use no title/data
+    // attribute. Parse that cell as a fallback so imported rows never become
+    // NULL timestamps (which the UI renders as 1/1/1970).
+    const visible = String(visibleWhen || '').replace(/\s+/g, ' ').trim();
+    const visibleDate = Date.parse(visible);
+    if (!Number.isNaN(visibleDate)) return Math.floor(visibleDate / 1000);
     return null;
 }
 
@@ -301,7 +309,7 @@ function parseStatusTable(html) {
             timeConsumedMillis: parseFirstInt(timeCell),
             memoryConsumedBytes: parseFirstInt(memCell) * 1024,
             language: langCell.trim(),
-            creationTimeSeconds: parseSubmissionTime(body),
+            creationTimeSeconds: parseSubmissionTime(body, cells[1]),
         });
     }
     return rows;
