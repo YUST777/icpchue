@@ -175,13 +175,18 @@ function parseFirstInt(text) {
 function parseSubmissionTime(body) {
     // Codeforces renders the absolute submission time in a title/data-time
     // attribute even when the visible value is relative ("2 hours ago").
-    const attr = body.match(/(?:data-time|data-timestamp|title)=["']([^"']+)["']/i);
-    if (!attr) return null;
-    const raw = attr[1];
-    const numeric = Number(raw);
-    if (Number.isFinite(numeric) && numeric > 0) return numeric > 4102444800 ? Math.floor(numeric / 1000) : Math.floor(numeric);
-    const parsed = Date.parse(raw);
-    return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000);
+    const attrs = body.matchAll(/(?:data-time|data-timestamp|data-livestamp|title)=["']([^"']+)["']/gi);
+    for (const attr of attrs) {
+        const raw = attr[1];
+        const numeric = Number(raw);
+        // Ignore unrelated title attributes such as "View source".
+        if (Number.isFinite(numeric) && numeric > 1_000_000_000) {
+            return numeric > 4102444800 ? Math.floor(numeric / 1000) : Math.floor(numeric);
+        }
+        const parsed = Date.parse(raw);
+        if (!Number.isNaN(parsed)) return Math.floor(parsed / 1000);
+    }
+    return null;
 }
 
 /**
