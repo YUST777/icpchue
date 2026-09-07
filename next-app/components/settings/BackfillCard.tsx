@@ -177,7 +177,8 @@ export default function BackfillCard() {
             </h3>
             <p className="text-sm text-[#A0A0A0] mb-4">
                 New: automatically import your accepted and failed attempts so every
-                problem&apos;s tries count stays accurate.
+                problem&apos;s tries count stays accurate. Only problems linked to
+                Codeforces are included; VJudge and other providers are skipped.
             </p>
 
             {!hasExtension ? (
