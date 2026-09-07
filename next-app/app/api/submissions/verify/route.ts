@@ -391,9 +391,9 @@ export async function POST(req: NextRequest) {
                 verdict = EXCLUDED.verdict,
                 time_ms = EXCLUDED.time_ms,
                 memory_kb = EXCLUDED.memory_kb,
-                // A browser sync may already have persisted the exact source
-                // from this Codeforces submission. Keep it instead of
-                // replacing it with the current editor buffer.
+                -- A browser sync may already have persisted the exact source
+                -- from this Codeforces submission. Keep it instead of
+                -- replacing it with the current editor buffer.
                 source_code = COALESCE(submissions.source_code, EXCLUDED.source_code),
                 language = EXCLUDED.language
             WHERE submissions.user_id = EXCLUDED.user_id
