@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Not logged in
                 accountCard.className = 'account-card error';
                 avatar.textContent = '!';
-                handle.textContent = 'Not logged in';
-                statusText.textContent = 'Login to Codeforces first';
+                handle.textContent = 'Connect Codeforces';
+                statusText.textContent = 'Log in to sync attempts';
             }
         } catch (error) {
             console.error('Status check failed:', error);

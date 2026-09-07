@@ -99,7 +99,9 @@ export async function POST(req: NextRequest) {
         const index = await loadCurriculumIndex();
         const result = await applyBackfillBatches(user.id, finalHandle || null, batches, index);
 
-        if (result.newlySolved > 0) {
+        // Failed attempts can create ATTEMPTED progress and change mentor/
+        // tries views even when no new AC was found.
+        if (result.matchingSubmissions > 0) {
             await Promise.all([
                 invalidateCache(`user:${user.id}:dashboard_stats`),
                 invalidateCache(`user:${user.id}:roadmap`),

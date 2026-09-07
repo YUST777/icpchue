@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.3.2 — Background Service Worker
+ * Verdict Helper Extension v1.3.3 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -22,17 +22,19 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.3.2';
+const EXT_VERSION = '1.3.3';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
 const MAX_PROBLEM_HISTORY_PAGES = 50;
 const CF_FETCH_TIMEOUT_MS = 12_000;
+const VERIFIED_SESSION_CACHE_MS = 60_000;
 
 // ─── Handle cache ────────────────────────────────────────────────────
 let handleCache = {
     handle: null,
     sessionKey: null, // changes when session cookies change
+    verifiedAt: 0,
 };
 
 function getSessionKey(rawCookies) {
@@ -51,6 +53,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
         (name === 'JSESSIONID' || name === '39ce7' || name === 'X-User-Sha1' || name === 'handle')) {
         handleCache.handle = null;
         handleCache.sessionKey = null;
+        handleCache.verifiedAt = 0;
     }
 });
 
@@ -76,67 +79,76 @@ async function getCodeforcesCookies() {
 }
 
 // ─── Login Check + handle resolution (from the live CF session only) ──
-async function checkLogin() {
+async function checkLogin(allowRecentVerification = false) {
     try {
         const cookieResult = await getCodeforcesCookies();
         if (!cookieResult.success) {
+            handleCache.handle = null;
+            handleCache.sessionKey = null;
+            handleCache.verifiedAt = 0;
             return { loggedIn: false };
         }
 
         const raw = cookieResult.raw || [];
-
-        // 1. Check handle cookie (fastest path, zero requests)
-        const handleCookie = raw.find(c => c.name === 'handle');
-        if (handleCookie) {
-            handleCache.handle = handleCookie.value;
-            handleCache.sessionKey = getSessionKey(raw);
-            return { loggedIn: true, handle: handleCookie.value };
-        }
-
-        // 2. Check session cookies exist
-        const hasSession = raw.some(c =>
-            c.name === 'X-User-Sha1' ||
-            c.name === '39ce7' ||
-            c.name === 'JSESSIONID'
-        );
-
-        if (!hasSession) {
-            return { loggedIn: false };
-        }
-
-        // 3. Session cookies exist but no handle cookie — check cache
         const currentSessionKey = getSessionKey(raw);
-        if (handleCache.handle && handleCache.sessionKey === currentSessionKey) {
+
+        // A backfill sends one extension message per contest. Reuse a session
+        // that the extension verified moments ago so dozens of sheets do not
+        // each fetch the homepage. Popup/account checks never use this path,
+        // and each status page still rejects a logged-out session.
+        if (allowRecentVerification && handleCache.handle &&
+            handleCache.sessionKey === currentSessionKey &&
+            Date.now() - handleCache.verifiedAt < VERIFIED_SESSION_CACHE_MS) {
             return { loggedIn: true, handle: handleCache.handle };
         }
 
-        // 4. Fetch CF homepage ONCE to resolve handle (cached for session)
+        // Never trust the `handle` cookie by itself. Codeforces can leave it
+        // behind after logout, which would make the extension report the old
+        // account and potentially try to sync the wrong session.
+        // Verify the live homepage on every status check instead.
         try {
-            const res = await fetch('https://codeforces.com/', {
+            const res = await fetchWithTimeout('https://codeforces.com/', {
                 credentials: 'include',
-                headers: { 'User-Agent': navigator.userAgent }
-            });
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': navigator.userAgent,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                },
+            }, CF_FETCH_TIMEOUT_MS);
             const html = await res.text();
 
-            // The "enter"/"register" links only show when logged OUT.
-            const handleMatch = html.match(/personal-sidebar[\s\S]*?href="\/profile\/([^"]+)"/) ||
-                                html.match(/href="\/profile\/([^"]+)"[^>]*>\s*<[^>]*lang-[^>]*>/) ||
-                                html.match(/href="\/profile\/([^"]+)"/);
-            if (handleMatch && handleMatch[1]) {
-                handleCache.handle = handleMatch[1];
-                handleCache.sessionKey = currentSessionKey;
-                return { loggedIn: true, handle: handleMatch[1] };
-            }
+            const redirectedToLogin = /\/enter(?:[/?#]|$)|\/register(?:[/?#]|$)/i.test(res.url || '');
+            const hasLogoutLink = /(?:href|action)=["'][^"']*\/logout(?:[/?#"']|$)/i.test(html) ||
+                />\s*Logout\s*</i.test(html);
+            const hasLoginMarker = /Login into Codeforces|href=["'][^"']*\/(?:enter|register)(?:[/?#"'])/i.test(html);
+            // Prefer the profile link inside Codeforces' personal sidebar so
+            // a logged-in homepage cannot accidentally resolve a handle from
+            // a recent-contest/standings link elsewhere in the document.
+            const handleMatch = html.match(/personal-sidebar[\s\S]*?href=["']\/profile\/([A-Za-z0-9_.-]{1,64})(?:["'?#])/i) ||
+                html.match(/href=["']\/profile\/([A-Za-z0-9_.-]{1,64})(?:["'?#])/i);
 
-            if (html.includes('/logout')) {
-                return { loggedIn: true, handle: null };
+            // A live logged-in page must contain both the authenticated
+            // navigation marker and a profile handle. Any redirect, login
+            // page, challenge, or incomplete response fails closed.
+            if (res.ok && !redirectedToLogin && hasLogoutLink && !hasLoginMarker && handleMatch?.[1]) {
+                const handle = handleMatch[1];
+                handleCache.handle = handle;
+                handleCache.sessionKey = currentSessionKey;
+                handleCache.verifiedAt = Date.now();
+                return { loggedIn: true, handle };
             }
         } catch {
-            return { loggedIn: true, handle: null };
+            // Network failures must not fall back to a stale cookie/cache.
         }
 
-        return { loggedIn: true, handle: null };
+        handleCache.handle = null;
+        handleCache.sessionKey = null;
+        handleCache.verifiedAt = 0;
+        return { loggedIn: false };
     } catch {
+        handleCache.handle = null;
+        handleCache.sessionKey = null;
+        handleCache.verifiedAt = 0;
         return { loggedIn: false };
     }
 }
@@ -197,7 +209,7 @@ async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId
 }
 
 async function getSubmissionSource(params) {
-    const login = await checkLogin();
+    const login = await checkLogin(true);
     if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
     return fetchSubmissionSource(params);
 }
@@ -326,7 +338,7 @@ function isAcceptedVerdict(v) {
  */
 async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
     // 1. Confirm logged in + resolve the user's OWN handle from CF.
-    const login = await checkLogin();
+    const login = await checkLogin(true);
     if (!login.loggedIn) {
         return { success: false, error: 'NOT_LOGGED_IN' };
     }
@@ -432,7 +444,7 @@ function getContestMyUrl(contestId, urlType, groupId, page) {
  * Runs in the user's browser (residential IP + their CF session).
  */
 async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 10 }) {
-    const login = await checkLogin();
+    const login = await checkLogin(true);
     if (!login.loggedIn) {
         return { success: false, error: 'NOT_LOGGED_IN' };
     }

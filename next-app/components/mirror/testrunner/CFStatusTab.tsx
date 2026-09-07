@@ -65,6 +65,13 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 setHandleInput(resolved);
                 setHandleAutoResolved(true);
                 try { localStorage.setItem('verdict-cf-handle', resolved); } catch {}
+            } else {
+                // The extension verifies the live Codeforces session. Clear
+                // any previously remembered handle when that session is gone;
+                // otherwise a logout leaves the UI showing a stale account.
+                setHandleInput('');
+                setHandleAutoResolved(false);
+                try { localStorage.removeItem('verdict-cf-handle'); } catch {}
             }
         };
         window.addEventListener('message', handler);

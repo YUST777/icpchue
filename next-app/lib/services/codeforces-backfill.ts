@@ -122,14 +122,26 @@ export function parseCodeforcesUrl(url: unknown): { contestId: string; urlType: 
     const raw = String(url || '').trim();
     if (!raw) return null;
 
-    let match = raw.match(/\/group\/([^/]+)\/contest\/(\d+)/i);
+    // Only actual Codeforces links are eligible. Numeric paths on VJudge (or
+    // another judge) must never be mistaken for a Codeforces contest.
+    let parsed: URL;
+    try {
+        parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`);
+    } catch {
+        return null;
+    }
+    const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (hostname !== 'codeforces.com') return null;
+    const path = parsed.pathname;
+
+    let match = path.match(/\/group\/([^/]+)\/contest\/(\d+)/i);
     if (match) return { contestId: match[2], urlType: 'group', groupId: match[1] };
 
-    match = raw.match(/\/(gym|contest)\/(\d+)/i);
+    match = path.match(/\/(gym|contest)\/(\d+)/i);
     if (match) return { contestId: match[2], urlType: match[1].toLowerCase() as BackfillUrlType, groupId: null };
 
     // Some links use /problemset/problem/<contest>/<letter>.
-    match = raw.match(/\/problemset\/problem\/(\d+)\/([A-Za-z][A-Za-z0-9]?)/i);
+    match = path.match(/\/problemset\/problem\/(\d+)\/([A-Za-z][A-Za-z0-9]?)/i);
     if (match) return { contestId: match[1], urlType: 'contest', groupId: null };
 
     return null;
@@ -138,18 +150,19 @@ export function parseCodeforcesUrl(url: unknown): { contestId: string; urlType: 
 function deriveMapping(row: any): CurriculumMapping | null {
     const sheetContestId = normalizeContestId(row.sheet_contest_id);
     const problemContestId = normalizeContestId(row.problem_contest_id);
-    const fromUrl = parseCodeforcesUrl(row.codeforces_url) || parseCodeforcesUrl(row.contest_url);
-    const canonicalContestId = fromUrl?.contestId || problemContestId || sheetContestId;
+    const problemUrl = String(row.codeforces_url || '').trim();
+    const fromProblemUrl = parseCodeforcesUrl(problemUrl);
+    // A non-empty problem URL from another judge is authoritative and must
+    // not inherit the sheet's numeric contest_id.
+    if (problemUrl && !fromProblemUrl) return null;
+    const fromUrl = fromProblemUrl || parseCodeforcesUrl(row.contest_url);
+    if (!fromUrl) return null;
+    const canonicalContestId = fromUrl.contestId || problemContestId || sheetContestId;
     const problemIndex = normalizeProblemIndex(row.problem_letter);
     if (!canonicalContestId || !problemIndex || !row.sheet_id) return null;
 
-    const sheetUrlType = row.contest_url?.includes('/group/')
-        ? 'group'
-        : row.contest_url?.includes('/gym/')
-            ? 'gym'
-            : 'contest';
-    const urlType = fromUrl?.urlType || (row.sheet_group_id ? 'group' : sheetUrlType);
-    const groupId = fromUrl?.groupId || normalizeGroupId(row.sheet_group_id);
+    const urlType = fromUrl.urlType;
+    const groupId = fromUrl.groupId || normalizeGroupId(row.sheet_group_id);
 
     return {
         sheetId: String(row.sheet_id),
