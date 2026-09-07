@@ -134,14 +134,14 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         <Send size={20} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-white">Sync your Codeforces submission</h3>
-                        <p className="text-[10px] text-[#888]">Check your latest Codeforces submissions and apply your AC here</p>
+                        <h3 className="font-bold text-sm text-white">Sync your Codeforces submissions</h3>
+                        <p className="text-[10px] text-[#888]">Record every attempt and mark the problem solved when an AC is found</p>
                     </div>
                 </div>
 
                 <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
-                    <p><strong>1. Submit on Codeforces:</strong> Solve the problem and get <strong>Accepted (AC)</strong> on Codeforces.</p>
-                    <p><strong>2. Sync here:</strong> Click the button below — the extension checks your last few submissions for this problem and marks it solved if an AC is found.</p>
+                    <p><strong>1. Submit on Codeforces:</strong> Send your solution and wait for a final verdict.</p>
+                    <p><strong>2. Sync here:</strong> Click below — the extension imports your full attempt history, shows the latest verdict, and marks the problem solved only when an AC is found.</p>
                 </div>
 
                 {hasError && cfStatus?.error && (
