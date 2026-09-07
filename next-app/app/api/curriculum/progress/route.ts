@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
             const statsResult = await query(`
                 SELECT 
                     l.slug as level_slug,
-                    COUNT(DISTINCT p.id) as total_problems,
-                    COUNT(DISTINCT CASE WHEN up.status = 'SOLVED' THEN p.id END) as solved_count
+                    COUNT(p.id) AS total_problems,
+                    COUNT(*) FILTER (WHERE up.status = 'SOLVED') AS solved_count
                 FROM curriculum_levels l
                 JOIN curriculum_sheets s ON s.level_id = l.id
                 JOIN curriculum_problems p ON p.sheet_id = s.id
