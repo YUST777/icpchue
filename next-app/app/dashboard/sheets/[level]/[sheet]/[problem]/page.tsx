@@ -681,6 +681,8 @@ function MirrorUI({
                     onClose={closeModal}
                     submissionId={selectedSubId}
                     contestId={contestId}
+                    urlType={urlType}
+                    groupId={groupId}
                     onRestoreCode={restoreCode}
                 />
             </div>
