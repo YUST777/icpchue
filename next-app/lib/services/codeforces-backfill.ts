@@ -9,6 +9,7 @@ export interface IncomingBackfillSubmission {
     timeConsumedMillis?: number;
     memoryConsumedBytes?: number;
     language?: string;
+    details?: string | null;
     creationTimeSeconds?: number;
     submittedAt?: string | Date | null;
 }
@@ -52,6 +53,7 @@ interface NormalizedSubmission {
     timeMs: number;
     memoryKb: number;
     language: string;
+    details: string | null;
     submittedAt: Date | null;
     mappings: CurriculumMapping[];
 }
@@ -320,6 +322,7 @@ export async function applyBackfillBatches(
                 timeMs: Math.max(0, Math.min(2147483647, Number(raw.timeConsumedMillis) || 0)),
                 memoryKb: Math.max(0, Math.min(2147483647, Math.round((Number(raw.memoryConsumedBytes) || 0) / 1024))),
                 language: String(raw.language || 'C++').slice(0, 100),
+                details: rawVerdict !== String(raw.verdict || '').trim() ? String(raw.verdict || '').trim().slice(0, 500) : null,
                 submittedAt: parseSubmittedAt(raw),
                 mappings,
             };
@@ -373,7 +376,7 @@ export async function applyBackfillBatches(
                     primaryMapping.urlType,
                     primaryMapping.groupId,
                     record.submittedAt,
-                    null,
+                    record.details,
                 );
             });
 

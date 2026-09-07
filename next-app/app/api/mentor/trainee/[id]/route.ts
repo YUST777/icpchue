@@ -204,7 +204,7 @@ export async function GET(
             userId ? query(`
                 WITH ranked_subs AS (
                     SELECT 
-                        id, contest_id, problem_index, sheet_id, verdict, 
+                        id, contest_id, problem_index, sheet_id, verdict, details,
                         language, time_ms, memory_kb, submitted_at, 
                         time_to_solve_seconds, paste_events, tab_switches, 
                         cf_submission_id, source_code,
@@ -508,6 +508,7 @@ export async function GET(
                     sheet_name: sheetLookup.sheet_name
                 } : undefined,
                 verdict: sub.verdict || 'Accepted',
+                details: sub.details || null,
                 language: sub.language || 'C++',
                 time_ms: sub.time_ms ?? null,
                 memory_kb: sub.memory_kb ?? null,
