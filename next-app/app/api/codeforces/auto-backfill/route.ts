@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
                 WHERE id = $1
             `, [user.id]);
 
-            if (result.newlySolved > 0) {
+            // WA/CE/TLE rows also affect attempt counts and ATTEMPTED state.
+            if (result.matchingSubmissions > 0) {
                 await Promise.all([
                     invalidateCache(`user:${user.id}:dashboard_stats`),
                     invalidateCache(`user:${user.id}:roadmap`),
