@@ -1,11 +1,11 @@
 /**
- * Verdict Helper Extension v1.2.0 — Content Script
+ * Verdict Helper Extension v1.3.0 — Content Script
  *
  * Bridges window.postMessage (from the icpchue page) ↔ chrome.runtime.sendMessage
  * (to the background service worker). Also injects a marker element so the page
  * knows the extension is installed.
  *
- * v1.2.0: the extension reads the user's submissions itself (from their own
+ * v1.3.0: the extension reads the user's submissions itself (from their own
  * browser/IP) and returns only the result — cookies never leave the browser and
  * no local/remote bridge is contacted.
  */
@@ -14,7 +14,7 @@
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.2.0');
+    marker.setAttribute('data-version', '1.3.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();

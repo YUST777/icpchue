@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.2.0 — Background Service Worker
+ * Verdict Helper Extension v1.3.0 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.2.0';
+const EXT_VERSION = '1.3.0';
 
 // How many of the user's most-recent submissions (for the problem) to scan.
 const SCAN_LAST_N = 5;
