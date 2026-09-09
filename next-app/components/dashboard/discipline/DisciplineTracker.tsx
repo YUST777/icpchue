@@ -37,7 +37,8 @@ interface DisciplineTrackerProps {
 
 const TOTAL_WEEKS = 8;
 const DAYS_PER_WEEK = 7;
-const PROGRAM_START_DATE = new Date(2026, 7, 30, 0, 0, 0);
+// Program start date: September 8, 2026 (starts at 8/Sep)
+const PROGRAM_START_DATE = new Date(2026, 8, 8, 0, 0, 0);
 
 // ── TimeInputCell ──────────────────────────────────────────
 function TimeInputCell({
@@ -94,6 +95,12 @@ function getDayDate(week: number, day: number) {
 function formatDayDate(d: Date) {
     return `${d.getDate()}/${d.toLocaleString('en-US', { month: 'short' })}`;
 }
+function formatToDateOnly(d: Date) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 function isSameDay(a: Date, b: Date) {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -134,7 +141,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             const key = `${week}_${day}`;
             const current = logsMap.get(key) || {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
-                log_date: new Date().toISOString().split('T')[0],
+                log_date: formatToDateOnly(getDayDate(week, day)),
                 total_hours: 0, is_missed: false, done_tasks: '', student_comment: '',
             };
             const payload = {
@@ -182,7 +189,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             const ex = prev.find(l => l.week_number === week && l.day_number === day);
             const u: DisciplineLog = ex ? { ...ex, done_tasks: text } : {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
-                log_date: new Date().toISOString().split('T')[0], total_hours: null,
+                log_date: formatToDateOnly(getDayDate(week, day)), total_hours: null,
                 is_missed: false, done_tasks: text, student_comment: refsBuffer,
             };
             return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), u];
@@ -198,7 +205,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             const ex = prev.find(l => l.week_number === week && l.day_number === day);
             const u: DisciplineLog = ex ? { ...ex, student_comment: text } : {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
-                log_date: new Date().toISOString().split('T')[0], total_hours: null,
+                log_date: formatToDateOnly(getDayDate(week, day)), total_hours: null,
                 is_missed: false, done_tasks: tasksBuffer, student_comment: text,
             };
             return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), u];
@@ -214,7 +221,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             const ex = prev.find(l => l.week_number === week && l.day_number === day);
             const u: DisciplineLog = ex ? { ...ex, mentor_comment: text } : {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
-                log_date: new Date().toISOString().split('T')[0], total_hours: null,
+                log_date: formatToDateOnly(getDayDate(week, day)), total_hours: null,
                 is_missed: false, done_tasks: '', student_comment: '', mentor_comment: text,
             };
             return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), u];
