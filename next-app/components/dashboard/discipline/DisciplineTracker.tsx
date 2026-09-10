@@ -27,6 +27,7 @@ interface DisciplineLog {
     mentor_id?: number;
     mentor_name?: string;
     updated_at?: string;
+    submitted_at?: string;
 }
 
 interface DisciplineTrackerProps {
@@ -101,6 +102,19 @@ function formatToDateOnly(d: Date) {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+function formatSubmittedAt(isoStr?: string) {
+    if (!isoStr) return null;
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return null;
+        const month = d.toLocaleString('en-US', { month: 'short' });
+        const day = d.getDate();
+        const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return `${day}/${month} ${time}`;
+    } catch {
+        return null;
+    }
+}
 function isSameDay(a: Date, b: Date) {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -135,25 +149,28 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         return map;
     }, [logs]);
 
+    const activeEditBuffersRef = React.useRef({ tasks: '', refs: '' });
+
     // ── Save ───────────────────────────────────────────────
     const handleSaveLog = async (week: number, day: number, updates: Partial<DisciplineLog>) => {
         try {
-            const key = `${week}_${day}`;
-            const current = logsMap.get(key) || {
-                user_id: targetUserId || 0, week_number: week, day_number: day,
-                log_date: formatToDateOnly(getDayDate(week, day)),
-                total_hours: 0, is_missed: false, done_tasks: '', student_comment: '',
+            const payload: any = {
+                target_user_id: targetUserId,
+                week_number: week,
+                day_number: day,
+                log_date: updates.log_date ?? formatToDateOnly(getDayDate(week, day)),
             };
-            const payload = {
-                target_user_id: targetUserId, week_number: week, day_number: day,
-                log_date: updates.log_date ?? current.log_date,
-                total_hours: updates.total_hours ?? current.total_hours,
-                is_missed: updates.is_missed ?? current.is_missed,
-                done_tasks: updates.done_tasks ?? current.done_tasks,
-                student_comment: updates.student_comment ?? current.student_comment,
-                mentor_comment: updates.mentor_comment ?? current.mentor_comment,
-            };
-            const res = await fetch('/api/discipline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (updates.total_hours !== undefined) payload.total_hours = updates.total_hours;
+            if (updates.is_missed !== undefined) payload.is_missed = updates.is_missed;
+            if (updates.done_tasks !== undefined) payload.done_tasks = updates.done_tasks;
+            if (updates.student_comment !== undefined) payload.student_comment = updates.student_comment;
+            if (updates.mentor_comment !== undefined) payload.mentor_comment = updates.mentor_comment;
+
+            const res = await fetch('/api/discipline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
             if (res.ok) {
                 const data = await res.json();
                 setLogs(prev => [...prev.filter(l => !(l.week_number === week && l.day_number === day)), data.log]);
@@ -164,8 +181,11 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     // ── Modal open/close ───────────────────────────────────
     const openDayModal = (week: number, day: number) => {
         const log = logsMap.get(`${week}_${day}`);
-        setTasksBuffer(log?.done_tasks || '');
-        setRefsBuffer(log?.student_comment || '');
+        const tasks = log?.done_tasks || '';
+        const refs = log?.student_comment || '';
+        activeEditBuffersRef.current = { tasks, refs };
+        setTasksBuffer(tasks);
+        setRefsBuffer(refs);
         setActiveEditCell({ week, day, mode: 'day' });
     };
 
@@ -182,23 +202,24 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
     const handleTasksChange = (text: string) => {
         setTasksBuffer(text);
+        activeEditBuffersRef.current.tasks = text;
         if (!activeEditCell) return;
         const { week, day } = activeEditCell;
-        // optimistic
         setLogs(prev => {
             const ex = prev.find(l => l.week_number === week && l.day_number === day);
             const u: DisciplineLog = ex ? { ...ex, done_tasks: text } : {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
                 log_date: formatToDateOnly(getDayDate(week, day)), total_hours: null,
-                is_missed: false, done_tasks: text, student_comment: refsBuffer,
+                is_missed: false, done_tasks: text, student_comment: activeEditBuffersRef.current.refs,
             };
             return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), u];
         });
-        debouncedSave(week, day, { done_tasks: text, student_comment: refsBuffer });
+        debouncedSave(week, day, { done_tasks: text });
     };
 
     const handleRefsChange = (text: string) => {
         setRefsBuffer(text);
+        activeEditBuffersRef.current.refs = text;
         if (!activeEditCell) return;
         const { week, day } = activeEditCell;
         setLogs(prev => {
@@ -206,11 +227,11 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             const u: DisciplineLog = ex ? { ...ex, student_comment: text } : {
                 user_id: targetUserId || 0, week_number: week, day_number: day,
                 log_date: formatToDateOnly(getDayDate(week, day)), total_hours: null,
-                is_missed: false, done_tasks: tasksBuffer, student_comment: text,
+                is_missed: false, done_tasks: activeEditBuffersRef.current.tasks, student_comment: text,
             };
             return [...prev.filter(l => !(l.week_number === week && l.day_number === day)), u];
         });
-        debouncedSave(week, day, { done_tasks: tasksBuffer, student_comment: text });
+        debouncedSave(week, day, { student_comment: text });
     };
 
     const handleMentorChange = (text: string) => {
@@ -233,8 +254,14 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         if (modalDebounceRef.current) clearTimeout(modalDebounceRef.current);
         if (activeEditCell) {
             const { week, day, mode } = activeEditCell;
-            if (mode === 'mentor') handleSaveLog(week, day, { mentor_comment: mentorBuffer });
-            else handleSaveLog(week, day, { done_tasks: tasksBuffer, student_comment: refsBuffer });
+            if (mode === 'mentor') {
+                handleSaveLog(week, day, { mentor_comment: mentorBuffer });
+            } else {
+                handleSaveLog(week, day, {
+                    done_tasks: activeEditBuffersRef.current.tasks,
+                    student_comment: activeEditBuffersRef.current.refs,
+                });
+            }
         }
         setActiveEditCell(null);
     };
@@ -337,8 +364,8 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                             const isUnlocked = isMentorView || Date.now() >= unlockTs;
                                             const isToday = isSameDay(dayDate, now);
                                             const isPast = dayDate.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-                                            // Students can only edit TODAY; mentors can always view
-                                            const canStudentEdit = !isMentorView && isToday;
+                                            // Students can edit TODAY and any PAST unlocked day; future days remain locked until midnight
+                                            const canStudentEdit = !isMentorView && isUnlocked;
 
                                             return (
                                                 <tr key={key} className={`transition-colors group ${
@@ -364,6 +391,14 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                                 {!isUnlocked && <Lock size={10} className="text-amber-400/80" />}
                                                             </span>
                                                             <span className="text-[10px] font-mono text-white/40 mt-0.5">{displayDate}</span>
+                                                            {log?.submitted_at && (Boolean(log.done_tasks) || Boolean(log.student_comment) || (log.total_hours !== null && Number(log.total_hours) > 0)) && (
+                                                                <span 
+                                                                    className="text-[9px] font-mono text-[#E8C15A]/70 mt-1 px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.04]"
+                                                                    title={`Logged/sent at: ${new Date(log.submitted_at).toLocaleString()}`}
+                                                                >
+                                                                    Sent {formatSubmittedAt(log.submitted_at)}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </td>
 
@@ -446,11 +481,16 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                     <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] animate-scale-in" onClick={e => e.stopPropagation()}>
                         {/* Header */}
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-md border border-[#E8C15A]/20">
                                     W{activeEditCell.week} · Day {activeEditCell.day}
                                 </span>
                                 <span className="text-xs font-medium text-white/90">Daily Log</span>
+                                {logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at && (
+                                    <span className="text-[10px] font-mono text-white/40">
+                                        · Sent: {formatSubmittedAt(logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at)}
+                                    </span>
+                                )}
                             </div>
                             <button type="button" onClick={closeModal} className="w-6 h-6 rounded-lg text-white/30 hover:text-white hover:bg-white/5 flex items-center justify-center text-xs transition-colors cursor-pointer">✕</button>
                         </div>
