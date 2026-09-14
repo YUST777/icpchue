@@ -1,5 +1,11 @@
 export const committees = [
   {
+    id: 'trainee',
+    name: 'Student Trainee',
+    icon: 'Sparkles',
+    description: 'Learn algorithms, problem solving & participate in official contests',
+  },
+  {
     id: 'media',
     name: 'Media',
     icon: 'Palette',

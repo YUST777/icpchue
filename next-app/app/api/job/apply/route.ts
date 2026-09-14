@@ -4,7 +4,7 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
 
 const MAX_JSON_BYTES = 128 * 1024;
-const ALLOWED_COMMITTEES = new Set(['media', 'mentor', 'organizing', 'instructor']);
+const ALLOWED_COMMITTEES = new Set(['media', 'mentor', 'organizing', 'instructor', 'trainee']);
 
 function boundedText(value: unknown, max: number): string {
     return typeof value === 'string' ? value.trim().slice(0, max) : '';
