@@ -104,9 +104,19 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
         }
     };
 
-    // Extract Google Drive file ID and create embed URL
+    // Extract YouTube or Google Drive video ID and create embed URL
     const getEmbedUrl = (url: string) => {
-        // Handle /file/d/ID/... format
+        if (!url) return '';
+        // Handle YouTube URLs (youtu.be, youtube.com/watch, youtube.com/embed)
+        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+        if (ytMatch) {
+            return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`;
+        }
+        // Handle raw 11-char YouTube ID
+        if (/^[\w-]{11}$/.test(url.trim())) {
+            return `https://www.youtube-nocookie.com/embed/${url.trim()}`;
+        }
+        // Handle Google Drive /file/d/ID/... format
         const matchD = url.match(/\/file\/d\/([^\/]+)/);
         if (matchD) {
             return `https://drive.google.com/file/d/${matchD[1]}/preview`;
@@ -116,8 +126,8 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
         if (matchId) {
             return `https://drive.google.com/file/d/${matchId[1]}/preview`;
         }
-        // Handle direct ID if the input is just the 33-char ID
-        if (url.length === 33 && !url.includes('/')) {
+        // Handle direct ID if the input is a 33-char ID
+        if (url.length >= 25 && !url.includes('/')) {
             return `https://drive.google.com/file/d/${url}/preview`;
         }
         return url;

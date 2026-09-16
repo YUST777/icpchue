@@ -68,7 +68,7 @@ export const camps: Camp[] = [
                 desc: 'Comprehensive review covering all previous topics with 3 practice problems to solidify your understanding.',
                 description: 'Comprehensive review of all previous topics with 3 practice problems to solidify your understanding.',
                 thumbnail: '/images/lessons/levels_camp/level0/revision.webp',
-                videoId: '1sQT2Uk9A0FdDqn1gzBgvl8zn2rge3fe0',
+                videoId: 'M4BGbmasoJg',
                 content: <Session4Content />
             },
             {

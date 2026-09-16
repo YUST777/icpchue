@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Info, Eye } from 'lucide-react';
 import Providers from '@/components/core/Providers';
 import { camps } from '@/lib/sessionData';
+import { getEmbedUrl, getDirectWatchUrl } from '@/lib/video/videoUtils';
 
 function SessionContent() {
     const params = useParams();
@@ -92,10 +93,11 @@ function SessionContent() {
                     {session.videoId ? (
                         <div className="aspect-video w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
                             <iframe
-                                src={`https://drive.google.com/file/d/${session.videoId.includes('google.com') ? session.videoId.split('/d/')[1].split('/')[0] : session.videoId}/preview`}
+                                src={getEmbedUrl(session.videoId)}
                                 width="100%"
                                 height="100%"
                                 allow="autoplay; fullscreen"
+                                allowFullScreen
                                 className="w-full h-full"
                             ></iframe>
                         </div>
@@ -104,12 +106,17 @@ function SessionContent() {
                             <p className="text-white/40">No video available</p>
                         </div>
                     )}
-                    <div className="mt-4 px-2">
-                        <p className="text-sm text-white/40 flex items-center gap-2">
-                            <Info className="w-4 h-4" />
-                            If video doesn&apos;t load, <a href={`https://drive.google.com/file/d/${session.videoId}/view?usp=sharing`} target="_blank" rel="noopener noreferrer" className="text-[#d59928] hover:underline">watch on Drive</a>
-                        </p>
-                    </div>
+                    {session.videoId && (() => {
+                        const direct = getDirectWatchUrl(session.videoId);
+                        return (
+                            <div className="mt-4 px-2">
+                                <p className="text-sm text-white/40 flex items-center gap-2">
+                                    <Info className="w-4 h-4" />
+                                    If video doesn&apos;t load, <a href={direct.url} target="_blank" rel="noopener noreferrer" className="text-[#d59928] hover:underline">watch on {direct.platform}</a>
+                                </p>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <div className="flex items-center gap-4 mb-12">
