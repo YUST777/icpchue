@@ -54,7 +54,7 @@ export const camps: Camp[] = [
                 desc: 'Fundamentals of C++ Input/Output streams, arithmetic operators, and understanding basic data types and their limits.',
                 description: 'Master the basics of C++, input/output streams, and understand how data is stored in memory. Essential first steps for any competitive programmer.',
                 thumbnail: '/images/lessons/levels_camp/level0/datatypes.webp',
-                videoId: '1Ihh7e6pxPbu5L8RobscDgfSVv-WJEE6g',
+                videoId: 'bpOxSAt1XgE',
                 content: <Session1Content />
             },
             {
@@ -82,7 +82,7 @@ export const camps: Camp[] = [
                 desc: 'Mastering decision making with if-else statements, switch cases, and understanding program flow control.',
                 description: 'Master conditional statements, logical operators, and control flow patterns. Learn when to use if/else vs switch, and optimize your decision-making code.',
                 thumbnail: '/images/lessons/levels_camp/level0/control-flow.webp',
-                videoId: '1rm9v66HZd-_bZ7Z9KrpPbIIubBaqIa14',
+                videoId: 'yildYy8WIzs',
                 content: <Session3Content />
             },
             {
@@ -96,7 +96,7 @@ export const camps: Camp[] = [
                 desc: 'Mastering functions in C++, understanding scope, parameters, and modular programming.',
                 description: 'Learn how to write modular code using functions. covering scope, pass-by-value vs pass-by-reference, and organizational best practices.',
                 thumbnail: '/images/lessons/levels_camp/level0/functions.webp',
-                videoId: '12sTF5jj5S-w763CNt_k5XNpuAjYJC9Fk',
+                videoId: 'NnzIOowWajY',
             },
             {
                 id: 9,
