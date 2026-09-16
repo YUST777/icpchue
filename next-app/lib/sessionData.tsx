@@ -109,7 +109,7 @@ export const camps: Camp[] = [
                 desc: 'Understanding recursion in C++, base cases, and recursive programming techniques.',
                 description: 'Dive into recursion. Learn how functions can call themselves, understand base cases, and solve complex problems using recursive techniques.',
                 thumbnail: '/images/lessons/approval/recursion.webp',
-                videoId: '1bWcPjD6DEsCRKQ14Gk_M-1EHjvrKkD4C',
+                videoId: 'cHJ9fbc1YvM',
             },
             {
                 id: 10,
@@ -122,7 +122,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to 1D/2D arrays and strategies for solving ad-hoc problems.',
                 description: 'Learn how to store multiple values using arrays in C++ and develop logical thinking to tackle ad-hoc problems effectively.',
                 thumbnail: '/images/lessons/levels_camp/level0/arrays-adhocs.png',
-                videoId: '1lSj_AO1AijyMLAwayNFWbVTX81lfWHyY',
+                videoId: '9She7ddH_r0',
                 content: <Session6Content />
             },
             {
@@ -136,7 +136,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to time complexity analysis, Big-O notation, and estimating runtime from problem constraints.',
                 description: 'Learn how to analyze the efficiency of your code using Big-O notation. Understand common complexities and how to pick the right approach based on input constraints.',
                 thumbnail: '/images/lessons/levels_camp/level0/complexity.png',
-                videoId: '1nNM7Zd4DoZZB5js5Se3tzU9q0UPzneHb',
+                videoId: 'WuYMPU_-APo',
                 content: <Session7Content />
             },
             {
