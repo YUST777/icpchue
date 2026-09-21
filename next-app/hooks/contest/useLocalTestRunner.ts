@@ -59,22 +59,54 @@ export function useLocalTestRunner({
         setIsTestPanelVisible(true);
         if (setTestPanelActiveTab) setTestPanelActiveTab('result');
 
-        // Bypassing Judge0 for Vercel Serverless environment
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/judge/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sourceCode: currentCode,
+                    language: languageRef.current,
+                    testCases: currentTestCases.map(tc => ({ input: tc.input, output: tc.output })),
+                    timeLimit: timeLimitRef.current,
+                    memoryLimit: memoryLimitRef.current,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => null);
+                setResult({
+                    verdict: 'Judge Unavailable',
+                    passed: false,
+                    testsPassed: 0,
+                    totalTests: currentTestCases.length,
+                    results: [{
+                        testCase: 1,
+                        verdict: 'Judge Unavailable',
+                        passed: false,
+                        output: errorBody?.error || 'The judge service is temporarily unavailable. Please try again shortly.'
+                    }]
+                });
+                return;
+            }
+
+            const data: SubmissionResult = await response.json();
+            setResult(data);
+        } catch {
             setResult({
-                verdict: 'Offline',
+                verdict: 'Judge Unavailable',
                 passed: false,
                 testsPassed: 0,
                 totalTests: currentTestCases.length,
                 results: [{
                     testCase: 1,
-                    verdict: 'Local Testing Disabled',
+                    verdict: 'Judge Unavailable',
                     passed: false,
-                    output: 'Local test execution is disabled in the serverless environment. Please click the Submit button to solve, test, and submit directly on Codeforces!'
+                    output: 'Could not reach the judge service. Check your connection and try again.'
                 }]
             });
+        } finally {
             setSubmitting(false);
-        }, 500);
+        }
     }, [submitting, setIsTestPanelVisible, setTestPanelActiveTab]);
 
     return {
