@@ -1,0 +1,35 @@
+#cloud-config
+# First-boot provisioning for the icpchue Judge0 VM (Standard_B1ms, 1 vCPU / 2GB).
+# Installs Docker + certbot and adds a 2GB swapfile to give the small RAM
+# budget a safety margin (see infrastructure/judge0-azure/README.md).
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - certbot
+  - python3-certbot-nginx
+  - nginx
+
+runcmd:
+  # --- Docker Engine + Compose plugin (official install script) ---
+  - curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  - sh /tmp/get-docker.sh
+  - systemctl enable --now docker
+  - usermod -aG docker azureuser
+
+  # --- 2GB swapfile (safety margin on a 2GB-RAM box) ---
+  - fallocate -l 2G /swapfile
+  - chmod 600 /swapfile
+  - mkswap /swapfile
+  - swapon /swapfile
+  - echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  - sysctl vm.swappiness=10
+  - echo 'vm.swappiness=10' >> /etc/sysctl.conf
+
+  # --- Working directory for the compose deploy (populated over SSH) ---
+  - mkdir -p /opt/judge0
+  - chown azureuser:azureuser /opt/judge0
