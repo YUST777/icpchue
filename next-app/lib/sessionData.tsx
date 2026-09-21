@@ -150,7 +150,7 @@ export const camps: Camp[] = [
                 desc: 'Live contest session — solve problems under time pressure and review solutions.',
                 description: 'Recording of Contest #3. Practice solving competitive programming problems under real contest conditions with post-contest solution review.',
                 thumbnail: '/images/lessons/levels_camp/level0/contest3.png',
-                videoId: '1NpXBt2jPxwE6696h9UKnsdV5qtZKy5R4',
+                videoId: 'K1bUcW_pC0g',
             },
         ]
     },
@@ -173,7 +173,7 @@ export const camps: Camp[] = [
                 desc: 'Comprehensive revision of Programming 1 concepts.',
                 description: 'Comprehensive revision of Programming 1 concepts.',
                 thumbnail: '/images/lessons/pro1/revison.webp',
-                videoId: '1wa6DS3f-PMTaGEmdnvuU7q-ILkE703ak',
+                videoId: 'jn8wIAMwTq4',
                 content: <FullRevisionContent />
             },
             {
@@ -187,7 +187,7 @@ export const camps: Camp[] = [
                 desc: 'Live exam training session recording.',
                 description: 'Recording of the live exam training session covering problem solving strategies.',
                 thumbnail: '/images/lessons/pro1/examtraining.webp',
-                videoId: '1n3aiK4zG29WK6Si3NoJnnZKN-QvymCjR',
+                videoId: '5wfKnUVfnDw',
                 content: <ExamTrainingContent />
             }
         ]
@@ -211,7 +211,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to Algorithms, Instructions, and Time Complexity analysis (O(n), O(1), O(n²)).',
                 description: 'Introduction to Algorithms, Instructions, and Time Complexity. Learn O(n), O(1), and O(n²) analysis with practical examples.',
                 thumbnail: '/images/lessons/levels_camp/level1/complexity.webp',
-                videoId: '1fH4AIGqw3j6XSomagPB3CNwJVtM1YUxf',
+                videoId: 'S7nqV57Sodk',
                 content: <Session5Content />
             },
             {
@@ -225,7 +225,7 @@ export const camps: Camp[] = [
                 desc: 'Standard Template Library 1 - Vector, Pair, Set, Map, and basic C++ containers.',
                 description: 'Master the basics of C++ Standard Template Library (STL). Learn how to use vectors, pairs, sets, and maps to solve competitive programming problems efficiently.',
                 thumbnail: '/images/lessons/levels_camp/level1/stl1.webp',
-                videoId: '1_oitAo2oKbimJ_eWBhX5WXHNOJY4CJN6',
+                videoId: 'dlqBFgRwCBU',
             },
         ]
     },
