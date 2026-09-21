@@ -72,6 +72,8 @@ temp_pg_install/
 
 # Application Specific
 judge0/judge0.conf
+infrastructure/judge0-azure/judge0.conf
+infrastructure/judge0-azure/judge0.conf.generated
 Mirror/
 
 # Allow essential examples

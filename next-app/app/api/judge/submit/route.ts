@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
         const content = problem.content || {};
         const testCases = content.testCases || [];
         const timeLimitMs = content.meta?.timeLimitMs || 2000;
-        const memoryLimitMB = content.meta?.memoryLimitMB || 256;
+        // Capped at 512MB to stay within the self-hosted Judge0 VM's memory budget.
+        const memoryLimitMB = Math.min(content.meta?.memoryLimitMB || 256, 512);
 
 
         if (testCases.length === 0) {

@@ -29,7 +29,7 @@ const RequestSchema = z.object({
         output: z.string().max(100000)  // 100KB max per test output
     })).min(1).max(50), // 1-50 test cases
     timeLimit: z.number().min(100).max(10000).optional().default(2000),
-    memoryLimit: z.number().min(16).max(1024).optional().default(256)
+    memoryLimit: z.number().min(16).max(512).optional().default(256)
 });
 
 const JUDGE0_LANGUAGE_MAP: Record<string, number> = {

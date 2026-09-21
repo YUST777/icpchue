@@ -1,0 +1,67 @@
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 20M
+      max-file: "3"
+
+services:
+  server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      # Bound to localhost only — Nginx on the host terminates TLS at
+      # judge.icpchue.com and reverse-proxies here. Never expose 2358 publicly.
+      - "127.0.0.1:2358:2358"
+    privileged: true
+    <<: *default-logging
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  workers:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    <<: *default-logging
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+
+  db:
+    image: postgres:16.2
+    env_file: judge0.conf
+    volumes:
+      - data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7.2.4
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+    <<: *default-logging
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  data:
