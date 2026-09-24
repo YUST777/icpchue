@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
             mediaSkills,
             hasCamera,
             portfolioLink,
+            skillExperience,
             // Mentor / Instructor shared
             codeforcesHandle,
             // Mentor
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
                 cleanPortfolio = null;
             }
         }
+        const cleanSkillExperience = boundedText(skillExperience, 64) || null;
 
         // --- Validation ---
         if (!cleanName || cleanName.length < 3) {
@@ -144,17 +146,17 @@ export async function POST(req: NextRequest) {
             `INSERT INTO job_applications (
                 name, email, student_id, phone, faculty, academic_level, national_id,
                 committees,
-                media_skills, has_camera, portfolio_link,
+                media_skills, has_camera, portfolio_link, skill_experience,
                 codeforces_handle, contest_experience, weekly_availability,
                 has_ecpc_tshirt, tshirt_size, campus_days, organizing_experience,
                 preferred_teaching_level, teaching_experience
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7,
                 $8,
-                $9, $10, $11,
-                $12, $13, $14,
-                $15, $16, $17, $18,
-                $19, $20
+                $9, $10, $11, $12,
+                $13, $14, $15,
+                $16, $17, $18, $19,
+                $20, $21
             ) RETURNING id, created_at`,
             [
                 cleanName,
@@ -168,6 +170,7 @@ export async function POST(req: NextRequest) {
                 mediaSkills || [],
                 hasCamera ? hasCamera === 'yes' : null,
                 cleanPortfolio,
+                cleanSkillExperience,
                 cleanCfHandle,
                 contestExperience?.trim() || null,
                 weeklyAvailability?.trim() || null,
