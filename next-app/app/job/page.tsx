@@ -702,7 +702,7 @@ export default function JobApplicationPage() {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Own a camera?</label>
+                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Own a camera or iPhone?</label>
                                                     <div className="flex gap-1.5 max-w-[200px]">
                                                         {['yes', 'no'].map(opt => (
                                                             <button
