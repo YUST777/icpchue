@@ -14,7 +14,6 @@ import {
     Camera,
     Shirt,
     Trophy,
-    Sparkles,
 } from 'lucide-react';
 import { facultyOptions, levelOptions } from '@/app/register/constants';
 import { committees, mediaSkills } from '@/app/job/constants';
@@ -28,8 +27,6 @@ type FormErrors = Record<string, string | undefined>;
 const getCommitteeIcon = (id: string, className?: string) => {
     const cls = className || "text-[#E8C15A]";
     switch (id) {
-        case 'trainee':
-            return <Sparkles size={18} className={cls} />;
         case 'media':
             return <Palette size={18} className={cls} />;
         case 'mentor':
@@ -54,7 +51,7 @@ export default function JobApplicationPage() {
 
     // Step 2: Committees (Multi-Select)
     const [selectedCommittees, setSelectedCommittees] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<string>('trainee');
+    const [activeTab, setActiveTab] = useState<string>('media');
 
     // Media
     const [selectedMediaSkills, setSelectedMediaSkills] = useState<string[]>([]);
@@ -142,7 +139,7 @@ export default function JobApplicationPage() {
 
     const currentTab = selectedCommittees.includes(activeTab)
         ? activeTab
-        : (selectedCommittees[0] || 'trainee');
+        : (selectedCommittees[0] || 'media');
 
     const needsCf = selectedCommittees.includes('mentor') || selectedCommittees.includes('instructor');
 
@@ -533,7 +530,6 @@ export default function JobApplicationPage() {
                             <div className="grid grid-cols-2 gap-2 shrink-0 mb-3 min-w-0">
                                 {committees.map(c => {
                                     const isActive = selectedCommittees.includes(c.id);
-                                    const isTrainee = c.id === 'trainee';
                                     return (
                                         <button
                                             key={c.id}
@@ -541,7 +537,6 @@ export default function JobApplicationPage() {
                                             onClick={() => toggleCommittee(c.id)}
                                             className={cn(
                                                 'relative p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-1.5 min-w-0',
-                                                isTrainee && 'col-span-2',
                                                 isActive
                                                     ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
                                                     : 'bg-[#1A1A1E] border-white/10 hover:bg-white/[0.05] hover:border-white/20'
@@ -554,17 +549,10 @@ export default function JobApplicationPage() {
                                                 <div className="min-w-0 flex-1">
                                                     <p className={cn('text-xs font-bold leading-tight flex items-center gap-1.5', isActive ? 'text-[#E8C15A]' : 'text-white')}>
                                                         <span>{c.name}</span>
-                                                        {isTrainee && (
-                                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#E8C15A]/20 text-[#E8C15A] font-semibold tracking-wide uppercase">
-                                                                Recommended
-                                                            </span>
-                                                        )}
                                                     </p>
-                                                    {isTrainee && (
-                                                        <p className="text-[10px] text-white/50 truncate mt-0.5">
-                                                            {c.description}
-                                                        </p>
-                                                    )}
+                                                    <p className="text-[10px] text-white/50 truncate mt-0.5">
+                                                        {c.description}
+                                                    </p>
                                                 </div>
                                             </div>
                                             {isActive ? (
@@ -587,8 +575,7 @@ export default function JobApplicationPage() {
                                             "grid gap-1.5 pb-2.5 mb-2.5 border-b border-white/5 select-none",
                                             selectedCommittees.length === 2 && "grid-cols-2",
                                             selectedCommittees.length === 3 && "grid-cols-3",
-                                            selectedCommittees.length === 4 && "grid-cols-2 sm:grid-cols-4",
-                                            selectedCommittees.length >= 5 && "grid-cols-3 sm:grid-cols-5"
+                                            selectedCommittees.length >= 4 && "grid-cols-2 sm:grid-cols-4"
                                         )}>
                                             {selectedCommittees.map(id => {
                                                 const c = committees.find(item => item.id === id);
@@ -617,48 +604,6 @@ export default function JobApplicationPage() {
                                     {/* Inner Scrollable Panel — Page itself never scrolls on desktop */}
                                     <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar text-xs max-h-[320px] lg:max-h-none">
 
-                                        {/* TAB 0: STUDENT TRAINEE */}
-                                        {currentTab === 'trainee' && (
-                                            <div className="space-y-2.5">
-                                                <div className="p-3 bg-[#E8C15A]/[0.06] border border-[#E8C15A]/20 rounded-lg">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Sparkles size={14} className="text-[#E8C15A]" />
-                                                        <h4 className="text-xs font-bold text-[#E8C15A]">Welcome to ICPC HUE Trainee Track!</h4>
-                                                    </div>
-                                                    <p className="text-[11px] text-white/70 leading-relaxed">
-                                                        No prior competitive programming experience required. We will train you from the fundamentals of C++ and problem solving up to official ICPC contest qualification.
-                                                    </p>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
-                                                    <div>
-                                                        <label className={labelStyle}>Codeforces Handle <span className="text-white/40 font-normal lowercase">(optional)</span></label>
-                                                        <input
-                                                            type="text"
-                                                            value={codeforcesHandle}
-                                                            onChange={e => handleCodeforces(e.target.value)}
-                                                            placeholder="your_cf_handle"
-                                                            className={cn(iB, iN)}
-                                                            dir="ltr"
-                                                        />
-                                                        <p className="text-[9px] text-white/40 mt-0.5 ml-0.5">Don&apos;t have one? We&apos;ll help you create one.</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <label className={labelStyle}>Prior Programming Background <span className="text-white/40 font-normal lowercase">(optional)</span></label>
-                                                        <input
-                                                            type="text"
-                                                            value={contestExperience}
-                                                            onChange={e => setContestExperience(e.target.value)}
-                                                            placeholder="e.g. C++, Python, CS courses, or None"
-                                                            className={cn(iB, iN)}
-                                                        />
-                                                        <p className="text-[9px] text-white/40 mt-0.5 ml-0.5">Beginners with zero experience are welcome!</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
                                         {/* TAB 1: MEDIA */}
                                         {currentTab === 'media' && (
                                             <div className="space-y-2">
