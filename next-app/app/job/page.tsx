@@ -79,15 +79,35 @@ export default function JobApplicationPage() {
     const [hoverCurriculum, setHoverCurriculum] = useState(false);
     const [tooltipCoords, setTooltipCoords] = useState<{ x: number; y: number } | null>(null);
 
+    const closeCurriculumModal = () => {
+        setShowCurriculumModal(false);
+        setHoverCurriculum(false);
+        setTooltipCoords(null);
+    };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setShowCurriculumModal(false);
+            if (e.key === 'Escape') closeCurriculumModal();
         };
         if (showCurriculumModal) {
             window.addEventListener('keydown', handleKeyDown);
             return () => window.removeEventListener('keydown', handleKeyDown);
         }
     }, [showCurriculumModal]);
+
+    useEffect(() => {
+        if (!hoverCurriculum) return;
+        const handleDismiss = () => {
+            setHoverCurriculum(false);
+            setTooltipCoords(null);
+        };
+        window.addEventListener('scroll', handleDismiss, true);
+        window.addEventListener('click', handleDismiss);
+        return () => {
+            window.removeEventListener('scroll', handleDismiss, true);
+            window.removeEventListener('click', handleDismiss);
+        };
+    }, [hoverCurriculum]);
 
     const [errors, setErrors] = useState<FormErrors>({});
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -107,14 +127,19 @@ export default function JobApplicationPage() {
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    closeCurriculumModal();
                     setShowCurriculumModal(true);
                 }}
                 onMouseEnter={(e) => {
+                    if (showCurriculumModal) return;
                     const rect = e.currentTarget.getBoundingClientRect();
-                    setTooltipCoords({ x: rect.right, y: rect.top });
+                    setTooltipCoords({ x: rect.left + rect.width / 2, y: rect.top });
                     setHoverCurriculum(true);
                 }}
-                onMouseLeave={() => setHoverCurriculum(false)}
+                onMouseLeave={() => {
+                    setHoverCurriculum(false);
+                    setTooltipCoords(null);
+                }}
                 aria-label="View curriculum levels breakdown"
                 title="View curriculum levels breakdown (Click to expand)"
                 className="text-white/40 hover:text-[#E8C15A] transition-colors cursor-pointer p-0 m-0 bg-transparent border-0 outline-none inline-flex items-center justify-center shrink-0 focus:outline-none"
@@ -926,12 +951,22 @@ export default function JobApplicationPage() {
             </main>
 
             {/* Hover Tooltip Floating Card */}
-            {hoverCurriculum && tooltipCoords && (
+            {!showCurriculumModal && hoverCurriculum && tooltipCoords && (
                 <div
-                    className="fixed z-[90] pointer-events-none p-2.5 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 w-64 sm:w-72 animate-in fade-in zoom-in-95 duration-150"
+                    className="fixed z-[90] p-2.5 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 w-64 sm:w-72 animate-in fade-in zoom-in-95 duration-150 cursor-pointer"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        closeCurriculumModal();
+                        setShowCurriculumModal(true);
+                    }}
                     style={{
-                        top: Math.max(12, tooltipCoords.y - 250),
-                        left: Math.max(12, Math.min(typeof window !== 'undefined' ? window.innerWidth - 300 : 800, tooltipCoords.x - 260)),
+                        ...(tooltipCoords.y > 270
+                            ? { bottom: typeof window !== 'undefined' ? `${window.innerHeight - tooltipCoords.y + 8}px` : 'auto' }
+                            : { top: `${tooltipCoords.y + 22}px` }
+                        ),
+                        left: typeof window !== 'undefined'
+                            ? `${Math.max(12, Math.min(window.innerWidth - 300, tooltipCoords.x - 140))}px`
+                            : 'auto',
                     }}
                 >
                     <div className="text-[10px] font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
@@ -958,7 +993,7 @@ export default function JobApplicationPage() {
             {showCurriculumModal && (
                 <div 
                     className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
-                    onClick={() => setShowCurriculumModal(false)}
+                    onClick={closeCurriculumModal}
                 >
                     <div 
                         className="relative bg-[#121214] border border-[#E8C15A]/40 rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(232,193,90,0.18)]"
@@ -977,7 +1012,7 @@ export default function JobApplicationPage() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setShowCurriculumModal(false)}
+                                onClick={closeCurriculumModal}
                                 className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
                             >
                                 ✕
