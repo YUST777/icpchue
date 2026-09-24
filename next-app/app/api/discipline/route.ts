@@ -12,9 +12,9 @@ export async function GET(req: NextRequest) {
 
         const url = new URL(req.url);
         const targetUserIdParam = url.searchParams.get('target_user_id');
-        let effectiveUserId = authUser.id;
+        let effectiveUserId = Number(authUser.id);
 
-        if (targetUserIdParam && targetUserIdParam !== String(authUser.id)) {
+        if (targetUserIdParam && Number(targetUserIdParam) !== effectiveUserId) {
             const isStaff = authUser.role === 'mentor' || authUser.role === 'instructor' || authUser.role === 'owner';
             if (!isStaff) {
                 return NextResponse.json({ error: 'Forbidden: Mentor privileges required' }, { status: 403 });
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         }
         if (authUser.role === 'mentor' &&
             ['mentor', 'instructor', 'owner'].includes(String(targetUserRow.role)) &&
-            effectiveUserId !== authUser.id) {
+            effectiveUserId !== Number(authUser.id)) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
         const targetUserName = targetUserRow ? (decrypt(targetUserRow.enc_name) || targetUserRow.codeforces_handle || `Trainee #${effectiveUserId}`) : `User #${effectiveUserId}`;
@@ -122,20 +122,20 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid week_number or day_number (1-7)' }, { status: 400 });
         }
 
-        let effectiveUserId = authUser.id;
+        let effectiveUserId = Number(authUser.id);
         const isStaff = authUser.role === 'mentor' || authUser.role === 'instructor' || authUser.role === 'owner';
 
-        if (target_user_id && target_user_id !== authUser.id) {
+        if (target_user_id && Number(target_user_id) !== effectiveUserId) {
             if (!isStaff) {
                 return NextResponse.json({ error: 'Forbidden: Mentor privileges required' }, { status: 403 });
             }
-            effectiveUserId = parseInt(target_user_id, 10);
+            effectiveUserId = parseInt(String(target_user_id), 10);
         }
 
         if (!Number.isSafeInteger(effectiveUserId) || effectiveUserId <= 0) {
             return NextResponse.json({ error: 'Invalid target user' }, { status: 400 });
         }
-        if (authUser.role === 'mentor' && effectiveUserId !== authUser.id) {
+        if (authUser.role === 'mentor' && effectiveUserId !== Number(authUser.id)) {
             const targetRole = await query('SELECT role FROM users WHERE id = $1', [effectiveUserId]);
             if (['mentor', 'instructor', 'owner'].includes(String(targetRole.rows[0]?.role || ''))) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

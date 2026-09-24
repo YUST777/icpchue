@@ -173,7 +173,22 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             });
             if (res.ok) {
                 const data = await res.json();
-                setLogs(prev => [...prev.filter(l => !(l.week_number === week && l.day_number === day)), data.log]);
+                setLogs(prev => {
+                    const updated = [...prev.filter(l => !(l.week_number === week && l.day_number === day)), data.log];
+                    const totalHours = updated.reduce((sum, l) => sum + (l.is_missed ? 0 : Number(l.total_hours || 0)), 0);
+                    const activeDays = updated.filter(l => !l.is_missed && Number(l.total_hours) > 0).length;
+                    const mentorReviewsCount = updated.filter(l => Boolean(l.mentor_comment && l.mentor_comment.trim())).length;
+                    setSummary({
+                        total_hours: Math.round(totalHours * 10) / 10,
+                        active_days: activeDays,
+                        mentor_reviews: mentorReviewsCount,
+                        total_entries: updated.length,
+                    });
+                    return updated;
+                });
+            } else {
+                const errData = await res.json().catch(() => null);
+                console.error('[Discipline Save Failed]', res.status, errData);
             }
         } catch (err) { console.error('Failed to save log:', err); }
     };

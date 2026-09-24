@@ -84,9 +84,9 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
 
         const userRow = result.rows[0];
         const user: AuthUser = {
-            id: userRow.id,
+            id: Number(userRow.id),
             email: authUser.email || '',
-            applicationId: userRow.application_id,
+            applicationId: userRow.application_id ? Number(userRow.application_id) : undefined,
             role: userRow.role || 'trainee',
         };
 
