@@ -100,7 +100,7 @@ export default function JobApplicationPage() {
     const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5';
 
     const LevelInfoButton = () => (
-        <div className="relative inline-flex items-center">
+        <span className="relative inline-flex items-center align-middle">
             <button
                 type="button"
                 onClick={(e) => {
@@ -110,20 +110,23 @@ export default function JobApplicationPage() {
                 }}
                 onMouseEnter={() => setHoverCurriculum(true)}
                 onMouseLeave={() => setHoverCurriculum(false)}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#E8C15A]/15 hover:bg-[#E8C15A]/25 border border-[#E8C15A]/40 text-[#E8C15A] text-[10px] font-bold cursor-pointer transition-all active:scale-95 group"
-                title="Hover or click to view Level 1, 2, 3 curriculum breakdown"
+                aria-label="View curriculum levels breakdown"
+                title="View curriculum levels breakdown (Click to expand)"
+                className="w-3.5 h-3.5 rounded-full bg-white/10 hover:bg-[#E8C15A]/25 border border-white/20 hover:border-[#E8C15A]/70 text-white/50 hover:text-[#E8C15A] inline-flex items-center justify-center transition-all cursor-pointer text-[9px] font-bold leading-none select-none active:scale-90"
             >
-                <HelpCircle size={11} className="text-[#E8C15A] shrink-0" />
-                <span className="text-[10px] leading-none">? Levels Info</span>
+                ?
             </button>
 
             {hoverCurriculum && (
-                <div className="absolute bottom-full right-0 mb-2 w-64 sm:w-72 p-2 bg-[#121214] border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95">
-                    <div className="text-[10px] font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
-                        <span>Curriculum Levels Breakdown</span>
-                        <span className="text-[8px] text-white/40">Click to enlarge</span>
+                <div className="absolute bottom-full right-0 mb-2 w-64 sm:w-72 p-2 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95">
+                    <div className="text-[10px] font-semibold text-[#E8C15A] mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E8C15A]"></span>
+                            Curriculum Breakdown
+                        </span>
+                        <span className="text-[8px] text-white/40 font-normal">Click to enlarge</span>
                     </div>
-                    <div className="relative w-full aspect-[683/920] max-h-56 sm:max-h-72 overflow-hidden rounded-lg border border-white/10 bg-white">
+                    <div className="relative w-full aspect-[683/920] max-h-56 sm:max-h-64 overflow-hidden rounded-lg border border-white/10 bg-white">
                         <Image
                             src="/images/curriculum_levels.png"
                             alt="Curriculum Levels"
@@ -135,7 +138,7 @@ export default function JobApplicationPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </span>
     );
 
     // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
@@ -730,12 +733,11 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-1.5 ml-0.5">
-                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider">
-                                                                Mentoring Level <span className="text-red-400">*</span>
-                                                            </label>
+                                                        <label className="flex items-center gap-1.5 text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5">
+                                                            <span>Mentoring Level</span>
+                                                            <span className="text-red-400">*</span>
                                                             <LevelInfoButton />
-                                                        </div>
+                                                        </label>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
                                                                 <button
@@ -851,12 +853,11 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-1.5 ml-0.5">
-                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider">
-                                                                Teaching Level <span className="text-red-400">*</span>
-                                                            </label>
+                                                        <label className="flex items-center gap-1.5 text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5">
+                                                            <span>Teaching Level</span>
+                                                            <span className="text-red-400">*</span>
                                                             <LevelInfoButton />
-                                                        </div>
+                                                        </label>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
                                                                 <button
