@@ -77,6 +77,7 @@ export default function JobApplicationPage() {
     // Curriculum Levels modal / hover preview
     const [showCurriculumModal, setShowCurriculumModal] = useState(false);
     const [hoverCurriculum, setHoverCurriculum] = useState(false);
+    const [tooltipCoords, setTooltipCoords] = useState<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -97,10 +98,10 @@ export default function JobApplicationPage() {
     const iB = 'w-full px-3.5 py-2.5 sm:py-2 bg-[#1A1A1E] border rounded-lg text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none focus:ring-1 transition-all';
     const iN = 'border-white/10 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
     const iE = 'border-red-500/70 focus:ring-red-500/60';
-    const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5';
+    const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5 leading-none';
 
     const LevelInfoButton = () => (
-        <span className="relative inline-flex items-center align-middle">
+        <span className="inline-flex items-center align-middle">
             <button
                 type="button"
                 onClick={(e) => {
@@ -108,36 +109,19 @@ export default function JobApplicationPage() {
                     e.stopPropagation();
                     setShowCurriculumModal(true);
                 }}
-                onMouseEnter={() => setHoverCurriculum(true)}
+                onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setTooltipCoords({ x: rect.right, y: rect.top });
+                    setHoverCurriculum(true);
+                }}
                 onMouseLeave={() => setHoverCurriculum(false)}
                 aria-label="View curriculum levels breakdown"
                 title="View curriculum levels breakdown (Click to expand)"
-                className="w-3.5 h-3.5 rounded-full bg-white/10 hover:bg-[#E8C15A]/25 border border-white/20 hover:border-[#E8C15A]/70 text-white/50 hover:text-[#E8C15A] inline-flex items-center justify-center transition-all cursor-pointer text-[9px] font-bold leading-none select-none active:scale-90"
+                className="text-white/40 hover:text-[#E8C15A] transition-colors cursor-pointer p-0 m-0 bg-transparent border-0 outline-none inline-flex items-center justify-center shrink-0 focus:outline-none"
+                style={{ width: '14px', height: '14px', minWidth: '14px', minHeight: '14px' }}
             >
-                ?
+                <HelpCircle size={13} className="shrink-0" />
             </button>
-
-            {hoverCurriculum && (
-                <div className="absolute bottom-full right-0 mb-2 w-64 sm:w-72 p-2 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95">
-                    <div className="text-[10px] font-semibold text-[#E8C15A] mb-1.5 flex items-center justify-between">
-                        <span className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#E8C15A]"></span>
-                            Curriculum Breakdown
-                        </span>
-                        <span className="text-[8px] text-white/40 font-normal">Click to enlarge</span>
-                    </div>
-                    <div className="relative w-full aspect-[683/920] max-h-56 sm:max-h-64 overflow-hidden rounded-lg border border-white/10 bg-white">
-                        <Image
-                            src="/images/curriculum_levels.png"
-                            alt="Curriculum Levels"
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 640px) 256px, 288px"
-                            priority
-                        />
-                    </div>
-                </div>
-            )}
         </span>
     );
 
@@ -733,11 +717,12 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
-                                                        <label className="flex items-center gap-1.5 text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5">
-                                                            <span>Mentoring Level</span>
-                                                            <span className="text-red-400">*</span>
+                                                        <div className="flex items-center gap-1.5 mb-1.5 ml-0.5">
+                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider leading-none">
+                                                                Mentoring Level <span className="text-red-400">*</span>
+                                                            </label>
                                                             <LevelInfoButton />
-                                                        </label>
+                                                        </div>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
                                                                 <button
@@ -853,11 +838,12 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
-                                                        <label className="flex items-center gap-1.5 text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5">
-                                                            <span>Teaching Level</span>
-                                                            <span className="text-red-400">*</span>
+                                                        <div className="flex items-center gap-1.5 mb-1.5 ml-0.5">
+                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider leading-none">
+                                                                Teaching Level <span className="text-red-400">*</span>
+                                                            </label>
                                                             <LevelInfoButton />
-                                                        </label>
+                                                        </div>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
                                                                 <button
@@ -938,6 +924,35 @@ export default function JobApplicationPage() {
 
                 </form>
             </main>
+
+            {/* Hover Tooltip Floating Card */}
+            {hoverCurriculum && tooltipCoords && (
+                <div
+                    className="fixed z-[90] pointer-events-none p-2.5 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 w-64 sm:w-72 animate-in fade-in zoom-in-95 duration-150"
+                    style={{
+                        top: Math.max(12, tooltipCoords.y - 250),
+                        left: Math.max(12, Math.min(typeof window !== 'undefined' ? window.innerWidth - 300 : 800, tooltipCoords.x - 260)),
+                    }}
+                >
+                    <div className="text-[10px] font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                            <HelpCircle size={11} className="text-[#E8C15A]" />
+                            <span>Curriculum Roadmap</span>
+                        </span>
+                        <span className="text-[8px] text-white/40 font-normal">Click to enlarge</span>
+                    </div>
+                    <div className="relative w-full aspect-[683/920] max-h-56 overflow-hidden rounded-lg border border-white/10 bg-white">
+                        <Image
+                            src="/images/curriculum_levels.png"
+                            alt="Curriculum Levels"
+                            fill
+                            className="object-contain"
+                            sizes="280px"
+                            priority
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Fullscreen/Dialog Curriculum Levels Modal */}
             {showCurriculumModal && (
