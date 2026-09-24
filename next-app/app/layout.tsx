@@ -7,6 +7,8 @@ import "./globals.css";
 import Providers from "@/components/core/Providers";
 import InstallBanner from "@/components/landing/InstallBanner";
 import AchievementToast from "@/components/achievements/AchievementToast";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -244,6 +246,8 @@ export default async function RootLayout({
           <AchievementToast />
 
           {children}
+          <Analytics />
+          <SpeedInsights />
         </Providers>
       </body>
     </html>
