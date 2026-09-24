@@ -56,6 +56,7 @@ export default function JobApplicationPage() {
 
     // Media
     const [selectedMediaSkills, setSelectedMediaSkills] = useState<string[]>([]);
+    const [skillExperience, setSkillExperience] = useState('');
     const [hasCamera, setHasCamera] = useState('');
 
     // Codeforces (Mentor / Instructor)
@@ -292,6 +293,7 @@ export default function JobApplicationPage() {
                     nationalId: cleanNid || null,
                     committees: selectedCommittees,
                     mediaSkills: selectedMediaSkills,
+                    skillExperience: skillExperience || null,
                     hasCamera,
                     codeforcesHandle: cleanCf || null,
                     weeklyAvailability: preferredMentorLevel || null,
@@ -699,6 +701,32 @@ export default function JobApplicationPage() {
                                                         })}
                                                     </div>
                                                     {errors.mediaSkills && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.mediaSkills}</p>}
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">
+                                                        Skill Experience (Already know it or ready to learn?)
+                                                    </label>
+                                                    <div className="grid grid-cols-2 gap-1.5">
+                                                        {[
+                                                            { id: 'already_know', label: 'Already know how to do it' },
+                                                            { id: 'ready_to_learn', label: 'Ready to learn from the team' },
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={opt.id}
+                                                                type="button"
+                                                                onClick={() => setSkillExperience(p => p === opt.id ? '' : opt.id)}
+                                                                className={cn(
+                                                                    'py-2 px-2.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer leading-tight flex items-center justify-center',
+                                                                    skillExperience === opt.id
+                                                                        ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                )}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
 
                                                 <div>
