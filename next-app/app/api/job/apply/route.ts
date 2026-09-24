@@ -117,6 +117,11 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'يرجى تحديد مستوى التدريس المفضل' }, { status: 400 });
             }
         }
+        if (committees.includes('mentor')) {
+            if (!weeklyAvailability?.trim()) {
+                return NextResponse.json({ error: 'يرجى تحديد مستوى الإرشاد المفضل' }, { status: 400 });
+            }
+        }
 
         // --- Check for duplicates ---
         const dupCheck = await query(

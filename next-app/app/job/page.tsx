@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -14,6 +14,7 @@ import {
     Camera,
     Shirt,
     Trophy,
+    HelpCircle,
 } from 'lucide-react';
 import { facultyOptions, levelOptions } from '@/app/register/constants';
 import { committees, mediaSkills } from '@/app/job/constants';
@@ -61,6 +62,7 @@ export default function JobApplicationPage() {
     const [codeforcesHandle, setCodeforcesHandle] = useState('');
 
     // Mentor
+    const [preferredMentorLevel, setPreferredMentorLevel] = useState('');
     const [participatedEcpc, setParticipatedEcpc] = useState('');
     const [contestExperience, setContestExperience] = useState('');
 
@@ -72,6 +74,20 @@ export default function JobApplicationPage() {
     const [preferredTeachingLevel, setPreferredTeachingLevel] = useState('');
     const [teachingExperience, setTeachingExperience] = useState('');
 
+    // Curriculum Levels modal / hover preview
+    const [showCurriculumModal, setShowCurriculumModal] = useState(false);
+    const [hoverCurriculum, setHoverCurriculum] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setShowCurriculumModal(false);
+        };
+        if (showCurriculumModal) {
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [showCurriculumModal]);
+
     const [errors, setErrors] = useState<FormErrors>({});
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -82,6 +98,45 @@ export default function JobApplicationPage() {
     const iN = 'border-white/10 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
     const iE = 'border-red-500/70 focus:ring-red-500/60';
     const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5';
+
+    const LevelInfoButton = () => (
+        <div className="relative inline-flex items-center">
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowCurriculumModal(true);
+                }}
+                onMouseEnter={() => setHoverCurriculum(true)}
+                onMouseLeave={() => setHoverCurriculum(false)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#E8C15A]/15 hover:bg-[#E8C15A]/25 border border-[#E8C15A]/40 text-[#E8C15A] text-[10px] font-bold cursor-pointer transition-all active:scale-95 group"
+                title="Hover or click to view Level 1, 2, 3 curriculum breakdown"
+            >
+                <HelpCircle size={11} className="text-[#E8C15A] shrink-0" />
+                <span className="text-[10px] leading-none">? Levels Info</span>
+            </button>
+
+            {hoverCurriculum && (
+                <div className="absolute bottom-full right-0 mb-2 w-64 sm:w-72 p-2 bg-[#121214] border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black z-50 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95">
+                    <div className="text-[10px] font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
+                        <span>Curriculum Levels Breakdown</span>
+                        <span className="text-[8px] text-white/40">Click to enlarge</span>
+                    </div>
+                    <div className="relative w-full aspect-[683/920] max-h-56 sm:max-h-72 overflow-hidden rounded-lg border border-white/10 bg-white">
+                        <Image
+                            src="/images/curriculum_levels.png"
+                            alt="Curriculum Levels"
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 640px) 256px, 288px"
+                            priority
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
     const toAsciiDigits = (str: string) => {
@@ -178,6 +233,7 @@ export default function JobApplicationPage() {
         if (needsCf && !codeforcesHandle.trim()) e.codeforcesHandle = 'Codeforces handle is required';
         if (selectedCommittees.includes('media') && selectedMediaSkills.length === 0) e.mediaSkills = 'Select at least one skill';
         if (selectedCommittees.includes('instructor') && !preferredTeachingLevel) e.preferredTeachingLevel = 'Select level';
+        if (selectedCommittees.includes('mentor') && !preferredMentorLevel) e.preferredMentorLevel = 'Select level';
 
         setErrors(e);
         const isValid = Object.keys(e).length === 0;
@@ -226,6 +282,7 @@ export default function JobApplicationPage() {
                     mediaSkills: selectedMediaSkills,
                     hasCamera,
                     codeforcesHandle: cleanCf || null,
+                    weeklyAvailability: preferredMentorLevel || null,
                     contestExperience: participatedEcpc
                         ? `ECPC: ${participatedEcpc === 'yes' ? 'Yes' : 'No'}${contestExperience.trim() ? ` | ${contestExperience.trim()}` : ''}`
                         : contestExperience.trim() || null,
@@ -673,6 +730,38 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
+                                                        <div className="flex items-center justify-between mb-1.5 ml-0.5">
+                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider">
+                                                                Mentoring Level <span className="text-red-400">*</span>
+                                                            </label>
+                                                            <LevelInfoButton />
+                                                        </div>
+                                                        <div className="flex gap-1.5">
+                                                            {['Level 1', 'Level 2', 'Level 3'].map(opt => (
+                                                                <button
+                                                                    key={opt}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setPreferredMentorLevel(opt);
+                                                                        setErrors(p => { const c = { ...p }; delete c.preferredMentorLevel; return c; });
+                                                                    }}
+                                                                    className={cn(
+                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center',
+                                                                        preferredMentorLevel === opt
+                                                                            ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                    )}
+                                                                >
+                                                                    {opt}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        {errors.preferredMentorLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.preferredMentorLevel}</p>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
+                                                    <div>
                                                         <label className={labelStyle}>Participated in ECPC?</label>
                                                         <div className="flex gap-1.5">
                                                             {['yes', 'no'].map(opt => (
@@ -692,17 +781,17 @@ export default function JobApplicationPage() {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div>
-                                                    <label className={labelStyle}>Contest Experience (Optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={contestExperience}
-                                                        onChange={e => setContestExperience(e.target.value)}
-                                                        placeholder="Team name, qualifications, rank..."
-                                                        className={cn(iB, iN)}
-                                                    />
+                                                    <div>
+                                                        <label className={labelStyle}>Contest Experience (Optional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={contestExperience}
+                                                            onChange={e => setContestExperience(e.target.value)}
+                                                            placeholder="Team name, qualifications, rank..."
+                                                            className={cn(iB, iN)}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -762,13 +851,21 @@ export default function JobApplicationPage() {
                                                     </div>
 
                                                     <div>
-                                                        <label className={labelStyle}>Teaching Level <span className="text-red-400">*</span></label>
+                                                        <div className="flex items-center justify-between mb-1.5 ml-0.5">
+                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider">
+                                                                Teaching Level <span className="text-red-400">*</span>
+                                                            </label>
+                                                            <LevelInfoButton />
+                                                        </div>
                                                         <div className="flex gap-1.5">
-                                                            {['Level 0 (C++ Basics & STL)', 'Level 1 (DS & Algorithms)'].map(opt => (
+                                                            {['Level 1', 'Level 2', 'Level 3'].map(opt => (
                                                                 <button
                                                                     key={opt}
                                                                     type="button"
-                                                                    onClick={() => { setPreferredTeachingLevel(opt); setErrors(p => { const c = { ...p }; delete c.preferredTeachingLevel; return c; }); }}
+                                                                    onClick={() => {
+                                                                        setPreferredTeachingLevel(opt);
+                                                                        setErrors(p => { const c = { ...p }; delete c.preferredTeachingLevel; return c; });
+                                                                    }}
                                                                     className={cn(
                                                                         'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center',
                                                                         preferredTeachingLevel === opt
@@ -776,7 +873,7 @@ export default function JobApplicationPage() {
                                                                             : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
                                                                     )}
                                                                 >
-                                                                    {opt.split(' (')[0]}
+                                                                    {opt}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -840,6 +937,53 @@ export default function JobApplicationPage() {
 
                 </form>
             </main>
+
+            {/* Fullscreen/Dialog Curriculum Levels Modal */}
+            {showCurriculumModal && (
+                <div 
+                    className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
+                    onClick={() => setShowCurriculumModal(false)}
+                >
+                    <div 
+                        className="relative bg-[#121214] border border-[#E8C15A]/40 rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(232,193,90,0.18)]"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-white/10 bg-[#16161A] shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-md bg-[#E8C15A]/15 border border-[#E8C15A]/30 flex items-center justify-center">
+                                    <HelpCircle size={14} className="text-[#E8C15A]" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs sm:text-sm font-bold text-white leading-tight">Curriculum Levels Breakdown</h3>
+                                    <p className="text-[10px] text-white/50">Level 1, Level 2, and Level 3 Curriculum Topics</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowCurriculumModal(false)}
+                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Modal Body: Scrollable Image */}
+                        <div className="p-3 sm:p-4 overflow-y-auto max-h-[calc(92vh-70px)] flex justify-center bg-[#0D0D0F]">
+                            <div className="relative w-full max-w-md rounded-xl overflow-hidden border border-white/10 shadow-lg bg-white">
+                                <Image
+                                    src="/images/curriculum_levels.png"
+                                    alt="ICPC HUE Curriculum Roadmap (Level 1, 2, 3)"
+                                    width={683}
+                                    height={920}
+                                    className="w-full h-auto object-contain block"
+                                    priority
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx global>{`
                 .custom-scroll::-webkit-scrollbar {
