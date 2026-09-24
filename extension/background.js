@@ -22,9 +22,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.3.4';
-
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const EXT_VERSION = '1.3.3';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
@@ -308,26 +306,10 @@ function parseStatusTable(html) {
 
         let problemIndex = null;
         let problemName = null;
-
-        // Try extracting problem index from href in row body (e.g. /problem/A, /problem/12A, /problemset/problem/1234/A)
-        const hrefMatch = body.match(/\/problem(?:\/\d+)?\/([A-Za-z0-9]+)/i);
-        if (hrefMatch) {
-            problemIndex = hrefMatch[1].toUpperCase();
-        }
-
-        // Parse from problemCell text: supports hyphen '-', en-dash '–', em-dash '—', colons, or just index
-        const pm = problemCell.match(/^([A-Za-z0-9]+)\s*[-–—:]\s*(.*)$/);
+        const pm = problemCell.match(/^([A-Za-z][0-9]?)\s*-\s*(.*)$/);
         if (pm) {
-            if (!problemIndex) problemIndex = pm[1].toUpperCase();
+            problemIndex = pm[1].toUpperCase();
             problemName = pm[2].trim();
-        } else if (!problemIndex) {
-            const singleMatch = problemCell.match(/^([A-Za-z0-9]+)$/);
-            if (singleMatch) {
-                problemIndex = singleMatch[1].toUpperCase();
-            }
-        }
-        if (!problemName && problemCell) {
-            problemName = problemCell.replace(/^[A-Za-z0-9]+\s*[-–—:]*\s*/, '').trim() || problemCell.trim();
         }
 
         rows.push({
@@ -369,7 +351,6 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
     let pagesRead = 0;
 
     for (let page = 1; page <= MAX_PROBLEM_HISTORY_PAGES; page++) {
-        if (page > 1) await sleep(200);
         const url = getStatusUrl(contestId, urlType, groupId, problemIndex, page);
         let html;
         try {
@@ -398,23 +379,14 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
                 if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
                     return { success: false, error: 'NOT_LOGGED_IN' };
                 }
-                return {
-                    success: true,
-                    handle: login.handle || null,
-                    accepted: null,
-                    latest: null,
-                    scanned: 0,
-                    submissions: [],
-                    pagesRead: 0,
-                };
+                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
             }
             break;
         }
 
         const allRows = parseStatusTable(html);
         const pageRows = allRows.filter(r => {
-            const author = (r.author || '').toLowerCase().trim();
-            const byUser = !handleLc || !author || author === handleLc || author.includes(handleLc);
+            const byUser = !handleLc || (r.author || '').toLowerCase() === handleLc;
             const byProblem = !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx;
             return byUser && byProblem;
         });
@@ -485,7 +457,6 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
     let pagesRead = 0;
 
     for (let page = 1; page <= maxPages; page++) {
-        if (page > 1) await sleep(200);
         const url = getContestMyUrl(contestId, urlType, groupId, page);
         let html;
         try {
@@ -516,25 +487,14 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
                 if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
                     return { success: false, error: 'NOT_LOGGED_IN' };
                 }
-                return {
-                    success: true,
-                    handle: login.handle || null,
-                    contestId: String(contestId),
-                    accepted: [],
-                    submissions: [],
-                    pagesRead: 0,
-                    totalRows: 0,
-                };
+                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
             }
             break; // no more pages
         }
 
-        const rows = parseStatusTable(html).filter(r => {
-            if (!handleLc) return true;
-            const author = (r.author || '').toLowerCase().trim();
-            if (!author) return true;
-            return author === handleLc || author.includes(handleLc);
-        });
+        const rows = parseStatusTable(html).filter(r =>
+            !handleLc || (r.author || '').toLowerCase() === handleLc
+        );
         if (rows.length === 0) break; // empty page => done
 
         pagesRead++;

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         const user = await verifyAuth(req);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const rl = await rateLimit(`cf-backfill:${user.id}`, 30, 60);
+        const rl = await rateLimit(`cf-backfill:${user.id}`, 6, 60);
         if (!rl.success) return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
 
         const contentLength = Number(req.headers.get('content-length') || 0);
@@ -58,8 +58,7 @@ export async function POST(req: NextRequest) {
             'SELECT codeforces_handle FROM users WHERE id = $1',
             [user.id]
         );
-        const rawDbHandle = userResult.rows[0]?.codeforces_handle;
-        const userHandle: string | null = rawDbHandle ? String(rawDbHandle).trim() : null;
+        const userHandle: string | null = userResult.rows[0]?.codeforces_handle || null;
 
         const submittedHandle = String(body?.cfHandle || '').trim();
         const finalHandle = submittedHandle || userHandle;
@@ -71,12 +70,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Codeforces handle is required' }, { status: 400 });
         }
 
-        // Link handle to user account if it was not already set
-        if (!userHandle && finalHandle) {
-            await query('UPDATE users SET codeforces_handle = $1 WHERE id = $2', [finalHandle, user.id]);
-        }
-
-        const linkedBrowserHandle = Boolean(finalHandle);
+        // Group/gym rows can only be read from the user's authenticated
+        // Codeforces browser session. Once the handle is already linked to
+        // this account, allow the browser result to award SOLVED as well as
+        // reconstructing attempts. Public API syncs use the separate
+        // auto-backfill route and never set this flag.
+        const linkedBrowserHandle = Boolean(userHandle) &&
+            finalHandle.toLowerCase() === String(userHandle || '').toLowerCase();
 
         const batches: BackfillBatch[] = requestedBatches.map((batch: any) => {
             const urlType = batch?.urlType === 'group' || batch?.urlType === 'gym'
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
                 // This endpoint receives data read from the user's authenticated
                 // browser, so group contests are explicitly allowed.
                 allowGroup: true,
-                allowUnverifiedAccepted: linkedBrowserHandle,
+                allowUnverifiedAccepted: linkedBrowserHandle && (urlType === 'group' || urlType === 'gym'),
             };
         });
 
