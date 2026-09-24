@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
             JOIN curriculum_problems p ON p.sheet_id = s.id
             LEFT JOIN user_progress up
                 ON up.user_id = $1
-               AND up.problem_id = (COALESCE(s.contest_id, p.contest_id) || ':' || p.problem_letter)
+               AND up.problem_id = (s.contest_id || ':' || p.problem_letter)
             WHERE p.codeforces_url IS NOT NULL OR s.contest_url IS NOT NULL
             ORDER BY l.level_number ASC, s.sheet_number ASC, p.problem_number ASC
         `, [user.id]);
