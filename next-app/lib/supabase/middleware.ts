@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PROTECTED_PREFIXES = ['/dashboard'];
 
 // Routes that authenticated users should NOT see — redirect to /dashboard
-const AUTH_ONLY_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'];
+const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password', '/reset-password'];
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next();

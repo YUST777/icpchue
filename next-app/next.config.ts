@@ -17,11 +17,6 @@ const nextConfig: NextConfig = {
     async redirects() {
         return [
             {
-                source: '/apply',
-                destination: '/register',
-                permanent: true,
-            },
-            {
                 source: '/joinnow',
                 destination: '/register',
                 permanent: true,
