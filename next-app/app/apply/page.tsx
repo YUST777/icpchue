@@ -83,7 +83,7 @@ export default function ApplyPage() {
 
     const otpInputRef = useRef<HTMLInputElement>(null);
     const isSubmittingRef = useRef(false);
-    const { register: authRegister, isAuthenticated, loading: authLoading } = useAuth();
+    const { register: authRegister, isAuthenticated } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -330,34 +330,34 @@ export default function ApplyPage() {
     const strength = getStrength(password);
 
     const teamPhotos = [
-        'FB_IMG_1790132657082.jpg',
-        'FB_IMG_1790132659885.jpg',
-        'FB_IMG_1790132664255.jpg',
-        'FB_IMG_1790132668477.jpg',
-        'FB_IMG_1790132683848.jpg',
-        'FB_IMG_1790132686754.jpg',
-        'FB_IMG_1790132690995.jpg',
-        'FB_IMG_1790132693865.jpg',
-        'FB_IMG_1790132696016.jpg',
-        'FB_IMG_1790132697858.jpg',
-        'FB_IMG_1790132699784.jpg',
-        'FB_IMG_1790132702043.jpg',
-        'FB_IMG_1790132703739.jpg',
-        'FB_IMG_1790132705475.jpg',
-        'FB_IMG_1790132707334.jpg',
-        'FB_IMG_1790132708823.jpg',
-    ].map((file) => `/icpchue_2026/ecpc_qulifcatio/${file}`);
+        'FB_IMG_1790132657082.webp',
+        'FB_IMG_1790132659885.webp',
+        'FB_IMG_1790132664255.webp',
+        'FB_IMG_1790132668477.webp',
+        'FB_IMG_1790132683848.webp',
+        'FB_IMG_1790132686754.webp',
+        'FB_IMG_1790132690995.webp',
+        'FB_IMG_1790132693865.webp',
+        'FB_IMG_1790132696016.webp',
+        'FB_IMG_1790132697858.webp',
+        'FB_IMG_1790132699784.webp',
+        'FB_IMG_1790132702043.webp',
+        'FB_IMG_1790132703739.webp',
+        'FB_IMG_1790132705475.webp',
+        'FB_IMG_1790132707334.webp',
+        'FB_IMG_1790132708823.webp',
+    ].map((file) => `/icpchue_2026/apply/teams/${file}`);
 
     const sessionPhotos = [
-        '698720073_122201950184480179_5524576068416986641_n.jpg',
-        '698751636_122201950196480179_1317259686965926327_n.jpg',
-        '698751641_122201950160480179_6892566794014720488_n (1).jpg',
-        '698845343_122201950088480179_7433727580274268909_n.jpg',
-        '700235973_122201950244480179_5384633379550818553_n.jpg',
-        '701234639_122201950232480179_1041411884937013802_n.jpg',
-        '701291046_122201950172480179_5707468508456741567_n.jpg',
-        '701311673_122201950112480179_3810720953429366339_n.jpg',
-    ].map((file) => encodeURI(`/icpchue_2026/sesstion/clean/${file}`));
+        '698720073_122201950184480179_5524576068416986641_n.webp',
+        '698751636_122201950196480179_1317259686965926327_n.webp',
+        '698751641_122201950160480179_6892566794014720488_n (1).webp',
+        '698845343_122201950088480179_7433727580274268909_n.webp',
+        '700235973_122201950244480179_5384633379550818553_n.webp',
+        '701234639_122201950232480179_1041411884937013802_n.webp',
+        '701291046_122201950172480179_5707468508456741567_n.webp',
+        '701311673_122201950112480179_3810720953429366339_n.webp',
+    ].map((file) => encodeURI(`/icpchue_2026/apply/sessions/${file}`));
 
     const storySlides = [
         {
@@ -369,7 +369,7 @@ export default function ApplyPage() {
         },
         {
             kind: 'image' as const,
-            image: '/icpchue_2026/ecpc_qulifcatio/photo_2026-09-23_12-32-07.jpg',
+            image: '/icpchue_2026/apply/slides/ecpc-feature.webp',
             alt: 'ICPC HUE members together at the ECPC qualification',
             kicker: 'A student community',
             title: 'ICPC HUE is where problem solvers meet.',
@@ -377,7 +377,7 @@ export default function ApplyPage() {
         },
         {
             kind: 'image' as const,
-            image: '/icpchue_2026/dcc/clean/FB_IMG_1790132765397.jpg',
+            image: '/icpchue_2026/apply/slides/dcc-clean.webp',
             alt: 'ICPC HUE members celebrating at DCC 2026',
             kicker: 'Learn together',
             title: 'No one has to train alone.',
@@ -402,16 +402,6 @@ export default function ApplyPage() {
     const inputBase = 'w-full px-3 py-1.5 sm:py-2 bg-black/40 border rounded-xl text-white text-xs sm:text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
     const inputNormal = 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
     const inputError = 'border-red-500/50 focus:ring-red-500/50';
-
-    if (authLoading) {
-        return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-                <div className="relative w-16 h-16">
-                    <Image src="/icons/icpchue.svg" alt="Loading" fill className="animate-pulse" priority />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div dir="ltr" className={cn('h-[100dvh] w-full overflow-hidden', step === 0 ? 'bg-black' : 'bg-[#0A0A0A] flex flex-row-reverse')}>
@@ -483,8 +473,10 @@ export default function ApplyPage() {
                                                     src={src}
                                                     alt={currentStory.kind === 'teams' ? `ICPC HUE ECPC team ${teamFrame * 4 + index + 1}` : `ICPC HUE community session ${sessionFrame * 4 + index + 1}`}
                                                     fill
-                                                    priority
-                                                    sizes="(min-width: 1024px) 50vw, 50vw"
+                                                    priority={storySlide === 0 && teamFrame === 0}
+                                                    loading={storySlide === 0 && teamFrame === 0 ? 'eager' : 'lazy'}
+                                                    unoptimized
+                                                    sizes="(min-width: 1024px) 28vw, 50vw"
                                                     className="object-cover object-center"
                                                 />
                                                 <span className="story-photo-number">{String((currentStory.kind === 'teams' ? teamFrame : sessionFrame) * 4 + index + 1).padStart(2, '0')}</span>
@@ -492,7 +484,7 @@ export default function ApplyPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority sizes="100vw" className="object-cover object-center" />
+                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 0} loading={storySlide === 0 ? 'eager' : 'lazy'} unoptimized sizes="100vw" className="object-cover object-center" />
                                 )}
                                 <div className={currentStory.kind === 'image' ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
