@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Loader2, Hexagon, ArrowRight, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Hexagon, ArrowLeft, ArrowRight, Mail } from 'lucide-react';
 import { z } from 'zod';
 
 import { facultyOptions, levelOptions } from '@/app/register/constants';
@@ -50,6 +50,7 @@ export default function ApplyPage() {
     const [storySlide, setStorySlide] = useState(0);
     const [teamFrame, setTeamFrame] = useState(0);
     const [sessionFrame, setSessionFrame] = useState(0);
+    const [winnerFrame, setWinnerFrame] = useState(0);
     const [isReturningUser, setIsReturningUser] = useState(false);
     const [returningUserName, setReturningUserName] = useState<string | null>(null);
 
@@ -99,6 +100,7 @@ export default function ApplyPage() {
     useEffect(() => {
         setTeamFrame(0);
         setSessionFrame(0);
+        setWinnerFrame(0);
     }, [storySlide]);
 
     useEffect(() => {
@@ -114,6 +116,14 @@ export default function ApplyPage() {
         const timer = window.setInterval(() => {
             setSessionFrame((current) => (current + 1) % 2);
         }, 1900);
+        return () => window.clearInterval(timer);
+    }, [step, storySlide]);
+
+    useEffect(() => {
+        if (step !== 0 || storySlide !== 2) return;
+        const timer = window.setInterval(() => {
+            setWinnerFrame((current) => (current + 1) % 5);
+        }, 2400);
         return () => window.clearInterval(timer);
     }, [step, storySlide]);
 
@@ -359,6 +369,14 @@ export default function ApplyPage() {
         '701311673_122201950112480179_3810720953429366339_n.webp',
     ].map((file) => encodeURI(`/icpchue_2026/apply/sessions/${file}`));
 
+    const winnerPhotos = [
+        '1_framed.webp',
+        '2_framed.webp',
+        'TOM08621_framed.webp',
+        'TOM08623_framed.webp',
+        'TOM08625_framed.webp',
+    ].map((file) => `/icpchue_2026/apply/winners/${file}`);
+
     const storySlides = [
         {
             kind: 'teams' as const,
@@ -376,12 +394,11 @@ export default function ApplyPage() {
             body: 'We are Horus University students learning competitive programming together, one problem and one contest at a time.',
         },
         {
-            kind: 'image' as const,
-            image: '/icpchue_2026/apply/slides/dcc-clean.webp',
-            alt: 'ICPC HUE members celebrating at DCC 2026',
-            kicker: 'Learn together',
-            title: 'No one has to train alone.',
-            body: 'Instructors explain. Mentors follow up. Teams practice, share ideas, and show up for each other when a problem gets hard.',
+            kind: 'winners' as const,
+            kicker: 'DCC 2026 · Community in motion',
+            title: 'We build the room we want to compete in.',
+            body: 'From our first community contest to the next qualification, every result is built by people showing up for one another.',
+            images: winnerPhotos,
         },
         {
             kind: 'sessions' as const,
@@ -398,6 +415,8 @@ export default function ApplyPage() {
         : currentStory.kind === 'sessions'
             ? currentStory.images.slice(sessionFrame * 4, sessionFrame * 4 + 4)
             : null;
+    const currentWinner = currentStory.kind === 'winners' ? currentStory.images[winnerFrame] : null;
+    const isPhotoStory = currentStory.kind === 'image' || currentStory.kind === 'winners';
 
     const inputBase = 'w-full px-3 py-1.5 sm:py-2 bg-black/40 border rounded-xl text-white text-xs sm:text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
     const inputNormal = 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
@@ -463,8 +482,8 @@ export default function ApplyPage() {
                     {/* STEP 0: COMMUNITY SHOWCASE & INTRO CARD                  */}
                     {/* ========================================================= */}
                     {step === 0 && (
-                        <div className={cn('story-shell', currentStory.kind === 'image' ? 'story-shell-photo' : 'story-shell-gallery')}>
-                            <div className={cn('story-media', currentStory.kind === 'image' ? 'story-media-photo' : 'story-media-gallery')} aria-live="polite">
+                        <div className={cn('story-shell', isPhotoStory ? 'story-shell-photo' : 'story-shell-gallery')}>
+                            <div className={cn('story-media', isPhotoStory ? 'story-media-photo' : 'story-media-gallery')} aria-live="polite">
                                 {currentStory.kind === 'teams' || currentStory.kind === 'sessions' ? (
                                     <div className="story-gallery" key={`${currentStory.kind}-${currentStory.kind === 'teams' ? teamFrame : sessionFrame}`}>
                                         {currentGallery?.map((src, index) => (
@@ -479,14 +498,26 @@ export default function ApplyPage() {
                                                     sizes="(min-width: 1024px) 28vw, 50vw"
                                                     className="object-cover object-center"
                                                 />
-                                                <span className="story-photo-number">{String((currentStory.kind === 'teams' ? teamFrame : sessionFrame) * 4 + index + 1).padStart(2, '0')}</span>
                                             </div>
                                         ))}
+                                    </div>
+                                ) : currentStory.kind === 'winners' && currentWinner ? (
+                                    <div className="story-winner-frame" key={currentWinner}>
+                                        <Image
+                                            src={currentWinner}
+                                            alt={`ICPC HUE community winner photo ${winnerFrame + 1}`}
+                                            fill
+                                            priority={storySlide === 2 && winnerFrame === 0}
+                                            loading={storySlide === 2 && winnerFrame === 0 ? 'eager' : 'lazy'}
+                                            unoptimized
+                                            sizes="100vw"
+                                            className="object-cover object-center"
+                                        />
                                     </div>
                                 ) : (
                                     <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 0} loading={storySlide === 0 ? 'eager' : 'lazy'} unoptimized sizes="100vw" className="object-cover object-center" />
                                 )}
-                                <div className={currentStory.kind === 'image' ? 'story-vignette' : 'story-gallery-shade'} />
+                                <div className={isPhotoStory ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
 
                             <div className="story-progress" aria-label={`Community story ${storySlide + 1} of ${storySlides.length}`}>
@@ -499,20 +530,25 @@ export default function ApplyPage() {
                                 <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={52} height={52} priority className="h-full w-full object-contain" />
                             </Link>
 
-                            <div className={cn('story-copy', currentStory.kind !== 'image' ? 'story-copy-gallery' : 'story-copy-photo')}>
+                            <div className={cn('story-copy', isPhotoStory ? 'story-copy-photo' : 'story-copy-gallery')}>
                                 <div className="story-kicker">
-                                    <span className="story-index">0{storySlide + 1}</span>
                                     <span className="story-rule" />
-                                    <span>{currentStory.kind === 'teams' ? `ECPC qualification · Teams ${String(teamFrame * 4 + 1).padStart(2, '0')}–${String(teamFrame * 4 + 4).padStart(2, '0')}` : currentStory.kind === 'sessions' ? `Session moments · ${String(sessionFrame + 1).padStart(2, '0')} / 02` : currentStory.kicker}</span>
+                                    <span>{currentStory.kind === 'teams' ? 'ECPC qualification · Team gallery' : currentStory.kind === 'sessions' ? 'Session moments' : currentStory.kicker}</span>
+                                    {currentStory.kind === 'sessions' && <span className="story-season">ICPC HUE · 2026/27</span>}
                                 </div>
                                 <h1>{currentStory.title}</h1>
                                 <p>{currentStory.body}</p>
                                 <div className="story-actions">
+                                    {storySlide > 0 && (
+                                        <button type="button" onClick={() => setStorySlide((current) => current - 1)} className="story-secondary-cta">
+                                            <ArrowLeft size={15} />
+                                            <span>Previous</span>
+                                        </button>
+                                    )}
                                     <button type="button" onClick={() => storySlide < storySlides.length - 1 ? setStorySlide((current) => current + 1) : setStep(1)} className="story-cta">
-                                        <span>{storySlide < storySlides.length - 1 ? 'Next story' : 'Start Level 1'}</span>
+                                        <span>{storySlide < storySlides.length - 1 ? 'Next story' : 'Register LV1'}</span>
                                         <ArrowRight size={15} />
                                     </button>
-                                    <span className="story-meta">ICPC HUE · 2026/27</span>
                                 </div>
                             </div>
                         </div>
@@ -827,6 +863,12 @@ export default function ApplyPage() {
                 .story-media > img {
                     animation: story-image-in 900ms cubic-bezier(.2,.75,.2,1) both;
                 }
+                .story-winner-frame {
+                    position: absolute;
+                    inset: 0;
+                    overflow: hidden;
+                    animation: story-image-in 900ms cubic-bezier(.2,.75,.2,1) both;
+                }
                 .story-gallery {
                     position: absolute;
                     inset: 0;
@@ -923,6 +965,7 @@ export default function ApplyPage() {
                 .story-kicker {
                     display: flex;
                     align-items: center;
+                    flex-wrap: wrap;
                     gap: 12px;
                     color: rgba(255,255,255,.78);
                     font-size: 10px;
@@ -931,8 +974,14 @@ export default function ApplyPage() {
                     line-height: 1.2;
                     text-transform: uppercase;
                 }
-                .story-index { color: #e8c15a; }
                 .story-rule { width: 30px; height: 1px; background: rgba(232,193,90,.8); }
+                .story-season {
+                    margin-left: auto;
+                    color: rgba(255,255,255,.5);
+                    font-size: 9px;
+                    letter-spacing: .12em;
+                    white-space: nowrap;
+                }
                 .story-copy h1 {
                     max-width: 670px;
                     margin: 17px 0 0;
@@ -982,6 +1031,20 @@ export default function ApplyPage() {
                     opacity: .72;
                 }
                 .story-actions { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
+                .story-secondary-cta {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    border: 1px solid rgba(255,255,255,.18);
+                    border-radius: 999px;
+                    padding: 11px 14px;
+                    background: rgba(255,255,255,.04);
+                    color: rgba(255,255,255,.8);
+                    font-size: 12px;
+                    font-weight: 750;
+                    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+                }
+                .story-secondary-cta:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); transform: translateY(-1px); }
                 .story-cta {
                     display: inline-flex;
                     align-items: center;
@@ -1022,8 +1085,8 @@ export default function ApplyPage() {
                     .story-copy h1 { max-width: 340px; margin-top: 13px; font-size: 34px; line-height: .98; }
                     .story-copy p { max-width: 340px; margin-top: 12px; font-size: 13px; line-height: 1.45; }
                     .story-actions { margin-top: 17px; gap: 11px; }
+                    .story-secondary-cta { padding: 10px 12px; }
                     .story-cta { padding: 11px 15px 11px 16px; }
-                    .story-meta { font-size: 8px; letter-spacing: .1em; }
                     .story-logo { right: 18px; bottom: 25px; width: 36px; height: 36px; }
                     .story-photo-number { left: 7px; top: 6px; font-size: 8px; }
                     .story-media-gallery {
@@ -1036,6 +1099,7 @@ export default function ApplyPage() {
                         padding: 14px 68px 16px 18px;
                     }
                     .story-copy-gallery .story-kicker { gap: 8px; font-size: 8px; letter-spacing: .12em; }
+                    .story-copy-gallery .story-season { margin-left: 0; font-size: 7px; letter-spacing: .08em; }
                     .story-copy-gallery h1 { margin-top: 7px; font-size: 25px; line-height: 1.02; }
                     .story-copy-gallery p { margin-top: 7px; font-size: 11.5px; line-height: 1.35; }
                     .story-copy-gallery .story-actions { margin-top: 10px; }
