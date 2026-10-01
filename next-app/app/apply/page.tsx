@@ -35,7 +35,6 @@ type FormErrors = {
     id?: string;
     nationalId?: string;
     studentLevel?: string;
-    hasLaptop?: string;
 };
 
 function cn(...classes: (string | boolean | undefined)[]) {
@@ -63,7 +62,6 @@ export default function ApplyPage() {
         id: '',
         nationalId: '',
         studentLevel: '',
-        hasLaptop: '',
         codeforcesProfile: '',
         leetcodeProfile: '',
     });
@@ -186,10 +184,6 @@ export default function ApplyPage() {
         else if (formData.nationalId.length !== 14) newErrors.nationalId = 'Must be exactly 14 digits';
         else if (!/^[23]/.test(formData.nationalId)) newErrors.nationalId = 'Must start with 2 or 3';
         if (!formData.studentLevel) newErrors.studentLevel = 'Level is required';
-
-        if (formData.hasLaptop === '') {
-            newErrors.hasLaptop = 'Please select if you have a laptop';
-        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -383,7 +377,7 @@ export default function ApplyPage() {
         },
         {
             kind: 'image' as const,
-            image: '/icpchue_2026/dcc/FB_IMG_1790132765397.jpg',
+            image: '/icpchue_2026/dcc/clean/FB_IMG_1790132765397.jpg',
             alt: 'ICPC HUE members celebrating at DCC 2026',
             kicker: 'Learn together',
             title: 'No one has to train alone.',
@@ -629,26 +623,6 @@ export default function ApplyPage() {
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-1 ml-1">Do you have a laptop?</label>
-                                        <div className="flex gap-2">
-                                            <label className={cn(
-                                                'flex-1 py-1 sm:py-1.5 px-3 rounded-xl cursor-pointer text-center text-xs font-semibold transition-all border',
-                                                formData.hasLaptop === 'true' ? 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30' : 'bg-black/40 border-white/5 text-white/50 hover:bg-white/5'
-                                            )}>
-                                                <input type="radio" name="hasLaptop" value="true" checked={formData.hasLaptop === 'true'} onChange={handleFormChange} className="hidden" />
-                                                Yes
-                                            </label>
-                                            <label className={cn(
-                                                'flex-1 py-1 sm:py-1.5 px-3 rounded-xl cursor-pointer text-center text-xs font-semibold transition-all border',
-                                                formData.hasLaptop === 'false' ? 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30' : 'bg-black/40 border-white/5 text-white/50 hover:bg-white/5'
-                                            )}>
-                                                <input type="radio" name="hasLaptop" value="false" checked={formData.hasLaptop === 'false'} onChange={handleFormChange} className="hidden" />
-                                                No
-                                            </label>
-                                        </div>
-                                        {errors.hasLaptop && <p className="text-red-400 text-[8.5px] mt-0.5 ml-1">{errors.hasLaptop}</p>}
-                                    </div>
                                 </div>
                             )}
 
