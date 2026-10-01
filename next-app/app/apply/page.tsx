@@ -115,7 +115,7 @@ export default function ApplyPage() {
     useEffect(() => {
         if (step !== 0 || storySlide !== 3) return;
         const timer = window.setInterval(() => {
-            setSessionFrame((current) => (current + 1) % 2);
+            setSessionFrame((current) => (current + 1) % 4);
         }, 1900);
         return () => window.clearInterval(timer);
     }, [step, storySlide]);
@@ -360,23 +360,31 @@ export default function ApplyPage() {
     ].map((file) => `/icpchue_2026/apply/teams/${file}`);
 
     const sessionPhotos = [
-        '698720073_122201950184480179_5524576068416986641_n.webp',
-        '698751636_122201950196480179_1317259686965926327_n.webp',
-        '698751641_122201950160480179_6892566794014720488_n (1).webp',
-        '698845343_122201950088480179_7433727580274268909_n.webp',
-        '700235973_122201950244480179_5384633379550818553_n.webp',
-        '701234639_122201950232480179_1041411884937013802_n.webp',
-        '701291046_122201950172480179_5707468508456741567_n.webp',
-        '701311673_122201950112480179_3810720953429366339_n.webp',
-    ].map((file) => encodeURI(`/icpchue_2026/apply/sessions/${file}`));
+        '657367962_122130414231113129_212038043814875684_n_clean.webp',
+        '658157793_122130414285113129_3026927933477771579_n_clean.webp',
+        '658173619_122130414147113129_4021898539307213542_n_clean.webp',
+        '658797072_122130414189113129_8309544409391256141_n_clean.webp',
+        '667386709_122131569639113129_4901110169865784213_n_clean.webp',
+        '668353484_122131569807113129_2401607956113167475_n_clean.webp',
+        '669603572_122131569633113129_554431543351382537_n_clean.webp',
+        '669705997_122131569753113129_6657208219811454227_n_clean.webp',
+        '698720073_122201950184480179_5524576068416986641_n_clean.webp',
+        '698751636_122201950196480179_1317259686965926327_n_clean.webp',
+        '698751641_122201950160480179_6892566794014720488_n_1_clean.webp',
+        '698845343_122201950088480179_7433727580274268909_n_clean.webp',
+        '700235973_122201950244480179_5384633379550818553_n_clean.webp',
+        '701234639_122201950232480179_1041411884937013802_n_clean.webp',
+        '701291046_122201950172480179_5707468508456741567_n_clean.webp',
+        '701311673_122201950112480179_3810720953429366339_n_clean.webp',
+    ].map((file) => `/icpchue_2026/apply/sessions/${file}`);
 
     const winnerPhotos = [
-        '1_framed.webp',
-        '2_framed.webp',
-        'TOM08621_framed.webp',
-        'TOM08623_framed.webp',
-        'TOM08625_framed.webp',
-    ].map((file) => `/icpchue_2026/apply/winners/${file}`);
+        '1_framed_clean.webp',
+        '2_framed_clean.webp',
+        'TOM08621_framed_clean.webp',
+        'TOM08623_framed_clean.webp',
+        'TOM08625_framed_clean.webp',
+    ].map((file) => `/icpchue_2026/apply/winners-clean/${file}`);
 
     useEffect(() => {
         let mounted = true;
@@ -557,8 +565,7 @@ export default function ApplyPage() {
                                                     alt={currentStory.kind === 'teams' ? `ICPC HUE ECPC team ${teamFrame * 4 + index + 1}` : `ICPC HUE community session ${sessionFrame * 4 + index + 1}`}
                                                     fill
                                                     priority={storySlide === 0 && teamFrame === 0}
-                                                    loading={storySlide === 0 && teamFrame === 0 ? 'eager' : 'lazy'}
-                                                    unoptimized
+                                                    loading={storySlide === 0 || storySlide === 3 ? 'eager' : 'lazy'}
                                                     sizes="(min-width: 1024px) 28vw, 50vw"
                                                     className="object-cover object-center"
                                                 />
@@ -572,14 +579,13 @@ export default function ApplyPage() {
                                             alt={`ICPC HUE community winner photo ${winnerFrame + 1}`}
                                             fill
                                             priority={storySlide === 2 && winnerFrame === 0}
-                                            loading={storySlide === 2 && winnerFrame === 0 ? 'eager' : 'lazy'}
-                                            unoptimized
+                                            loading={storySlide === 2 ? 'eager' : 'lazy'}
                                             sizes="100vw"
                                             className="object-cover object-center"
                                         />
                                     </div>
                                 ) : (
-                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 0} loading={storySlide === 0 ? 'eager' : 'lazy'} unoptimized sizes="100vw" className="object-cover object-center" />
+                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} sizes="100vw" className="object-cover object-center" />
                                 )}
                                 <div className={isPhotoStory ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
