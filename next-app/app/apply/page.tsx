@@ -51,6 +51,7 @@ export default function ApplyPage() {
     const [teamFrame, setTeamFrame] = useState(0);
     const [sessionFrame, setSessionFrame] = useState(0);
     const [winnerFrame, setWinnerFrame] = useState(0);
+    const [storyReady, setStoryReady] = useState(false);
     const [isReturningUser, setIsReturningUser] = useState(false);
     const [returningUserName, setReturningUserName] = useState<string | null>(null);
 
@@ -377,6 +378,39 @@ export default function ApplyPage() {
         'TOM08625_framed.webp',
     ].map((file) => `/icpchue_2026/apply/winners/${file}`);
 
+    useEffect(() => {
+        let mounted = true;
+        const firstFrame = [
+            '/icons/icpchue.svg',
+            '/icpchue_2026/apply/teams/FB_IMG_1790132657082.webp',
+            '/icpchue_2026/apply/teams/FB_IMG_1790132659885.webp',
+            '/icpchue_2026/apply/teams/FB_IMG_1790132664255.webp',
+            '/icpchue_2026/apply/teams/FB_IMG_1790132668477.webp',
+        ];
+
+        const imageReady = (src: string) => new Promise<void>((resolve) => {
+            const image = new window.Image();
+            image.decoding = 'async';
+            image.onload = () => resolve();
+            image.onerror = () => resolve();
+            image.src = src;
+        });
+
+        Promise.all(firstFrame.map(imageReady)).then(() => {
+            if (!mounted) return;
+            window.requestAnimationFrame(() => setStoryReady(true));
+        });
+
+        const fallback = window.setTimeout(() => {
+            if (mounted) setStoryReady(true);
+        }, 5000);
+
+        return () => {
+            mounted = false;
+            window.clearTimeout(fallback);
+        };
+    }, []);
+
     const storySlides = [
         {
             kind: 'teams' as const,
@@ -424,6 +458,36 @@ export default function ApplyPage() {
 
     return (
         <div dir="ltr" className={cn('h-[100dvh] w-full overflow-hidden', step === 0 ? 'bg-black' : 'bg-[#0A0A0A] flex flex-row-reverse')}>
+            <div
+                role="status"
+                aria-label="Loading ICPC HUE"
+                aria-busy={!storyReady}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 100,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#0b0b0a',
+                    opacity: storyReady ? 0 : 1,
+                    visibility: storyReady ? 'hidden' : 'visible',
+                    pointerEvents: storyReady ? 'none' : 'auto',
+                    transition: 'opacity 280ms ease, visibility 280ms ease',
+                }}
+            >
+                <div style={{ position: 'relative', width: 86, height: 86, display: 'grid', placeItems: 'center' }}>
+                    <Image
+                        src="/icons/icpchue.svg"
+                        alt=""
+                        width="54"
+                        height="54"
+                        priority
+                        unoptimized
+                        style={{ width: 64, height: 64, objectFit: 'contain', animation: 'icpchue-loader-pulse 1100ms ease-in-out infinite' }}
+                    />
+                </div>
+            </div>
             {/* Form Column */}
             <div className={cn(
                 'h-[100dvh] relative',
@@ -814,6 +878,10 @@ export default function ApplyPage() {
                     0%, 100% { transform: translateX(0); }
                     25% { transform: translateX(-4px); }
                     75% { transform: translateX(4px); }
+                }
+                @keyframes icpchue-loader-pulse {
+                    0%, 100% { opacity: .72; transform: scale(.94); }
+                    50% { opacity: 1; transform: scale(1); }
                 }
                 .animate-shake {
                     animation: shake 0.2s ease-in-out 0s 2;
