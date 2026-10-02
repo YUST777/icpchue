@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Loader2, Hexagon, ArrowLeft, ArrowRight, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Hexagon, ArrowLeft, ArrowRight, Mail, HelpCircle, X } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { z } from 'zod';
 
@@ -92,6 +92,7 @@ export default function ApplyPage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [showJunkHelp, setShowJunkHelp] = useState(false);
 
     const otpInputRef = useRef<HTMLInputElement>(null);
     const isSubmittingRef = useRef(false);
@@ -242,7 +243,7 @@ export default function ApplyPage() {
         try {
             res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-ICPCHUE-Apply-Client': '2' },
                 body: JSON.stringify({ email: normalizedEmail }),
             });
         } catch {
@@ -978,8 +979,22 @@ export default function ApplyPage() {
                                             autoComplete="one-time-code"
                                         />
                                         {errors.otp && <p className="text-red-400 text-[8.5px] mt-0.5 ml-1">{errors.otp}</p>}
+                                        <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#E8C15A]/20 bg-[#E8C15A]/[0.06] px-3 py-2">
+                                            <p dir="rtl" lang="ar" className="text-[12px] font-semibold leading-snug text-white/85 sm:text-[13px]">
+                                                هتلاقي الكود في الـ Junk / Trash
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowJunkHelp(true)}
+                                                aria-label="Show where to find the code in Outlook"
+                                                aria-haspopup="dialog"
+                                                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#E8C15A] transition-colors hover:bg-[#E8C15A]/15"
+                                            >
+                                                <HelpCircle size={17} />
+                                            </button>
+                                        </div>
                                         <div className="flex items-center justify-between mt-1.5 ml-1">
-                                            <p className="text-white/20 text-[9.5px]">Check inbox &amp; spam</p>
+                                            <p className="text-white/20 text-[9.5px]">Check Inbox, Junk &amp; Deleted</p>
                                             <button
                                                 type="button"
                                                 onClick={handleResendOtp}
@@ -1039,6 +1054,36 @@ export default function ApplyPage() {
                     <p className="text-white/20 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 HORUS UNIVERSITY • ICPC COMMUNITY</p>
                 </div>
             </div>}
+
+            {showJunkHelp && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Where to find the verification code"
+                    className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                    onClick={() => setShowJunkHelp(false)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setShowJunkHelp(false); }}
+                >
+                    <div className="relative flex max-h-full w-full max-w-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                            <p dir="rtl" lang="ar" className="text-[13px] font-semibold text-white">افتح Outlook ← القائمة ← Junk</p>
+                            <button type="button" autoFocus onClick={() => setShowJunkHelp(false)} aria-label="Close" className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="min-h-0 overflow-y-auto">
+                            <Image
+                                src="/icpchue_2026/apply/outlook-junk-help.webp"
+                                alt="Outlook folder list with an arrow pointing to the Junk folder, where the verification code email arrives"
+                                width={720}
+                                height={1405}
+                                unoptimized
+                                className="h-auto w-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 @keyframes shake {
