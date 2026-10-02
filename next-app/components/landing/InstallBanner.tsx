@@ -16,10 +16,13 @@ export default function InstallBanner() {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const pathname = usePathname();
 
-    // Don't show on /job or the mirror/problem page — it covers the form / editor
+    // Don't show on /job, /apply, /register, /login, or the mirror/problem page — it covers the form / editor
     const isExcludedPage = 
         pathname === '/job' || 
         pathname?.startsWith('/job/') || 
+        pathname === '/apply' ||
+        pathname === '/register' ||
+        pathname === '/login' ||
         (pathname?.includes('/sheets/') && (pathname?.split('/').length ?? 0) > 5);
 
     useEffect(() => {

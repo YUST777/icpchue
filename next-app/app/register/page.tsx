@@ -335,7 +335,7 @@ export default function Register() {
 
     const strength = getStrength(password);
 
-    const inputBase = 'w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
+    const inputBase = 'w-full px-3 sm:px-3.5 py-2 sm:py-2.5 bg-black/40 border rounded-xl text-white text-xs sm:text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
     const inputNormal = 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
     const inputError = 'border-red-500/50 focus:ring-red-500/50';
 
@@ -343,7 +343,7 @@ export default function Register() {
         return (
             <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
                 <div className="relative w-16 h-16">
-                    <Image src="/icons/icpchue.svg" alt="Loading" fill className="animate-pulse" />
+                    <Image src="/icons/icpchue.svg" alt="Loading" fill className="animate-pulse" priority />
                 </div>
             </div>
         );
@@ -351,51 +351,59 @@ export default function Register() {
 
     const stepTitles = ['Start Your Application', 'Verify Email', 'Complete Profile'];
     const stepSubtitles = [
-        'Join ICPC HUE today and start your journey.',
+        '',
         'We sent a code to ' + email,
         "We need a little more info to get you set up.",
     ];
 
     return (
-        <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex flex-row-reverse">
+        <div dir="ltr" className="h-[100dvh] w-full bg-[#0A0A0A] flex flex-row-reverse overflow-hidden">
             {/* Right Side - Form */}
-            <div className="w-full lg:w-[45%] min-h-[100dvh] overflow-y-auto flex flex-col px-8 sm:px-16 lg:px-20 py-12 bg-[#0C0C0C] relative">
+            <div className="w-full lg:w-[45%] h-[100dvh] flex flex-col justify-center px-5 sm:px-10 lg:px-12 xl:px-16 py-3 sm:py-4 bg-[#0C0C0C] relative overflow-y-auto lg:overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#E8C15A]/5 rounded-full blur-[100px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-                <div className="w-full max-w-[450px] mx-auto z-10 pt-4 pb-10">
-                    <div className="mb-8 lg:hidden">
-                        <Link href="/" className="inline-block mb-4">
-                            <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={48} height={48} className="h-12 w-auto" />
+                <div className="w-full max-w-[440px] mx-auto z-10 flex flex-col justify-center my-auto">
+                    <div className="flex items-center justify-between mb-2.5 sm:mb-3.5">
+                        <Link href="/" aria-label="ICPC HUE home" className="inline-flex shrink-0 items-center hover:opacity-80 transition-opacity">
+                            <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={26} height={26} className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 object-contain" priority />
+                        </Link>
+                        <Link href="/" className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.14em] text-white/35 hover:text-[#E8C15A] transition-colors">
+                            <span aria-hidden="true">&larr;</span> Back to home
                         </Link>
                     </div>
 
                     {/* Step indicator */}
-                    <div className="flex items-center gap-2 mb-8">
+                    <div className="flex items-center gap-1.5 mb-2.5 sm:mb-3" aria-label={`Registration step ${step} of 3`}>
                         {[1, 2, 3].map((s) => (
                             <div key={s} className={cn('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-[#E8C15A]' : 'bg-white/5')} />
                         ))}
                     </div>
 
-                    <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
-                        {stepTitles[step - 1]}
-                    </h1>
-                    <p className="text-white/40 text-sm mb-8">
-                        {stepSubtitles[step - 1]}
-                    </p>
+                    <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
+                        <h1 className="whitespace-nowrap text-[16px] sm:text-[19px] font-bold leading-tight text-white tracking-tight">
+                            {stepTitles[step - 1]}
+                        </h1>
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">Step 0{step}/03</span>
+                    </div>
+                    {stepSubtitles[step - 1] && (
+                        <p className="text-white/40 text-[11px] sm:text-xs mb-2.5 sm:mb-3 line-clamp-1">
+                            {stepSubtitles[step - 1]}
+                        </p>
+                    )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
                         {submitError && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm animate-shake">
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 text-red-400 text-xs animate-shake">
                                 {submitError}
                             </div>
                         )}
 
                         {/* ===== STEP 1: Email + Password ===== */}
                         {step === 1 && (
-                            <>
+                            <div className="space-y-2.5 sm:space-y-3">
                                 <div>
-                                    <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Email or Horus ID</label>
+                                    <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Email or Horus ID</label>
                                     <input
                                         type="email"
                                         value={email}
@@ -404,27 +412,27 @@ export default function Register() {
                                         className={cn(inputBase, errors.email ? inputError : inputNormal)}
                                         dir="ltr"
                                     />
-                                    {errors.email && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
+                                    {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.email}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Password</label>
+                                    <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Password</label>
                                     <div className="relative">
                                         <input
                                             type={showPassword ? 'text' : 'password'}
                                             value={password}
                                             onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })); }}
                                             placeholder="Min 9 characters, 1 uppercase"
-                                            className={cn(inputBase, 'pr-12', errors.password ? inputError : inputNormal)}
+                                            className={cn(inputBase, 'pr-10', errors.password ? inputError : inputNormal)}
                                             dir="ltr"
                                         />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-                                    {errors.password && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.password}</p>}
+                                    {errors.password && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.password}</p>}
                                     {password && (
-                                        <div className="mt-2">
-                                            <div className="flex items-center justify-between text-[10px] mb-1 ml-1">
+                                        <div className="mt-1.5">
+                                            <div className="flex items-center justify-between text-[9px] mb-0.5 ml-1">
                                                 <span className="text-white/30 uppercase tracking-wider">Strength</span>
                                                 <span className={strength.pct >= 60 ? 'text-green-400' : 'text-white/40'}>{strength.label}</span>
                                             </div>
@@ -435,64 +443,66 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Confirm Password</label>
+                                    <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Confirm Password</label>
                                     <div className="relative">
                                         <input
                                             type={showConfirmPassword ? 'text' : 'password'}
                                             value={confirmPassword}
                                             onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
                                             placeholder="Re-enter your password"
-                                            className={cn(inputBase, 'pr-12', errors.confirmPassword ? inputError : inputNormal)}
+                                            className={cn(inputBase, 'pr-10', errors.confirmPassword ? inputError : inputNormal)}
                                             dir="ltr"
                                         />
-                                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
-                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+                                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-                                    {errors.confirmPassword && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.confirmPassword}</p>}
+                                    {errors.confirmPassword && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.confirmPassword}</p>}
                                 </div>
-                            </>
+                            </div>
                         )}
 
                         {/* ===== STEP 2: OTP Verification ===== */}
                         {step === 2 && (
-                            <div>
-                                <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">
-                                    <span className="flex items-center gap-1.5"><Mail size={12} /> Verification Code</span>
-                                </label>
-                                <input
-                                    ref={otpInputRef}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={6}
-                                    value={otp}
-                                    onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); if (errors.otp) setErrors(prev => ({ ...prev, otp: undefined })); }}
-                                    placeholder="000000"
-                                    className={cn(inputBase, 'text-center text-2xl tracking-[0.5em] font-mono', errors.otp ? inputError : inputNormal)}
-                                    dir="ltr"
-                                    autoComplete="one-time-code"
-                                />
-                                {errors.otp && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.otp}</p>}
-                                <div className="flex items-center justify-between mt-3 ml-1">
-                                    <p className="text-white/20 text-[10px]">Check your inbox &amp; spam</p>
-                                    <button
-                                        type="button"
-                                        onClick={handleResendOtp}
-                                        disabled={resendCooldown > 0 || loading}
-                                        className="text-[10px] font-bold text-[#E8C15A]/60 hover:text-[#E8C15A] disabled:text-white/10 transition-colors uppercase tracking-wider"
-                                    >
-                                        {resendCooldown > 0 ? ('Resend in ' + resendCooldown + 's') : 'Resend Code'}
-                                    </button>
+                            <div className="space-y-2.5 sm:space-y-3">
+                                <div>
+                                    <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1.5 ml-1">
+                                        <span className="flex items-center gap-1.5"><Mail size={12} /> Verification Code</span>
+                                    </label>
+                                    <input
+                                        ref={otpInputRef}
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={6}
+                                        value={otp}
+                                        onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); if (errors.otp) setErrors(prev => ({ ...prev, otp: undefined })); }}
+                                        placeholder="000000"
+                                        className={cn(inputBase, 'text-center text-xl sm:text-2xl tracking-[0.4em] font-mono py-2.5', errors.otp ? inputError : inputNormal)}
+                                        dir="ltr"
+                                        autoComplete="one-time-code"
+                                    />
+                                    {errors.otp && <p className="text-red-400 text-[9px] mt-1 ml-1">{errors.otp}</p>}
+                                    <div className="flex items-center justify-between mt-2 ml-1">
+                                        <p className="text-white/20 text-[10px]">Check your inbox &amp; spam</p>
+                                        <button
+                                            type="button"
+                                            onClick={handleResendOtp}
+                                            disabled={resendCooldown > 0 || loading}
+                                            className="text-[10px] font-bold text-[#E8C15A]/60 hover:text-[#E8C15A] disabled:text-white/10 transition-colors uppercase tracking-wider"
+                                        >
+                                            {resendCooldown > 0 ? ('Resend in ' + resendCooldown + 's') : 'Resend Code'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* ===== STEP 3: Profile / Application Info ===== */}
                         {step === 3 && (
-                            <div className="space-y-5">
-                                <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2.5 sm:space-y-3">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                                     <div className="col-span-2">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Full Name</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Full Name</label>
                                         <input
                                             type="text"
                                             name="name"
@@ -501,11 +511,11 @@ export default function Register() {
                                             placeholder="John Doe"
                                             className={cn(inputBase, errors.name ? inputError : inputNormal)}
                                         />
-                                        {errors.name && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.name}</p>}
+                                        {errors.name && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.name}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Phone Number</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Phone Number</label>
                                         <input
                                             type="text"
                                             name="telephone"
@@ -514,11 +524,11 @@ export default function Register() {
                                             placeholder="+20xxxxxxxxx"
                                             className={cn(inputBase, errors.telephone ? inputError : inputNormal)}
                                         />
-                                        {errors.telephone && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.telephone}</p>}
+                                        {errors.telephone && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.telephone}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Student ID</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Student ID</label>
                                         <input
                                             type="text"
                                             name="id"
@@ -528,11 +538,11 @@ export default function Register() {
                                             maxLength={12}
                                             className={cn(inputBase, errors.id ? inputError : inputNormal)}
                                         />
-                                        {errors.id && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.id}</p>}
+                                        {errors.id && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.id}</p>}
                                     </div>
 
                                     <div className="col-span-2">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">National ID (Optional)</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">National ID (Optional)</label>
                                         <input
                                             type="text"
                                             name="nationalId"
@@ -542,11 +552,11 @@ export default function Register() {
                                             maxLength={14}
                                             className={cn(inputBase, errors.nationalId ? inputError : inputNormal)}
                                         />
-                                        {errors.nationalId && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.nationalId}</p>}
+                                        {errors.nationalId && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.nationalId}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Faculty</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Faculty</label>
                                         <select
                                             name="faculty"
                                             value={formData.faculty}
@@ -558,11 +568,11 @@ export default function Register() {
                                                 <option key={opt.value} value={opt.value} className="bg-black">{opt.label.split(' / ')[0]}</option>
                                             ))}
                                         </select>
-                                        {errors.faculty && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.faculty}</p>}
+                                        {errors.faculty && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.faculty}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Level</label>
+                                        <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Level</label>
                                         <select
                                             name="studentLevel"
                                             value={formData.studentLevel}
@@ -574,29 +584,29 @@ export default function Register() {
                                                 <option key={opt.value} value={opt.value} className="bg-black">{opt.label.split(' / ')[0]}</option>
                                             ))}
                                         </select>
-                                        {errors.studentLevel && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.studentLevel}</p>}
+                                        {errors.studentLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.studentLevel}</p>}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-3 ml-1">Do you have a laptop?</label>
-                                    <div className="flex gap-4">
+                                    <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Do you have a laptop?</label>
+                                    <div className="flex gap-2.5">
                                         <label className={cn(
-                                            'flex-1 p-3 rounded-xl cursor-pointer text-center text-sm font-semibold transition-all border',
+                                            'flex-1 py-1.5 sm:py-2 px-3 rounded-xl cursor-pointer text-center text-xs font-semibold transition-all border',
                                             formData.hasLaptop === 'true' ? 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30' : 'bg-black/40 border-white/5 text-white/50 hover:bg-white/5'
                                         )}>
                                             <input type="radio" name="hasLaptop" value="true" checked={formData.hasLaptop === 'true'} onChange={handleFormChange} className="hidden" />
                                             Yes
                                         </label>
                                         <label className={cn(
-                                            'flex-1 p-3 rounded-xl cursor-pointer text-center text-sm font-semibold transition-all border',
+                                            'flex-1 py-1.5 sm:py-2 px-3 rounded-xl cursor-pointer text-center text-xs font-semibold transition-all border',
                                             formData.hasLaptop === 'false' ? 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30' : 'bg-black/40 border-white/5 text-white/50 hover:bg-white/5'
                                         )}>
                                             <input type="radio" name="hasLaptop" value="false" checked={formData.hasLaptop === 'false'} onChange={handleFormChange} className="hidden" />
                                             No
                                         </label>
                                     </div>
-                                    {errors.hasLaptop && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.hasLaptop}</p>}
+                                    {errors.hasLaptop && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.hasLaptop}</p>}
                                 </div>
                             </div>
                         )}
@@ -604,50 +614,33 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={loading || (step === 2 && otp.length !== 6)}
-                            className="w-full py-4 mt-8 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
+                            className="w-full py-2.5 sm:py-3 mt-2 sm:mt-3 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs sm:text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
                         >
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                            {loading ? <Loader2 className="animate-spin" size={18} /> : (
                                 step === 1 ? 'Send Verification Code' : step === 2 ? 'Verify Email' : 'Submit Application'
                             )}
-                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                         </button>
                     </form>
 
-                    <div className="mt-8 space-y-4 text-center">
-                        <p className="text-white/30 text-xs font-medium">
+                    <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+                        <p className="text-white/45 text-[11px] sm:text-xs font-medium">
                             Already have an account?{' '}
-                            <Link href="/login" className="text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/10 hover:decoration-[#E8C15A]/40">
+                            <Link href="/login" className="text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/20 hover:decoration-[#E8C15A]/40">
                                 Sign in
                             </Link>
                         </p>
-
-                        <p className="text-white/20 text-[9px]">
-                            By signing up, you agree to our{' '}
-                            <Link href="/terms" className="underline hover:text-[#E8C15A]/60 transition-colors">Terms of Service</Link>
-                        </p>
-                    </div>
-
-                    <div className="mt-12 text-center lg:hidden">
-                        <Link href="/" className="text-[10px] uppercase font-bold tracking-widest text-white/10 hover:text-white/30 transition-colors">
-                            &larr; Back to Home
-                        </Link>
                     </div>
                 </div>
             </div>
 
             {/* Left Side - Branding */}
-            <div className="hidden lg:flex w-[55%] min-h-[100dvh] items-center justify-center bg-[#080808] border-r border-white/5 px-20 relative overflow-hidden">
-                <div className="absolute top-8 left-8 z-20">
-                    <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                        <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={40} height={40} className="w-10 h-10 drop-shadow-2xl" />
-                    </Link>
-                </div>
-
+            <div className="hidden lg:flex w-[55%] h-[100dvh] items-center justify-center bg-[#080808] border-r border-white/5 px-12 xl:px-20 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(232,193,90,0.05),transparent_50%)]" />
 
                 <div className="max-w-xl relative">
                     <Hexagon size={64} className="text-[#E8C15A]/10 absolute -top-12 -left-12 rotate-12" />
-                    <blockquote className="text-4xl text-white/90 font-medium leading-tight mb-12 tracking-tight">
+                    <blockquote className="text-3xl xl:text-4xl text-white/90 font-medium leading-tight mb-8 tracking-tight">
                         &quot;Master algorithms, solve real challenges, and build your future in tech with <span className="text-[#E8C15A] italic font-bold">ICPC HUE</span>.&quot;
                     </blockquote>
                     <div className="space-y-0.5 ml-1">
@@ -656,7 +649,7 @@ export default function Register() {
                     </div>
                 </div>
 
-                <div className="absolute bottom-12 left-20 right-20 flex items-center justify-between">
+                <div className="absolute bottom-8 left-12 right-12 xl:left-20 xl:right-20 flex items-center justify-between">
                     <p className="text-white/5 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 HORUS UNIVERSITY</p>
                 </div>
             </div>
