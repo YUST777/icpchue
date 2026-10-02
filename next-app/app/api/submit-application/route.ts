@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
-import { scraperQueue } from '@/lib/db/queue';
 import { encrypt, createBlindIndex } from '@/lib/security/encryption';
 import { sanitizeInput } from '@/lib/security/validation';
 
@@ -8,7 +7,7 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
 
 export async function POST(req: NextRequest) {
-    // 1. Rate Limiting (Global Redis)
+    // 1. Rate Limiting (Postgres)
     const ip = getClientIp(req);
     const limitResult = await rateLimit(`submit_app:${ip}`, 3, 600); // 3 attempts per 10 mins
 
@@ -83,23 +82,8 @@ export async function POST(req: NextRequest) {
 
         const applicationId = result.rows[0].id;
 
-        // Trigger Scraper via BullMQ
-        if (applicationType === 'trainer') {
-            const jobData = {
-                applicationId,
-                leetcodeProfile,
-                codeforcesProfile,
-                applicationType
-            };
-
-            // Scalable Job Queue (Persistent, Retries)
-            try {
-                await scraperQueue.add('scrape-job', jobData);
-            } catch {
-                // Non-blocking failure
-            }
-        } else {
-            // Mark as not applicable
+        // Trainer profiles stay 'pending' for the scraper; mark everyone else.
+        if (applicationType !== 'trainer') {
             query("UPDATE applications SET scraping_status = 'not_applicable' WHERE id = $1", [applicationId])
                 .catch(() => { });
         }
