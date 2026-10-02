@@ -380,31 +380,31 @@ export default function ApplyPage() {
     ].map((file) => `/icpchue_2026/apply/teams/${file}`);
 
     const sessionPhotos = [
-        '657367962_122130414231113129_212038043814875684_n_clean.webp',
-        '658157793_122130414285113129_3026927933477771579_n_clean.webp',
-        '658173619_122130414147113129_4021898539307213542_n_clean.webp',
-        '658797072_122130414189113129_8309544409391256141_n_clean.webp',
-        '667386709_122131569639113129_4901110169865784213_n_clean.webp',
-        '668353484_122131569807113129_2401607956113167475_n_clean.webp',
-        '669603572_122131569633113129_554431543351382537_n_clean.webp',
-        '669705997_122131569753113129_6657208219811454227_n_clean.webp',
-        '698720073_122201950184480179_5524576068416986641_n_clean.webp',
-        '698751636_122201950196480179_1317259686965926327_n_clean.webp',
-        '698751641_122201950160480179_6892566794014720488_n_1_clean.webp',
-        '698845343_122201950088480179_7433727580274268909_n_clean.webp',
-        '700235973_122201950244480179_5384633379550818553_n_clean.webp',
-        '701234639_122201950232480179_1041411884937013802_n_clean.webp',
-        '701291046_122201950172480179_5707468508456741567_n_clean.webp',
-        '701311673_122201950112480179_3810720953429366339_n_clean.webp',
-    ].map((file) => `/icpchue_2026/apply/sessions/${file}`);
+        '657367962_122130414231113129_212038043814875684_n.jpg',
+        '658157793_122130414285113129_3026927933477771579_n.jpg',
+        '658173619_122130414147113129_4021898539307213542_n.jpg',
+        '658797072_122130414189113129_8309544409391256141_n.jpg',
+        '667386709_122131569639113129_4901110169865784213_n.jpg',
+        '668353484_122131569807113129_2401607956113167475_n.jpg',
+        '669603572_122131569633113129_554431543351382537_n.jpg',
+        '669705997_122131569753113129_6657208219811454227_n.jpg',
+        '698720073_122201950184480179_5524576068416986641_n.jpg',
+        '698751636_122201950196480179_1317259686965926327_n.jpg',
+        '698751641_122201950160480179_6892566794014720488_n (1).jpg',
+        '698845343_122201950088480179_7433727580274268909_n.jpg',
+        '700235973_122201950244480179_5384633379550818553_n.jpg',
+        '701234639_122201950232480179_1041411884937013802_n.jpg',
+        '701291046_122201950172480179_5707468508456741567_n.jpg',
+        '701311673_122201950112480179_3810720953429366339_n.jpg',
+    ].map((file) => `/icpchue_2026/sesstion/${file}`);
 
     const winnerPhotos = [
-        '1_framed_clean.webp',
-        '2_framed_clean.webp',
-        'TOM08621_framed_clean.webp',
-        'TOM08623_framed_clean.webp',
-        'TOM08625_framed_clean.webp',
-    ].map((file) => `/icpchue_2026/apply/winners-clean/${file}`);
+        '1_framed.JPG',
+        '2_framed.JPG',
+        'TOM08621_framed.JPG',
+        'TOM08623_framed.JPG',
+        'TOM08625_framed.JPG',
+    ].map((file) => `/icpchue_2026/winners/${file}`);
 
     useEffect(() => {
         let mounted = true;
@@ -449,7 +449,7 @@ export default function ApplyPage() {
         },
         {
             kind: 'image' as const,
-            image: '/icpchue_2026/apply/slides/ecpc-feature.webp',
+            image: '/icpchue_2026/ecpc_qulifcatio/FB_IMG_1790132738501.jpg',
             alt: 'ICPC HUE members together at the ECPC qualification',
             kicker: 'A student community',
             title: 'ICPC HUE is where problem solvers meet.',
@@ -590,6 +590,8 @@ export default function ApplyPage() {
                                                     loading={storySlide === 0 || storySlide === 3 ? 'eager' : 'lazy'}
                                                     quality={90}
                                                     sizes="50vw"
+                                                    unoptimized={currentStory.kind === 'sessions'}
+                                                    style={currentStory.kind === 'sessions' ? { transform: 'scale(1.18)', transformOrigin: 'center top' } : undefined}
                                                     className="object-cover object-center"
                                                 />
                                             </div>
@@ -605,11 +607,13 @@ export default function ApplyPage() {
                                             loading={storySlide === 2 ? 'eager' : 'lazy'}
                                             quality={90}
                                             sizes="100vw"
-                                            className="object-cover object-center"
+                                            unoptimized
+                                            style={{ transform: 'scale(1.24)', transformOrigin: 'center top' }}
+                                            className="story-winner-image object-cover object-center"
                                         />
                                     </div>
                                 ) : currentStory.kind === 'image' ? (
-                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} quality={90} sizes="100vw" className="object-cover object-center" />
+                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} quality={90} sizes="100vw" unoptimized style={{ transform: 'scale(1.3)', transformOrigin: 'center center', animation: 'none' }} className="story-feature-image object-cover object-center" />
                                 ) : null}
                                 <div className={isPhotoStory ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
@@ -1187,15 +1191,26 @@ export default function ApplyPage() {
                 }
                 .story-photo-session > img {
                     object-position: center top !important;
+                    transform: scale(1.18);
+                    transform-origin: center top;
                 }
                 .story-media > img {
                     animation: story-image-in 900ms cubic-bezier(.2,.75,.2,1) both;
+                }
+                .story-media > img.story-feature-image {
+                    animation: story-feature-image-in 900ms cubic-bezier(.2,.75,.2,1) both;
+                    transform-origin: center center;
                 }
                 .story-winner-frame {
                     position: absolute;
                     inset: 0;
                     overflow: hidden;
                     animation: story-image-in 900ms cubic-bezier(.2,.75,.2,1) both;
+                }
+                .story-winner-image {
+                    object-position: center top !important;
+                    transform: scale(1.24);
+                    transform-origin: center top;
                 }
                 .story-gallery {
                     position: absolute;
@@ -1389,6 +1404,7 @@ export default function ApplyPage() {
                 .story-cta:hover { background: #f2cf73; transform: translateY(-1px); }
                 .story-meta { color: rgba(255,255,255,.56); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
                 @keyframes story-image-in { from { opacity: 0; transform: scale(1.035); } to { opacity: 1; transform: scale(1); } }
+                @keyframes story-feature-image-in { from { opacity: 0; transform: scale(1.3); } to { opacity: 1; transform: scale(1.3); } }
                 .team-tile {
                     opacity: 0;
                     animation: team-reveal 700ms cubic-bezier(.2,.8,.2,1) forwards;
@@ -1396,6 +1412,20 @@ export default function ApplyPage() {
                 }
                 @media (prefers-reduced-motion: reduce) {
                     .team-tile, .story-media > img { opacity: 1; animation: none; }
+                }
+                /* Keep the source artwork framed cleanly even when reduced motion is enabled. */
+                .story-media > img.story-feature-image {
+                    transform: scale(1.3) !important;
+                    transform-origin: center center !important;
+                    animation: none !important;
+                }
+                .story-winner-image {
+                    transform: scale(1.24) !important;
+                    transform-origin: center top !important;
+                }
+                .story-photo-session > img {
+                    transform: scale(1.18) !important;
+                    transform-origin: center top !important;
                 }
                 @media (max-width: 1023px) {
                     .story-copy { width: min(720px, 90%); padding: 0 0 34px 28px; }
