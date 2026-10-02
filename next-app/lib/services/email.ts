@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
 
-// Shared Email Service
-// Using Port 25 for internal Docker networking
+// Shared email service for non-Auth messages (for example password reset).
+// Supabase Auth handles registration OTP delivery separately.
+const smtpPort = Number.parseInt(process.env.SMTP_PORT || '25', 10);
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_SERVER || 'mailserver',
-    port: 25,
+    port: Number.isFinite(smtpPort) && smtpPort > 0 ? smtpPort : 25,
     secure: false,
     auth: {
         user: process.env.SMTP_LOGIN,
