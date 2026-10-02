@@ -1,88 +1,27 @@
-import { redis } from '../db/redis';
+import { query } from '../db/db';
 
 /**
- * In-memory latch for pending Redis fetches to prevent dog-piling
- * within a single server instance.
+ * Short-lived JSON cache stored in Postgres (public.app_cache), shared by all
+ * serverless instances, so invalidation is immediate everywhere. An in-flight
+ * latch prevents dog-piling within one instance. Every failure degrades to
+ * calling the fetcher, never to an error.
  */
+
 const pendingPromises = new Map<string, Promise<any>>();
-
-/**
- * Higher-order function to wrap an API handler with Redis caching.
- * Includes dog-piling protection to ensure only one fetcher executes
- * simultaneously for the same key.
- * 
- * @param key The cache key
- * @param ttl Time to live in seconds
- * @param fetcher Async function that fetches data if cache misses
- */
-export async function getCachedData<T>(
-    key: string,
-    ttl: number,
-    fetcher: () => Promise<T>
-): Promise<T> {
-    // 1. Double-check latch first (Dog-piling protection)
-    if (pendingPromises.has(key)) {
-        return pendingPromises.get(key);
-    }
-
-    const fetchAndCache = (async () => {
-        // 2. Try to get from Redis
-        try {
-            const cached = await redis.get(key);
-            if (cached) {
-                return JSON.parse(cached);
-            }
-        } catch (redisError) {
-            console.error(`[Cache] Redis read error for key ${key}:`, redisError);
-            // Proceed to fetch fresh data
-        }
-
-        // 3. Cache miss or Redis error: Fetch fresh data
-        // If this throws, it bubbles up to the caller (no double fetch)
-        const data = await fetcher();
-
-        // 4. Store in Redis
-        try {
-            await redis.set(key, JSON.stringify(data), 'EX', ttl);
-        } catch (redisError) {
-            console.error(`[Cache] Redis write error for key ${key}:`, redisError);
-        }
-
-        return data;
-    })();
-
-    pendingPromises.set(key, fetchAndCache);
-
-    // Ensure we clean up the map when the promise settles (success or fail)
-    fetchAndCache.finally(() => {
-        pendingPromises.delete(key);
-    });
-
-    return fetchAndCache;
-}
-
-/**
- * Invalidate a specific cache key
- */
-export async function invalidateCache(key: string): Promise<void> {
-    try {
-        await redis.del(key);
-        // Also remove from any pending promises if they exist
-        pendingPromises.delete(key);
-    } catch (error) {
-        console.error(`[Cache] Invalidation error for key ${key}:`, error);
-    }
-}
+const CLEANUP_PROBABILITY = 0.01;
 
 /**
  * Basic Get cache
  */
 export async function getCache<T>(key: string): Promise<T | null> {
     try {
-        const cached = await redis.get(key);
-        return cached ? JSON.parse(cached) : null;
+        const result = await query<{ value: T }>(
+            'SELECT value FROM public.app_cache WHERE key = $1 AND expires_at > now()',
+            [key]
+        );
+        return result.rows[0]?.value ?? null;
     } catch (e) {
-        console.error(`[Cache] Get error:`, e);
+        console.error('[Cache] Get error:', e instanceof Error ? e.message : e);
         return null;
     }
 }
@@ -91,10 +30,61 @@ export async function getCache<T>(key: string): Promise<T | null> {
  * Basic Set cache
  */
 export async function setCache(key: string, data: any, ttl: number): Promise<void> {
+    if (data === undefined) return;
     try {
-        await redis.set(key, JSON.stringify(data), 'EX', ttl);
+        await query(
+            `INSERT INTO public.app_cache (key, value, expires_at)
+             VALUES ($1, $2::jsonb, now() + make_interval(secs => $3))
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = EXCLUDED.expires_at`,
+            [key, JSON.stringify(data), Math.max(1, Math.floor(ttl))]
+        );
+        if (Math.random() < CLEANUP_PROBABILITY) {
+            query('DELETE FROM public.app_cache WHERE expires_at < now()').catch(() => {});
+        }
     } catch (e) {
-        console.error(`[Cache] Set error:`, e);
+        console.error('[Cache] Set error:', e instanceof Error ? e.message : e);
     }
 }
 
+/**
+ * Wrap a fetcher with caching and dog-piling protection so only one fetch
+ * runs per key per instance at a time.
+ */
+export async function getCachedData<T>(
+    key: string,
+    ttl: number,
+    fetcher: () => Promise<T>
+): Promise<T> {
+    if (pendingPromises.has(key)) {
+        return pendingPromises.get(key);
+    }
+
+    const fetchAndCache = (async () => {
+        const cached = await getCache<T>(key);
+        if (cached !== null) return cached;
+
+        // If this throws, it bubbles up to the caller (no double fetch).
+        const data = await fetcher();
+        await setCache(key, data, ttl);
+        return data;
+    })();
+
+    pendingPromises.set(key, fetchAndCache);
+    fetchAndCache.finally(() => {
+        pendingPromises.delete(key);
+    }).catch(() => {});
+
+    return fetchAndCache;
+}
+
+/**
+ * Invalidate a specific cache key
+ */
+export async function invalidateCache(key: string): Promise<void> {
+    pendingPromises.delete(key);
+    try {
+        await query('DELETE FROM public.app_cache WHERE key = $1', [key]);
+    } catch (error) {
+        console.error(`[Cache] Invalidation error for key ${key}:`, error instanceof Error ? error.message : error);
+    }
+}

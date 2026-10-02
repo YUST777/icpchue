@@ -1,12 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { redis } from '@/lib/db/redis';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
+import { query } from '@/lib/db/db';
 
-const TOKEN_RE = /^[0-9a-f]{64}$/;
 const MAX_BODY_BYTES = 16 * 1024;
+// Recovery sessions come from the emailed link; refuse stale ones.
+const MAX_RECOVERY_AGE_SECONDS = 60 * 60;
 
+type JwtClaims = { amr?: Array<{ method?: string; timestamp?: number }> };
+
+function decodeClaims(token: string): JwtClaims | null {
+    try {
+        const payload = token.split('.')[1];
+        return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Completes a Supabase Auth password recovery. The browser sends the
+ * short-lived access token that Supabase put in the reset link's URL
+ * fragment; we verify it with Supabase, then set the new password.
+ */
 export async function POST(req: NextRequest) {
     try {
         const contentLength = Number(req.headers.get('content-length') || 0);
@@ -14,53 +31,67 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Request payload is too large.' }, { status: 413 });
         }
         const ip = getClientIp(req);
-        const limitResult = await rateLimit(`reset-pwd:${ip}`, 3, 60);
+        const limitResult = await rateLimit(`reset-pwd-v2:${ip}`, 10, 300);
         if (!limitResult.success) {
             return NextResponse.json({ error: 'Too many attempts. Please wait.' }, { status: 429 });
         }
 
-        const body = await req.json();
-        const { token, newPassword } = body;
+        const body = await req.json().catch(() => null);
+        const accessToken = body?.accessToken;
+        const newPassword = body?.newPassword;
 
-        if (typeof token !== 'string' || typeof newPassword !== 'string' || !token || !newPassword) {
-            return NextResponse.json({ error: 'Token and new password are required' }, { status: 400 });
+        if (typeof accessToken !== 'string' || typeof newPassword !== 'string' || !accessToken || !newPassword) {
+            return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
         }
-        if (newPassword.length > 256) {
-            return NextResponse.json({ error: 'Password is too long.' }, { status: 400 });
+        if (accessToken.length > 4096 || newPassword.length > 256) {
+            return NextResponse.json({ error: 'Request is too large.' }, { status: 400 });
         }
-
-        if (!TOKEN_RE.test(token)) {
-            return NextResponse.json({ error: 'Reset link has expired or is invalid.' }, { status: 400 });
-        }
-
         if (newPassword.length < 9 || !/[A-Z]/.test(newPassword)) {
             return NextResponse.json({ error: 'Password must be at least 9 characters with at least one uppercase letter' }, { status: 400 });
         }
 
-        // Atomic get-and-delete: read the value and delete in one round-trip
-        // so two concurrent requests can't both consume the same token
-        const data = await redis.getdel(`pwd-reset:${token}`);
-        if (!data) {
-            return NextResponse.json({ error: 'Reset link has expired or is invalid.' }, { status: 400 });
+        // Only accept sessions created by an emailed one-time link (amr
+        // "recovery"/"otp"), recently. A normal password-login session cannot
+        // be used here to change the password without the email step.
+        const claims = decodeClaims(accessToken);
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const viaEmailLink = claims?.amr?.some((entry) =>
+            (entry.method === 'recovery' || entry.method === 'otp') &&
+            typeof entry.timestamp === 'number' &&
+            nowSeconds - entry.timestamp <= MAX_RECOVERY_AGE_SECONDS
+        );
+        if (!viaEmailLink) {
+            return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
         }
 
-        const { supabaseUid } = JSON.parse(data);
-
         const adminClient = createAdminClient();
-        const { error } = await adminClient.auth.admin.updateUserById(supabaseUid, {
-            password: newPassword,
-        });
+        // Verifies the signature and that the session is still active.
+        const { data: userData, error: userError } = await adminClient.auth.getUser(accessToken);
+        if (userError || !userData.user) {
+            return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
+        }
 
+        const linked = await query('SELECT 1 FROM users WHERE supabase_uid = $1 LIMIT 1', [userData.user.id]);
+        if (linked.rows.length === 0) {
+            return NextResponse.json({ error: 'No ICPC HUE account is linked to this email.' }, { status: 400 });
+        }
+
+        const { error } = await adminClient.auth.admin.updateUserById(userData.user.id, { password: newPassword });
         if (error) {
+            console.error('[Reset Password] Supabase password update failed:', error.status, error.code, error.message);
             return NextResponse.json({ error: 'Failed to reset password.' }, { status: 500 });
         }
 
-        // Also clean up the reverse mapping
-        await redis.del(`pwd-reset-user:${supabaseUid}`).catch(() => {});
+        // End the recovery session and any other sessions using the old password.
+        const { error: signOutError } = await adminClient.auth.admin.signOut(accessToken, 'global');
+        // Supabase may already have ended the session on password change.
+        if (signOutError && signOutError.name !== 'AuthSessionMissingError') {
+            console.warn('[Reset Password] Could not revoke sessions:', signOutError.message);
+        }
 
         return NextResponse.json({ success: true, message: 'Password has been reset successfully.' });
-
-    } catch {
+    } catch (error) {
+        console.error('[Reset Password] Unexpected failure:', error instanceof Error ? error.message : error);
         return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 });
     }
 }

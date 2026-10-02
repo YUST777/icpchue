@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
-import { redis } from '@/lib/db/redis';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
 
@@ -29,40 +28,9 @@ export async function GET(req: NextRequest) {
     const idsToFetch: string[] = [];
 
     try {
-        // --- REDIS CACHING ---
-        let cacheResults: (string | null)[] = [];
-        const isRedisReady = redis.status === 'ready';
-
-        if (isRedisReady) {
-            try {
-                // Pipeline not directly supported by ioredis instance wrapper if not explicit, 
-                // but ioredis supports pipeline().
-                const pipeline = redis.pipeline();
-                ids.forEach(id => pipeline.get(`web:news:counts:${id}`));
-                const results = await pipeline.exec();
-                // results is [[err, result], ...]
-                cacheResults = results ? results.map(r => r[1] as string | null) : [];
-            } catch {
-                cacheResults = ids.map(() => null);
-            }
-        } else {
-            cacheResults = ids.map(() => null);
-        }
-
-        ids.forEach((id, index) => {
-            const cachedCounts = cacheResults[index];
+        ids.forEach(id => {
             responseMap[id] = { counts: { like: 0, heart: 0, fire: 0 }, userReactions: [] };
-
-            // ioredis pipeline results can be null if key doesn't exist
-            if (cachedCounts) {
-                try {
-                    responseMap[id].counts = JSON.parse(cachedCounts);
-                } catch {
-                    idsToFetch.push(id); // Parse error, fetch again
-                }
-            } else {
-                idsToFetch.push(id);
-            }
+            idsToFetch.push(id);
         });
 
         // Fetch Missing from DB
@@ -90,13 +58,6 @@ export async function GET(req: NextRequest) {
                 responseMap[id].counts = counts;
             });
 
-            if (isRedisReady) {
-                const savePipeline = redis.pipeline();
-                idsToFetch.forEach(id => {
-                    savePipeline.setex(`web:news:counts:${id}`, 60, JSON.stringify(responseMap[id].counts));
-                });
-                await savePipeline.exec().catch(() => {});
-            }
         }
 
         // User Reactions (Always fetch fresh)
@@ -146,7 +107,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid reaction type' }, { status: 400 });
         }
 
-        const isRedisReady = redis.status === 'ready';
 
         // Toggle in a single query: delete if exists, insert if not, return action taken
         const toggleResult = await query(`
@@ -165,7 +125,6 @@ export async function POST(req: NextRequest) {
                 CASE WHEN EXISTS (SELECT 1 FROM deleted) THEN 'removed' ELSE 'added' END AS action
         `, [newsId, userId, reactionType]);
 
-        if (isRedisReady) await redis.del(`web:news:counts:${newsId}`).catch(() => { });
         const action = toggleResult.rows[0]?.action || 'added';
         return NextResponse.json({ action, reactionType });
 

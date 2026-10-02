@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
 /**
  * Delete all data for 8241043@horus.edu.eg to allow re-testing the full flow:
- * Apply → OTP → Register. Removes user, auth, application, and Redis keys.
+ * Apply → OTP → Register. Removes user, auth, application, and rate-limit rows.
  */
 
 import { query } from '../lib/db/db';
 import { createBlindIndex } from '../lib/security/encryption';
 import { createAdminClient } from '../lib/supabase/admin';
-import { redis } from '../lib/db/redis';
 
 const EMAIL = '8241043@horus.edu.eg'.trim().toLowerCase();
 const STUDENT_ID = '8241043';
@@ -99,13 +98,12 @@ async function run() {
         }
     }
 
-    // 5. Clear Redis keys (optional - may fail if Redis unreachable)
+    // 5. Clear rate-limit windows for this email (Postgres replaced Redis)
     try {
-        await redis.del(`reg-verified:${EMAIL}`);
-        if (supabaseUid) await redis.del(`pwd-reset-user:${supabaseUid}`);
-        console.log('  Cleared Redis (reg-verified, pwd-reset)');
+        await query(`DELETE FROM public.app_rate_limits WHERE key LIKE '%' || $1`, [EMAIL]);
+        console.log('  Cleared rate-limit rows');
     } catch (e) {
-        console.warn('  Redis skipped (unreachable):', e instanceof Error ? e.message : String(e));
+        console.warn('  Rate-limit cleanup skipped:', e instanceof Error ? e.message : String(e));
     }
 
     // 6. Legacy password_resets table (by email)
