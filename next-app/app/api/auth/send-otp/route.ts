@@ -20,6 +20,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Request payload is too large.' }, { status: 413 });
         }
 
+        // Tabs opened before the last /apply deploy still run an old bundle
+        // that sent the code but never showed the code input. Ask those
+        // tabs to reload instead of silently emailing a code they cannot use.
+        const referer = req.headers.get('referer') || '';
+        if (/\/apply(?:[/?#]|$)/.test(referer) && req.headers.get('x-icpchue-apply-client') !== '2') {
+            return NextResponse.json({
+                error: 'This page was updated. Please refresh the page (اعمل Refresh للصفحة) and try again.'
+            }, { status: 409 });
+        }
+
         const body = await req.json().catch(() => null);
         const rawEmail = body?.email;
         if (typeof rawEmail !== 'string' || !rawEmail.trim() || rawEmail.length > 254) {
