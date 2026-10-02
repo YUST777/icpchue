@@ -45,7 +45,7 @@ function cn(...classes: (string | boolean | undefined)[]) {
 export default function ApplyPage() {
     // Step 0: Community Showcase & Intro
     // Step 1: Student Profile Info
-    // Step 2: Level 1 handoff and account explanation
+    // Step 2: Level 0 handoff and account explanation
     // Step 3: Account Credentials (Email & Password)
     // Step 4: OTP Verification & Final Submit
     const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
@@ -209,7 +209,7 @@ export default function ApplyPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/apply/level1', {
+            const res = await fetch('/api/apply/level0', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -306,7 +306,7 @@ export default function ApplyPage() {
             email,
             password,
             applicationType,
-            registrationFlow: 'level1',
+            registrationFlow: 'level0',
             ...formData,
         };
 
@@ -466,7 +466,7 @@ export default function ApplyPage() {
             kind: 'sessions' as const,
             kicker: 'Inside the sessions',
             title: 'The work happens together.',
-            body: 'Level 1 is built around practice, feedback, and showing up consistently with people who want to improve.',
+            body: 'Level 0 is built around practice, feedback, and showing up consistently with people who want to improve.',
             images: sessionPhotos,
         },
     ] as const;
@@ -540,7 +540,7 @@ export default function ApplyPage() {
                         <Link href="/" aria-label="ICPC HUE home" className="inline-flex shrink-0 items-center transition-opacity hover:opacity-80">
                             <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={32} height={32} className="h-7 w-7 shrink-0 object-contain sm:h-8 sm:w-8" priority />
                         </Link>
-                        {step === 2 && <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">Level 1 · 2026/27</span>}
+                        {step === 2 && <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">Level 0 · 2026/27</span>}
                     </div>}
 
                     {/* Account progress stays out of the way on the saved-registration handoff. */}
@@ -554,12 +554,12 @@ export default function ApplyPage() {
                             </div>
                             <div className="mb-1 flex items-center justify-between gap-2">
                                 <h1 className="text-[15px] font-bold leading-tight tracking-tight text-white sm:text-[18px]">
-                                    {step === 1 ? 'Register for ICPC HUE Level 1' : step === 3 ? 'Create your ICPC HUE account' : 'Verify Email'}
+                                    {step === 1 ? 'Register for ICPC HUE Level 0' : step === 3 ? 'Create your ICPC HUE account' : 'Verify Email'}
                                 </h1>
                                 <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">{step === 1 ? '1. Registration' : step === 3 ? '2. Account' : '3. Verify'}</span>
                             </div>
                             <p className="mb-2 text-[10.5px] text-white/40 sm:mb-2.5 sm:text-[11.5px]">
-                                {step === 1 && 'Enter your student details for the Level 1 training cohort.'}
+                                {step === 1 && 'Enter your student details for the Level 0 training cohort.'}
                                 {step === 3 && 'Create the account you will use to train and track your progress.'}
                                 {step === 4 && `We sent a 6-digit code to ${email}`}
                             </p>
@@ -588,7 +588,8 @@ export default function ApplyPage() {
                                                     fill
                                                     priority={storySlide === 0 && teamFrame === 0}
                                                     loading={storySlide === 0 || storySlide === 3 ? 'eager' : 'lazy'}
-                                                    sizes="(min-width: 1024px) 28vw, 50vw"
+                                                    quality={90}
+                                                    sizes="50vw"
                                                     className="object-cover object-center"
                                                 />
                                             </div>
@@ -602,12 +603,13 @@ export default function ApplyPage() {
                                             fill
                                             priority={storySlide === 2 && winnerFrame === 0}
                                             loading={storySlide === 2 ? 'eager' : 'lazy'}
+                                            quality={90}
                                             sizes="100vw"
                                             className="object-cover object-center"
                                         />
                                     </div>
                                 ) : currentStory.kind === 'image' ? (
-                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} sizes="100vw" className="object-cover object-center" />
+                                    <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} quality={90} sizes="100vw" className="object-cover object-center" />
                                 ) : null}
                                 <div className={isPhotoStory ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
@@ -638,7 +640,7 @@ export default function ApplyPage() {
                                         </button>
                                     )}
                                     <button type="button" onClick={() => storySlide < storySlides.length - 1 ? setStorySlide((current) => current + 1) : setStep(1)} className="story-cta">
-                                        <span>{storySlide < storySlides.length - 1 ? 'Next story' : 'Register LV1'}</span>
+                                        <span>{storySlide < storySlides.length - 1 ? 'Next story' : 'Register LV0'}</span>
                                         <ArrowRight size={15} />
                                     </button>
                                 </div>
@@ -746,12 +748,12 @@ export default function ApplyPage() {
                                 </div>
                             )}
 
-                            {/* ===== STEP 2: Level 1 handoff ===== */}
+                            {/* ===== STEP 2: Level 0 handoff ===== */}
                             {step === 2 && (
-                                <section className="handoff" aria-labelledby="level-one-confirmation">
+                                <section className="handoff" aria-labelledby="level-zero-confirmation">
                                     <p className="handoff-eyebrow">ICPC HUE TRAINING</p>
-                                    <h1 id="level-one-confirmation" className="handoff-title">Your place is saved.</h1>
-                                    <p className="handoff-lede">You’re on the Level 1 list. Choose how you want to continue.</p>
+                                    <h1 id="level-zero-confirmation" className="handoff-title">Your place is saved.</h1>
+                                    <p className="handoff-lede">You’re on the Level 0 list. Choose how you want to continue.</p>
 
                                     <div className="handoff-routes">
                                         <div className="handoff-route handoff-route-primary">
@@ -776,19 +778,25 @@ export default function ApplyPage() {
                                             </button>
                                         </div>
 
-                                        <div className="handoff-route handoff-route-secondary">
+                                        <a
+                                            href="https://chat.whatsapp.com/JreeORGikEY7J9I0UbcdOD?s=cl&p=a&ilr=4"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="handoff-route handoff-route-secondary"
+                                            aria-label="Join the Level 0 WhatsApp group"
+                                        >
                                             <div className="handoff-route-body">
                                                 <div className="handoff-route-secondary-icon" aria-hidden="true"><FaWhatsapp size={36} /></div>
                                                 <div>
                                                     <h2>Not ready for an account?</h2>
-                                                    <p>Get Level 1 updates on WhatsApp.</p>
+                                                    <p>Get Level 0 updates on WhatsApp.</p>
                                                 </div>
-                                                <a href="https://chat.whatsapp.com/JreeORGikEY7J9I0UbcdOD?s=cl&p=a&ilr=4" target="_blank" rel="noreferrer" className="handoff-alternative-link" aria-label="Join the Level 1 WhatsApp group">
+                                                <span className="handoff-alternative-link" aria-hidden="true">
                                                     <span>Join</span>
                                                     <ArrowRight size={17} />
-                                                </a>
+                                                </span>
                                             </div>
-                                        </div>
+                                        </a>
                                     </div>
                                 </section>
                             )}
@@ -898,7 +906,7 @@ export default function ApplyPage() {
                                 className="w-full py-2.5 sm:py-3 mt-1.5 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs sm:text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={17} /> : (
-                                    step === 1 ? 'Register for Level 1' : step === 3 ? 'Send verification code' : 'Verify email & submit'
+                                    step === 1 ? 'Register for Level 0' : step === 3 ? 'Send verification code' : 'Verify email & submit'
                                 )}
                                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                             </button>}
@@ -916,7 +924,7 @@ export default function ApplyPage() {
                     <Hexagon size={64} className="text-[#E8C15A]/10 absolute -top-12 -left-12 rotate-12" />
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 text-xs font-semibold mb-6">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        Level 1 Training Cohort Now Open
+                        Level 0 Training Cohort Now Open
                     </div>
                     <blockquote className="text-3xl xl:text-4xl text-white/90 font-medium leading-tight mb-8 tracking-tight">
                         &quot;Master algorithms, solve real challenges, and build your future in tech with <span className="text-[#E8C15A] italic font-bold">ICPC HUE</span>.&quot;
@@ -1082,12 +1090,20 @@ export default function ApplyPage() {
                     transform: translateY(-1px);
                 }
                 .handoff-primary-button:focus-visible,
-                .handoff-alternative-link:focus-visible {
+                .handoff-route-secondary:focus-visible {
                     outline: 2px solid #e8c15a;
                     outline-offset: 3px;
                 }
                 .handoff-route-secondary {
+                    display: block;
                     padding: 16px 0 7px;
+                    color: inherit;
+                    text-decoration: none;
+                    transition: background 180ms ease, transform 180ms ease;
+                }
+                .handoff-route-secondary:hover {
+                    background: rgba(37,211,102,.045);
+                    transform: translateX(2px);
                 }
                 .handoff-route-secondary .handoff-route-body {
                     align-items: center;
@@ -1127,9 +1143,9 @@ export default function ApplyPage() {
                     font-size: 10px;
                     font-weight: 800;
                     text-decoration: none;
-                    transition: color 180ms ease, transform 180ms ease;
+                    transition: color 180ms ease;
                 }
-                .handoff-alternative-link:hover { color: #f2cf73; transform: translateX(1px); }
+                .handoff-route-secondary:hover .handoff-alternative-link { color: #f2cf73; }
                 @keyframes team-reveal {
                     0% { opacity: 0; transform: scale(0.84) translateY(10px); filter: saturate(0.4) brightness(0.55); }
                     65% { opacity: 1; transform: scale(1.035) translateY(-1px); filter: saturate(1.08) brightness(1.04); }
