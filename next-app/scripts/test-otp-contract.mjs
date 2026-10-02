@@ -22,5 +22,8 @@ assert.match(verifyRoute, /CODE_RE\s*=\s*\/\^\\d\{6\}\$\//);
 assert.match(verifyRoute, /verifyOtp\(\{\s*email:\s*normalizedEmail,\s*token:\s*code,\s*type:\s*'email'/s);
 assert.match(applyPage, /\/api\/auth\/send-otp/);
 assert.match(applyPage, /\/api\/auth\/verify-otp/);
+assert.match(applyPage, /\/api\/apply\/level0/);
+assert.match(applyPage, /registrationFlow:\s*'level0'/);
+assert.doesNotMatch(applyPage, /\/api\/apply\/level1/);
 
 console.log('OTP contract checks passed: template, send route, verify route, and /apply wiring.');
