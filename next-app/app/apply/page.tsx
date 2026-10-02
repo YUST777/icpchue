@@ -988,9 +988,10 @@ export default function ApplyPage() {
                                                 onClick={() => setShowJunkHelp(true)}
                                                 aria-label="Show where to find the code in Outlook"
                                                 aria-haspopup="dialog"
-                                                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#E8C15A] transition-colors hover:bg-[#E8C15A]/15"
+                                                style={{ padding: 0, minHeight: 0, width: 36, height: 36 }}
+                                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#E8C15A] transition-colors hover:bg-[#E8C15A]/15"
                                             >
-                                                <HelpCircle size={17} />
+                                                <HelpCircle size={20} />
                                             </button>
                                         </div>
                                         <div className="flex items-center justify-between mt-1.5 ml-1">
@@ -1067,7 +1068,7 @@ export default function ApplyPage() {
                     <div className="relative flex max-h-full w-full max-w-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111]" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
                             <p dir="rtl" lang="ar" className="text-[13px] font-semibold text-white">افتح Outlook ← القائمة ← Junk</p>
-                            <button type="button" autoFocus onClick={() => setShowJunkHelp(false)} aria-label="Close" className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
+                            <button type="button" autoFocus onClick={() => setShowJunkHelp(false)} aria-label="Close" style={{ padding: 0, minHeight: 0, width: 36, height: 36 }} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
                                 <X size={18} />
                             </button>
                         </div>
