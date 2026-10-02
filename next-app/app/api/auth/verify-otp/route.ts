@@ -3,6 +3,7 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
 import { createClient } from '@supabase/supabase-js';
 import { findAuthUserByEmail } from '@/lib/supabase/admin';
+import { isHorusEmail, normalizeHorusEmail } from '@/lib/auth/horus-email';
 
 const CODE_RE = /^\d{6}$/;
 const MAX_BODY_BYTES = 8 * 1024;
@@ -13,26 +14,33 @@ export async function POST(req: NextRequest) {
         if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
             return NextResponse.json({ error: 'Request payload is too large.' }, { status: 413 });
         }
-        const ip = getClientIp(req);
-
-        const { email, code } = await req.json();
-        if (typeof email !== 'string' || typeof code !== 'string' || !email || !code || email.length > 254) {
+        const body = await req.json().catch(() => null);
+        const email = body?.email;
+        const code = typeof body?.code === 'string' ? body.code.replace(/\D/g, '') : body?.code;
+        if (typeof email !== 'string' || typeof code !== 'string' || !email.trim() || !code || email.length > 254) {
             return NextResponse.json({ error: 'Email and code are required' }, { status: 400 });
         }
         if (!CODE_RE.test(code)) {
             return NextResponse.json({ error: 'Invalid code format.' }, { status: 400 });
         }
 
-        const normalizedEmail = email.trim().toLowerCase();
-        if (!/^[^\s@]+@horus\.edu\.eg$/i.test(normalizedEmail)) {
+        const normalizedEmail = normalizeHorusEmail(email);
+        if (!isHorusEmail(normalizedEmail)) {
             return NextResponse.json({ error: 'Use your Horus University email address.' }, { status: 400 });
         }
 
         // Rate-limit by both IP and email to stop distributed brute-force
-        const limitByIp = await rateLimit(`verify-otp:${ip}`, 5, 300);
+        const ip = getClientIp(req);
+        // Shared campus/mobile IPs can contain many legitimate students. The
+        // per-email limiter below remains strict for brute-force protection.
+        const limitByIp = await rateLimit(`verify-otp-v2:${ip}`, 30, 300);
         const limitByEmail = await rateLimit(`verify-otp-email:${normalizedEmail}`, 5, 300);
         if (!limitByIp.success || !limitByEmail.success) {
-            return NextResponse.json({ error: 'Too many attempts. Please request a new code.' }, { status: 429 });
+            const retryAfter = Math.max(1, Math.ceil((Math.max(limitByIp.reset, limitByEmail.reset) - Date.now()) / 1000));
+            return NextResponse.json(
+                { error: 'Too many attempts. Please request a new code in a few minutes.' },
+                { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+            );
         }
         const authUser = await findAuthUserByEmail(normalizedEmail);
         if (!authUser) {
@@ -57,6 +65,7 @@ export async function POST(req: NextRequest) {
             type: 'email',
         });
         if (error || !data.user) {
+            if (error) console.warn('[Verify OTP] Code rejected:', error.status, error.code, error.message);
             return NextResponse.json({ error: 'Incorrect or expired code. Please request a new one.' }, { status: 401 });
         }
 
