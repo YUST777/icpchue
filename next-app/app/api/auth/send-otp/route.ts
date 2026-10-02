@@ -111,7 +111,21 @@ export async function POST(req: NextRequest) {
             },
         });
         if (error) {
-            console.error('[Send OTP] Supabase Auth delivery failed:', error.status, error.code, error.message);
+            console.warn('[Send OTP] Supabase Auth delivery failed:', error.status, error.code, error.message);
+            // Supabase allows one email per address per ~60s. "only request
+            // this after N seconds" means a code was just sent to this same
+            // address, so let the student continue to the code screen.
+            const cooldown = /after (\d+) seconds?/i.exec(error.message || '');
+            if (error.status === 429 && cooldown) {
+                const retryAfter = Math.max(1, Number(cooldown[1]));
+                return NextResponse.json({
+                    success: true,
+                    alreadySent: true,
+                    retryAfter,
+                    email: normalizedEmail,
+                    message: 'A code was already sent to this email a moment ago.',
+                });
+            }
             if (error.status === 429) {
                 return NextResponse.json(
                     { error: 'Too many verification emails right now. Please wait a minute and try again.' },
