@@ -6,6 +6,8 @@ import { createAdminClient, findAuthUserByEmail } from '@/lib/supabase/admin';
 import { sanitizeInput } from '@/lib/security/validation';
 import { scraperQueue } from '@/lib/db/queue';
 import { getClientIp } from '@/lib/security/request';
+import { isHorusEmail, normalizeHorusEmail } from '@/lib/auth/horus-email';
+import { normalizeDigits, normalizeEgyptPhone } from '@/lib/apply/training-registration';
 
 function isValidPassword(password: string): boolean {
     if (password.length < 9) return false;
@@ -15,10 +17,17 @@ function isValidPassword(password: string): boolean {
 
 export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
-    const limitResult = await rateLimit(`register:${ip}`, 5, 3600);
+    // Students register from shared campus/mobile networks. Account creation
+    // already requires a verified OTP, so the IP bucket only needs to stop
+    // bulk abuse; a per-email bucket below limits retries for one address.
+    const limitResult = await rateLimit(`register-v2:${ip}`, 60, 3600);
 
     if (!limitResult.success) {
-        return NextResponse.json({ error: 'Too many registration attempts. Please wait.' }, { status: 429 });
+        const retryAfter = Math.max(1, Math.ceil((limitResult.reset - Date.now()) / 1000));
+        return NextResponse.json(
+            { error: 'Too many registrations from this network. Please wait a few minutes and try again.' },
+            { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+        );
     }
 
     try {
@@ -36,11 +45,15 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        const normalizedEmail = sanitizeInput(email).toLowerCase();
+        const normalizedEmail = normalizeHorusEmail(email);
+        if (!isHorusEmail(normalizedEmail)) {
+            return NextResponse.json({ error: 'Use your Horus University email address.' }, { status: 400 });
+        }
         const emailBlindIndex = createBlindIndex(normalizedEmail);
 
-        if (!/^[^\s@]+@horus\.edu\.eg$/i.test(normalizedEmail)) {
-            return NextResponse.json({ error: 'Use your Horus University email address.' }, { status: 400 });
+        const limitByEmail = await rateLimit(`register-email:${normalizedEmail}`, 10, 3600);
+        if (!limitByEmail.success) {
+            return NextResponse.json({ error: 'Too many attempts for this email. Please wait a few minutes.' }, { status: 429 });
         }
 
         // Supabase Auth owns the OTP and marks the user confirmed after the
@@ -69,10 +82,10 @@ export async function POST(req: NextRequest) {
         const trainingLabel = trainingFlow === 'level0' ? 'Level 0' : 'Level 1';
         let name = sanitizeInput(body.name);
         let faculty = sanitizeInput(body.faculty);
-        let studentId = sanitizeInput(body.id);
-        let nationalId = sanitizeInput(body.nationalId);
+        let studentId = sanitizeInput(trainingFlow ? normalizeDigits(body.id) : body.id);
+        let nationalId = sanitizeInput(trainingFlow ? normalizeDigits(body.nationalId) : body.nationalId);
         let studentLevel = sanitizeInput(body.studentLevel);
-        let telephone = sanitizeInput(body.telephone);
+        let telephone = sanitizeInput(trainingFlow ? normalizeEgyptPhone(body.telephone) : body.telephone);
         let hasLaptop = body.hasLaptop === true || body.hasLaptop === 'true';
         let codeforcesProfile = sanitizeInput(body.codeforcesProfile);
         let leetcodeProfile = sanitizeInput(body.leetcodeProfile);
@@ -187,6 +200,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (authError || !authData.user) {
+                console.error('[Register] Supabase Admin password update failed:', authError?.status, authError?.code, authError?.message);
                 await client.query('ROLLBACK');
                 return NextResponse.json({ error: authError?.message || 'Failed to create auth account' }, { status: 500 });
             }

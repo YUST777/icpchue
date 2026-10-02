@@ -10,9 +10,19 @@ import { FaWhatsapp } from 'react-icons/fa6';
 import { z } from 'zod';
 
 import { facultyOptions, levelOptions } from '@/app/register/constants';
+import { isHorusEmail, normalizeHorusEmail, toAsciiDigits } from '@/lib/auth/horus-email';
+
+const APPLY_DRAFT_KEY = 'icpchue:apply:level0:v1';
 
 const emailSchema = z.object({
-    email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+    email: z.string()
+        .transform((value) => normalizeHorusEmail(value))
+        .pipe(z.string()
+            .min(1, 'Email is required')
+            .refine(
+                (value) => isHorusEmail(value),
+                'Use your Horus University email: your student ID followed by @horus.edu.eg (not Gmail).'
+            )),
 });
 
 const passwordSchema = z.object({
@@ -54,8 +64,6 @@ export default function ApplyPage() {
     const [sessionFrame, setSessionFrame] = useState(0);
     const [winnerFrame, setWinnerFrame] = useState(0);
     const [storyReady, setStoryReady] = useState(false);
-    const [isReturningUser, setIsReturningUser] = useState(false);
-    const [returningUserName, setReturningUserName] = useState<string | null>(null);
 
     // Profile Details (Step 1)
     const applicationType = 'trainee';
@@ -100,6 +108,38 @@ export default function ApplyPage() {
         return () => clearTimeout(t);
     }, [resendCooldown]);
 
+    // Keep the saved student details across refreshes and in-app browser
+    // reloads (Facebook/Instagram). Account creation looks the intake row up
+    // by these identifiers, so losing them would strand the student.
+    // Passwords are never persisted.
+    useEffect(() => {
+        try {
+            const raw = window.sessionStorage.getItem(APPLY_DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw) as { formData?: typeof formData; saved?: boolean; email?: string };
+            if (draft.formData) setFormData((prev) => ({ ...prev, ...draft.formData }));
+            if (draft.email) setEmail(draft.email);
+            if (draft.saved) {
+                setStoryReady(true);
+                setStep(2);
+            }
+        } catch {
+            window.sessionStorage.removeItem(APPLY_DRAFT_KEY);
+        }
+        // Restore once on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const saveDraft = (patch: { saved?: boolean; email?: string }) => {
+        try {
+            const raw = window.sessionStorage.getItem(APPLY_DRAFT_KEY);
+            const current = raw ? JSON.parse(raw) : {};
+            window.sessionStorage.setItem(APPLY_DRAFT_KEY, JSON.stringify({ ...current, formData, ...patch }));
+        } catch {
+            // Storage can be unavailable in private mode; the flow still works.
+        }
+    };
+
     useEffect(() => {
         setTeamFrame(0);
         setSessionFrame(0);
@@ -131,18 +171,18 @@ export default function ApplyPage() {
     }, [step, storySlide]);
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (value.includes('@') || value.length < email.length) {
-            setEmail(value);
-            if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
-            return;
-        }
-        if (/^\d{7,8}$/.test(value) && (value.length === 7 || value.length === 8)) {
-            setEmail(value + '@horus.edu.eg');
-        } else {
-            setEmail(value);
-        }
+        setEmail(e.target.value);
         if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+        if (submitError) setSubmitError(null);
+    };
+
+    // Show the canonical address once the student leaves the field, so a bare
+    // student ID, Arabic digits, or a hidden keyboard character is visibly
+    // corrected before we send the code.
+    const handleEmailBlur = () => {
+        if (!email.trim()) return;
+        const normalized = normalizeHorusEmail(email);
+        if (normalized !== email) setEmail(normalized);
     };
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -150,11 +190,11 @@ export default function ApplyPage() {
         let newValue: string | boolean = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
 
         if (name === 'id' || name === 'nationalId') {
-            newValue = value.replace(/\D/g, '');
+            newValue = toAsciiDigits(value).replace(/\D/g, '');
         }
 
         if (name === 'telephone') {
-            newValue = value.replace(/[^\d+]/g, '');
+            newValue = toAsciiDigits(value).replace(/[^\d+]/g, '');
             if (newValue && !newValue.startsWith('+20')) {
                 if (newValue.startsWith('20')) {
                     newValue = '+' + newValue;
@@ -175,14 +215,41 @@ export default function ApplyPage() {
         }
     };
 
-    const sendOtp = async () => {
-        const res = await fetch('/api/auth/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to send code');
+    // Parse API responses defensively: a platform error page (HTML) must not
+    // surface as a cryptic JSON parse error on a student's phone.
+    const readJson = async (res: Response): Promise<Record<string, any>> => {
+        const text = await res.text();
+        try {
+            return text ? JSON.parse(text) : {};
+        } catch {
+            return { error: res.status >= 500 ? 'The server is busy. Please try again in a moment.' : 'Something went wrong. Please try again.' };
+        }
+    };
+
+    const describeError = (res: Response, data: Record<string, any>, fallback: string) => {
+        const message = typeof data.error === 'string' && data.error ? data.error : fallback;
+        const retryAfter = Number(res.headers.get('Retry-After'));
+        if (res.status === 429 && Number.isFinite(retryAfter) && retryAfter > 0) {
+            const minutes = Math.ceil(retryAfter / 60);
+            return `${message} (try again in ${retryAfter < 90 ? `${retryAfter}s` : `${minutes} min`})`;
+        }
+        return message;
+    };
+
+    const sendOtp = async (emailToVerify = email) => {
+        const normalizedEmail = normalizeHorusEmail(emailToVerify);
+        let res: Response;
+        try {
+            res = await fetch('/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail }),
+            });
+        } catch {
+            throw new Error('Network error. Check your connection and try again.');
+        }
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(describeError(res, data, 'Failed to send code'));
         return data;
     };
 
@@ -214,8 +281,9 @@ export default function ApplyPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'We could not save your registration.');
+            const data = await readJson(res);
+            if (!res.ok) throw new Error(describeError(res, data, 'We could not save your registration.'));
+            saveDraft({ saved: true });
             setStep(2);
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : 'We could not save your registration.');
@@ -249,13 +317,16 @@ export default function ApplyPage() {
         setLoading(true);
 
         try {
-            const data = await sendOtp();
+            const normalizedEmail = emailResult.data?.email ?? normalizeHorusEmail(email);
+            setEmail(normalizedEmail);
+            saveDraft({ saved: true, email: normalizedEmail });
+            const data = await sendOtp(normalizedEmail);
             if (data.alreadyVerified) {
                 // Email was already verified before — proceed directly with registration
-                await executeFinalRegistration();
+                await executeFinalRegistration(normalizedEmail);
             } else {
                 setResendCooldown(60);
-                setStep(3);
+                setStep(4);
                 setTimeout(() => otpInputRef.current?.focus(), 150);
             }
         } catch (err) {
@@ -279,20 +350,21 @@ export default function ApplyPage() {
         setLoading(true);
 
         try {
+            const normalizedEmail = normalizeHorusEmail(email);
             const res = await fetch('/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code: otp }),
+                body: JSON.stringify({ email: normalizedEmail, code: otp }),
             });
-            const data = await res.json();
+            const data = await readJson(res);
 
             if (!res.ok) {
-                setSubmitError(data.error || 'Verification failed');
+                setSubmitError(describeError(res, data, 'Verification failed'));
                 return;
             }
 
             // OTP verified — submit full registration
-            await executeFinalRegistration();
+            await executeFinalRegistration(normalizedEmail);
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : 'Verification failed');
         } finally {
@@ -301,9 +373,9 @@ export default function ApplyPage() {
         }
     };
 
-    const executeFinalRegistration = async () => {
+    const executeFinalRegistration = async (emailToRegister = email) => {
         const fullSubmissionData = {
-            email,
+            email: normalizeHorusEmail(emailToRegister),
             password,
             applicationType,
             registrationFlow: 'level0',
@@ -312,6 +384,7 @@ export default function ApplyPage() {
 
         try {
             await authRegister(fullSubmissionData);
+            try { window.sessionStorage.removeItem(APPLY_DRAFT_KEY); } catch { /* ignore */ }
             router.replace('/dashboard');
         } catch (err: any) {
             setSubmitError(err.message || 'Registration failed');
@@ -324,7 +397,7 @@ export default function ApplyPage() {
         setLoading(true);
         setSubmitError(null);
         try {
-            await sendOtp();
+            await sendOtp(email);
             setResendCooldown(60);
             setOtp('');
         } catch (err) {
@@ -338,7 +411,12 @@ export default function ApplyPage() {
         e.preventDefault();
         if (loading || isSubmittingRef.current) return;
         if (step === 1) await handleStep1Submit();
-        else if (step === 2) setStep(3);
+        else if (step === 2) {
+            // Students' Horus address is their student ID; prefill it so most
+            // people only have to choose a password.
+            if (!email.trim() && /^\d{5,12}$/.test(formData.id)) setEmail(`${formData.id}@horus.edu.eg`);
+            setStep(3);
+        }
         else if (step === 3) await handleStep2Submit();
         else if (step === 4) await handleStep3Submit();
     };
@@ -679,10 +757,11 @@ export default function ApplyPage() {
                                             <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-0.5 ml-1">Phone Number</label>
                                             <input
                                                 type="text"
+                                                inputMode="tel"
                                                 name="telephone"
                                                 value={formData.telephone}
                                                 onChange={handleFormChange}
-                                                placeholder="+20xxxxxxxxx"
+                                                placeholder="+20xxxxxxxxxx"
                                                 className={cn(inputBase, errors.telephone ? inputError : inputNormal)}
                                             />
                                             {errors.telephone && <p className="text-red-400 text-[8.5px] mt-0.5 ml-1">{errors.telephone}</p>}
@@ -809,16 +888,27 @@ export default function ApplyPage() {
                             {step === 3 && (
                                 <div className="space-y-2 sm:space-y-2.5">
                                     <div>
-                                        <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-0.5 ml-1">Email or Horus ID</label>
+                                        <label htmlFor="apply-email" className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-0.5 ml-1">Horus University Email</label>
                                         <input
-                                            type="email"
+                                            id="apply-email"
+                                            type="text"
+                                            inputMode="email"
+                                            autoComplete="email"
+                                            autoCapitalize="none"
+                                            autoCorrect="off"
+                                            spellCheck={false}
                                             value={email}
                                             onChange={handleEmailChange}
-                                            placeholder="Enter your email or Horus ID"
+                                            onBlur={handleEmailBlur}
+                                            placeholder="8251444@horus.edu.eg or just your student ID"
+                                            aria-invalid={Boolean(errors.email)}
+                                            aria-describedby="apply-email-hint"
                                             className={cn(inputBase, errors.email ? inputError : inputNormal)}
                                             dir="ltr"
                                         />
-                                        {errors.email && <p className="text-red-400 text-[8.5px] mt-0.5 ml-1">{errors.email}</p>}
+                                        {errors.email
+                                            ? <p id="apply-email-hint" className="text-red-400 text-[8.5px] mt-0.5 ml-1">{errors.email}</p>
+                                            : <p id="apply-email-hint" className="text-white/30 text-[9px] mt-0.5 ml-1">Your university email is your student ID + @horus.edu.eg. Gmail is not accepted.</p>}
                                     </div>
                                     <div>
                                         <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-0.5 ml-1">Password</label>

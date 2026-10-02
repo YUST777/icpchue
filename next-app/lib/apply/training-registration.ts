@@ -4,6 +4,7 @@ import { encrypt, createBlindIndex } from '@/lib/security/encryption';
 import { sanitizeInput } from '@/lib/security/validation';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
+import { toAsciiDigits } from '@/lib/auth/horus-email';
 
 export type TrainingLevel = 'level0' | 'level1';
 
@@ -20,23 +21,47 @@ const intakeConfig = {
     },
 } as const satisfies Record<TrainingLevel, { table: string; label: string; rateLimitKey: string }>;
 
+/** ASCII digits only; accepts Arabic-Indic digits and strips spaces/dashes. */
+export function normalizeDigits(value: unknown): string {
+    return toAsciiDigits(String(value ?? '')).replace(/\D/g, '');
+}
+
+/** Canonical +20XXXXXXXXXX form, matching what the /apply form produces. */
+export function normalizeEgyptPhone(value: unknown): string {
+    const raw = toAsciiDigits(String(value ?? '')).replace(/[^\d+]/g, '');
+    if (!raw || raw.startsWith('+20')) return raw;
+    if (raw.startsWith('0020')) return `+${raw.slice(2)}`;
+    if (raw.startsWith('20')) return `+${raw}`;
+    if (raw.startsWith('0')) return `+20${raw.slice(1)}`;
+    return raw.startsWith('+') ? raw : `+20${raw}`;
+}
+
 /** Records a training application before an ICPC HUE account is created. */
 export async function handleTrainingApplication(req: NextRequest, trainingLevel: TrainingLevel) {
     const config = intakeConfig[trainingLevel];
     const ip = getClientIp(req);
-    const limitResult = await rateLimit(`${config.rateLimitKey}:${ip}`, 5, 3600);
+    // Many students submit from the same campus or carrier IP. Duplicate
+    // submissions are idempotent (matched by blind indexes), so this bucket
+    // only needs to stop scripted floods, not normal classroom traffic.
+    const limitResult = await rateLimit(`${config.rateLimitKey}-v2:${ip}`, 120, 3600);
 
     if (!limitResult.success) {
-        return NextResponse.json({ error: 'Too many registration attempts. Please try again later.' }, { status: 429 });
+        const retryAfter = Math.max(1, Math.ceil((limitResult.reset - Date.now()) / 1000));
+        return NextResponse.json(
+            { error: 'Too many registrations from this network. Please wait a few minutes and try again.' },
+            { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+        );
     }
 
     try {
         const body = await req.json();
+        // Phones with Arabic keyboards send Arabic-Indic digits and stray
+        // spaces/dashes; canonicalize before validation and blind indexing.
         const name = sanitizeInput(body.name);
-        const telephone = sanitizeInput(body.telephone);
+        const telephone = sanitizeInput(normalizeEgyptPhone(body.telephone));
         const faculty = sanitizeInput(body.faculty);
-        const studentId = sanitizeInput(body.id);
-        const nationalId = sanitizeInput(body.nationalId);
+        const studentId = sanitizeInput(normalizeDigits(body.id));
+        const nationalId = sanitizeInput(normalizeDigits(body.nationalId));
         const studentLevel = sanitizeInput(body.studentLevel);
         const codeforcesProfile = sanitizeInput(body.codeforcesProfile);
         const leetcodeProfile = sanitizeInput(body.leetcodeProfile);
