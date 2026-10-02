@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint",
+    "test:otp": "node scripts/test-otp-contract.mjs",
+    "otp:smoke": "node scripts/otp-smoke.mjs",
     "analyze": "cross-env ANALYZE=true next build",
     "knip": "knip"
   },

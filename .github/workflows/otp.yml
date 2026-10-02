@@ -1,0 +1,84 @@
+name: OTP checks
+
+on:
+  push:
+    paths:
+      - 'next-app/app/api/auth/**'
+      - 'next-app/app/apply/**'
+      - 'next-app/scripts/test-otp-contract.mjs'
+      - 'next-app/scripts/otp-smoke.mjs'
+      - 'next-app/package.json'
+      - 'next-app/package-lock.json'
+      - 'supabase/templates/confirmation.html'
+      - '.github/workflows/otp.yml'
+  pull_request:
+    paths:
+      - 'next-app/app/api/auth/**'
+      - 'next-app/app/apply/**'
+      - 'next-app/scripts/test-otp-contract.mjs'
+      - 'next-app/scripts/otp-smoke.mjs'
+      - 'next-app/package.json'
+      - 'next-app/package-lock.json'
+      - 'supabase/templates/confirmation.html'
+      - '.github/workflows/otp.yml'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Run send first, then verify after reading the code'
+        required: true
+        type: choice
+        options:
+          - send
+          - verify
+      test_email:
+        description: 'Dedicated unused @horus.edu.eg test inbox'
+        required: true
+        type: string
+      otp_code:
+        description: 'Six-digit code, required only for verify'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: otp-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: OTP contract and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: next-app/package-lock.json
+      - run: npm ci
+      - run: npm run test:otp
+      - run: npm run build
+
+  live:
+    name: Live OTP smoke test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    env:
+      BASE_URL: https://www.icpchue.com
+      OTP_ACTION: ${{ inputs.action }}
+      TEST_EMAIL: ${{ inputs.test_email }}
+      OTP_CODE: ${{ inputs.otp_code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run otp:smoke
