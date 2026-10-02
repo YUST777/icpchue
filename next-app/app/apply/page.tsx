@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, Hexagon, ArrowLeft, ArrowRight, Mail } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa6';
 import { z } from 'zod';
 
 import { facultyOptions, levelOptions } from '@/app/register/constants';
@@ -44,9 +45,10 @@ function cn(...classes: (string | boolean | undefined)[]) {
 export default function ApplyPage() {
     // Step 0: Community Showcase & Intro
     // Step 1: Student Profile Info
-    // Step 2: Account Credentials (Email & Password)
-    // Step 3: OTP Verification & Final Submit
-    const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+    // Step 2: Level 1 handoff and account explanation
+    // Step 3: Account Credentials (Email & Password)
+    // Step 4: OTP Verification & Final Submit
+    const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
     const [storySlide, setStorySlide] = useState(0);
     const [teamFrame, setTeamFrame] = useState(0);
     const [sessionFrame, setSessionFrame] = useState(0);
@@ -68,12 +70,12 @@ export default function ApplyPage() {
         leetcodeProfile: '',
     });
 
-    // Account Credentials (Step 2)
+    // Account Credentials (Step 3)
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    // OTP Code (Step 3)
+    // OTP Code (Step 4)
     const [otp, setOtp] = useState('');
 
     const [showPassword, setShowPassword] = useState(false);
@@ -184,8 +186,8 @@ export default function ApplyPage() {
         return data;
     };
 
-    // Step 1 Validation -> Proceed to Step 2
-    const handleStep1Submit = () => {
+    // Step 1 Validation -> Save the training application and show the handoff
+    const handleStep1Submit = async () => {
         const newErrors: FormErrors = {};
         if (!formData.name.trim()) newErrors.name = 'Full name is required';
         if (!formData.telephone.trim() || !/^\+20\d{10}$/.test(formData.telephone)) newErrors.telephone = 'Valid phone is required (+20...)';
@@ -201,12 +203,29 @@ export default function ApplyPage() {
             return;
         }
 
+        isSubmittingRef.current = true;
         setErrors({});
         setSubmitError(null);
-        setStep(2);
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/apply/level1', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'We could not save your registration.');
+            setStep(2);
+        } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : 'We could not save your registration.');
+        } finally {
+            setLoading(false);
+            isSubmittingRef.current = false;
+        }
     };
 
-    // Step 2 Validation -> Send OTP -> Proceed to Step 3
+    // Step 3 Validation -> Send OTP -> Proceed to Step 4
     const handleStep2Submit = async () => {
         const emailResult = emailSchema.safeParse({ email });
         const passResult = passwordSchema.safeParse({ password, confirmPassword });
@@ -247,7 +266,7 @@ export default function ApplyPage() {
         }
     };
 
-    // Step 3 Validation -> Verify OTP & Submit
+    // Step 4 Validation -> Verify OTP & Submit
     const handleStep3Submit = async () => {
         if (otp.length !== 6) {
             setErrors({ otp: 'Enter the 6-digit code' });
@@ -318,9 +337,10 @@ export default function ApplyPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (loading || isSubmittingRef.current) return;
-        if (step === 1) handleStep1Submit();
-        else if (step === 2) await handleStep2Submit();
-        else if (step === 3) await handleStep3Submit();
+        if (step === 1) await handleStep1Submit();
+        else if (step === 2) setStep(3);
+        else if (step === 3) await handleStep2Submit();
+        else if (step === 4) await handleStep3Submit();
     };
 
     const getStrength = (pwd: string) => {
@@ -516,30 +536,32 @@ export default function ApplyPage() {
                 )}>
 
                     {/* Header Bar */}
-                    {step > 0 && <div className="mb-6 flex items-center justify-between sm:mb-7">
+                    {step > 0 && <div className={cn('flex items-center justify-between', step === 2 ? 'mb-3 sm:mb-4' : 'mb-6 sm:mb-7')}>
                         <Link href="/" aria-label="ICPC HUE home" className="inline-flex shrink-0 items-center transition-opacity hover:opacity-80">
                             <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={32} height={32} className="h-7 w-7 shrink-0 object-contain sm:h-8 sm:w-8" priority />
                         </Link>
+                        {step === 2 && <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">Level 1 · 2026/27</span>}
                     </div>}
 
-                    {/* Step Indicator (only active in steps 1, 2, 3) */}
-                    {step > 0 && (
+                    {/* Account progress stays out of the way on the saved-registration handoff. */}
+                    {step > 0 && step !== 2 && (
                         <>
-                            <div className="flex items-center gap-1.5 mb-2" aria-label={`Step ${step} of 3`}>
-                                {[1, 2, 3].map((s) => (
-                                    <div key={s} className={cn('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-[#E8C15A]' : 'bg-white/5')} />
-                                ))}
+                            <div className="flex items-center gap-1.5 mb-2" aria-label={`Account setup step ${step === 1 ? 1 : step === 3 ? 2 : 3} of 3`}>
+                                {[1, 2, 3].map((s) => {
+                                    const accountStep = step === 1 ? 1 : step === 3 ? 2 : 3;
+                                    return <div key={s} className={cn('h-1 flex-1 rounded-full transition-all', s <= accountStep ? 'bg-[#E8C15A]' : 'bg-white/5')} />;
+                                })}
                             </div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                                <h1 className="whitespace-nowrap text-[15px] sm:text-[18px] font-bold leading-tight text-white tracking-tight">
-                                    {step === 1 ? 'Complete Profile' : step === 2 ? 'Start Your Application' : 'Verify Email'}
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                                <h1 className="text-[15px] font-bold leading-tight tracking-tight text-white sm:text-[18px]">
+                                    {step === 1 ? 'Register for ICPC HUE Level 1' : step === 3 ? 'Create your ICPC HUE account' : 'Verify Email'}
                                 </h1>
-                                <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">Step 0{step}/03</span>
+                                <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">{step === 1 ? '1. Registration' : step === 3 ? '2. Account' : '3. Verify'}</span>
                             </div>
-                            <p className="text-white/40 text-[10.5px] sm:text-[11.5px] mb-2 sm:mb-2.5 line-clamp-1">
-                                {step === 1 && 'Enter your university & personal identity details.'}
-                                {step === 2 && 'Set up your secure login credentials.'}
-                                {step === 3 && `We sent a 6-digit code to ${email}`}
+                            <p className="mb-2 text-[10.5px] text-white/40 sm:mb-2.5 sm:text-[11.5px]">
+                                {step === 1 && 'Enter your student details for the Level 1 training cohort.'}
+                                {step === 3 && 'Create the account you will use to train and track your progress.'}
+                                {step === 4 && `We sent a 6-digit code to ${email}`}
                             </p>
                         </>
                     )}
@@ -584,9 +606,9 @@ export default function ApplyPage() {
                                             className="object-cover object-center"
                                         />
                                     </div>
-                                ) : (
+                                ) : currentStory.kind === 'image' ? (
                                     <Image src={currentStory.image} alt={currentStory.alt} fill priority={storySlide === 1} loading={storySlide === 1 ? 'eager' : 'lazy'} sizes="100vw" className="object-cover object-center" />
-                                )}
+                                ) : null}
                                 <div className={isPhotoStory ? 'story-vignette' : 'story-gallery-shade'} />
                             </div>
 
@@ -724,8 +746,55 @@ export default function ApplyPage() {
                                 </div>
                             )}
 
-                            {/* ===== STEP 2: Email & Password ===== */}
+                            {/* ===== STEP 2: Level 1 handoff ===== */}
                             {step === 2 && (
+                                <section className="handoff" aria-labelledby="level-one-confirmation">
+                                    <p className="handoff-eyebrow">ICPC HUE TRAINING</p>
+                                    <h1 id="level-one-confirmation" className="handoff-title">Your place is saved.</h1>
+                                    <p className="handoff-lede">You’re on the Level 1 list. Choose how you want to continue.</p>
+
+                                    <div className="handoff-routes">
+                                        <div className="handoff-route handoff-route-primary">
+                                            <div className="handoff-route-topline">
+                                                <span className="handoff-route-label">Best way to train</span>
+                                                <span className="handoff-route-badge">Recommended</span>
+                                            </div>
+                                            <div className="handoff-route-body">
+                                                <div>
+                                                    <h2>Create your ICPC HUE account</h2>
+                                                    <p>Practice from 650+ problems, watch 22+ hours of sessions, and keep your progress in one place.</p>
+                                                </div>
+                                            </div>
+                                            <div className="handoff-route-resources" aria-label="Training resources">
+                                                <span><strong>650+</strong> problems</span>
+                                                <span><strong>22+</strong> session hours</span>
+                                                <span><strong>Progress</strong> saved</span>
+                                            </div>
+                                            <button type="submit" className="handoff-primary-button group">
+                                                Create account
+                                                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                                            </button>
+                                        </div>
+
+                                        <div className="handoff-route handoff-route-secondary">
+                                            <div className="handoff-route-body">
+                                                <div className="handoff-route-secondary-icon" aria-hidden="true"><FaWhatsapp size={36} /></div>
+                                                <div>
+                                                    <h2>Not ready for an account?</h2>
+                                                    <p>Get Level 1 updates on WhatsApp.</p>
+                                                </div>
+                                                <a href="https://chat.whatsapp.com/JreeORGikEY7J9I0UbcdOD?s=cl&p=a&ilr=4" target="_blank" rel="noreferrer" className="handoff-alternative-link" aria-label="Join the Level 1 WhatsApp group">
+                                                    <span>Join</span>
+                                                    <ArrowRight size={17} />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ===== STEP 3: Email & Password ===== */}
+                            {step === 3 && (
                                 <div className="space-y-2 sm:space-y-2.5">
                                     <div>
                                         <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-0.5 ml-1">Email or Horus ID</label>
@@ -787,8 +856,8 @@ export default function ApplyPage() {
                                 </div>
                             )}
 
-                            {/* ===== STEP 3: OTP Verification ===== */}
-                            {step === 3 && (
+                            {/* ===== STEP 4: OTP Verification ===== */}
+                            {step === 4 && (
                                 <div className="space-y-2 sm:space-y-2.5">
                                     <div>
                                         <label className="block text-white/50 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider mb-1 ml-1">
@@ -823,28 +892,18 @@ export default function ApplyPage() {
                             )}
 
                             {/* Submit / Next Button */}
-                            <button
+                            {step !== 2 && <button
                                 type="submit"
-                                disabled={loading || (step === 3 && otp.length !== 6)}
+                                disabled={loading || (step === 4 && otp.length !== 6)}
                                 className="w-full py-2.5 sm:py-3 mt-1.5 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs sm:text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={17} /> : (
-                                    step === 1 ? 'Continue to Account Setup' : step === 2 ? 'Send Verification Code' : 'Verify Email & Submit'
+                                    step === 1 ? 'Register for Level 1' : step === 3 ? 'Send verification code' : 'Verify email & submit'
                                 )}
                                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                            </button>
+                            </button>}
                         </form>
                     )}
-
-                    {/* Bottom Link */}
-                    {step > 0 && <div className="mt-2 sm:mt-2.5 text-center">
-                        <p className="text-white/45 text-[10.5px] sm:text-xs font-medium">
-                            Already have an account?{' '}
-                            <Link href="/login" className="text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/20 hover:decoration-[#E8C15A]/40">
-                                Sign in
-                            </Link>
-                        </p>
-                    </div>}
 
                 </div>
             </div>
@@ -892,6 +951,185 @@ export default function ApplyPage() {
                 .animate-shake {
                     animation: shake 0.2s ease-in-out 0s 2;
                 }
+                .handoff {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                    margin-top: 10px;
+                }
+                .handoff-eyebrow {
+                    margin: 0;
+                    color: rgba(232,193,90,.9);
+                    font-size: 10px;
+                    font-weight: 800;
+                    letter-spacing: .2em;
+                    line-height: 1.2;
+                    text-transform: uppercase;
+                }
+                .handoff-title {
+                    margin: 10px 0 0;
+                    color: #fff;
+                    font-size: clamp(32px, 3.4vw, 42px);
+                    font-weight: 850;
+                    letter-spacing: -.045em;
+                    line-height: .98;
+                    text-wrap: balance;
+                }
+                .handoff-lede {
+                    max-width: 350px;
+                    margin: 12px 0 25px;
+                    color: rgba(255,255,255,.58);
+                    font-size: 13px;
+                    line-height: 1.45;
+                }
+                .handoff-routes {
+                    border-top: 1px solid rgba(255,255,255,.15);
+                    border-bottom: 1px solid rgba(255,255,255,.15);
+                }
+                .handoff-route {
+                    min-width: 0;
+                }
+                .handoff-route-primary {
+                    padding: 16px 0 18px;
+                    border-bottom: 1px solid rgba(255,255,255,.1);
+                }
+                .handoff-route-topline {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+                .handoff-route-label,
+                .handoff-route-badge {
+                    color: rgba(232,193,90,.86);
+                    font-size: 9px;
+                    font-weight: 800;
+                    letter-spacing: .15em;
+                    line-height: 1.2;
+                    text-transform: uppercase;
+                }
+                .handoff-route-badge {
+                    padding: 5px 8px;
+                    border: 1px solid rgba(232,193,90,.28);
+                    border-radius: 999px;
+                    color: rgba(255,255,255,.54);
+                    font-size: 8px;
+                    letter-spacing: .08em;
+                }
+                .handoff-route-body {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    margin-top: 13px;
+                }
+                .handoff-route-primary .handoff-route-body > div:first-child {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .handoff-route h2 {
+                    margin: 0;
+                    color: #fff;
+                    font-size: 18px;
+                    font-weight: 780;
+                    letter-spacing: -.025em;
+                    line-height: 1.12;
+                }
+                .handoff-route p {
+                    max-width: 315px;
+                    margin: 7px 0 0;
+                    color: rgba(255,255,255,.53);
+                    font-size: 11px;
+                    line-height: 1.48;
+                }
+                .handoff-route-resources {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 7px 16px;
+                    margin-top: 15px;
+                    padding-top: 12px;
+                    border-top: 1px solid rgba(255,255,255,.1);
+                    color: rgba(255,255,255,.42);
+                    font-size: 9px;
+                }
+                .handoff-route-resources span { white-space: nowrap; }
+                .handoff-route-resources strong {
+                    margin-right: 3px;
+                    color: rgba(255,255,255,.9);
+                    font-size: 11px;
+                    font-weight: 800;
+                }
+                .handoff-primary-button {
+                    display: flex;
+                    width: 100%;
+                    min-height: 46px;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 9px;
+                    margin-top: 16px;
+                    padding: 12px 14px;
+                    border: 0;
+                    border-radius: 7px;
+                    color: #15120c;
+                    background: #e8c15a;
+                    box-shadow: 0 10px 24px rgba(232,193,90,.14);
+                    font-size: 12px;
+                    font-weight: 800;
+                    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+                }
+                .handoff-primary-button:hover {
+                    background: #f2cf73;
+                    box-shadow: 0 12px 28px rgba(232,193,90,.22);
+                    transform: translateY(-1px);
+                }
+                .handoff-primary-button:focus-visible,
+                .handoff-alternative-link:focus-visible {
+                    outline: 2px solid #e8c15a;
+                    outline-offset: 3px;
+                }
+                .handoff-route-secondary {
+                    padding: 16px 0 7px;
+                }
+                .handoff-route-secondary .handoff-route-body {
+                    align-items: center;
+                    gap: 11px;
+                    margin-top: 0;
+                }
+                .handoff-route-secondary .handoff-route-body > div:nth-child(2) {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .handoff-route-secondary-icon {
+                    display: grid;
+                    flex: 0 0 auto;
+                    width: 42px;
+                    height: 42px;
+                    place-items: center;
+                    color: #25d366;
+                }
+                .handoff-route-secondary h2 {
+                    font-size: 13px;
+                    line-height: 1.2;
+                }
+                .handoff-route-secondary p {
+                    margin-top: 4px;
+                    font-size: 10px;
+                    color: rgba(255,255,255,.4);
+                }
+                .handoff-alternative-link {
+                    display: inline-flex;
+                    flex: 0 0 auto;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 5px;
+                    min-width: 50px;
+                    height: 34px;
+                    color: rgba(232,193,90,.88);
+                    font-size: 10px;
+                    font-weight: 800;
+                    text-decoration: none;
+                    transition: color 180ms ease, transform 180ms ease;
+                }
+                .handoff-alternative-link:hover { color: #f2cf73; transform: translateX(1px); }
                 @keyframes team-reveal {
                     0% { opacity: 0; transform: scale(0.84) translateY(10px); filter: saturate(0.4) brightness(0.55); }
                     65% { opacity: 1; transform: scale(1.035) translateY(-1px); filter: saturate(1.08) brightness(1.04); }
@@ -1155,6 +1393,16 @@ export default function ApplyPage() {
                     .story-shell-gallery .story-logo { right: 24px; bottom: 18px; width: 36px; height: 36px; }
                 }
                 @media (max-width: 640px) {
+                    .handoff-title { font-size: 31px; }
+                    .handoff { margin-top: 7px; }
+                    .handoff-lede { margin-bottom: 22px; font-size: 12px; }
+                    .handoff-route-primary { padding-top: 14px; }
+                    .handoff-route h2 { font-size: 17px; }
+                    .handoff-route p { font-size: 10.5px; }
+                    .handoff-route-resources { gap: 7px 11px; }
+                    .handoff-route-resources span { font-size: 8px; }
+                    .handoff-route-resources strong { font-size: 10px; }
+                    .handoff-route-badge { font-size: 7px; padding: 4px 7px; }
                     .story-copy { width: 100%; padding: 0 22px 24px; }
                     .story-copy h1 { max-width: 340px; margin-top: 13px; font-size: 34px; line-height: .98; }
                     .story-copy p { max-width: 340px; margin-top: 12px; font-size: 13px; line-height: 1.45; }

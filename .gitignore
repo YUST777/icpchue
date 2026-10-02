@@ -90,3 +90,10 @@ SUSPICIOUS_SUBMISSIONS.md
 
 next-app/bun.lock
 .playwright-cli/
+
+# Videos & Large Media
+icpchue_videos/
+*videos*/
+*.mp4
+*.webm
+*.crdownload

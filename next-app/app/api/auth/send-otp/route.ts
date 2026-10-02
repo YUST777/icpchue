@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomInt } from 'crypto';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { createBlindIndex } from '@/lib/security/encryption';
 import { query } from '@/lib/db/db';
-import { redis } from '@/lib/db/redis';
-import { sendOtpEmail } from '@/lib/services/email';
 import { getClientIp } from '@/lib/security/request';
+import { createClient } from '@supabase/supabase-js';
+import { findAuthUserByEmail } from '@/lib/supabase/admin';
 
-const OTP_TTL = 300; // 5 minutes
 const MAX_BODY_BYTES = 8 * 1024;
 
 export async function POST(req: NextRequest) {
@@ -47,15 +45,44 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Account already exists. Please login.' }, { status: 409 });
         }
 
-        const code = String(randomInt(100000, 1000000));
-        await redis.set(`reg-otp:${normalizedEmail}`, code, 'EX', OTP_TTL);
+        // Supabase Auth is the source of truth for registration OTPs. The
+        // application database can have a rotated blind-index key, so check
+        // Auth as a second duplicate guard before asking it to send a code.
+        const authUser = await findAuthUserByEmail(normalizedEmail);
+        if (authUser) {
+            const isPendingRegistration = authUser.user_metadata?.icpchue_registration === true;
+            if (isPendingRegistration && authUser.email_confirmed_at) {
+                return NextResponse.json({
+                    success: true,
+                    alreadyVerified: true,
+                    message: 'Email already verified. Continue registration.'
+                });
+            }
+            if (!isPendingRegistration) {
+                return NextResponse.json({ error: 'Account already exists. Please login.' }, { status: 409 });
+            }
+        }
 
         try {
-            await sendOtpEmail(normalizedEmail, code);
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            if (!supabaseUrl || !supabaseAnonKey) {
+                return NextResponse.json({ error: 'Authentication service is not configured.' }, { status: 503 });
+            }
+
+            const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+                auth: { autoRefreshToken: false, persistSession: false },
+            });
+            const { error } = await supabase.auth.signInWithOtp({
+                email: normalizedEmail,
+                options: {
+                    shouldCreateUser: true,
+                    data: { icpchue_registration: true },
+                },
+            });
+            if (error) throw error;
         } catch (error) {
-            // Do not leave a usable OTP behind when delivery failed.
-            await redis.del(`reg-otp:${normalizedEmail}`).catch(() => {});
-            console.error('[Send OTP] Email delivery failed:', error);
+            console.error('[Send OTP] Supabase Auth delivery failed:', error instanceof Error ? error.message : error);
             return NextResponse.json({ error: 'Could not send verification email. Please try again later.' }, { status: 503 });
         }
 

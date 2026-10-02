@@ -3,8 +3,8 @@ import { createBlindIndex } from '@/lib/security/encryption';
 import { query } from '@/lib/db/db';
 import { sanitizeInput } from '@/lib/security/validation';
 import { rateLimit } from '@/lib/cache/rate-limit';
-import { redis } from '@/lib/db/redis';
 import { getClientIp } from '@/lib/security/request';
+import { findAuthUserByEmail } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
     try {
@@ -22,13 +22,12 @@ export async function POST(req: NextRequest) {
         const normalizedEmail = sanitizeInput(email).toLowerCase();
         const emailBlindIndex = createBlindIndex(normalizedEmail);
 
-        // Security: Only allow this check for emails that have been OTP-verified
-        // This prevents unauthenticated enumeration of the applications table
-        const isVerified = await redis.get(`reg-verified:${normalizedEmail}`);
-        if (!isVerified) {
-            // Verification is intentionally ephemeral. Do not consult a
-            // permanent DB flag: knowing an old email must never be enough to
-            // claim an application later.
+        // Security: Only allow this check for emails that have been verified by
+        // Supabase Auth during the current registration flow. This prevents
+        // unauthenticated enumeration of the applications table without a
+        // Redis dependency.
+        const authUser = await findAuthUserByEmail(normalizedEmail);
+        if (!authUser || !authUser.email_confirmed_at || authUser.user_metadata?.icpchue_registration !== true) {
             return NextResponse.json({ hasApplication: false, name: null });
         }
 
