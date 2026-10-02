@@ -326,7 +326,9 @@ export default function ApplyPage() {
                 // Email was already verified before — proceed directly with registration
                 await executeFinalRegistration(normalizedEmail);
             } else {
-                setResendCooldown(60);
+                // alreadySent: a code went to this address seconds ago (double
+                // tap or refresh); the student should use that one.
+                setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(1, data.retryAfter) : 60);
                 setStep(4);
                 setTimeout(() => otpInputRef.current?.focus(), 150);
             }
@@ -398,9 +400,9 @@ export default function ApplyPage() {
         setLoading(true);
         setSubmitError(null);
         try {
-            await sendOtp(email);
-            setResendCooldown(60);
-            setOtp('');
+            const data = await sendOtp(email);
+            setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(1, data.retryAfter) : 60);
+            if (!data.alreadySent) setOtp('');
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : 'Failed to resend');
         } finally {
