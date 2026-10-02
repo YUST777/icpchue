@@ -995,7 +995,7 @@ export default function ApplyPage() {
                                             </button>
                                         </div>
                                         <div className="flex items-center justify-between mt-1.5 ml-1">
-                                            <p className="text-white/20 text-[9.5px]">Check Inbox, Junk &amp; Deleted</p>
+                                            <p className="text-white/30 text-[9.5px]">Only the newest code works</p>
                                             <button
                                                 type="button"
                                                 onClick={handleResendOtp}
