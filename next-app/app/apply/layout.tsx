@@ -14,8 +14,8 @@ export const metadata: Metadata = {
         images: [
             {
                 url: previewImage,
-                width: 1200,
-                height: 900,
+                width: 1920,
+                height: 1080,
                 alt: 'ICPC HUE community at the ECPC qualification',
             },
         ],
