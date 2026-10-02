@@ -63,6 +63,12 @@ jobs:
       - run: npm ci
       - run: npm run test:otp
       - run: npm run build
+        env:
+          # The build imports the browser Supabase client during static generation.
+          # Runtime deployments provide the real public values; CI only needs
+          # non-secret values so it can compile and validate the application.
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
 
   live:
     name: Live OTP smoke test
