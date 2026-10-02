@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
         ignoreBuildErrors: true,
     },
     serverExternalPackages: ['pg', 'sharp', 'canvas'],
+    images: {
+        // Keep story images sharp on high-density screens while retaining
+        // Next's responsive resizing and lazy-loading behavior.
+        qualities: [75, 90],
+    },
     reactCompiler: true,
     experimental: {
         proxyClientMaxBodySize: '50mb',

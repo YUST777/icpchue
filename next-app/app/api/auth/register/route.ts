@@ -57,11 +57,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Email not verified. Please complete the verification step.' }, { status: 403 });
         }
 
-        // Parse profile data before resolving the registration source. Level 1
-        // registrations are stored in their own intake table until an account
-        // is created; the legacy /register flow keeps using applications.
+        // Parse profile data before resolving the registration source. Level 0
+        // and legacy Level 1 registrations live in their intake tables until
+        // an account is created; the legacy /register flow keeps using applications.
         const applicationType = sanitizeInput(body.applicationType || 'trainee');
         const registrationFlow = sanitizeInput(body.registrationFlow);
+        const trainingFlow = registrationFlow === 'level0' || registrationFlow === 'level1'
+            ? registrationFlow
+            : null;
+        const trainingTable = trainingFlow ? `${trainingFlow}_training_registrations` : null;
+        const trainingLabel = trainingFlow === 'level0' ? 'Level 0' : 'Level 1';
         let name = sanitizeInput(body.name);
         let faculty = sanitizeInput(body.faculty);
         let studentId = sanitizeInput(body.id);
@@ -72,10 +77,10 @@ export async function POST(req: NextRequest) {
         let codeforcesProfile = sanitizeInput(body.codeforcesProfile);
         let leetcodeProfile = sanitizeInput(body.leetcodeProfile);
 
-        let level1Registration: any = null;
+        let trainingRegistration: any = null;
         let existingAppCheck: { rows: any[] } = { rows: [] };
 
-        if (registrationFlow === 'level1') {
+        if (trainingFlow && trainingTable) {
             const lookupParts = ['email_blind_index = $1'];
             const lookupParams: Array<string | null> = [emailBlindIndex];
             const addLookup = (column: string, value: string) => {
@@ -91,40 +96,40 @@ export async function POST(req: NextRequest) {
                 `SELECT id, name, faculty, student_id, national_id, academic_level,
                         telephone, has_laptop, codeforces_profile, leetcode_profile,
                         email, email_blind_index, application_id, status
-                   FROM level1_training_registrations
+                   FROM ${trainingTable}
                   WHERE season_year = 2027
                     AND (${lookupParts.join(' OR ')})
                   ORDER BY submitted_at DESC
                   LIMIT 1`,
                 lookupParams
             );
-            level1Registration = intakeResult.rows[0] || null;
+            trainingRegistration = intakeResult.rows[0] || null;
 
-            if (!level1Registration) {
+            if (!trainingRegistration) {
                 return NextResponse.json({
-                    error: 'Complete the Level 1 training registration before creating an account.'
+                    error: `Complete the ${trainingLabel} training registration before creating an account.`
                 }, { status: 400 });
             }
 
-            if (level1Registration.status === 'cancelled') {
-                return NextResponse.json({ error: 'This Level 1 registration is no longer active.' }, { status: 409 });
+            if (trainingRegistration.status === 'cancelled') {
+                return NextResponse.json({ error: `This ${trainingLabel} registration is no longer active.` }, { status: 409 });
             }
 
-            if (level1Registration.email_blind_index && level1Registration.email_blind_index !== emailBlindIndex) {
-                return NextResponse.json({ error: 'This Level 1 registration is linked to a different email.' }, { status: 409 });
+            if (trainingRegistration.email_blind_index && trainingRegistration.email_blind_index !== emailBlindIndex) {
+                return NextResponse.json({ error: `This ${trainingLabel} registration is linked to a different email.` }, { status: 409 });
             }
 
             // The intake record is canonical. Do not let a modified client
             // request replace the student's identity during account linking.
-            name = level1Registration.name;
-            faculty = level1Registration.faculty;
-            studentId = decrypt(level1Registration.student_id) || level1Registration.student_id;
-            nationalId = decrypt(level1Registration.national_id) || level1Registration.national_id;
-            studentLevel = level1Registration.academic_level;
-            telephone = decrypt(level1Registration.telephone) || level1Registration.telephone;
-            hasLaptop = Boolean(level1Registration.has_laptop);
-            codeforcesProfile = level1Registration.codeforces_profile || '';
-            leetcodeProfile = level1Registration.leetcode_profile || '';
+            name = trainingRegistration.name;
+            faculty = trainingRegistration.faculty;
+            studentId = decrypt(trainingRegistration.student_id) || trainingRegistration.student_id;
+            nationalId = decrypt(trainingRegistration.national_id) || trainingRegistration.national_id;
+            studentLevel = trainingRegistration.academic_level;
+            telephone = decrypt(trainingRegistration.telephone) || trainingRegistration.telephone;
+            hasLaptop = Boolean(trainingRegistration.has_laptop);
+            codeforcesProfile = trainingRegistration.codeforces_profile || '';
+            leetcodeProfile = trainingRegistration.leetcode_profile || '';
         } else {
             // Preliminary check for returning users in the legacy flow.
             existingAppCheck = await query(
@@ -133,8 +138,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const isReturningByEmail = registrationFlow === 'level1'
-            ? Boolean(level1Registration)
+        const isReturningByEmail = trainingFlow
+            ? Boolean(trainingRegistration)
             : existingAppCheck.rows.length > 0;
 
         if (!isReturningByEmail) {
@@ -143,11 +148,11 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Level 1 applications collect a national ID before account creation.
+        // Training applications collect a national ID before account creation.
         // Keep this server-side so the requirement cannot be bypassed by a
         // modified browser request; the legacy /register flow remains intact.
-        if (registrationFlow === 'level1' && (!/^\d{14}$/.test(nationalId) || !/^[23]/.test(nationalId))) {
-            return NextResponse.json({ error: 'A valid 14-digit national ID is required for Level 1 registration.' }, { status: 400 });
+        if (trainingFlow && (!/^\d{14}$/.test(nationalId) || !/^[23]/.test(nationalId))) {
+            return NextResponse.json({ error: `A valid 14-digit national ID is required for ${trainingLabel} registration.` }, { status: 400 });
         }
 
         const userAgent = sanitizeInput(req.headers.get('user-agent') || 'unknown').substring(0, 255);
@@ -189,19 +194,19 @@ export async function POST(req: NextRequest) {
             let applicationId: number;
             let userName: string;
 
-            if (registrationFlow === 'level1') {
+            if (trainingFlow && trainingTable) {
                 // Lock the intake row so two tabs cannot create two accounts or
                 // two compatibility applications for the same registration.
                 const lockedIntake = await client.query(
                     `SELECT id, application_id, name
-                       FROM level1_training_registrations
+                       FROM ${trainingTable}
                       WHERE id = $1 AND season_year = 2027
                       FOR UPDATE`,
-                    [level1Registration.id]
+                    [trainingRegistration.id]
                 );
                 if (lockedIntake.rows.length === 0) {
                     await client.query('ROLLBACK');
-                    return NextResponse.json({ error: 'Level 1 registration could not be found.' }, { status: 409 });
+                    return NextResponse.json({ error: `${trainingLabel} registration could not be found.` }, { status: 409 });
                 }
 
                 const existingUserForIntake = await client.query(
@@ -210,7 +215,7 @@ export async function POST(req: NextRequest) {
                 );
                 if (existingUserForIntake.rows.length > 0) {
                     await client.query('ROLLBACK');
-                    return NextResponse.json({ error: 'This Level 1 registration already has an account. Please login.' }, { status: 409 });
+                    return NextResponse.json({ error: `This ${trainingLabel} registration already has an account. Please login.` }, { status: 409 });
                 }
 
                 applicationId = lockedIntake.rows[0].application_id;
@@ -223,7 +228,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 if (!applicationId) {
-                    const level1ApplicationResult = await client.query(`
+                    const trainingApplicationResult = await client.query(`
                         INSERT INTO applications (
                             application_type, name, faculty, student_id, national_id, student_level,
                             telephone, has_laptop, codeforces_profile, leetcode_profile, email,
@@ -234,7 +239,7 @@ export async function POST(req: NextRequest) {
                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                         RETURNING id
                     `, [
-                        'level1_training_2027',
+                        `${trainingFlow}_training_2027`,
                         name,
                         faculty,
                         studentId,
@@ -254,19 +259,19 @@ export async function POST(req: NextRequest) {
                         studentIdBlindIndex,
                         2027,
                     ]);
-                    applicationId = level1ApplicationResult.rows[0].id;
+                    applicationId = trainingApplicationResult.rows[0].id;
                 }
 
                 userName = name;
                 await client.query(`
-                    UPDATE level1_training_registrations
+                    UPDATE ${trainingTable}
                      SET email = $1,
                            email_blind_index = $2,
                            application_id = $3,
                            status = 'account_created',
                            account_created_at = now()
                      WHERE id = $4
-                `, [encrypt(normalizedEmail), emailBlindIndex, applicationId, level1Registration.id]);
+                `, [encrypt(normalizedEmail), emailBlindIndex, applicationId, trainingRegistration.id]);
             } else if (existingApp.rows.length > 0) {
                 // ===== RETURNING USER: Link to existing application =====
                 applicationId = existingApp.rows[0].id;
