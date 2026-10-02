@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         });
         if (error || !data.user) {
             if (error) console.warn('[Verify OTP] Code rejected:', error.status, error.code, error.message);
-            return NextResponse.json({ error: 'Incorrect or expired code. Please request a new one.' }, { status: 401 });
+            return NextResponse.json({ error: 'Wrong or old code. Use the code from the NEWEST email (each new code cancels the previous one). الكود غلط أو قديم: استخدم الكود من آخر إيميل وصلك.' }, { status: 401 });
         }
 
         return NextResponse.json({ success: true, message: 'Email verified.' });
