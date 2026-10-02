@@ -4,7 +4,6 @@ import { getPool, query } from '@/lib/db/db';
 import { decrypt, encrypt, createBlindIndex } from '@/lib/security/encryption';
 import { createAdminClient, findAuthUserByEmail } from '@/lib/supabase/admin';
 import { sanitizeInput } from '@/lib/security/validation';
-import { scraperQueue } from '@/lib/db/queue';
 import { getClientIp } from '@/lib/security/request';
 import { isHorusEmail, normalizeHorusEmail } from '@/lib/auth/horus-email';
 import { normalizeDigits, normalizeEgyptPhone } from '@/lib/apply/training-registration';
@@ -433,11 +432,9 @@ export async function POST(req: NextRequest) {
                 grantAchievement(newUser.id, ACHIEVEMENTS.WELCOME)
             ).catch(() => {});
 
-            if (applicationType === 'trainer') {
-                const jobData = { applicationId, leetcodeProfile, codeforcesProfile, applicationType };
-                try { await scraperQueue.add('scrape-job', jobData); } catch {}
-            } else {
-                getPool().query("UPDATE applications SET scraping_status = 'not_applicable' WHERE id = $1", [applicationId]).catch(() => { });
+            // Trainer profiles stay 'pending' for the scraper; nothing else needs it.
+            if (applicationType !== 'trainer') {
+                await getPool().query("UPDATE applications SET scraping_status = 'not_applicable' WHERE id = $1", [applicationId]).catch(() => { });
             }
 
             return NextResponse.json({

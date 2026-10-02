@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Hexagon, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ResetPassword() {
@@ -16,8 +16,29 @@ export default function ResetPassword() {
 
 function ResetPasswordInner() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+    // Supabase puts a short-lived recovery session in the URL fragment of the
+    // emailed link. Fragments never reach the server, so read it here, then
+    // strip it from the address bar.
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [linkState, setLinkState] = useState<'checking' | 'ready' | 'invalid'>('checking');
+    const [linkError, setLinkError] = useState('This reset link is invalid, expired, or was already used. Please request a new one.');
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const token = params.get('access_token');
+        if (token && params.get('type') === 'recovery') {
+            setAccessToken(token);
+            setLinkState('ready');
+        } else {
+            if (params.get('error_code') === 'otp_expired' || params.get('error')) {
+                setLinkError('This reset link has expired or was already used. Please request a new one.');
+            }
+            setLinkState('invalid');
+        }
+        if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, []);
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -43,13 +64,17 @@ function ResetPasswordInner() {
 
     const strength = getStrength(password);
 
-    if (!token) {
+    if (linkState === 'checking') {
+        return <div className="min-h-[100dvh] w-full bg-[#0A0A0A]" />;
+    }
+
+    if (linkState === 'invalid' || !accessToken) {
         return (
             <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex items-center justify-center px-8">
                 <div className="max-w-md w-full text-center">
                     <AlertCircle className="w-16 h-16 text-red-400/80 mx-auto mb-6" />
                     <h2 className="text-2xl font-bold text-white mb-3">Invalid Link</h2>
-                    <p className="text-white/40 text-sm mb-8">This reset link is missing or malformed. Please request a new one.</p>
+                    <p className="text-white/40 text-sm mb-8">{linkError}</p>
                     <Link
                         href="/forgot-password"
                         className="inline-flex items-center gap-2 px-8 py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all shadow-lg shadow-[#E8C15A]/10"
@@ -87,9 +112,9 @@ function ResetPasswordInner() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword: password }),
+                body: JSON.stringify({ accessToken, newPassword: password }),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok && data.success) {
                 setStatus('success');

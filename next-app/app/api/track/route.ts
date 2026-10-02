@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
         const ip = getClientIp(req);
         const ua = req.headers.get('user-agent') || null;
 
-        // Push to Redis buffer — non-blocking, batched flush to Postgres
-        pushEvent({
+        // Write to Postgres; await so serverless runtimes do not drop it.
+        await pushEvent({
             user_id: user.id,
             session_id: sessionId || '',
             action,
