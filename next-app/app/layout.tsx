@@ -201,8 +201,31 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" translate="no" className={`${inter.variable} notranslate`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        {/* Browser auto-translate rewrites text nodes React owns and crashes the page (removeChild NotFoundError). */}
+        <meta name="google" content="notranslate" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // If an extension or translator still moves nodes, skip the bad DOM call instead of crashing React.
+                if (typeof Node === 'function' && Node.prototype) {
+                  var originalRemoveChild = Node.prototype.removeChild;
+                  Node.prototype.removeChild = function(child) {
+                    if (child.parentNode !== this) return child;
+                    return originalRemoveChild.apply(this, arguments);
+                  };
+                  var originalInsertBefore = Node.prototype.insertBefore;
+                  Node.prototype.insertBefore = function(newNode, referenceNode) {
+                    if (referenceNode && referenceNode.parentNode !== this) return newNode;
+                    return originalInsertBefore.apply(this, arguments);
+                  };
+                }
+              })();
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
