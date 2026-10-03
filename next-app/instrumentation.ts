@@ -34,6 +34,8 @@ export async function register() {
                 const message = args
                     .map((a) => (a instanceof Error ? describeError(a).message : typeof a === 'string' ? a : describeError(a).message))
                     .join(' ');
+                // Node runtime notices are platform noise, not app problems.
+                if (/^\(node:\d+\) (Experimental|Deprecation)Warning/.test(message)) return;
                 const stack = firstError ? describeError(firstError).stack : new Error().stack?.split('\n').slice(2, 8).join('\n') ?? null;
                 void schedule(() => recordError({ level, source: 'server', message, stack }));
             } catch {
