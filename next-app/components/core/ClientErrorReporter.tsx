@@ -52,9 +52,26 @@ export default function ClientErrorReporter() {
             }
             const watched = path.startsWith('/api/') && path !== '/api/client-errors';
 
+            // Weak mobile connections drop requests. Retry safe GETs to our
+            // own API a couple of times before giving up.
+            const retryable = watched && method === 'GET' && !init?.signal?.aborted;
+            const attempt = async (): Promise<Response> => {
+                const delays = retryable ? [600, 1800] : [];
+                for (let i = 0; ; i += 1) {
+                    try {
+                        return await nativeFetch(input, init);
+                    } catch (error) {
+                        const aborted = error instanceof DOMException && error.name === 'AbortError';
+                        if (aborted || i >= delays.length || init?.signal?.aborted) throw error;
+                        await new Promise((r) => setTimeout(r, delays[i]));
+                    }
+                }
+            };
+
             try {
-                const response = await nativeFetch(input, init);
-                if (watched && !response.ok && !EXPECTED_STATUSES.has(response.status) && (response.status >= 500 || response.status === 429 || response.status === 400)) {
+                const response = await attempt();
+                // 400/429 answers are the API's own validation messages shown to the user.
+                if (watched && !response.ok && !EXPECTED_STATUSES.has(response.status) && response.status >= 500) {
                     let detail = '';
                     try {
                         detail = (await response.clone().text()).slice(0, 300);
@@ -71,7 +88,8 @@ export default function ClientErrorReporter() {
                 }
                 return response;
             } catch (error) {
-                if (watched && !(error instanceof DOMException && error.name === 'AbortError')) {
+                // Offline phones are not a bug; only report failures while online.
+                if (watched && navigator.onLine && !(error instanceof DOMException && error.name === 'AbortError')) {
                     reportClientError({
                         kind: 'fetch',
                         message: `${method} ${path} -> network error: ${describeUnknown(error).message}`,
