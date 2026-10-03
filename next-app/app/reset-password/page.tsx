@@ -20,13 +20,20 @@ function ResetPasswordInner() {
     // emailed link. Fragments never reach the server, so read it here, then
     // strip it from the address bar.
     const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [tokenHash, setTokenHash] = useState<string | null>(null);
     const [linkState, setLinkState] = useState<'checking' | 'ready' | 'invalid'>('checking');
     const [linkError, setLinkError] = useState('This reset link is invalid, expired, or was already used. Please request a new one.');
 
     useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const token = params.get('access_token');
-        if (token && params.get('type') === 'recovery') {
+        const hash = query.get('token_hash');
+        if (hash && (query.get('type') || 'recovery') === 'recovery') {
+            // Do not spend the token on page load (email scanners load pages too).
+            setTokenHash(hash);
+            setLinkState('ready');
+        } else if (token && params.get('type') === 'recovery') {
             setAccessToken(token);
             setLinkState('ready');
         } else {
@@ -35,7 +42,7 @@ function ResetPasswordInner() {
             }
             setLinkState('invalid');
         }
-        if (window.location.hash) {
+        if (window.location.hash || window.location.search) {
             window.history.replaceState(null, '', window.location.pathname);
         }
     }, []);
@@ -68,7 +75,7 @@ function ResetPasswordInner() {
         return <div className="min-h-[100dvh] w-full bg-[#0A0A0A]" />;
     }
 
-    if (linkState === 'invalid' || !accessToken) {
+    if (linkState === 'invalid' || (!accessToken && !tokenHash)) {
         return (
             <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex items-center justify-center px-8">
                 <div className="max-w-md w-full text-center">
@@ -112,7 +119,7 @@ function ResetPasswordInner() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accessToken, newPassword: password }),
+                body: JSON.stringify(tokenHash ? { tokenHash, newPassword: password } : { accessToken, newPassword: password }),
             });
             const data = await res.json().catch(() => ({}));
 
