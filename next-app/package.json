@@ -11,7 +11,8 @@
     "test:otp": "node scripts/test-otp-contract.mjs",
     "otp:smoke": "node scripts/otp-smoke.mjs",
     "analyze": "cross-env ANALYZE=true next build",
-    "knip": "knip"
+    "knip": "knip",
+    "errors": "node --env-file=.env.local scripts/errors-report.mjs"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",
