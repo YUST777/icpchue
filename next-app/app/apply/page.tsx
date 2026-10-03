@@ -363,6 +363,11 @@ export default function ApplyPage() {
 
             if (!res.ok) {
                 setSubmitError(describeError(res, data, 'Verification failed'));
+                if (res.status === 401) {
+                    // Wrong or replaced code: clear it so the student types the newest one.
+                    setOtp('');
+                    setTimeout(() => otpInputRef.current?.focus(), 50);
+                }
                 return;
             }
 
