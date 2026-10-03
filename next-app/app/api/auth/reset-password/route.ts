@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
@@ -37,10 +38,40 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json().catch(() => null);
-        const accessToken = body?.accessToken;
+        let accessToken = body?.accessToken;
+        const tokenHash = body?.tokenHash;
         const newPassword = body?.newPassword;
 
-        if (typeof accessToken !== 'string' || typeof newPassword !== 'string' || !accessToken || !newPassword) {
+        if (typeof newPassword !== 'string' || !newPassword) {
+            return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
+        }
+        if (newPassword.length < 9 || !/[A-Z]/.test(newPassword)) {
+            return NextResponse.json({ error: 'Password must be at least 9 characters with at least one uppercase letter' }, { status: 400 });
+        }
+
+        // Preferred flow: the email links to /reset-password?token_hash=...
+        // The one-time token is only spent here, when the student submits
+        // the form. Outlook/Defender link scanners only GET the page, so
+        // they can no longer burn the link before the student opens it.
+        if (typeof tokenHash === 'string' && tokenHash) {
+            if (tokenHash.length > 512 || !/^[A-Za-z0-9_-]+$/.test(tokenHash)) {
+                return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
+            }
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            if (!supabaseUrl || !supabaseAnonKey) {
+                return NextResponse.json({ error: 'Authentication service is not configured.' }, { status: 503 });
+            }
+            const anon = createClient(supabaseUrl, supabaseAnonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+            const { data: verified, error: verifyError } = await anon.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+            if (verifyError || !verified.session) {
+                console.warn('[Reset Password] Recovery token rejected:', verifyError?.status, verifyError?.code, verifyError?.message);
+                return NextResponse.json({ error: 'This reset link has expired or was already used. Please request a new one.' }, { status: 400 });
+            }
+            accessToken = verified.session.access_token;
+        }
+
+        if (typeof accessToken !== 'string' || !accessToken) {
             return NextResponse.json({ error: 'Reset link has expired or is invalid. Please request a new one.' }, { status: 400 });
         }
         if (accessToken.length > 4096 || newPassword.length > 256) {
