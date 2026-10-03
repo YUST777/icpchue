@@ -138,7 +138,7 @@ export default function TestCaseTab({
                                         }
                                     }
                                 }}
-                                className="absolute -top-1 -right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 min-w-0! min-h-0! p-0! bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                                 title="Delete test case"
                             >
                                 <X size={10} />
