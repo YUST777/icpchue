@@ -111,7 +111,9 @@ export async function POST(req: NextRequest) {
             },
         });
         if (error) {
-            console.warn('[Send OTP] Supabase Auth delivery failed:', error.status, error.code, error.message);
+            const isCooldown = error.status === 429 && /after \d+ seconds?/i.test(error.message || '');
+            // The per-address cooldown is handled below (student continues to the code screen).
+            if (!isCooldown) console.warn('[Send OTP] Supabase Auth delivery failed:', error.status, error.code, error.message);
             // Supabase allows one email per address per ~60s. "only request
             // this after N seconds" means a code was just sent to this same
             // address, so let the student continue to the code screen.
