@@ -21,10 +21,22 @@ interface TraineeSummary {
         level_2: number;
         level_3: number;
     };
+    total_curriculum_problems?: number;
+}
+
+/** Link by account id (or application id), never by student ID: a numeric
+ *  student ID can equal another user's account id. */
+function dossierHref(t: { user_id?: number | string | null; application_id?: number | string | null; id: number | string }) {
+    if (t.user_id) return `/dashboard/mentor/${encodeURIComponent(String(t.user_id))}`;
+    if (t.application_id) return `/dashboard/mentor/app-${encodeURIComponent(String(t.application_id))}`;
+    return `/dashboard/mentor/${encodeURIComponent(String(t.id))}`;
 }
 
 interface TraineeItem {
     id: number;
+    user_id?: number | null;
+    application_id?: number | null;
+    training_level?: string | null;
     name: string;
     student_id: string;
     academic_level: string;
@@ -58,6 +70,10 @@ export default function MentorTraineesDirectoryPage() {
     const [timeRange, setTimeRange] = useState('all');
     const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'oldest_active' | 'streak_desc' | 'name_asc'>('solves_desc');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -76,6 +92,8 @@ export default function MentorTraineesDirectoryPage() {
             if (statusFilter !== 'all') params.set('status', statusFilter);
             if (timeRange !== 'all') params.set('timeRange', timeRange);
             if (sortBy) params.set('sortBy', sortBy);
+            params.set('page', String(page));
+            params.set('limit', '30');
 
             const res = await fetch(`/api/mentor/trainees?${params.toString()}`, {
                 signal: controller.signal
@@ -84,13 +102,21 @@ export default function MentorTraineesDirectoryPage() {
                 const data = await res.json();
                 setTrainees(data.trainees || []);
                 setSummary(data.summary || null);
+                setTotalPages(data.pagination?.total_pages || 1);
+                setTotalItems(data.pagination?.total_items || 0);
+                setLoadError(null);
+            } else if (res.status === 401 || res.status === 403) {
+                setLoadError('You do not have mentor access.');
+            } else {
+                setLoadError('Could not load trainees. Please try again.');
             }
         } catch (err: any) {
-            if (err.name !== 'AbortError') {
-                console.error('Failed to fetch trainees:', err);
-            }
+            if (err.name === 'AbortError') return;
+            console.error('Failed to fetch trainees:', err);
+            setLoadError('Network error while loading trainees.');
         } finally {
-            setLoading(false);
+            // An aborted request must not end the loading state of the newer one.
+            if (!controller.signal.aborted) setLoading(false);
         }
     };
 
@@ -99,6 +125,12 @@ export default function MentorTraineesDirectoryPage() {
             fetchTrainees();
         }, 200);
         return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, levelFilter, statusFilter, timeRange, sortBy, page]);
+
+    // Any filter change starts again from the first page.
+    useEffect(() => {
+        setPage(1);
     }, [search, levelFilter, statusFilter, timeRange, sortBy]);
 
     const formatLastActive = (isoStr?: string | null) => {
@@ -287,6 +319,10 @@ export default function MentorTraineesDirectoryPage() {
             </div>
 
             {/* 4. Trainees List */}
+            {loadError && !loading && (
+                <div role="alert" className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">{loadError}</div>
+            )}
+
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3, 4, 5, 6].map(i => (
@@ -305,7 +341,7 @@ export default function MentorTraineesDirectoryPage() {
                     {trainees.map((t) => (
                         <Link
                             key={t.id}
-                            href={`/dashboard/mentor/${encodeURIComponent(String(t.student_id || t.id))}`}
+                            href={dossierHref(t)}
                             className="bg-[#121214]/90 border border-white/[0.08] hover:border-[#E8C15A]/40 rounded-2xl p-5 transition-all duration-200 group flex flex-col justify-between hover:bg-white/[0.02] shadow-md hover:shadow-xl backdrop-blur-xl"
                         >
                             <div>
@@ -354,7 +390,7 @@ export default function MentorTraineesDirectoryPage() {
                                     </div>
                                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                         <div 
-                                            style={{ width: `${Math.min(100, Math.round((t.total_solved / 150) * 100))}%` }} 
+                                            style={{ width: `${summary?.total_curriculum_problems ? Math.min(100, Math.round((t.total_solved / summary.total_curriculum_problems) * 100)) : 0}%` }} 
                                             className="h-full bg-[#E8C15A] rounded-full"
                                         />
                                     </div>
@@ -447,7 +483,7 @@ export default function MentorTraineesDirectoryPage() {
                                         </td>
                                         <td className="py-3 px-4 text-right">
                                             <Link
-                                                href={`/dashboard/mentor/${encodeURIComponent(String(t.student_id || t.id))}`}
+                                                href={dossierHref(t)}
                                                 className="inline-flex items-center gap-1 px-3 py-1 bg-white/5 hover:bg-[#E8C15A] text-white hover:text-black font-semibold rounded-lg text-xs transition-colors"
                                             >
                                                 <span>Inspect</span>
@@ -460,6 +496,16 @@ export default function MentorTraineesDirectoryPage() {
                         </table>
                     </div>
                 </div>
+            )}
+
+            {!loading && totalPages > 1 && (
+                <nav aria-label="Trainee pages" className="flex items-center justify-center gap-3 text-xs text-white/60">
+                    <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Previous</button>
+                    <span>Page {page} of {totalPages} · {totalItems} trainees</span>
+                    <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Next</button>
+                </nav>
             )}
         </div>
     );

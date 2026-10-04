@@ -78,6 +78,21 @@ export async function POST(req: NextRequest) {
         if (linkedHandle && linkedHandle.toLowerCase() !== trimmedHandle.toLowerCase()) {
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
+        // The extension's submission id is self-reported, so it is accepted
+        // only for problems the curriculum itself places in a private group or
+        // gym (which the public API cannot see) — not because the client says
+        // urlType is group/gym.
+        if (extensionHandoff) {
+            const { loadCurriculumIndex, isPrivateCurriculumProblem } = await import('@/lib/services/codeforces-backfill');
+            const curriculum = await loadCurriculumIndex();
+            if (!isPrivateCurriculumProblem(curriculum, String(targetContestId), normalizedProblemIndex, groupId || null)) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'This problem can be verified with the public Codeforces API. Please try again.',
+                    code: 'NOT_PRIVATE_PROBLEM'
+                }, { status: 400 });
+            }
+        }
         if (extensionHandoff && !linkedHandle) {
             return NextResponse.json({
                 success: false,
@@ -420,16 +435,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Submission belongs to another account' }, { status: 403 });
         }
 
-        // 5. Update user_progress
+        // 5. Update user_progress. Re-verifying an already solved problem
+        // must not move solved_at or count as a new daily solve/streak day.
         const trackingProblemId = `${targetContestId}:${normalizedProblemIndex}`;
+        const priorProgress = await query(
+            'SELECT status FROM user_progress WHERE user_id = $1 AND problem_id = $2 LIMIT 1',
+            [user.id, trackingProblemId]
+        );
+        const wasSolved = priorProgress.rows[0]?.status === 'SOLVED';
         await query(`
             INSERT INTO user_progress (user_id, problem_id, sheet_id, status, submission_id, solved_at)
             VALUES ($1, $2, $3, 'SOLVED', $4, $5)
             ON CONFLICT (user_id, problem_id) 
             DO UPDATE SET 
                 status = 'SOLVED',
-                submission_id = EXCLUDED.submission_id,
-                solved_at = EXCLUDED.solved_at
+                sheet_id = COALESCE(user_progress.sheet_id, EXCLUDED.sheet_id),
+                submission_id = CASE WHEN user_progress.status = 'SOLVED' THEN user_progress.submission_id ELSE EXCLUDED.submission_id END,
+                solved_at = CASE WHEN user_progress.status = 'SOLVED' THEN user_progress.solved_at ELSE EXCLUDED.solved_at END
         `, [
             user.id,
             trackingProblemId,
@@ -442,7 +464,8 @@ export async function POST(req: NextRequest) {
         const { updateStreakOnSolve } = await import('@/lib/services/streaks');
         
         await Promise.all([
-            updateStreakOnSolve(user.id),
+            wasSolved ? Promise.resolve() : updateStreakOnSolve(user.id),
+            invalidateCache(`user:${user.id}:solved:${contestId}`),
             invalidateCache(`user:${user.id}:dashboard_stats`),
             invalidateCache(`user:${user.id}:roadmap`),
             invalidateCache(`user:${user.id}:streak`),

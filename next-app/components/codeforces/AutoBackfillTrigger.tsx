@@ -18,7 +18,7 @@ function askExtension(contestId: string, urlType: string, groupId: string | null
             cleanup();
             resolve(event.data);
         };
-        const timer = window.setTimeout(() => { cleanup(); resolve({ success: false, error: 'TIMEOUT' }); }, 30_000);
+        const timer = window.setTimeout(() => { cleanup(); resolve({ success: false, error: 'TIMEOUT' }); }, 120_000);
         const cleanup = () => { window.clearTimeout(timer); window.removeEventListener('message', onMessage); };
         window.addEventListener('message', onMessage);
         window.postMessage({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
-import { invalidateCache } from '@/lib/cache/cache';
+import { invalidateCache, invalidateCachePrefix } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import {
     applyBackfillBatches,
@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
         const handle = String(claim.rows[0]?.codeforces_handle || '').trim();
         if (!handle) {
             await query('UPDATE users SET auto_backfill_lease_until = NULL WHERE id = $1', [user.id]);
-            return NextResponse.json({ skipped: true, reason: 'no_codeforces_handle' });
+            // success lets the client store its run marker instead of retrying on every load.
+            return NextResponse.json({ success: true, skipped: true, reason: 'no_codeforces_handle' });
         }
 
         try {
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
             // WA/CE/TLE rows also affect attempt counts and ATTEMPTED state.
             if (result.matchingSubmissions > 0) {
                 await Promise.all([
+                    invalidateCachePrefix(`user:${user.id}:`),
                     invalidateCache(`user:${user.id}:dashboard_stats`),
                     invalidateCache(`user:${user.id}:roadmap`),
                     invalidateCache(`user:${user.id}:streak`),

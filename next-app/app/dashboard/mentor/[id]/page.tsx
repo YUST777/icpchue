@@ -26,29 +26,41 @@ export default function TraineeDossierPage() {
     const [activeTab, setActiveTab] = useState<TabId>('overview');
     const [expandedSheetId, setExpandedSheetId] = useState<number | string | null>(null);
     const [progressSearch, setProgressSearch] = useState('');
-    const [selectedLevelId, setSelectedLevelId] = useState<string>('1');
+    const [selectedLevelId, setSelectedLevelId] = useState<string>('all');
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [timeHorizon, setTimeHorizon] = useState<'all' | '24h' | '7d' | '30d' | '90d'>('all');
 
     // Submissions pagination with deduplication
     const [submissionsList, setSubmissionsList] = useState<any[]>([]);
     const [loadingMoreSubs, setLoadingMoreSubs] = useState(false);
 
-    const fetchDossier = async () => {
+    const fetchDossier = async (signal?: AbortSignal) => {
         if (!studentIdParam) return;
+        // Never show the previous trainee's dossier under a new URL.
         setLoading(true);
+        setData(null);
+        setSubmissionsList([]);
+        setLoadError(null);
+        setActiveTab('overview');
+        setExpandedSheetId(null);
+        setTimeHorizon('all');
         try {
-            const res = await fetch(`/api/mentor/trainee/${encodeURIComponent(studentIdParam)}?sub_limit=100&sub_offset=0`);
+            const res = await fetch(`/api/mentor/trainee/${encodeURIComponent(studentIdParam)}?sub_limit=100&sub_offset=0`, { signal });
             if (res.ok) {
                 const resData = await res.json();
                 setData(resData);
                 setSubmissionsList(resData.recent_submissions || []);
-            } else if (res.status === 403) {
+            } else if (res.status === 401 || res.status === 403) {
                 router.replace('/dashboard');
+            } else if (res.status !== 404) {
+                setLoadError('Could not load this dossier. Please try again.');
             }
         } catch (err) {
+            if ((err as Error)?.name === 'AbortError') return;
             console.error('Failed to fetch trainee dossier:', err);
+            setLoadError('Network error while loading this dossier.');
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) setLoading(false);
         }
     };
 
@@ -75,7 +87,10 @@ export default function TraineeDossierPage() {
     };
 
     useEffect(() => {
-        fetchDossier();
+        const controller = new AbortController();
+        fetchDossier(controller.signal);
+        return () => controller.abort();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [studentIdParam]);
 
     const toggleSheet = (id: number | string) => {
@@ -120,7 +135,7 @@ export default function TraineeDossierPage() {
         let list = data.sheet_progress;
 
         if (selectedLevelId !== 'all') {
-            list = list.filter((s: any) => String(s.level_id || 1) === selectedLevelId);
+            list = list.filter((s: any) => String(s.level_number ?? '') === selectedLevelId);
         }
 
         if (progressSearch.trim()) {
@@ -156,8 +171,8 @@ export default function TraineeDossierPage() {
                 <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
                     <AlertTriangle size={24} />
                 </div>
-                <h1 className="text-base font-bold text-white">Trainee Not Found</h1>
-                <p className="text-xs text-white/50">No trainee records matched identifier: {studentIdParam}</p>
+                <h1 className="text-base font-bold text-white">{loadError ? 'Could not load dossier' : 'Trainee Not Found'}</h1>
+                <p className="text-xs text-white/50">{loadError || `No trainee records matched identifier: ${studentIdParam}`}</p>
                 <button
                     onClick={() => router.push('/dashboard/mentor')}
                     className="px-3 py-1.5 rounded-lg bg-[#E8C15A] text-black font-semibold text-xs transition-all hover:bg-[#d4ad45]"
@@ -356,7 +371,7 @@ export default function TraineeDossierPage() {
                         {/* Minimalist Controls: Ultra-Thin Level Pills & Search */}
                         <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-1">
-                                {(['1', '2', '3', 'all'] as const).map((lvl) => {
+                                {(['all', '0', '1', '2', '3'] as const).map((lvl) => {
                                     const label = lvl === 'all' ? 'All' : `Lv ${lvl}`;
                                     const isActive = selectedLevelId === lvl;
                                     return (
@@ -462,11 +477,16 @@ export default function TraineeDossierPage() {
             {/* Tab: Self Discipline Study Log */}
             {activeTab === 'discipline' && (
                 <div className="space-y-3">
-                    <DisciplineTracker 
-                        targetUserId={profile.user_id} 
-                        isMentorView={true} 
-                        traineeName={profile.name} 
-                    />
+                    {/* Without an account the tracker would load and edit the mentor's own log. */}
+                    {profile.user_id ? (
+                        <DisciplineTracker 
+                            targetUserId={profile.user_id} 
+                            isMentorView={true} 
+                            traineeName={profile.name} 
+                        />
+                    ) : (
+                        <p className="text-xs text-white/40 p-4">This trainee has not created an account yet, so there is no study log.</p>
+                    )}
                 </div>
             )}
 

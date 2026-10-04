@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
-import { invalidateCache } from '@/lib/cache/cache';
+import { invalidateCache, invalidateCachePrefix } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import {
     applyBackfillBatches,
@@ -92,7 +92,9 @@ export async function POST(req: NextRequest) {
                 // This endpoint receives data read from the user's authenticated
                 // browser, so group contests are explicitly allowed.
                 allowGroup: true,
-                allowUnverifiedAccepted: linkedBrowserHandle && (urlType === 'group' || urlType === 'gym'),
+                // Whether a browser AC is trusted is decided per problem from
+                // the curriculum (private group/gym only), never from urlType.
+                allowUnverifiedAccepted: linkedBrowserHandle,
             };
         });
 
@@ -103,6 +105,8 @@ export async function POST(req: NextRequest) {
         // tries views even when no new AC was found.
         if (result.matchingSubmissions > 0) {
             await Promise.all([
+                // Sheet/solved/details caches are keyed per contest and sheet.
+                invalidateCachePrefix(`user:${user.id}:`),
                 invalidateCache(`user:${user.id}:dashboard_stats`),
                 invalidateCache(`user:${user.id}:roadmap`),
                 invalidateCache(`user:${user.id}:streak`),

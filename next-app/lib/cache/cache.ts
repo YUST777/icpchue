@@ -88,3 +88,20 @@ export async function invalidateCache(key: string): Promise<void> {
         console.error(`[Cache] Invalidation error for key ${key}:`, error instanceof Error ? error.message : error);
     }
 }
+
+/**
+ * Invalidate every cache key that starts with `prefix` (for example all of
+ * one user's sheet/solved/details caches after a sync).
+ */
+export async function invalidateCachePrefix(prefix: string): Promise<void> {
+    if (!prefix) return;
+    for (const key of Array.from(pendingPromises.keys())) {
+        if (key.startsWith(prefix)) pendingPromises.delete(key);
+    }
+    try {
+        const escaped = prefix.replace(/[\\%_]/g, (c) => `\\${c}`);
+        await query(`DELETE FROM public.app_cache WHERE key LIKE $1 ESCAPE '\\'`, [`${escaped}%`]);
+    } catch (error) {
+        console.error(`[Cache] Prefix invalidation error for ${prefix}:`, error instanceof Error ? error.message : error);
+    }
+}

@@ -24,7 +24,7 @@ function askExtensionForContest(
     contestId: string,
     urlType: string,
     groupId: string | null,
-    timeoutMs = 30000
+    timeoutMs = 120000
 ): Promise<{ success: boolean; accepted?: any[]; submissions?: any[]; handle?: string | null; error?: string }> {
     return new Promise((resolve) => {
         const requestId = `${contestId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -113,13 +113,17 @@ export default function BackfillCard() {
         ).values());
         const batches: any[] = [];
         let discoveredHandle: string | null = null;
+        let partialContests = 0;
+        let failedContests = 0;
         let cursor = 0;
         const worker = async () => {
             while (cursor < targets.length && !cancelRef.current) {
                 const sheet = targets[cursor++];
                 setCurrentSheet(sheet.sheetName);
                 const extResult = await askExtensionForContest(sheet.contestId, sheet.urlType, sheet.groupId);
+                if (!extResult.success) failedContests++;
                 if (extResult.success) {
+                    if ((extResult as { partial?: string | null }).partial) partialContests++;
                     if (extResult.handle) discoveredHandle = extResult.handle;
                     batches.push({
                         contestId: sheet.contestId,
@@ -132,7 +136,9 @@ export default function BackfillCard() {
                 setProgress({ done: Math.min(cursor, targets.length), total: targets.length });
             }
         };
-        await Promise.all(Array.from({ length: Math.min(3, targets.length) }, () => worker()));
+        // One contest at a time: parallel scans trigger Codeforces throttling,
+        // which used to cut histories short and time out.
+        await worker();
 
         if (!cancelRef.current && targets.length > 0 && batches.length === 0) {
             setError('The extension could not read any Codeforces contests. Check that you are logged in and try again.');
@@ -141,23 +147,32 @@ export default function BackfillCard() {
         }
         if (!cancelRef.current && batches.length > 0) {
             try {
-                const res = await fetch('/api/codeforces/backfill', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ batches, cfHandle: discoveredHandle }),
-                });
-                if (!res.ok) throw new Error('save failed');
-                const data = await res.json();
-                solvedTotal += data.newlySolved || data.solved || 0;
+                let inserted = 0;
+                // The API accepts a bounded number of batches per request.
+                for (let i = 0; i < batches.length; i += 40) {
+                    const res = await fetch('/api/codeforces/backfill', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ batches: batches.slice(i, i + 40), cfHandle: discoveredHandle }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(res.status === 403 && /mismatch/i.test(data.error || '')
+                            ? 'The Codeforces account logged in on this browser is not the one linked to your ICPC HUE account.'
+                            : 'The history was read, but the server could not save it. Please try again.');
+                    }
+                    solvedTotal += data.newlySolved || data.solved || 0;
+                    inserted += Number(data.newlyInserted) || 0;
+                }
                 setTotalSolved(solvedTotal);
-                // `matchingSubmissions` is the size of the incoming history,
-                // not the number of rows added by this run. The API's
-                // `newlyInserted` count is idempotent because submissions are
-                // upserted by their Codeforces submission id.
-                setTotalAttempts(Number(data.newlyInserted) || 0);
-            } catch {
-                setError('The history was read, but the server could not save it. Please try again.');
+                // newlyInserted is idempotent: submissions are upserted by CF id.
+                setTotalAttempts(inserted);
+                if (partialContests || failedContests) {
+                    setError(`Saved what was read. ${partialContests + failedContests} contest(s) could not be fully read from Codeforces; run the backfill again later to finish.`);
+                }
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'The history was read, but the server could not save it. Please try again.');
                 setPhase('error');
                 return;
             }
@@ -238,6 +253,12 @@ export default function BackfillCard() {
                             {totalAttempts > 0
                                 ? <span>Done — imported <strong>{totalAttempts}</strong> new attempt{totalAttempts !== 1 ? 's' : ''}{totalSolved > 0 && <> and marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved</>}.</span>
                                 : <span>Already up to date — no new attempts were added.</span>}
+                        </div>
+                    )}
+                    {phase === 'done' && error && (
+                        <div className="mt-2 flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+                            <AlertTriangle size={18} className="shrink-0" />
+                            {error}
                         </div>
                     )}
 

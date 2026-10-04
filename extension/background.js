@@ -253,29 +253,55 @@ function parseFirstInt(text) {
     return m ? parseInt(m[1], 10) : 0;
 }
 
-function parseSubmissionTime(body, visibleWhen = '') {
-    // Codeforces renders the absolute submission time in a title/data-time
-    // attribute even when the visible value is relative ("2 hours ago").
-    const attrs = body.matchAll(/(?:data-time|data-timestamp|data-livestamp|title)=["']([^"']+)["']/gi);
-    for (const attr of attrs) {
-        const raw = attr[1];
-        const numeric = Number(raw);
-        // Ignore unrelated title attributes such as "View source".
-        if (Number.isFinite(numeric) && numeric > 1_000_000_000) {
-            return numeric > 4102444800 ? Math.floor(numeric / 1000) : Math.floor(numeric);
-        }
-        const parsed = Date.parse(raw);
-        if (!Number.isNaN(parsed)) return Math.floor(parsed / 1000);
-    }
+// ─── Status page time parsing ───────────────────────────────────────
+// The "When" cell is plain text in the Codeforces account's display
+// timezone (Moscow, UTC+3, unless the user changed it). The page states
+// that offset next to the server time ("…UTC+3"). Never use the browser's
+// timezone: a Cairo or US browser would shift every timestamp.
+const CF_MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+const DEFAULT_CF_OFFSET_MINUTES = 180;
 
-    // Some Codeforces layouts put the absolute date only in the visible
-    // second column (for example "Sep/07/2026 17:18") and use no title/data
-    // attribute. Parse that cell as a fallback so imported rows never become
-    // NULL timestamps (which the UI renders as 1/1/1970).
-    const visible = String(visibleWhen || '').replace(/\s+/g, ' ').trim();
-    const visibleDate = Date.parse(visible);
-    if (!Number.isNaN(visibleDate)) return Math.floor(visibleDate / 1000);
-    return null;
+function parseCfOffsetMinutes(html) {
+    const m = String(html || '').match(/UTC\s*([+-])\s*(\d{1,2})(?::(\d{2}))?/);
+    if (!m) return DEFAULT_CF_OFFSET_MINUTES;
+    const minutes = Number(m[2]) * 60 + Number(m[3] || 0);
+    return m[1] === '-' ? -minutes : minutes;
+}
+
+function plausibleEpoch(seconds) {
+    const now = Date.now() / 1000;
+    return Number.isFinite(seconds) && seconds > 1262304000 && seconds < now + 86400 ? Math.floor(seconds) : null;
+}
+
+function parseCfDateText(text, offsetMinutes) {
+    const t = String(text || '');
+    let y, mo, d, h, mi, s;
+    let m = t.match(/([A-Za-z]{3})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+        mo = CF_MONTHS[m[1].toLowerCase()];
+        if (mo === undefined) return null;
+        d = +m[2]; y = +m[3]; h = +m[4]; mi = +m[5]; s = +(m[6] || 0);
+    } else {
+        m = t.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if (!m) return null;
+        d = +m[1]; mo = +m[2] - 1; y = +m[3]; h = +m[4]; mi = +m[5]; s = +(m[6] || 0);
+    }
+    return plausibleEpoch((Date.UTC(y, mo, d, h, mi, s) - offsetMinutes * 60000) / 1000);
+}
+
+function parseSubmissionTime(whenCellHtml, offsetMinutes) {
+    const cell = String(whenCellHtml || '');
+    // Only look inside the When cell; titles elsewhere in the row (team
+    // names, problem names) used to be parsed as dates like 2001-02-01.
+    const numeric = cell.match(/data-(?:time|timestamp|livestamp)=["'](\d{9,13})["']/i);
+    if (numeric) {
+        const n = Number(numeric[1]);
+        return plausibleEpoch(n > 4102444800 ? n / 1000 : n);
+    }
+    const visible = parseCfDateText(stripTags(cell), offsetMinutes);
+    if (visible) return visible;
+    const title = cell.match(/title=["']([^"']+)["']/i);
+    return title ? parseCfDateText(title[1], offsetMinutes) : null;
 }
 
 /**
@@ -285,126 +311,144 @@ function parseSubmissionTime(body, visibleWhen = '') {
  */
 function parseStatusTable(html) {
     const rows = [];
+    const offsetMinutes = parseCfOffsetMinutes(html);
     const trRe = /<tr[^>]*data-submission-id="(\d+)"[^>]*>([\s\S]*?)<\/tr>/g;
     let m;
     while ((m = trRe.exec(html)) !== null) {
         const id = parseInt(m[1], 10);
         const body = m[2];
-        const cells = [];
+        const rawCells = [];
         const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
         let c;
-        while ((c = tdRe.exec(body)) !== null) {
-            cells.push(stripTags(c[1]));
-        }
-        if (cells.length < 6) continue;
+        while ((c = tdRe.exec(body)) !== null) rawCells.push(c[1]);
+        if (rawCells.length < 6) continue;
+        const cells = rawCells.map(stripTags);
 
-        const problemCell = cells[3] || '';
-        const langCell = cells[4] || '';
-        const verdictCell = cells[5] || '';
-        const timeCell = cells[6] || '';
-        const memCell = cells[7] || '';
-
+        // Prefer the problem link (handles A1, B2, AA); fall back to the text.
         let problemIndex = null;
         let problemName = null;
-        const pm = problemCell.match(/^([A-Za-z][0-9]?)\s*-\s*(.*)$/);
-        if (pm) {
-            problemIndex = pm[1].toUpperCase();
-            problemName = pm[2].trim();
-        }
+        const href = rawCells[3].match(/\/problem\/([A-Za-z0-9]{1,4})(?:["'?#/]|$)/);
+        const text = (cells[3] || '').match(/^([A-Za-z][A-Za-z0-9]{0,3})\s*-\s*(.*)$/);
+        if (href) problemIndex = href[1].toUpperCase();
+        else if (text) problemIndex = text[1].toUpperCase();
+        if (text) problemName = text[2].trim();
 
         rows.push({
             id,
-            author: (cells[2] || '').trim(),
+            author: (cells[2] || '').replace(/\s+/g, '').trim(),
             problemIndex,
             problemName,
-            verdict: verdictCell.trim(),
-            timeConsumedMillis: parseFirstInt(timeCell),
-            memoryConsumedBytes: parseFirstInt(memCell) * 1024,
-            language: langCell.trim(),
-            creationTimeSeconds: parseSubmissionTime(body, cells[1]),
+            verdict: (cells[5] || '').trim(),
+            timeConsumedMillis: parseFirstInt((cells[6] || '').replace(/[\s\u00a0\u2009]/g, '')),
+            memoryConsumedBytes: parseFirstInt((cells[7] || '').replace(/[\s\u00a0\u2009]/g, '')) * 1024,
+            language: (cells[4] || '').trim(),
+            creationTimeSeconds: parseSubmissionTime(rawCells[1], offsetMinutes),
         });
     }
     return rows;
 }
 
 function isAcceptedVerdict(v) {
-    const t = String(v || '').toLowerCase();
-    return t === 'accepted' || t === 'ok' || t.startsWith('accepted');
+    const t = String(v || '').trim().toLowerCase();
+    return t === 'accepted' || t === 'ok' || t.startsWith('accepted') ||
+        t.startsWith('happy new year') || t.startsWith('perfect result');
+}
+
+function isChallengePage(res, html) {
+    return /<title>\s*(Just a moment|Attention Required)/i.test(html) ||
+        /\/cdn-cgi\/challenge-platform\/|cf_chl_opt|cf-chl-/i.test(html) ||
+        ((res.status === 403 || res.status === 503) && /cloudflare/i.test(html));
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const PAGE_DELAY_MS = 350;
+
+/**
+ * Read paginated /my status pages. Stops when a page is short, empty, or adds
+ * no new submission ids (Codeforces repeats the last page for out-of-range
+ * page numbers). A failure after page 1 is reported as `partial` instead of
+ * silently looking like the end of the history.
+ */
+async function readStatusPages(urlForPage, maxPages) {
+    const rows = [];
+    const seen = new Set();
+    let pagesRead = 0;
+    let partial = null;
+
+    for (let page = 1; page <= maxPages; page++) {
+        if (page > 1) await sleep(PAGE_DELAY_MS);
+        let res;
+        let html;
+        try {
+            res = await fetchWithTimeout(urlForPage(page), {
+                credentials: 'include',
+                headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+            });
+            html = await res.text();
+        } catch (err) {
+            const error = err && err.name === 'AbortError' ? 'FETCH_TIMEOUT' : `FETCH_FAILED: ${err && err.message}`;
+            if (page === 1) return { error };
+            partial = error;
+            break;
+        }
+
+        if (isChallengePage(res, html)) {
+            if (page === 1) return { error: 'CLOUDFLARE_CHALLENGE' };
+            partial = 'CLOUDFLARE_CHALLENGE';
+            break;
+        }
+        if (!res.ok) {
+            if (page === 1) return { error: `HTTP_${res.status}` };
+            if (res.status !== 400 && res.status !== 404) partial = `HTTP_${res.status}`;
+            break;
+        }
+        if (!html.includes('status-frame-datatable')) {
+            if (page === 1) {
+                if (html.includes('Login into Codeforces') || /\/enter(?:[/?#]|$)/.test(res.url || '')) {
+                    return { error: 'NOT_LOGGED_IN' };
+                }
+                return { error: 'NO_SUBMISSIONS_TABLE' };
+            }
+            break;
+        }
+
+        const pageRows = parseStatusTable(html);
+        if (pageRows.length === 0) break;
+        pagesRead++;
+        let added = 0;
+        for (const row of pageRows) {
+            if (seen.has(row.id)) continue;
+            seen.add(row.id);
+            rows.push(row);
+            added++;
+        }
+        if (added === 0 || pageRows.length < 50) break;
+    }
+
+    return { rows, pagesRead, partial };
 }
 
 /**
  * Fetch the user's complete submission history for a problem and find an AC.
  * Runs entirely in the user's browser (residential IP + their CF cookies).
+ * "/my" pages only list the logged-in user's own submissions, so rows are
+ * not filtered by author (that filter dropped team and legendary-handle rows).
  */
 async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
-    // 1. Confirm logged in + resolve the user's OWN handle from CF.
     const login = await checkLogin(true);
-    if (!login.loggedIn) {
-        return { success: false, error: 'NOT_LOGGED_IN' };
-    }
+    if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
 
-    // 2. Fetch every page. Codeforces applies problemIndex server-side, so
-    // this scans one problem's history instead of the entire contest history.
-    const handleLc = (login.handle || '').toLowerCase();
     const wantIdx = problemIndex ? String(problemIndex).toUpperCase() : null;
-    const byId = new Map();
-    let pagesRead = 0;
+    const read = await readStatusPages(
+        (page) => getStatusUrl(contestId, urlType, groupId, problemIndex, page),
+        MAX_PROBLEM_HISTORY_PAGES
+    );
+    if (read.error) return { success: false, error: read.error };
 
-    for (let page = 1; page <= MAX_PROBLEM_HISTORY_PAGES; page++) {
-        const url = getStatusUrl(contestId, urlType, groupId, problemIndex, page);
-        let html;
-        try {
-            const res = await fetch(url, {
-                credentials: 'include',
-                headers: {
-                    'User-Agent': navigator.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                },
-            });
-            if (!res.ok) {
-                if (page > 1) break;
-                return { success: false, error: `HTTP_${res.status}` };
-            }
-            html = await res.text();
-        } catch (err) {
-            if (page > 1) break;
-            return { success: false, error: `FETCH_FAILED: ${err.message}` };
-        }
-
-        if (html.includes('<title>Just a moment...</title>')) {
-            return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
-        }
-        if (!html.includes('status-frame-datatable')) {
-            if (page === 1) {
-                if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
-                    return { success: false, error: 'NOT_LOGGED_IN' };
-                }
-                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
-            }
-            break;
-        }
-
-        const allRows = parseStatusTable(html);
-        const pageRows = allRows.filter(r => {
-            const byUser = !handleLc || (r.author || '').toLowerCase() === handleLc;
-            const byProblem = !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx;
-            return byUser && byProblem;
-        });
-        if (allRows.length === 0) break;
-
-        pagesRead++;
-        for (const row of pageRows) byId.set(row.id, row);
-        if (allRows.length < 50) break;
-    }
-
-    // Keep the order deterministic even if Codeforces repeated a row across a
-    // page boundary while a new submission was being judged.
-    const history = Array.from(byId.values()).sort((a, b) => b.id - a.id);
-    // Fetch only the latest source during sync. This keeps a 500-attempt
-    // history fast and guarantees the UI can immediately show the last code.
-    // Older attempts are still fully tracked by verdict/metadata and their
-    // exact source is fetched and persisted when that row is opened.
-    const submissions = history;
+    const submissions = read.rows
+        .filter(r => !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx)
+        .sort((a, b) => b.id - a.id);
+    // Fetch only the latest source during sync; older sources load on demand.
     if (submissions[0]) {
         const source = await fetchSubmissionSource({ contestId, urlType, groupId, submissionId: submissions[0].id });
         if (source.success && source.sourceCode) submissions[0].sourceCode = source.sourceCode;
@@ -418,12 +462,12 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
         latest: submissions[0] || null,
         scanned: submissions.length,
         submissions,
-        pagesRead,
+        pagesRead: read.pagesRead,
+        partial: read.partial,
     };
 }
 
 // ─── Contest-wide backfill ───────────────────────────────────────────
-// Build the paginated "my submissions in this contest" URL.
 function getContestMyUrl(contestId, urlType, groupId, page) {
     let base;
     if (urlType === 'gym') {
@@ -437,93 +481,36 @@ function getContestMyUrl(contestId, urlType, groupId, page) {
 }
 
 /**
- * Fetch ALL of the user's submissions across a whole contest/sheet (every
- * problem at once), paginating until no new rows. Returns the complete verdict
- * history plus the BEST (fastest) AC per problem index.
- *
- * Runs in the user's browser (residential IP + their CF session).
+ * Fetch ALL of the user's submissions across a whole contest/sheet and the
+ * fastest AC per problem index.
  */
 async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 10 }) {
     const login = await checkLogin(true);
-    if (!login.loggedIn) {
-        return { success: false, error: 'NOT_LOGGED_IN' };
-    }
-    const handleLc = (login.handle || '').toLowerCase();
+    if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
 
-    // problemIndex -> best AC row
+    const pages = Math.max(1, Math.min(100, Number(maxPages) || 10));
+    const read = await readStatusPages((page) => getContestMyUrl(contestId, urlType, groupId, page), pages);
+    if (read.error) return { success: false, error: read.error };
+
     const acByProblem = {};
     const allSubmissions = [];
-    let totalRows = 0;
-    let pagesRead = 0;
-
-    for (let page = 1; page <= maxPages; page++) {
-        const url = getContestMyUrl(contestId, urlType, groupId, page);
-        let html;
-        try {
-            const res = await fetch(url, {
-                credentials: 'include',
-                headers: {
-                    'User-Agent': navigator.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                },
-            });
-            if (!res.ok) {
-                // Page beyond the last one can 400/404 — stop gracefully if we
-                // already have data, else report the error.
-                if (page > 1) break;
-                return { success: false, error: `HTTP_${res.status}` };
-            }
-            html = await res.text();
-        } catch (err) {
-            if (page > 1) break;
-            return { success: false, error: `FETCH_FAILED: ${err.message}` };
+    let unparsed = 0;
+    for (const r of read.rows) {
+        if (!r.problemIndex) { unparsed++; continue; }
+        const key = r.problemIndex.toUpperCase();
+        allSubmissions.push({
+            problemIndex: key,
+            id: r.id,
+            verdict: r.verdict,
+            timeConsumedMillis: r.timeConsumedMillis || 0,
+            memoryConsumedBytes: r.memoryConsumedBytes || 0,
+            language: r.language || '',
+            creationTimeSeconds: r.creationTimeSeconds || undefined,
+        });
+        if (isAcceptedVerdict(r.verdict)) {
+            const prev = acByProblem[key];
+            if (!prev || (r.timeConsumedMillis || 0) < (prev.timeConsumedMillis || 0)) acByProblem[key] = r;
         }
-
-        if (html.includes('<title>Just a moment...</title>')) {
-            return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
-        }
-        if (!html.includes('status-frame-datatable')) {
-            if (page === 1) {
-                if (html.includes('Login into Codeforces') || /\/enter\b/.test(html)) {
-                    return { success: false, error: 'NOT_LOGGED_IN' };
-                }
-                return { success: false, error: 'NO_SUBMISSIONS_TABLE' };
-            }
-            break; // no more pages
-        }
-
-        const rows = parseStatusTable(html).filter(r =>
-            !handleLc || (r.author || '').toLowerCase() === handleLc
-        );
-        if (rows.length === 0) break; // empty page => done
-
-        pagesRead++;
-        totalRows += rows.length;
-
-        for (const r of rows) {
-            if (!r.problemIndex) continue;
-            const key = r.problemIndex.toUpperCase();
-            allSubmissions.push({
-                problemIndex: key,
-                id: r.id,
-                verdict: r.verdict,
-                timeConsumedMillis: r.timeConsumedMillis || 0,
-                memoryConsumedBytes: r.memoryConsumedBytes || 0,
-                language: r.language || '',
-                creationTimeSeconds: r.creationTimeSeconds || undefined,
-            });
-
-            if (isAcceptedVerdict(r.verdict)) {
-                const prev = acByProblem[key];
-                // Keep the fastest AC (or the first one we see).
-                if (!prev || (r.timeConsumedMillis || 0) < (prev.timeConsumedMillis || 0)) {
-                    acByProblem[key] = r;
-                }
-            }
-        }
-
-        // CF shows 50 rows per page; fewer means this was the last page.
-        if (rows.length < 50) break;
     }
 
     const accepted = Object.entries(acByProblem).map(([problemIndex, r]) => ({
@@ -542,8 +529,10 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
         contestId: String(contestId),
         accepted,
         submissions: allSubmissions,
-        pagesRead,
-        totalRows,
+        pagesRead: read.pagesRead,
+        totalRows: read.rows.length,
+        unparsed,
+        partial: read.partial,
     };
 }
 

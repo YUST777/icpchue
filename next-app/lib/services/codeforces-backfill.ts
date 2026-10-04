@@ -39,7 +39,7 @@ interface CurriculumMapping {
     groupId: string | null;
 }
 
-interface CurriculumIndex {
+export interface CurriculumIndex {
     exact: Map<string, CurriculumMapping[]>;
     byContestAndProblem: Map<string, CurriculumMapping[]>;
     bySheetContestAndProblem: Map<string, CurriculumMapping[]>;
@@ -79,8 +79,23 @@ const FINAL_VERDICTS: Record<string, string> = {
     'IDLENESS LIMIT EXCEEDED': 'Idleness Limit Exceeded',
     CHALLENGED: 'Challenged',
     SKIPPED: 'Skipped',
-    TESTING: 'Testing',
+    // Codeforces' easter-egg AC text and IOI-style full score both count as solved.
+    'HAPPY NEW YEAR!': 'Accepted',
+    PARTIAL: 'Partial',
+    HACKED: 'Hacked',
+    FAILED: 'Failed',
+    CRASHED: 'Crashed',
+    REJECTED: 'Rejected',
+    SECURITY_VIOLATED: 'Security Violated',
+    INPUT_PREPARATION_CRASHED: 'Input Preparation Crashed',
 };
+
+/** Verdicts that are still being judged; storing them creates false attempts. */
+function isPendingVerdict(raw: unknown) {
+    const v = String(raw || '').trim().toUpperCase();
+    return !v || v === 'TESTING' || v.startsWith('RUNNING') || v.startsWith('IN QUEUE') ||
+        v.startsWith('WAITING') || v.startsWith('PENDING') || v.startsWith('JUDGING') || v === 'SUBMITTED';
+}
 
 function normalizeUrlType(value: unknown): BackfillUrlType {
     return value === 'group' || value === 'gym' ? value : 'contest';
@@ -230,6 +245,8 @@ export function normalizeVerdict(verdict?: string) {
     const upper = raw.toUpperCase();
     const exact = FINAL_VERDICTS[upper];
     if (exact) return exact;
+    if (upper.startsWith('HAPPY NEW YEAR') || upper.startsWith('PERFECT RESULT')) return 'Accepted';
+    if (upper.startsWith('PARTIAL RESULT')) return 'Partial';
 
     // Codeforces' HTML status table includes the failed test in the verdict
     // text (for example, "Wrong answer on test 1"). Store a stable verdict in
@@ -253,30 +270,52 @@ function parseSubmittedAt(raw: IncomingBackfillSubmission): Date | null {
     return null;
 }
 
+/**
+ * True when the curriculum itself says this problem lives in a private
+ * Codeforces group or a gym, i.e. the public API cannot verify it. Decided
+ * from the database, never from the client's urlType.
+ */
+export function isPrivateCurriculumProblem(
+    index: CurriculumIndex,
+    contestId: string,
+    problemIndex: string,
+    groupId?: string | null,
+): boolean {
+    const idx = normalizeProblemIndex(problemIndex);
+    const contest = normalizeContestId(contestId);
+    if (!idx || !contest) return false;
+    if (index.exact.has(targetKey('gym', null, contest, idx))) return true;
+    const group = normalizeGroupId(groupId);
+    return Boolean(group && index.exact.has(targetKey('group', group, contest, idx)));
+}
+
 function resolveMappings(
     index: CurriculumIndex,
     batch: BackfillBatch,
     contestId: string,
     problemIndex: string,
-): CurriculumMapping[] {
+): { mappings: CurriculumMapping[]; exact: boolean } {
     const urlType = normalizeUrlType(batch.urlType);
     const groupId = normalizeGroupId(batch.groupId);
     const exact = index.exact.get(targetKey(urlType, groupId, contestId, problemIndex))
         ?.filter(mapping => !batch.sheetId || mapping.sheetId === String(batch.sheetId))
         .filter(mapping => batch.allowGroup !== false || mapping.urlType !== 'group');
-    if (exact?.length) return exact;
+    if (exact?.length) return { mappings: exact, exact: true };
 
     const sheetAliases = batch.sheetId
         ? index.bySheetContestAndProblem.get(sheetContestProblemKey(String(batch.sheetId), contestId, problemIndex))
         : undefined;
-    if (sheetAliases?.length) return sheetAliases.filter(mapping => batch.allowGroup !== false || mapping.urlType !== 'group');
+    if (sheetAliases?.length) {
+        return { mappings: sheetAliases.filter(mapping => batch.allowGroup !== false || mapping.urlType !== 'group'), exact: false };
+    }
 
     // Legacy payloads used the sheet-level contest ID. Resolve that alias, but
     // never let a public sync accidentally import a private group problem.
     const aliases = index.byContestAndProblem.get(contestProblemKey(contestId, problemIndex)) || [];
-    return aliases
-        .filter(mapping => !batch.sheetId || mapping.sheetId === String(batch.sheetId))
-        .filter(mapping => batch.allowGroup !== false || mapping.urlType !== 'group');
+    const filtered = aliases.filter(mapping => batch.allowGroup !== false || mapping.urlType !== 'group');
+    const inSheet = batch.sheetId ? filtered.filter(mapping => mapping.sheetId === String(batch.sheetId)) : filtered;
+    // A problem moved/shared between sheets must still resolve.
+    return { mappings: inSheet.length ? inSheet : filtered, exact: false };
 }
 
 export interface BackfillResult {
@@ -319,16 +358,21 @@ export async function applyBackfillBatches(
             const cfId = Number(raw?.id);
             const problemIndex = normalizeProblemIndex(raw?.problemIndex);
             if (!Number.isSafeInteger(cfId) || cfId <= 0 || !problemIndex) { skipped++; continue; }
+            if (isPendingVerdict(raw.verdict)) { skipped++; continue; }
 
-            const mappings = resolveMappings(curriculum, batch, contestId, problemIndex);
+            const { mappings, exact } = resolveMappings(curriculum, batch, contestId, problemIndex);
             if (mappings.length === 0) { skipped++; continue; }
 
             const rawVerdict = normalizeVerdict(raw.verdict);
-            // Extension payloads are useful for reconstructing attempt history,
-            // but are client-controlled and cannot be evidence of an AC. Only
-            // the server-side Codeforces API path may award SOLVED progress.
-            const acceptedIsTrusted = isAccepted(rawVerdict) &&
-                (batch.allowUnverifiedAccepted === true || batch.allowGroup === false);
+            // Server API data (allowGroup === false) is authoritative. Browser
+            // data may award SOLVED only for problems the curriculum places in
+            // a private group or gym (the public API cannot see those), only
+            // on an exact curriculum match, and only for a linked handle.
+            // Public-contest ACs from the browser stay "Unverified" until the
+            // server API confirms them.
+            const browserPrivateAc = batch.allowUnverifiedAccepted === true && exact &&
+                mappings.every(mapping => mapping.urlType === 'group' || mapping.urlType === 'gym');
+            const acceptedIsTrusted = isAccepted(rawVerdict) && (batch.allowGroup === false || browserPrivateAc);
             const normalized: NormalizedSubmission = {
                 cfId,
                 contestId,
@@ -406,7 +450,11 @@ export async function applyBackfillBatches(
                     submitted_at, details
                 ) VALUES ${placeholders.join(', ')}
                 ON CONFLICT (cf_submission_id) DO UPDATE SET
-                    verdict = EXCLUDED.verdict,
+                    -- Never downgrade a verified AC when a later browser scan
+                    -- re-reads the same submission as "Unverified Accepted".
+                    verdict = CASE
+                        WHEN submissions.verdict = 'Accepted' AND EXCLUDED.verdict = 'Unverified Accepted'
+                        THEN submissions.verdict ELSE EXCLUDED.verdict END,
                     time_ms = EXCLUDED.time_ms,
                     memory_kb = EXCLUDED.memory_kb,
                     language = EXCLUDED.language,
@@ -416,7 +464,8 @@ export async function applyBackfillBatches(
                     details = COALESCE(EXCLUDED.details, submissions.details)
                 WHERE submissions.user_id = EXCLUDED.user_id
                   AND (
-                    submissions.verdict IS DISTINCT FROM EXCLUDED.verdict OR
+                    (submissions.verdict IS DISTINCT FROM EXCLUDED.verdict
+                        AND NOT (submissions.verdict = 'Accepted' AND EXCLUDED.verdict = 'Unverified Accepted')) OR
                     submissions.time_ms IS DISTINCT FROM EXCLUDED.time_ms OR
                     submissions.memory_kb IS DISTINCT FROM EXCLUDED.memory_kb OR
                     submissions.language IS DISTINCT FROM EXCLUDED.language OR

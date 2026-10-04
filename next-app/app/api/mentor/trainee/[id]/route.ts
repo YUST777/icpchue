@@ -10,6 +10,22 @@ interface CacheEntry {
 }
 
 const dossierCache = new Map<string, CacheEntry>();
+const DOSSIER_CACHE_MAX = 200;
+
+type ProblemStatus = 'SOLVED' | 'WRONG_ANSWER' | 'TIME_LIMIT' | 'MEMORY_LIMIT' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR' | 'ATTEMPTED' | 'NOT_STARTED';
+
+/** Classify a stored verdict by its start, not by loose substrings ("wa" in "waiting"). */
+function classifyVerdict(raw: string | null | undefined): { status: ProblemStatus; label: string } {
+    const v = String(raw || '').trim();
+    const l = v.toLowerCase();
+    if (/^(ok|ac|accepted|happy new year|perfect result)/.test(l)) return { status: 'SOLVED', label: 'Accepted' };
+    if (/^(wrong answer|wa\b)/.test(l)) return { status: 'WRONG_ANSWER', label: v };
+    if (/^(time limit|tle\b)/.test(l)) return { status: 'TIME_LIMIT', label: 'Time Limit Exceeded' };
+    if (/^(memory limit|mle\b)/.test(l)) return { status: 'MEMORY_LIMIT', label: 'Memory Limit Exceeded' };
+    if (/^(runtime error|rte\b|re\b)/.test(l)) return { status: 'RUNTIME_ERROR', label: 'Runtime Error' };
+    if (/^(compilation error|ce\b)/.test(l)) return { status: 'COMPILATION_ERROR', label: 'Compilation Error' };
+    return { status: 'ATTEMPTED', label: v || 'Attempted' };
+}
 
 export async function GET(
     req: NextRequest,
@@ -35,7 +51,9 @@ export async function GET(
         const subOffset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
         const subLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : 100;
 
-        const cacheKey = `dossier:${paramId.toLowerCase().trim()}:${subOffset}:${subLimit}`;
+        // The role is part of the key: mentors must never receive a staff dossier
+        // that an owner's request cached a moment earlier.
+        const cacheKey = `dossier:${mentorUser.role}:${paramId.toLowerCase().trim()}:${subOffset}:${subLimit}`;
         const cached = dossierCache.get(cacheKey);
         if (cached && cached.expiresAt > Date.now()) {
             return NextResponse.json(cached.data, {
@@ -48,7 +66,15 @@ export async function GET(
         let appRow: any = null;
 
         let candidateUserId: string | null = null;
-        if (/^\d+$/.test(paramId)) {
+        const appMatch = paramId.match(/^app-(\d+)$/i);
+        if (appMatch) {
+            const byApp = await query('SELECT * FROM applications WHERE id = $1 LIMIT 1', [appMatch[1]]);
+            if (byApp.rows.length > 0) {
+                appRow = byApp.rows[0];
+                const uRes = await query('SELECT * FROM users WHERE application_id = $1 ORDER BY id DESC LIMIT 1', [appRow.id]);
+                if (uRes.rows.length > 0) userRow = uRes.rows[0];
+            }
+        } else if (/^\d+$/.test(paramId)) {
             candidateUserId = paramId;
         } else {
             const stuMatch = paramId.match(/^STU-(\d+)$/i);
@@ -92,22 +118,6 @@ export async function GET(
         }
 
         if (!userRow && !appRow) {
-            const appCheck = await query('SELECT id, student_id, name, email, email_blind_index, faculty, student_level, telephone, telegram_username, has_laptop, codeforces_profile, leetcode_profile, season_year, submitted_at FROM applications ORDER BY id DESC LIMIT 500');
-            for (const a of appCheck.rows) {
-                const decSid = decrypt(a.student_id);
-                if (decSid === paramId || a.student_id === paramId) {
-                    appRow = a;
-                    const uRes = await query(
-                        'SELECT * FROM users WHERE application_id = $1 OR email_blind_index = $2 OR (email = $3 AND $3 IS NOT NULL) LIMIT 1', 
-                        [a.id, a.email_blind_index, a.email]
-                    );
-                    if (uRes.rows.length > 0) userRow = uRes.rows[0];
-                    break;
-                }
-            }
-        }
-
-        if (!userRow && !appRow) {
             return NextResponse.json({ error: 'Student not found' }, { status: 404 });
         }
 
@@ -134,22 +144,23 @@ export async function GET(
             user_id: userId,
             application_id: applicationId,
             name: decrypt(appRow?.name) || userRow?.codeforces_handle || `Student #${userId || applicationId}`,
-            student_id: decrypt(appRow?.student_id) || appRow?.student_id || `STU-${userId || applicationId}`,
+            student_id: appRow?.student_id || `STU-${userId || applicationId}`,
             email: decrypt(appRow?.email) || decrypt(userRow?.email) || userRow?.email || '',
             phone: decrypt(appRow?.telephone) || '',
             telegram: appRow?.telegram_username || userRow?.telegram_username || '',
-            faculty: decrypt(appRow?.faculty) || appRow?.faculty || 'Computing & Informatics',
-            academic_level: appRow?.student_level || 'Level 1',
-            has_laptop: appRow?.has_laptop ?? true,
-            codeforces_handle: userRow?.codeforces_handle || appRow?.codeforces_profile || '',
+            faculty: appRow?.faculty || '',
+            academic_level: appRow?.student_level || '',
+            training_level: (String(appRow?.application_type || '').match(/^level(\d)_training_/) || [])[1] ?? null,
+            has_laptop: appRow?.has_laptop ?? null,
+            codeforces_handle: userRow?.codeforces_handle || '',
+            codeforces_profile: appRow?.codeforces_profile || '',
             leetcode_profile: appRow?.leetcode_profile || '',
             profile_picture: null,
             created_at: userRow?.created_at || appRow?.submitted_at,
             last_login_at: userRow?.last_login_at || null,
             cheating_flags: userRow?.cheating_flags || 0,
             is_shadow_banned: userRow?.is_shadow_banned || false,
-            season_year: appRow?.season_year || 2026,
-            cohort_group: 'Group A',
+            season_year: appRow?.season_year || null,
         };
 
         // 3. Parallel Fetching with Verified Schema
@@ -170,9 +181,16 @@ export async function GET(
             sumTimeRes,
             problemVerdictsRes
         ] = await Promise.all([
-            userId ? query('SELECT COUNT(*) as distinct_solved, MAX(submitted_at) as last_solve_at, COUNT(*) as total_submissions FROM submissions WHERE user_id = $1 AND (LOWER(verdict) LIKE \'%accepted%\' OR LOWER(verdict) = \'ok\' OR LOWER(verdict) = \'ac\')', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`
+                SELECT
+                    (SELECT COUNT(DISTINCT problem_id) FROM user_progress WHERE user_id = $1 AND status = 'SOLVED') AS distinct_solved,
+                    (SELECT COUNT(DISTINCT (COALESCE(contest_id::text, sheet_id::text, ''), UPPER(problem_index)))
+                       FROM submissions WHERE user_id = $1 AND verdict IN ('Accepted', 'OK')) AS distinct_ac,
+                    (SELECT MAX(submitted_at) FROM submissions WHERE user_id = $1 AND verdict IN ('Accepted', 'OK')) AS last_solve_at,
+                    (SELECT COUNT(*) FROM submissions WHERE user_id = $1 AND submitted_at > now() - interval '7 days') AS subs_7d
+            `, [userId]) : Promise.resolve({ rows: [] }),
             userId ? query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
-            query('SELECT * FROM recap_2025 WHERE student_id = $1 OR (username = $2 AND $2 != \'\') LIMIT 1', [profile.student_id, profile.codeforces_handle || '']),
+            Promise.resolve({ rows: [] }),
             query('SELECT COUNT(*) as count FROM curriculum_problems'),
             query(`
                 SELECT 
@@ -196,7 +214,7 @@ export async function GET(
             `),
             userId ? query('SELECT sheet_id, problem_id, status FROM user_progress WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [] }),
             userId ? query(`
-                SELECT solve_date, solve_count 
+                SELECT to_char(solve_date, 'YYYY-MM-DD') AS solve_date, solve_count 
                 FROM daily_solves 
                 WHERE user_id = $1 AND solve_date >= CURRENT_DATE - INTERVAL '365 days'
                 ORDER BY solve_date ASC
@@ -234,7 +252,7 @@ export async function GET(
                 ORDER BY updated_at DESC 
                 LIMIT 100
             `, [userId]) : Promise.resolve({ rows: [] }),
-            userId ? query('SELECT * FROM user_custom_tests WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 10', [userId]) : Promise.resolve({ rows: [] }),
+            Promise.resolve({ rows: [] }),
             userId ? query('SELECT SUM(time_to_solve_seconds) as total_sec FROM submissions WHERE user_id = $1', [userId]) : Promise.resolve({ rows: [{ total_sec: '0' }] }),
             userId ? query(`
                 SELECT 
@@ -249,7 +267,12 @@ export async function GET(
             `, [userId]) : Promise.resolve({ rows: [] })
         ]);
 
-        const distinctSolved = parseInt(statsRes.rows[0]?.distinct_solved || '0', 10);
+        // Same source as the directory (user_progress SOLVED), falling back to
+        // distinct accepted problems for users whose progress was never synced.
+        const distinctSolved = Math.max(
+            parseInt(statsRes.rows[0]?.distinct_solved || '0', 10),
+            parseInt(statsRes.rows[0]?.distinct_ac || '0', 10),
+        );
         const totalSubmissions = parseInt(subsCountRes.rows[0]?.total || statsRes.rows[0]?.total_submissions || '0', 10);
         const currentStreak = parseInt(streakRes.rows[0]?.current_streak || '0', 10);
         const maxStreak = parseInt(streakRes.rows[0]?.max_streak || '0', 10);
@@ -261,7 +284,7 @@ export async function GET(
         const sheetIdToSheetMap = new Map<string, { level: string, level_id: string, sheet_letter: string, sheet_name: string, sheet_id: string }>();
 
         sheetsRes.rows.forEach((s: any) => {
-            const lvlId = String(s.level_id || 1);
+            const lvlId = String(s.level_number ?? s.level_id ?? '');
             const info = {
                 level: `Lv ${lvlId}`,
                 level_id: lvlId,
@@ -339,37 +362,15 @@ export async function GET(
             const subKey = `${canonicalContestId}_${letter}`;
             const subData = probSubMap.get(subKey);
 
-            let status: 'SOLVED' | 'WRONG_ANSWER' | 'TIME_LIMIT' | 'MEMORY_LIMIT' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR' | 'ATTEMPTED' | 'NOT_STARTED' = 'NOT_STARTED';
+            let status: ProblemStatus = 'NOT_STARTED';
             let verdictLabel = 'Not Started';
             let attempts = 0;
 
             if (subData) {
                 attempts = subData.total_attempts;
-                if (subData.has_ac) {
-                    status = 'SOLVED';
-                    verdictLabel = 'Accepted';
-                } else {
-                    const lowerV = (subData.latest_verdict || '').toLowerCase();
-                    if (lowerV.includes('wrong') || lowerV.includes('wa')) {
-                        status = 'WRONG_ANSWER';
-                        verdictLabel = subData.latest_verdict;
-                    } else if (lowerV.includes('time') || lowerV.includes('tle')) {
-                        status = 'TIME_LIMIT';
-                        verdictLabel = 'Time Limit Exceeded';
-                    } else if (lowerV.includes('memory') || lowerV.includes('mle')) {
-                        status = 'MEMORY_LIMIT';
-                        verdictLabel = 'Memory Limit Exceeded';
-                    } else if (lowerV.includes('runtime') || lowerV.includes('rte')) {
-                        status = 'RUNTIME_ERROR';
-                        verdictLabel = 'Runtime Error';
-                    } else if (lowerV.includes('compil') || lowerV.includes('ce')) {
-                        status = 'COMPILATION_ERROR';
-                        verdictLabel = 'Compilation Error';
-                    } else {
-                        status = 'ATTEMPTED';
-                        verdictLabel = subData.latest_verdict || 'Attempted';
-                    }
-                }
+                const classified = subData.has_ac ? { status: 'SOLVED' as ProblemStatus, label: 'Accepted' } : classifyVerdict(subData.latest_verdict);
+                status = classified.status;
+                verdictLabel = classified.label;
             } else if (
                 solvedSet.has(`${sheetIdStr}_${letter}`) ||
                 solvedSet.has(`cid_${canonicalContestId}_${letter}`) ||
@@ -419,8 +420,8 @@ export async function GET(
                 sheet_letter: s.sheet_letter || `Sheet ${s.sheet_number}`,
                 name: s.name,
                 level_id: s.level_id,
-                level_number: s.level_number ?? (s.level_id !== undefined ? s.level_id : 1),
-                level_name: s.level_name || (s.level_id === '1' ? 'Level 1' : s.level_id === '2' ? 'Level 2' : 'Level 3'),
+                level_number: s.level_number ?? null,
+                level_name: s.level_name || (s.level_number != null ? `Level ${s.level_number}` : ''),
                 contest_id: s.contest_id,
                 total_problems: sheetTotal,
                 solved: solvedCount,
@@ -466,7 +467,7 @@ export async function GET(
         const timeSpentStr = totalSec > 0 ? `${hours}h ${mins}m` : '0h 0m';
 
         const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const subs7d = subTimestamps.filter((t: number) => t >= sevenDaysAgo).length;
+        const subs7d = parseInt(statsRes.rows[0]?.subs_7d ?? '', 10) || subTimestamps.filter((t: number) => t >= sevenDaysAgo).length;
 
         // 4. Metrics Payload
         const metrics = {
@@ -483,7 +484,8 @@ export async function GET(
             time_spent_seconds: totalSec,
             time_spent_str: timeSpentStr,
             last_solve_at: lastSolveAt,
-            accuracy_rate: totalSubmissions > 0 ? Math.round((distinctSolved / totalSubmissions) * 100) : 0,
+            // Share of submissions that were accepted (distinct problems would mix units).
+            accuracy_rate: totalSubmissions > 0 ? Math.min(100, Math.round((parseInt(statsRes.rows[0]?.distinct_ac || '0', 10) / totalSubmissions) * 100)) : 0,
         };
 
         // 5. Recent Submissions List
@@ -507,7 +509,7 @@ export async function GET(
                     sheet_letter: sheetLookup.sheet_letter,
                     sheet_name: sheetLookup.sheet_name
                 } : undefined,
-                verdict: sub.verdict || 'Accepted',
+                verdict: sub.verdict || 'Unknown',
                 details: sub.details || null,
                 language: sub.language || 'C++',
                 time_ms: sub.time_ms ?? null,
@@ -544,7 +546,7 @@ export async function GET(
 
         // 7. Heatmap
         const heatmapData = heatmapRes.rows.map((row: any) => ({
-            date: row.solve_date ? new Date(row.solve_date).toISOString().slice(0, 10) : '',
+            date: row.solve_date ? String(row.solve_date) : '',
             count: parseInt(row.solve_count || '0', 10),
         })).filter((d: any) => Boolean(d.date));
 
@@ -566,9 +568,10 @@ export async function GET(
                     : `${cid} ${letter}`;
 
                 const subData = probSubMap.get(comboKey);
-                const hasAc = subData ? subData.has_ac : (s.verdict?.toLowerCase().includes('accepted') || s.verdict === 'OK');
-                const verdict = hasAc ? 'Accepted' : (subData?.latest_verdict || s.verdict || 'Wrong Answer');
-                const status = hasAc ? 'SOLVED' : (verdict.toLowerCase().includes('time') ? 'TIME_LIMIT' : 'WRONG_ANSWER');
+                const hasAc = subData ? subData.has_ac : classifyVerdict(s.verdict).status === 'SOLVED';
+                const classified = hasAc ? { status: 'SOLVED' as ProblemStatus, label: 'Accepted' } : classifyVerdict(subData?.latest_verdict || s.verdict);
+                const verdict = classified.label;
+                const status = classified.status;
 
                 codeCatalog.push({
                     key: `sub_${comboKey}`,
@@ -656,6 +659,11 @@ export async function GET(
         };
 
         // Cache for 30s
+        if (dossierCache.size >= DOSSIER_CACHE_MAX) {
+            const now = Date.now();
+            for (const [key, entry] of dossierCache) if (entry.expiresAt <= now) dossierCache.delete(key);
+            if (dossierCache.size >= DOSSIER_CACHE_MAX) dossierCache.delete(dossierCache.keys().next().value as string);
+        }
         dossierCache.set(cacheKey, {
             data: responsePayload,
             expiresAt: Date.now() + 30000,
@@ -664,6 +672,6 @@ export async function GET(
         return NextResponse.json(responsePayload);
     } catch (error: any) {
         console.error('Mentor Trainee API Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
