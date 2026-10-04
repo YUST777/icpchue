@@ -10,6 +10,7 @@ interface CacheEntry {
 }
 const CACHE_TTL_MS = 30 * 1000;
 let traineesCache: CacheEntry | null = null;
+let curriculumTotal = 0;
 
 function normalizeSearchText(text: string): string {
     if (!text) return '';
@@ -50,8 +51,8 @@ export async function GET(req: NextRequest) {
                 WITH user_solve_counts AS (
                     SELECT 
                         user_id, 
-                        COUNT(DISTINCT problem_id) as total_solved,
-                        COUNT(CASE WHEN status = 'ATTEMPTED' THEN 1 END) as total_attempted
+                        COUNT(DISTINCT problem_id) FILTER (WHERE status = 'SOLVED') as total_solved,
+                        COUNT(DISTINCT problem_id) FILTER (WHERE status = 'ATTEMPTED') as total_attempted
                     FROM user_progress 
                     WHERE status IN ('SOLVED', 'ATTEMPTED')
                     GROUP BY user_id
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest) {
                     u.created_at as user_created_at,
                     u.last_login_at,
                     a.id as application_id,
+                    a.application_type,
                     a.student_id,
                     a.name as encrypted_name,
                     a.email as encrypted_email,
@@ -93,32 +95,48 @@ export async function GET(req: NextRequest) {
                     COALESCE(us.max_streak, 0) as max_streak,
                     us.last_solve_date
                 FROM users u
-                LEFT JOIN applications a ON (u.application_id = a.id OR (u.email_blind_index IS NOT NULL AND u.email_blind_index = a.email_blind_index))
+                -- Exactly one application per user: the linked one, otherwise the
+                -- newest application with the same email. The old OR-join
+                -- duplicated returning students (e.g. 2026 + Level 0 2027).
+                LEFT JOIN LATERAL (
+                    SELECT ap.*
+                      FROM applications ap
+                     WHERE ap.id = u.application_id
+                        OR (u.application_id IS NULL AND u.email_blind_index IS NOT NULL AND ap.email_blind_index = u.email_blind_index)
+                     ORDER BY (ap.id = u.application_id) DESC, ap.id DESC
+                     LIMIT 1
+                ) a ON true
                 LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
                 LEFT JOIN latest_submissions ls ON u.id = ls.user_id
                 LEFT JOIN user_streaks us ON u.id = us.user_id
                 WHERE u.role NOT IN ('mentor', 'instructor', 'owner') OR u.role IS NULL
                 ORDER BY u.id DESC
             `);
-
-            const totalCurriculumProblems = 150;
+            const curriculumCount = await query('SELECT COUNT(*)::int AS c FROM curriculum_problems');
+            const totalCurriculumProblems = Number(curriculumCount.rows[0]?.c) || 0;
             const now = Date.now();
 
             allTrainees = result.rows.map((row) => {
                 const decryptedName = decrypt(row.encrypted_name) || row.codeforces_handle || `Student #${row.user_id || row.application_id}`;
-                const decryptedSid = decrypt(row.student_id) || row.student_id || `STU-${row.user_id || row.application_id}`;
-                const decryptedEmail = decrypt(row.encrypted_email) || decrypt(row.user_email) || row.user_email || '';
-                const decryptedFaculty = decrypt(row.encrypted_faculty) || 'Computing & Informatics';
-                const decryptedPhone = decrypt(row.encrypted_phone) || '';
+                // student_id and faculty are stored as plaintext; only email,
+                // phone and national ID are encrypted.
+                const studentId = row.student_id || `STU-${row.user_id || row.application_id}`;
+                const decryptedEmail = decrypt(row.encrypted_email) || decrypt(row.user_email) || '';
+                const trainingLevel = (String(row.application_type || '').match(/^level(\d)_training_/) || [])[1] ?? null;
 
-                const lastActiveDate = row.last_submission_at || row.last_login_at || row.last_solve_date || row.user_created_at;
-                const lastActiveMs = lastActiveDate ? new Date(lastActiveDate).getTime() : 0;
-                const validLastActiveMs = Number.isFinite(lastActiveMs) && lastActiveMs > 0 ? lastActiveMs : 0;
-                const daysSinceActive = validLastActiveMs ? Math.floor((now - validLastActiveMs) / (1000 * 60 * 60 * 24)) : 999;
+                // Most recent of submission, login and solve (not the first non-null).
+                const activityMs = [row.last_submission_at, row.last_login_at, row.last_solve_date]
+                    .map((d) => (d ? new Date(d).getTime() : 0))
+                    .filter((t) => Number.isFinite(t) && t > 0);
+                const validLastActiveMs = activityMs.length ? Math.max(...activityMs) : 0;
+                const lastActiveDate = validLastActiveMs ? new Date(validLastActiveMs).toISOString() : null;
+                const hoursSinceActive = validLastActiveMs ? (now - validLastActiveMs) / (1000 * 60 * 60) : Infinity;
+                const daysSinceActive = validLastActiveMs ? Math.floor(hoursSinceActive / 24) : 999;
                 
                 const totalSolved = parseInt(row.total_solved, 10) || 0;
                 const totalAttempted = parseInt(row.total_attempted, 10) || 0;
-                const isStuck = totalAttempted > 3 && totalSolved < 5;
+                // Several problems tried but not solved, with few solves overall.
+                const isStuck = totalAttempted >= 3 && totalSolved < 5;
                 const isInactive = daysSinceActive > 7;
                 const flagsCount = parseInt(row.cheating_flags, 10) || 0;
                 const isBanned = Boolean(row.is_shadow_banned);
@@ -128,22 +146,24 @@ export async function GET(req: NextRequest) {
                     user_id: row.user_id,
                     application_id: row.application_id,
                     name: decryptedName,
-                    student_id: decryptedSid,
+                    student_id: studentId,
+                    // Used for server-side search only; stripped from the response.
                     email: decryptedEmail,
-                    faculty: decryptedFaculty,
-                    phone: decryptedPhone,
+                    faculty: row.encrypted_faculty || '',
                     telegram: row.telegram_username || row.app_telegram || '',
-                    codeforces_handle: row.codeforces_handle || row.codeforces_profile || '',
-                    academic_level: row.student_level || 'Level 1',
-                    has_laptop: row.has_laptop ?? true,
+                    codeforces_handle: row.codeforces_handle || '',
+                    academic_level: row.student_level || '',
+                    training_level: trainingLevel,
+                    has_laptop: row.has_laptop ?? null,
                     total_solved: totalSolved,
                     total_attempted: totalAttempted,
                     total_submissions: parseInt(row.total_submissions, 10) || 0,
-                    progress_percentage: Math.min(100, Math.round((totalSolved / (totalCurriculumProblems || 1)) * 100)),
+                    progress_percentage: totalCurriculumProblems ? Math.min(100, Math.round((totalSolved / totalCurriculumProblems) * 100)) : 0,
                     current_streak: parseInt(row.current_streak, 10) || 0,
                     max_streak: parseInt(row.max_streak, 10) || 0,
                     last_active_at: lastActiveDate,
                     days_since_active: daysSinceActive,
+                    hours_since_active: hoursSinceActive,
                     flags_count: flagsCount,
                     is_shadow_banned: isBanned,
                     is_stuck: isStuck,
@@ -152,6 +172,7 @@ export async function GET(req: NextRequest) {
                 };
             });
 
+            curriculumTotal = totalCurriculumProblems;
             traineesCache = {
                 data: allTrainees,
                 expiresAt: Date.now() + CACHE_TTL_MS,
@@ -181,10 +202,12 @@ export async function GET(req: NextRequest) {
         }
 
         if (level && level !== 'all') {
-            const normLevel = normalizeSearchText(level).replace(/\s+/g, '');
+            // "Level 0".."Level 3" = training level; exact match only (no
+            // substring matches like "Level 1" vs "Level 10").
+            const wanted = (level.match(/(\d+)/) || [])[1] ?? null;
             filtered = filtered.filter((t) => {
-                const sLvl = normalizeSearchText(t.academic_level).replace(/\s+/g, '');
-                return sLvl.includes(normLevel) || sLvl.includes(`l${normLevel}`);
+                const academic = (String(t.academic_level).match(/(\d+)/) || [])[1] ?? null;
+                return wanted !== null && (t.training_level === wanted || (t.training_level === null && academic === wanted));
             });
         }
 
@@ -201,7 +224,7 @@ export async function GET(req: NextRequest) {
 
         if (timeRange && timeRange !== 'all') {
             filtered = filtered.filter((t) => {
-                if (timeRange === '24h' || timeRange === 'today') return t.days_since_active <= 1;
+                if (timeRange === '24h' || timeRange === 'today') return t.hours_since_active <= 24;
                 if (timeRange === '3d') return t.days_since_active <= 3;
                 if (timeRange === '7d' || timeRange === 'week') return t.days_since_active <= 7;
                 if (timeRange === '30d' || timeRange === 'month') return t.days_since_active <= 30;
@@ -241,16 +264,17 @@ export async function GET(req: NextRequest) {
         // 5. Aggregate Summary Counts
         const summary = {
             total_trainees: allTrainees.length,
-            active_trainees: allTrainees.filter(t => !t.is_inactive && !t.is_shadow_banned).length,
+            // Same rule as the "active" filter so the card matches the list.
+            active_trainees: allTrainees.filter(t => !t.is_inactive && !t.is_shadow_banned && t.flags_count === 0).length,
             stuck_trainees: allTrainees.filter(t => t.is_stuck).length,
             flagged_trainees: allTrainees.filter(t => t.flags_count > 0 || t.is_shadow_banned).length,
             inactive_trainees: allTrainees.filter(t => t.is_inactive).length,
-            level_distribution: {
-                level_0: allTrainees.filter(t => t.academic_level.includes('0')).length,
-                level_1: allTrainees.filter(t => t.academic_level.includes('1')).length,
-                level_2: allTrainees.filter(t => t.academic_level.includes('2')).length,
-                level_3: allTrainees.filter(t => t.academic_level.includes('3')).length,
-            }
+            level_distribution: Object.fromEntries(['0', '1', '2', '3'].map((n) => [
+                `level_${n}`,
+                allTrainees.filter((t) => t.training_level === n ||
+                    (t.training_level === null && (String(t.academic_level).match(/(\d+)/) || [])[1] === n)).length,
+            ])),
+            total_curriculum_problems: curriculumTotal,
         };
 
         return NextResponse.json({
@@ -262,7 +286,8 @@ export async function GET(req: NextRequest) {
                 total_items: totalCount,
                 total_pages: totalPages,
             },
-            trainees: paginated,
+            // Contact details are not needed on the directory; keep them out of the payload.
+            trainees: paginated.map(({ email: _email, ...rest }) => rest),
         }, {
             headers: {
                 'Cache-Control': 'private, max-age=30'
