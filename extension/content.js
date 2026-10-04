@@ -1,11 +1,11 @@
 /**
- * Verdict Helper Extension v1.3.3 — Content Script
+ * Verdict Helper Extension v1.4.0 — Content Script
  *
  * Bridges window.postMessage (from the icpchue page) ↔ chrome.runtime.sendMessage
  * (to the background service worker). Also injects a marker element so the page
  * knows the extension is installed.
  *
- * v1.3.3: the extension reads the user's submissions itself (from their own
+ * v1.4.0: the extension reads the user's submissions itself (from their own
  * browser/IP) and returns only the result — cookies never leave the browser and
  * no local/remote bridge is contacted.
  */
@@ -14,7 +14,7 @@
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.3.3');
+    marker.setAttribute('data-version', '1.4.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();
@@ -100,6 +100,19 @@ window.addEventListener('message', async (event) => {
                 success: false,
                 error: err.message || 'Extension error',
             }, '*');
+        }
+    }
+
+    // ── Prepare submit: hand the code to the Codeforces submit tab ──
+    if (type === 'VERDICT_PREPARE_SUBMIT') {
+        try {
+            const { contestId, problemIndex, groupId, code, language } = payload || {};
+            const result = await chrome.runtime.sendMessage({
+                type: 'PREPARE_SUBMIT', contestId, problemIndex, groupId, code, language,
+            });
+            window.postMessage({ type: 'VERDICT_PREPARE_SUBMIT_RESULT', success: !!(result && result.success) }, '*');
+        } catch {
+            window.postMessage({ type: 'VERDICT_PREPARE_SUBMIT_RESULT', success: false }, '*');
         }
     }
 
