@@ -187,7 +187,7 @@ export const camps: Camp[] = [
                 desc: 'Live exam training session recording.',
                 description: 'Recording of the live exam training session covering problem solving strategies.',
                 thumbnail: '/images/lessons/pro1/examtraining.webp',
-                videoId: '',
+                videoId: 'H2Wbb5zSEjU',
                 content: <ExamTrainingContent />
             }
         ]
