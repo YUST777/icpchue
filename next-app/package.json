@@ -49,6 +49,7 @@
     "speakeasy": "^2.0.0",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
+    "vim-monaco": "^1.0.6",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
   },

@@ -95,6 +95,7 @@ export default function CodeWorkspace({
     const tabSize = useEditorStore((s) => s.tabSize);
     const wordWrap = useEditorStore((s) => s.wordWrap);
     const lineNumbers = useEditorStore((s) => s.lineNumbers);
+    const keyBinding = useEditorStore((s) => s.keyBinding);
 
     // Reset selected test case when problem changes
     useEffect(() => {
@@ -208,8 +209,13 @@ export default function CodeWorkspace({
 
     // Monaco editor ref
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
+    // Mounted editor instance (state) so Vim mode can attach once it is ready
+    const [editorInstance, setEditorInstance] = useState<Parameters<OnMount>[0] | null>(null);
+    // Node the vim-monaco status bar renders into (Vim mode only)
+    const vimStatusRef = useRef<HTMLDivElement>(null);
     const onEditorMount: OnMount = (editor, monacoEditor) => {
         editorInstanceRef.current = editor;
+        setEditorInstance(editor);
         handleEditorDidMount(editor, monacoEditor);
 
         // Scroll to top so content doesnt float in the middle under CSS zoom
@@ -221,6 +227,41 @@ export default function CodeWorkspace({
     useEffect(() => {
         return () => { editorInstanceRef.current = null; };
     }, []);
+
+    // Vim mode: attach vim-monaco only when the editor exists and the user chose
+    // the 'Vim' key binding. Imported dynamically so it never ships in the
+    // standard-mode bundle. If it fails to load, the editor keeps working.
+    useEffect(() => {
+        if (!editorInstance || keyBinding !== 'Vim') return;
+        const statusEl = vimStatusRef.current;
+        if (!statusEl) return;
+
+        let cancelled = false;
+        let vimMode: { disable: () => void } | null = null;
+
+        (async () => {
+            try {
+                const mod = await import('vim-monaco');
+                if (cancelled) return;
+                if (!(window as unknown as { monaco?: unknown }).monaco) {
+                    console.error('[CodeWorkspace] Vim mode requires the global window.monaco, which is not available yet.');
+                    return;
+                }
+                const statusBar = mod.makeDomStatusBar(statusEl, () => editorInstance.focus());
+                const mode = new mod.VimMode(editorInstance, statusBar);
+                if (!mode.attached) mode.enable();
+                vimMode = mode;
+            } catch (err) {
+                console.error('[CodeWorkspace] Failed to load Vim mode:', err);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+            vimMode?.disable();
+            statusEl.replaceChildren();
+        };
+    }, [editorInstance, keyBinding]);
 
     // Auto-switch to result tab when result arrives
     useEffect(() => {
@@ -405,6 +446,14 @@ export default function CodeWorkspace({
                     />
                 </div>
             </div>
+
+            {/* Vim status bar (vim-monaco) - only in Vim mode; the editor above shrinks to make room */}
+            {keyBinding === 'Vim' && (
+                <div
+                    ref={vimStatusRef}
+                    className="shrink-0 flex items-center px-3 h-7 bg-[#1a1a1a] border-t border-white/10 text-[11px] font-mono text-white/60 select-none overflow-hidden"
+                />
+            )}
 
             {/* ============ TEST PANEL (ALWAYS RENDERED) ============ */}
             <div
