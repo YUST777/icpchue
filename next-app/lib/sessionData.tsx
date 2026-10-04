@@ -54,7 +54,7 @@ export const camps: Camp[] = [
                 desc: 'Fundamentals of C++ Input/Output streams, arithmetic operators, and understanding basic data types and their limits.',
                 description: 'Master the basics of C++, input/output streams, and understand how data is stored in memory. Essential first steps for any competitive programmer.',
                 thumbnail: '/images/lessons/levels_camp/level0/datatypes.webp',
-                videoId: 'bpOxSAt1XgE',
+                videoId: 'OdCXSAkK67o',
                 content: <Session1Content />
             },
             {
@@ -68,7 +68,7 @@ export const camps: Camp[] = [
                 desc: 'Comprehensive review covering all previous topics with 3 practice problems to solidify your understanding.',
                 description: 'Comprehensive review of all previous topics with 3 practice problems to solidify your understanding.',
                 thumbnail: '/images/lessons/levels_camp/level0/revision.webp',
-                videoId: 'M4BGbmasoJg',
+                videoId: 'l6khncveTSQ',
                 content: <Session4Content />
             },
             {
@@ -82,7 +82,7 @@ export const camps: Camp[] = [
                 desc: 'Mastering decision making with if-else statements, switch cases, and understanding program flow control.',
                 description: 'Master conditional statements, logical operators, and control flow patterns. Learn when to use if/else vs switch, and optimize your decision-making code.',
                 thumbnail: '/images/lessons/levels_camp/level0/control-flow.webp',
-                videoId: 'yildYy8WIzs',
+                videoId: 'rHtlbb5vzGw',
                 content: <Session3Content />
             },
             {
@@ -96,7 +96,7 @@ export const camps: Camp[] = [
                 desc: 'Mastering functions in C++, understanding scope, parameters, and modular programming.',
                 description: 'Learn how to write modular code using functions. covering scope, pass-by-value vs pass-by-reference, and organizational best practices.',
                 thumbnail: '/images/lessons/levels_camp/level0/functions.webp',
-                videoId: 'NnzIOowWajY',
+                videoId: 'YZwuGGKkEAw',
             },
             {
                 id: 9,
@@ -109,7 +109,7 @@ export const camps: Camp[] = [
                 desc: 'Understanding recursion in C++, base cases, and recursive programming techniques.',
                 description: 'Dive into recursion. Learn how functions can call themselves, understand base cases, and solve complex problems using recursive techniques.',
                 thumbnail: '/images/lessons/approval/recursion.webp',
-                videoId: 'cHJ9fbc1YvM',
+                videoId: 'J62YFhg6TIE',
             },
             {
                 id: 10,
@@ -122,7 +122,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to 1D/2D arrays and strategies for solving ad-hoc problems.',
                 description: 'Learn how to store multiple values using arrays in C++ and develop logical thinking to tackle ad-hoc problems effectively.',
                 thumbnail: '/images/lessons/levels_camp/level0/arrays-adhocs.png',
-                videoId: '9She7ddH_r0',
+                videoId: 'SnTv1TB0m5c',
                 content: <Session6Content />
             },
             {
@@ -136,7 +136,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to time complexity analysis, Big-O notation, and estimating runtime from problem constraints.',
                 description: 'Learn how to analyze the efficiency of your code using Big-O notation. Understand common complexities and how to pick the right approach based on input constraints.',
                 thumbnail: '/images/lessons/levels_camp/level0/complexity.png',
-                videoId: 'WuYMPU_-APo',
+                videoId: 'JRc6-BQcXx4',
                 content: <Session7Content />
             },
             {
@@ -150,7 +150,7 @@ export const camps: Camp[] = [
                 desc: 'Live contest session — solve problems under time pressure and review solutions.',
                 description: 'Recording of Contest #3. Practice solving competitive programming problems under real contest conditions with post-contest solution review.',
                 thumbnail: '/images/lessons/levels_camp/level0/contest3.png',
-                videoId: 'K1bUcW_pC0g',
+                videoId: 'FLXhYfYyFA4',
             },
         ]
     },
@@ -173,7 +173,7 @@ export const camps: Camp[] = [
                 desc: 'Comprehensive revision of Programming 1 concepts.',
                 description: 'Comprehensive revision of Programming 1 concepts.',
                 thumbnail: '/images/lessons/pro1/revison.webp',
-                videoId: 'jn8wIAMwTq4',
+                videoId: 'BmYVF9TytVc',
                 content: <FullRevisionContent />
             },
             {
@@ -187,7 +187,7 @@ export const camps: Camp[] = [
                 desc: 'Live exam training session recording.',
                 description: 'Recording of the live exam training session covering problem solving strategies.',
                 thumbnail: '/images/lessons/pro1/examtraining.webp',
-                videoId: '5wfKnUVfnDw',
+                videoId: '',
                 content: <ExamTrainingContent />
             }
         ]
@@ -211,7 +211,7 @@ export const camps: Camp[] = [
                 desc: 'Introduction to Algorithms, Instructions, and Time Complexity analysis (O(n), O(1), O(n²)).',
                 description: 'Introduction to Algorithms, Instructions, and Time Complexity. Learn O(n), O(1), and O(n²) analysis with practical examples.',
                 thumbnail: '/images/lessons/levels_camp/level1/complexity.webp',
-                videoId: 'S7nqV57Sodk',
+                videoId: 'e5X7oPMRxf8',
                 content: <Session5Content />
             },
             {
