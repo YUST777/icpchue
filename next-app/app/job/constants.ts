@@ -1,3 +1,6 @@
+// Flip to true to reopen the /job application form.
+export const JOB_APPLICATIONS_OPEN = false;
+
 export const committees = [
   {
     id: 'media',
