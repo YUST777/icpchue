@@ -184,7 +184,7 @@ export default function TeamRegistration() {
                         {showHelp && (
                             <div className="mt-2 bg-[#111] border border-white/5 rounded-xl p-4 space-y-2">
                                 <p className="text-white/50 text-xs">Each member needs an <a href="https://icpc.global" target="_blank" rel="noopener noreferrer" className="text-[#E8C15A] underline">icpc.global</a> account. Enter the email you registered with.</p>
-                                <a href="https://drive.google.com/file/d/1HAcSbtF1J9Hixk0JLd0oGiuFIiflT6I0/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#E8C15A] text-xs font-bold hover:underline">📹 Watch Tutorial <ArrowRight size={12} /></a>
+                                <a href="https://youtu.be/Yj3GlhjZGuc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#E8C15A] text-xs font-bold hover:underline">📹 Watch Tutorial <ArrowRight size={12} /></a>
                             </div>
                         )}
                     </div>

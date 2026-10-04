@@ -103,7 +103,10 @@ function SessionContent() {
                         </div>
                     ) : (
                         <div className="aspect-video w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
-                            <p className="text-white/40">No video available</p>
+                            <div className="text-center px-6">
+                                <p className="text-white/60 font-bold text-sm sm:text-base">الفيديو هيكون متاح قريب</p>
+                                <p className="text-white/30 text-xs mt-1">Video coming soon</p>
+                            </div>
                         </div>
                     )}
                     {session.videoId && (() => {
