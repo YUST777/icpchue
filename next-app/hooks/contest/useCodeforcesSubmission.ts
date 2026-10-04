@@ -207,7 +207,9 @@ export function useCodeforcesSubmission({
                             }),
                         });
                         const backfillData = await backfillRes.json().catch(() => ({}));
-                        if (!backfillRes.ok || !backfillData.success || backfillData.matchingSubmissions === 0) {
+                        // matchingSubmissions === 0 only means this problem is not
+                        // in the tracked curriculum; verification can still run.
+                        if (!backfillRes.ok || !backfillData.success) {
                             throw new Error('Found your Codeforces history, but failed to save it. Please try again.');
                         }
                     }
