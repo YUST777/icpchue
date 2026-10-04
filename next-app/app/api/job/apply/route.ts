@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
+import { JOB_APPLICATIONS_OPEN } from '@/app/job/constants';
 
 const MAX_JSON_BYTES = 128 * 1024;
 const ALLOWED_COMMITTEES = new Set(['media', 'mentor', 'organizing', 'instructor']);
@@ -11,6 +12,10 @@ function boundedText(value: unknown, max: number): string {
 }
 
 export async function POST(req: NextRequest) {
+    if (!JOB_APPLICATIONS_OPEN) {
+        return NextResponse.json({ error: 'Applications are closed.' }, { status: 403 });
+    }
+
     try {
         const contentLength = Number(req.headers.get('content-length') || 0);
         if (Number.isFinite(contentLength) && contentLength > MAX_JSON_BYTES) {

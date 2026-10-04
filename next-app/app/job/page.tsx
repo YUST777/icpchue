@@ -15,9 +15,10 @@ import {
     Shirt,
     Trophy,
     HelpCircle,
+    Lock,
 } from 'lucide-react';
 import { facultyOptions, levelOptions } from '@/app/register/constants';
-import { committees, mediaSkills } from '@/app/job/constants';
+import { committees, mediaSkills, JOB_APPLICATIONS_OPEN } from '@/app/job/constants';
 
 function cn(...c: (string | boolean | undefined)[]) {
     return c.filter(Boolean).join(' ');
@@ -317,6 +318,31 @@ export default function JobApplicationPage() {
             setLoading(false);
         }
     };
+
+    if (!JOB_APPLICATIONS_OPEN) return (
+        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
+            <div dir="rtl" className="relative z-10 text-center max-w-md w-full bg-[#121214] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div className="w-14 h-14 mx-auto mb-4 bg-[#E8C15A]/10 border border-[#E8C15A]/20 rounded-full flex items-center justify-center">
+                    <Lock className="w-7 h-7 text-[#E8C15A]" />
+                </div>
+
+                <h1 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+                    التقديم مقفول حالياً
+                </h1>
+
+                <p className="text-white/70 text-xs sm:text-sm mb-6 leading-relaxed">
+                    شكراً لاهتمامك بالانضمام لفريق ICPC HUE. باب التقديم اتقفل، وهنعلن عن أي فرص جديدة على صفحاتنا.
+                </p>
+
+                <Link
+                    href="/"
+                    className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white font-medium text-xs rounded-xl transition-all border border-white/5 cursor-pointer"
+                >
+                    العودة للصفحة الرئيسية
+                </Link>
+            </div>
+        </div>
+    );
 
     if (success) return (
         <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
