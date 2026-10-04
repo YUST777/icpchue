@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
 import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES } from './EditorConstants';
+import { useEditorStore } from '@/hooks/contest/useEditorStore';
 import dynamic from 'next/dynamic';
 // Lazy-load clang-format WASM — only loaded when user actually formats
 let formatModule: { format: (code: string, filename: string, style: string) => string } | null = null;
@@ -85,6 +86,15 @@ export default function CodeWorkspace({
     const savedHeightRef = useRef(DEFAULT_PANEL_PERCENT);
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
+
+    // Editor settings (persisted) — read with individual selectors so this
+    // component only re-renders when a value it actually uses changes.
+    const fontFamily = useEditorStore((s) => s.fontFamily);
+    const fontSize = useEditorStore((s) => s.fontSize);
+    const fontLigatures = useEditorStore((s) => s.fontLigatures);
+    const tabSize = useEditorStore((s) => s.tabSize);
+    const wordWrap = useEditorStore((s) => s.wordWrap);
+    const lineNumbers = useEditorStore((s) => s.lineNumbers);
 
     // Reset selected test case when problem changes
     useEffect(() => {
@@ -355,14 +365,17 @@ export default function CodeWorkspace({
                         onMount={onEditorMount}
                         options={{
                             minimap: { enabled: false },
-                            fontSize: 13,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize,
+                            fontFamily,
                             scrollBeyondLastLine: false,
                             automaticLayout: true,
                             padding: { top: 0, bottom: 0 },
-                            lineHeight: 22,
-                            fontLigatures: true,
-                            lineNumbers: 'on',
+                            lineHeight: Math.round(fontSize * 1.7),
+                            fontLigatures,
+                            lineNumbers,
+                            tabSize,
+                            detectIndentation: false,
+                            wordWrap,
                             renderLineHighlight: 'all',
                             suggest: {
                                 filterGraceful: false,
