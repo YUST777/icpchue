@@ -74,11 +74,26 @@ export function useCodeforcesSubmission({
         activeSubIdRef.current = null;
 
         try {
-            // 1. Open the Codeforces submit page in a new tab
+            // 1. Hand the code to the extension so it pastes it on the
+            //    Codeforces submit page (extension v1.4.0+). Also copy it to
+            //    the clipboard as a fallback for older extension versions.
+            window.postMessage({
+                type: 'VERDICT_PREPARE_SUBMIT',
+                payload: {
+                    contestId: String(contestId),
+                    problemIndex: String(problemId),
+                    groupId: urlType === 'group' ? groupId || null : null,
+                    code,
+                    language,
+                },
+            }, window.location.origin);
+            navigator.clipboard?.writeText(code).catch(() => {});
+
+            // 2. Open the Codeforces submit page in a new tab
             const cfUrl = getSubmitUrl(contestId, problemId, urlType, groupId);
             window.open(cfUrl, '_blank');
 
-            // 2. Save submitted code snapshot to DB for tracking
+            // 3. Save submitted code snapshot to DB for tracking
             fetch('/api/user/code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

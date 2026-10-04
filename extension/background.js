@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.3.3 — Background Service Worker
+ * Verdict Helper Extension v1.4.0 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.3.3';
+const EXT_VERSION = '1.4.0';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
@@ -548,7 +548,54 @@ async function getContestSubmissions({ contestId, urlType, groupId, maxPages = 1
 }
 
 // ─── Message Handler ─────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+// ─── Pending submit (auto-paste into Codeforces) ─────────────────────
+// The site stores the student's code right before opening the Codeforces
+// submit tab; the submit page takes it once. Kept in session storage so it
+// never touches disk and expires after 10 minutes.
+const PENDING_TTL_MS = 10 * 60 * 1000;
+const MAX_CODE_LENGTH = 65536;
+const ALLOWED_LANGUAGES = new Set(['c', 'cpp', 'java', 'python', 'kotlin']);
+
+async function storePendingSubmit({ contestId, problemIndex, groupId, code, language }) {
+    if (!/^\d+$/.test(String(contestId || '')) || !/^[A-Za-z0-9]{1,4}$/.test(String(problemIndex || ''))) {
+        return { success: false, error: 'BAD_PROBLEM' };
+    }
+    if (typeof code !== 'string' || !code.trim() || code.length > MAX_CODE_LENGTH) {
+        return { success: false, error: 'BAD_CODE' };
+    }
+    const key = `pending:${groupId || ''}:${contestId}:${String(problemIndex).toUpperCase()}`;
+    await chrome.storage.session.set({
+        [key]: { code, language: ALLOWED_LANGUAGES.has(language) ? language : null, at: Date.now() },
+    });
+    return { success: true };
+}
+
+async function takePendingSubmit(key) {
+    const storageKey = `pending:${key}`;
+    const stored = (await chrome.storage.session.get(storageKey))[storageKey];
+    if (!stored) return { pending: null };
+    await chrome.storage.session.remove(storageKey);
+    if (Date.now() - stored.at > PENDING_TTL_MS) return { pending: null };
+    return { pending: { code: stored.code, language: stored.language } };
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'PREPARE_SUBMIT') {
+        storePendingSubmit(message).then(sendResponse).catch(() => sendResponse({ success: false }));
+        return true;
+    }
+
+    // Only the Codeforces submit-page script may take the pending code.
+    if (message.type === 'TAKE_PENDING_SUBMIT') {
+        const fromCodeforces = /^https:\/\/(www\.)?codeforces\.com\//.test(sender?.url || '');
+        if (!fromCodeforces || typeof message.key !== 'string') {
+            sendResponse({ pending: null });
+            return true;
+        }
+        takePendingSubmit(message.key).then(sendResponse).catch(() => sendResponse({ pending: null }));
+        return true;
+    }
+
     if (message.type === 'CHECK_CF_LOGIN' || message.action === 'checkLoginStatus') {
         checkLogin().then(sendResponse);
         return true;
