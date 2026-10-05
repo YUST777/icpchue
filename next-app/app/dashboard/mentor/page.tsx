@@ -230,7 +230,7 @@ export default function MentorTraineesDirectoryPage() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search student name, student ID, CF handle, or email..."
+                        placeholder="Search name, student ID, CF handle, or full email..."
                         className="w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
                     />
                 </div>
