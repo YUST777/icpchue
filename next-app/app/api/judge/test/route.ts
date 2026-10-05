@@ -4,6 +4,10 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { z } from 'zod';
 
+// Judge polling can take a while on the self-hosted box; allow up to 60s.
+export const maxDuration = 60;
+const JUDGE_POLL_BUDGET_MS = 50_000;
+
 // Judge0 Configuration.
 // Defaults to the free public Judge0 CE API (no self-hosted Docker needed on
 // Vercel). Override JUDGE0_API_URL to point at a self-hosted / RapidAPI instance.
@@ -172,12 +176,12 @@ export async function POST(req: NextRequest) {
         // Poll for results
         const tokenString = validTokens.map((t: Judge0Token) => t.token).join(',');
         let submissions: Judge0SubmissionResult[] = [];
-        let pollAttempts = 0;
-        const maxPollAttempts = 20; // 20 seconds max for sample tests
+        // The judge runs ~2 cases at a time and recompiles for each (~5s),
+        // so poll against a wall-clock deadline rather than a fixed count.
+        const pollDeadline = Date.now() + JUDGE_POLL_BUDGET_MS;
 
-        while (pollAttempts < maxPollAttempts) {
-            await new Promise(r => setTimeout(r, 500)); // 0.5 second delay for faster feedback
-            pollAttempts++;
+        while (Date.now() < pollDeadline) {
+            await new Promise(r => setTimeout(r, 750));
 
             const resultsResponse = await fetch(
                 `${JUDGE0_API_URL}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=token,stdout,stderr,status_id,time,memory,compile_output`,
@@ -249,11 +253,17 @@ export async function POST(req: NextRequest) {
                 case 10:
                 case 11:
                 case 12:
+                case 14:
                     verdict = 'Runtime Error';
                     allPassed = false;
                     break;
                 case 13:
                     verdict = 'Internal Error';
+                    allPassed = false;
+                    break;
+                case 1:
+                case 2:
+                    verdict = 'Judge Timeout';
                     allPassed = false;
                     break;
                 default:
