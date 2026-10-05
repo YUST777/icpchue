@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
         // Run cleanup
         const results = {
             activity: 0,
-            navigation: 0,
             errors: 0,
             sessions: 0,
             logins: 0,
@@ -35,9 +34,6 @@ export async function POST(req: NextRequest) {
 
         const r1 = await query("DELETE FROM user_activity WHERE created_at < NOW() - INTERVAL '90 days'");
         results.activity = r1.rowCount || 0;
-
-        const r2 = await query("DELETE FROM page_navigation WHERE entered_at < NOW() - INTERVAL '90 days'");
-        results.navigation = r2.rowCount || 0;
 
         const r3 = await query("DELETE FROM error_logs WHERE created_at < NOW() - INTERVAL '30 days'");
         results.errors = r3.rowCount || 0;
