@@ -642,6 +642,89 @@ export async function GET(
             updated_at: n.updated_at,
         }));
 
+        // 10. Time on problems (problem_time_sessions, sent by the problem page timer)
+        const [timeAggRes, timeSessionsRes] = userId ? await Promise.all([
+            query(`
+                WITH first_ac AS (
+                    SELECT contest_id::text AS cid, UPPER(TRIM(problem_index)) AS pidx, MIN(submitted_at) AS ac_at
+                    FROM submissions
+                    WHERE user_id = $1 AND (LOWER(verdict) LIKE '%accepted%' OR LOWER(verdict) IN ('ok', 'ac'))
+                    GROUP BY 1, 2
+                )
+                SELECT t.contest_id, t.problem_index, MAX(t.sheet_id) AS sheet_id,
+                       SUM(t.active_seconds)::int AS active_seconds,
+                       SUM(t.idle_seconds)::int AS idle_seconds,
+                       SUM(t.away_seconds)::int AS away_seconds,
+                       COUNT(*)::int AS visits,
+                       MIN(t.started_at) AS first_seen, MAX(t.last_beat_at) AS last_seen,
+                       f.ac_at AS first_ac_at,
+                       COALESCE(SUM(t.active_seconds) FILTER (WHERE f.ac_at IS NOT NULL AND t.started_at <= f.ac_at), 0)::int AS active_before_ac
+                FROM problem_time_sessions t
+                LEFT JOIN first_ac f ON f.cid = t.contest_id AND f.pidx = t.problem_index
+                WHERE t.user_id = $1
+                GROUP BY t.contest_id, t.problem_index, f.ac_at
+            `, [userId]),
+            query(`
+                SELECT contest_id, problem_index, started_at, last_beat_at, active_seconds, idle_seconds, away_seconds
+                FROM problem_time_sessions
+                WHERE user_id = $1 AND active_seconds + idle_seconds + away_seconds >= 30
+                ORDER BY started_at DESC
+                LIMIT 200
+            `, [userId]),
+        ]) : [{ rows: [] }, { rows: [] }];
+
+        const problemLabel = (cid: string, letter: string, sheetId?: string | null) => {
+            const sheetInfo = contestToSheetMap.get(cid) || (sheetId ? sheetIdToSheetMap.get(String(sheetId)) : undefined);
+            return {
+                label: sheetInfo ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter} / ${letter}` : `${cid} ${letter}`,
+                sheet_key: sheetInfo ? `${sheetInfo.level} / Sheet ${sheetInfo.sheet_letter}` : 'Other',
+                sheet_name: sheetInfo?.sheet_name || null,
+                title: problemTitleMap.get(`${cid}_${letter}`) || null,
+            };
+        };
+
+        const timeOnProblems = timeAggRes.rows.map((r: any) => {
+            const cid = String(r.contest_id);
+            const letter = String(r.problem_index).toUpperCase();
+            const sub = probSubMap.get(`${cid}_${letter}`);
+            const solved = Boolean(r.first_ac_at) || Boolean(sub?.has_ac);
+            return {
+                key: `${cid}_${letter}`,
+                contest_id: cid,
+                problem_index: letter,
+                ...problemLabel(cid, letter, r.sheet_id),
+                active_seconds: r.active_seconds,
+                idle_seconds: r.idle_seconds,
+                away_seconds: r.away_seconds,
+                visits: r.visits,
+                first_seen: r.first_seen,
+                last_seen: r.last_seen,
+                solved,
+                first_ac_at: r.first_ac_at,
+                // Active time spent before the first Accepted ("time to solve").
+                active_to_solve_seconds: r.first_ac_at ? r.active_before_ac : null,
+                attempts: sub?.total_attempts || 0,
+                latest_verdict: sub?.latest_verdict || null,
+            };
+        });
+
+        const timeSessions = timeSessionsRes.rows.map((r: any) => {
+            const cid = String(r.contest_id);
+            const letter = String(r.problem_index).toUpperCase();
+            const { label, title } = problemLabel(cid, letter);
+            return {
+                contest_id: cid,
+                problem_index: letter,
+                label,
+                title,
+                started_at: r.started_at,
+                ended_at: r.last_beat_at,
+                active_seconds: r.active_seconds,
+                idle_seconds: r.idle_seconds,
+                away_seconds: r.away_seconds,
+            };
+        });
+
         const responsePayload = {
             profile,
             metrics,
@@ -652,6 +735,8 @@ export async function GET(
             heatmap_data: heatmapData,
             code_catalog: codeCatalog,
             user_notes: userNotes,
+            time_on_problems: timeOnProblems,
+            time_sessions: timeSessions,
             behavioral_analysis: {
                 cheating_flags: flaggedProblems.length || profile.cheating_flags || 0,
                 risk_score: flaggedProblems.length > 3 ? 'HIGH' : flaggedProblems.length > 0 ? 'MEDIUM' : 'LOW',
