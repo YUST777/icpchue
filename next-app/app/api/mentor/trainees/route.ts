@@ -20,6 +20,8 @@ function normalizeSearchText(text: string): string {
         .replace(/[أإآ]/g, 'ا')                       // Normalize Alef variants
         .replace(/ة/g, 'ه')                           // Normalize Teh Marbuta
         .replace(/ى/g, 'ي')                           // Normalize Alef Maksura
+        .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660)) // Arabic-Indic digits
+        .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0)) // Persian digits
         .toLowerCase()
         .replace(/\s+/g, ' ')
         .trim();
@@ -150,6 +152,8 @@ export async function GET(req: NextRequest) {
                     // every email here cost ~60ms each (cryptr's PBKDF2), ~25s per
                     // rebuild, and the directory never shows emails anyway.
                     email_bis: [row.app_email_bi, row.user_email_bi].filter(Boolean),
+                    // Normalized once per cache build; stripped from the response.
+                    search_text: normalizeSearchText(`${decryptedName} ${studentId} ${row.codeforces_handle || ''}`),
                     faculty: row.encrypted_faculty || '',
                     telegram: row.telegram_username || row.app_telegram || '',
                     codeforces_handle: row.codeforces_handle || '',
@@ -181,22 +185,22 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Client-side Search, Level Filter, Status Filter with Arabic Normalization
-        let filtered = allTrainees;
+        // Copy so sorting below never reorders the shared cached array.
+        let filtered = allTrainees.slice();
 
         if (search) {
             const normSearch = normalizeSearchText(search);
-            const searchBlindIndex = createBlindIndex(search);
+            const words = normSearch.split(' ').filter(Boolean);
+            const compactSearch = normSearch.replace(/ /g, '');
+            // Emails are only stored encrypted, so match them exactly by blind index.
+            const searchBlindIndex = search.includes('@') ? createBlindIndex(search) : null;
 
             filtered = filtered.filter((t) => {
-                const normName = normalizeSearchText(t.name);
-                const normSid = normalizeSearchText(t.student_id);
-                const normHandle = normalizeSearchText(t.codeforces_handle);
-
-                const matchText = normName.includes(normSearch) ||
-                                  normSid.includes(normSearch) ||
-                                  normHandle.includes(normSearch);
-
-                return matchText || Boolean(searchBlindIndex && t.email_bis.includes(searchBlindIndex));
+                if (searchBlindIndex && t.email_bis.includes(searchBlindIndex)) return true;
+                // Every word anywhere (any order), or the whole query ignoring
+                // spaces ("عبدالله" vs "عبد الله").
+                return words.every((w) => t.search_text.includes(w)) ||
+                    t.search_text.replace(/ /g, '').includes(compactSearch);
             });
         }
 
@@ -214,7 +218,8 @@ export async function GET(req: NextRequest) {
             filtered = filtered.filter((t) => {
                 if (statusFilter === 'active') return !t.is_inactive && !t.is_shadow_banned && t.flags_count === 0;
                 if (statusFilter === 'stuck') return t.is_stuck;
-                if (statusFilter === 'flagged') return t.flags_count > 0;
+                // Matches the "flagged" summary card, which also counts banned students.
+                if (statusFilter === 'flagged') return t.flags_count > 0 || t.is_shadow_banned;
                 if (statusFilter === 'banned') return t.is_shadow_banned;
                 if (statusFilter === 'inactive') return t.is_inactive;
                 return true;
@@ -286,7 +291,7 @@ export async function GET(req: NextRequest) {
                 total_pages: totalPages,
             },
             // Contact details are not needed on the directory; keep them out of the payload.
-            trainees: paginated.map(({ email_bis: _emailBis, ...rest }) => rest),
+            trainees: paginated.map(({ email_bis: _emailBis, search_text: _searchText, ...rest }) => rest),
         }, {
             headers: {
                 'Cache-Control': 'private, max-age=30'
