@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
+import { getContestProblemStats } from '@/lib/curriculum/problem-stats';
 
 /**
  * GET /api/curriculum/problems/[sheetId]
@@ -50,12 +51,19 @@ export async function GET(
                 problem_number,
                 problem_letter,
                 title,
-                codeforces_url,
-                rating
+                codeforces_url
             FROM curriculum_problems
             WHERE sheet_id = $1
             ORDER BY problem_number ASC
         `, [sheet.id]);
+
+        // Group problems have no Codeforces rating; use our trainees' solve data.
+        const stats = sheet.contest_id
+            ? await getContestProblemStats(String(sheet.contest_id)).catch((e) => {
+                console.warn('[Curriculum] Problem stats failed:', e instanceof Error ? e.message : e);
+                return new Map();
+            })
+            : new Map();
 
         return NextResponse.json({
             success: true,
@@ -82,7 +90,7 @@ export async function GET(
                 letter: problem.problem_letter,
                 title: problem.title,
                 codeforcesUrl: problem.codeforces_url,
-                rating: problem.rating
+                stats: stats.get(String(problem.problem_letter).trim().toUpperCase()) || null,
             }))
         }, {
             headers: {

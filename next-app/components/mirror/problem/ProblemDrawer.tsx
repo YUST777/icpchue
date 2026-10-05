@@ -22,8 +22,22 @@ export interface SheetProblem {
     contestId: number;
     index: string;
     name: string;
+    /** Official Codeforces rating; only set for problems loaded from the CF API. */
     rating?: number;
     tags?: string[];
+    /** Our trainees' results on a curriculum problem (null until enough tried it). */
+    stats?: { tried: number; solved: number; solveRate: number; medianSolveSeconds: number | null } | null;
+}
+
+function formatMinutes(seconds: number): string {
+    const m = Math.max(1, Math.round(seconds / 60));
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ''}`.trim() : `${m}m`;
+}
+
+function solveRateStyle(rate: number): string {
+    if (rate >= 80) return 'bg-emerald-500/10 text-emerald-400';
+    if (rate >= 50) return 'bg-[#E8C15A]/10 text-[#E8C15A]';
+    return 'bg-red-500/10 text-red-400';
 }
 
 export interface ActiveSheet {
@@ -125,7 +139,7 @@ export default function ProblemDrawer({
                                     problems: data.problems.map((p: any) => ({
                                         index: (p.letter || p.title.split('.')[0] || 'A').trim(),
                                         name: p.title,
-                                        rating: p.rating,
+                                        stats: p.stats ?? null,
                                         contestId: Number(data.sheet.contestId) || 0,
                                     }))
                                 };
@@ -425,7 +439,7 @@ export default function ProblemDrawer({
                                             String(problem.contestId) === currentContestId &&
                                             problem.index.toUpperCase() === currentProblemId.toUpperCase();
                                         const isSolved = solvedSet.has(`${problem.contestId}-${problem.index}`);
-                                        const diff = getDifficultyColor(problem.rating);
+                                        const diff = problem.rating ? getDifficultyColor(problem.rating) : null;
 
                                         const href = levelSlug && sheetSlug
                                             ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.index}`
@@ -464,10 +478,19 @@ export default function ProblemDrawer({
                                                         </p>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                                        {/* Difficulty pill */}
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${diff.bg} ${diff.text} font-medium`}>
-                                                            {problem.rating ? `${problem.rating}` : "?"}
-                                                        </span>
+                                                        {/* Curriculum: how our trainees did. Official CF problems: real rating. */}
+                                                        {problem.stats ? (
+                                                            <span
+                                                                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${solveRateStyle(problem.stats.solveRate)}`}
+                                                                title={`${problem.stats.solved} of ${problem.stats.tried} trainees who tried it solved it${problem.stats.medianSolveSeconds != null ? ` · usually ~${formatMinutes(problem.stats.medianSolveSeconds)} of active work` : ''}`}
+                                                            >
+                                                                {problem.stats.solveRate}% solve{problem.stats.medianSolveSeconds != null ? ` · ~${formatMinutes(problem.stats.medianSolveSeconds)}` : ''}
+                                                            </span>
+                                                        ) : diff ? (
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${diff.bg} ${diff.text} font-medium`}>
+                                                                {problem.rating}
+                                                            </span>
+                                                        ) : null}
                                                     </div>
                                                 </div>
 
