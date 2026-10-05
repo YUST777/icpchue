@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
                 )
                 SELECT 
                     u.id as user_id,
-                    u.email as user_email,
+                    u.email_blind_index as user_email_bi,
                     u.codeforces_handle,
                     u.telegram_username,
                     u.cheating_flags,
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
                     a.application_type,
                     a.student_id,
                     a.name as encrypted_name,
-                    a.email as encrypted_email,
+                    a.email_blind_index as app_email_bi,
                     a.faculty as encrypted_faculty,
                     a.student_level,
                     a.telephone as encrypted_phone,
@@ -121,7 +121,6 @@ export async function GET(req: NextRequest) {
                 // student_id and faculty are stored as plaintext; only email,
                 // phone and national ID are encrypted.
                 const studentId = row.student_id || `STU-${row.user_id || row.application_id}`;
-                const decryptedEmail = decrypt(row.encrypted_email) || decrypt(row.user_email) || '';
                 const trainingLevel = (String(row.application_type || '').match(/^level(\d)_training_/) || [])[1] ?? null;
 
                 // Most recent of submission, login and solve (not the first non-null).
@@ -147,8 +146,10 @@ export async function GET(req: NextRequest) {
                     application_id: row.application_id,
                     name: decryptedName,
                     student_id: studentId,
-                    // Used for server-side search only; stripped from the response.
-                    email: decryptedEmail,
+                    // Exact-email search goes through the blind index. Decrypting
+                    // every email here cost ~60ms each (cryptr's PBKDF2), ~25s per
+                    // rebuild, and the directory never shows emails anyway.
+                    email_bis: [row.app_email_bi, row.user_email_bi].filter(Boolean),
                     faculty: row.encrypted_faculty || '',
                     telegram: row.telegram_username || row.app_telegram || '',
                     codeforces_handle: row.codeforces_handle || '',
@@ -190,14 +191,12 @@ export async function GET(req: NextRequest) {
                 const normName = normalizeSearchText(t.name);
                 const normSid = normalizeSearchText(t.student_id);
                 const normHandle = normalizeSearchText(t.codeforces_handle);
-                const normEmail = normalizeSearchText(t.email);
 
-                const matchText = normName.includes(normSearch) || 
-                                  normSid.includes(normSearch) || 
-                                  normHandle.includes(normSearch) || 
-                                  normEmail.includes(normSearch);
+                const matchText = normName.includes(normSearch) ||
+                                  normSid.includes(normSearch) ||
+                                  normHandle.includes(normSearch);
 
-                return matchText || (searchBlindIndex && (t.student_id === search || t.email === search));
+                return matchText || Boolean(searchBlindIndex && t.email_bis.includes(searchBlindIndex));
             });
         }
 
@@ -287,7 +286,7 @@ export async function GET(req: NextRequest) {
                 total_pages: totalPages,
             },
             // Contact details are not needed on the directory; keep them out of the payload.
-            trainees: paginated.map(({ email: _email, ...rest }) => rest),
+            trainees: paginated.map(({ email_bis: _emailBis, ...rest }) => rest),
         }, {
             headers: {
                 'Cache-Control': 'private, max-age=30'
