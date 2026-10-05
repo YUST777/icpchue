@@ -34,26 +34,8 @@ export async function POST(req: NextRequest) {
         // Determine page type from path
         const pageType = getPageType(page);
 
-        if (leftPage) {
-            // User left a page — update the time_spent on the last navigation entry
-            // Note: Postgres doesn't support ORDER BY/LIMIT in UPDATE, use subquery
-            await query(
-                `UPDATE page_navigation SET left_at = NOW(), time_spent_ms = $1 
-                 WHERE id = (
-                     SELECT id FROM page_navigation 
-                     WHERE user_id = $2 AND session_id = $3 AND page_path = $4 AND left_at IS NULL
-                     ORDER BY entered_at DESC LIMIT 1
-                 )`,
-                [timeSpent || 0, user.id, sessionId || '', page]
-            ).catch(() => {});
-        } else {
-            // New page visit
-            await query(
-                `INSERT INTO page_navigation (user_id, session_id, page_path, referrer, page_type)
-                 VALUES ($1, $2, $3, $4, $5)`,
-                [user.id, sessionId || '', page, referrer || null, pageType]
-            ).catch(() => {});
-        }
+        // Per-page rows (page_navigation) were dropped; nothing read them.
+        // Sessions below still count pages and events.
 
         // Upsert session
         if (sessionId) {
@@ -66,7 +48,7 @@ export async function POST(req: NextRequest) {
                     pages_visited = user_sessions.pages_visited + CASE WHEN $8 THEN 1 ELSE 0 END,
                     total_events = user_sessions.total_events + 1`,
                 [user.id, sessionId, ip, ua, deviceInfo.device, deviceInfo.browser, deviceInfo.os, !leftPage]
-            ).catch(() => {});
+            ).catch((e) => console.warn('[Track] write failed:', e instanceof Error ? e.message : e));
         }
 
         return NextResponse.json({ ok: true });

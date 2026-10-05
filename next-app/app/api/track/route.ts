@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
             ip_address: ip,
             user_agent: ua,
             created_at: new Date().toISOString(),
-        }).catch(() => {});
+        }).catch((e) => console.warn('[Track] write failed:', e instanceof Error ? e.message : e));
 
         // Special handling for specific events
         if (action === 'error_encounter' && metadata) {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [user.id, sessionId || '', metadata.message?.slice(0, 500) || 'Unknown', metadata.source || null,
                      metadata.line || null, metadata.col || null, metadata.page || null, metadata.type || 'js_error']
-                ).catch(() => {});
+                ).catch((e) => console.warn('[Track] write failed:', e instanceof Error ? e.message : e));
             });
         }
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
                      metadata.connection?.type, metadata.referrer?.slice(0, 500),
                      metadata.utmSource?.slice(0, 100), metadata.utmMedium?.slice(0, 100), metadata.utmCampaign?.slice(0, 100),
                      user.id, sessionId]
-                ).catch(() => {});
+                ).catch((e) => console.warn('[Track] write failed:', e instanceof Error ? e.message : e));
             });
         }
 
