@@ -271,6 +271,13 @@ export default async function RootLayout({
           {children}
           <Analytics />
           <SpeedInsights />
+          {/* Cloudflare Web Analytics. DNS is not proxied through Cloudflare, so the
+              beacon must be installed manually (automatic injection never runs). */}
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon='{"token": "9681b7ceba1b42ab8f0892d5010661ca"}'
+          />
         </Providers>
       </body>
     </html>
