@@ -13,6 +13,7 @@ import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHea
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
 import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
+import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
 
 export default function TraineeDossierPage() {
@@ -488,6 +489,15 @@ export default function TraineeDossierPage() {
                         <p className="text-xs text-white/40 p-4">This trainee has not created an account yet, so there is no study log.</p>
                     )}
                 </div>
+            )}
+
+            {/* Time & Focus: active time per problem and session timeline */}
+            {activeTab === 'time' && (
+                <ProblemTimeView
+                    problems={data.time_on_problems || []}
+                    sessions={data.time_sessions || []}
+                    timeHorizon={timeHorizon}
+                />
             )}
 
             {/* Tab 3: Submissions Feed */}

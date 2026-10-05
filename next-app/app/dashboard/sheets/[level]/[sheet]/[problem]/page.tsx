@@ -31,6 +31,7 @@ import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
 import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
 import { fetchWithCache, invalidatePath } from '@/lib/cache/api-cache';
 import { useTrack } from '@/hooks/useTrack';
+import { useProblemTimer } from '@/hooks/useProblemTimer';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
 import type { CFProblemData, AnalyticsStats } from '@/components/mirror/shared/types';
@@ -230,6 +231,9 @@ function MirrorUI({
 
     // Comprehensive behavior tracking for cheating detection & analytics
     useBehaviorTracking({ track, contestId, problemId, sheetId });
+
+    // Active/idle/away time per visit, shown to mentors.
+    useProblemTimer({ contestId, problemIndex: problemId, sheetId });
 
     // Track tab switches
     const trackedSetActiveTab = useCallback((tab: 'description' | 'submissions' | 'analytics' | 'solution') => {
