@@ -1260,6 +1260,18 @@ iframe[title*="reCAPTCHA"],
   min-width: 0 !important;
 }
 
+/* The global touch-target rules (44px minimums, tablet button padding) are
+   unlayered, so they beat Tailwind utilities and inflate the IDE's toolbar,
+   tabs and icon buttons. revert-layer hands control back to the component's
+   own Tailwind classes. Real touch devices keep their rule below. */
+@media (hover: hover), (pointer: fine) {
+  .mirror-ui :is(button, a, [role="button"]) {
+    min-height: revert-layer;
+    min-width: revert-layer;
+    padding: revert-layer;
+  }
+}
+
 @media (max-width: 640px) {
 
   .mirror-ui input,

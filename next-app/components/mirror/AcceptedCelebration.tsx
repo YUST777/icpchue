@@ -1,19 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { useEditorStore } from '@/hooks/contest/useEditorStore';
-
-const HYPE_LINES = [
-    'عاش يا وحش 🔥',
-    'ده الكلام 💪',
-    'بطل والله 🏆',
-    'كمّل كده، إنت ماشي صح 🚀',
-    'سهلة عليك 😎',
-    'الكود ده نضيف 👌',
-    'واحدة كمان في الجيب ✅',
-    'مفيش حاجة توقفك 💥',
-];
 
 /** Short rising "ta-da" built with Web Audio, so there is no file to load. */
 function playVictoryChime() {
@@ -55,7 +43,10 @@ function playVictoryChime() {
 async function fireConfetti() {
     const { default: confetti } = await import('canvas-confetti');
     const colors = ['#E8C15A', '#22c55e', '#ffffff', '#f5d77a'];
-    const base = { colors, disableForReducedMotion: true, zIndex: 9999 };
+    // Not gated on prefers-reduced-motion: it is a one-second burst, Windows
+    // turns that preference on whenever animations are off, and students can
+    // disable it in editor settings.
+    const base = { colors, zIndex: 9999 };
     confetti({ ...base, particleCount: 90, spread: 75, startVelocity: 45, origin: { x: 0.5, y: 0.65 } });
     setTimeout(() => {
         confetti({ ...base, particleCount: 50, angle: 60, spread: 60, origin: { x: 0, y: 0.75 } });
@@ -64,9 +55,9 @@ async function fireConfetti() {
 }
 
 /**
- * Celebrates a Codeforces-confirmed Accepted on the problem page: confetti, a
- * short chime, and a hype banner. Fires once per submission and respects the
- * editor settings and the OS "reduce motion" preference.
+ * Celebrates a Codeforces-confirmed Accepted on the problem page with confetti
+ * and a short chime. Fires once per submission; both can be turned off in the
+ * editor settings.
  */
 export default function AcceptedCelebration({ cfStatus }: {
     cfStatus: { status?: string; verdict?: string; submissionId?: number | string } | null;
@@ -74,7 +65,6 @@ export default function AcceptedCelebration({ cfStatus }: {
     const celebrateAccepted = useEditorStore((s) => s.celebrateAccepted);
     const celebrationSound = useEditorStore((s) => s.celebrationSound);
     const lastKeyRef = useRef<string | null>(null);
-    const [banner, setBanner] = useState<string | null>(null);
 
     const accepted = cfStatus?.status === 'done' && (cfStatus.verdict === 'Accepted' || cfStatus.verdict === 'OK');
     const key = accepted ? String(cfStatus?.submissionId ?? 'accepted') : null;
@@ -86,28 +76,7 @@ export default function AcceptedCelebration({ cfStatus }: {
 
         if (celebrationSound) playVictoryChime();
         fireConfetti().catch(() => {});
-        setBanner(HYPE_LINES[Math.floor(Math.random() * HYPE_LINES.length)]);
-        const timer = setTimeout(() => setBanner(null), 2800);
-        return () => clearTimeout(timer);
     }, [key, celebrateAccepted, celebrationSound]);
 
-    return (
-        <AnimatePresence>
-            {banner && (
-                <motion.button
-                    type="button"
-                    onClick={() => setBanner(null)}
-                    initial={{ opacity: 0, y: -24, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -16, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 420, damping: 26 }}
-                    className="fixed top-16 left-1/2 -translate-x-1/2 z-[10000] px-6 py-3 rounded-2xl bg-[#0f1a12]/95 border border-emerald-400/40 shadow-[0_0_40px_rgba(34,197,94,0.35)] backdrop-blur-md text-center cursor-pointer"
-                    aria-live="polite"
-                >
-                    <div className="text-lg font-black tracking-wide text-emerald-400">ACCEPTED ✅</div>
-                    <div dir="rtl" className="text-sm font-semibold text-[#E8C15A] mt-0.5">{banner}</div>
-                </motion.button>
-            )}
-        </AnimatePresence>
-    );
+    return null;
 }

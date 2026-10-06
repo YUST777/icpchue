@@ -11,7 +11,7 @@ interface EditorSettings {
     tabSize: number;
     wordWrap: 'on' | 'off';
     lineNumbers: 'on' | 'relative';
-    /** Confetti + hype banner when Codeforces confirms an Accepted. */
+    /** Confetti when Codeforces confirms an Accepted. */
     celebrateAccepted: boolean;
     celebrationSound: boolean;
 }
