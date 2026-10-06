@@ -11,6 +11,9 @@ interface EditorSettings {
     tabSize: number;
     wordWrap: 'on' | 'off';
     lineNumbers: 'on' | 'relative';
+    /** Confetti + hype banner when Codeforces confirms an Accepted. */
+    celebrateAccepted: boolean;
+    celebrationSound: boolean;
 }
 
 interface EditorStore extends EditorSettings {
@@ -27,6 +30,8 @@ export const useEditorStore = create<EditorStore>()(
             tabSize: 4,
             wordWrap: 'off',
             lineNumbers: 'on',
+            celebrateAccepted: true,
+            celebrationSound: true,
 
             setSetting: (key, value) => set((state) => ({ ...state, [key]: value })),
         }),
