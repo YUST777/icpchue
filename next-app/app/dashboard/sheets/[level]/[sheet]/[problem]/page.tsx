@@ -33,6 +33,7 @@ import { useWhiteboardStore } from '@/hooks/contest/useWhiteboardStore';
 import { fetchWithCache, invalidatePath } from '@/lib/cache/api-cache';
 import { useTrack } from '@/hooks/useTrack';
 import { useProblemTimer } from '@/hooks/useProblemTimer';
+import { useFitZoom } from '@/hooks/useFitZoom';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
 import type { CFProblemData, AnalyticsStats } from '@/components/mirror/shared/types';
@@ -235,6 +236,9 @@ function MirrorUI({
 
     // Active/idle/away time per visit, shown to mentors.
     useProblemTimer({ contestId, problemIndex: problemId, sheetId });
+
+    // Scale the whole IDE to the window instead of a fixed zoom.
+    const fitZoom = useFitZoom();
 
     // Track tab switches
     const trackedSetActiveTab = useCallback((tab: 'description' | 'submissions' | 'analytics' | 'solution') => {
@@ -577,7 +581,7 @@ function MirrorUI({
 
     return (
         <ExtensionGate>
-            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col" style={{ zoom: 0.85 }}>
+            <div className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col" style={{ zoom: fitZoom }}>
                 {/* ProblemDrawer — slides from left */}
                 <ProblemDrawer
                     isOpen={isDrawerOpen}
