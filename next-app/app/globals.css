@@ -1264,6 +1264,18 @@ iframe[title*="reCAPTCHA"],
    unlayered, so they beat Tailwind utilities and inflate the IDE's toolbar,
    tabs and icon buttons. revert-layer hands control back to the component's
    own Tailwind classes. Real touch devices keep their rule below. */
+/* @monaco-editor/react wraps the editor in a <section>, and global landing-
+   page rules style every section: 4rem vertical padding on 768-1366px screens
+   (an empty band above line 1) and max-width: 100vw with overflow-x hidden.
+   vw ignores the page's CSS zoom, so the editor was clipped short on the
+   right. Hand these back to the component inside the IDE. */
+.mirror-ui section {
+  padding-top: revert-layer;
+  padding-bottom: revert-layer;
+  max-width: revert-layer;
+  overflow-x: revert-layer;
+}
+
 @media (hover: hover), (pointer: fine) {
   .mirror-ui :is(button, a, [role="button"]) {
     min-height: revert-layer;
