@@ -94,6 +94,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         tabSize,
         wordWrap,
         lineNumbers,
+        celebrateAccepted,
+        celebrationSound,
         setSetting
     } = useEditorStore();
 
@@ -224,6 +226,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 type: "toggle", 
                                                 val: lineNumbers === "relative", 
                                                 set: (v: boolean) => setSetting("lineNumbers", v ? "relative" : "on") 
+                                            },
+                                            {
+                                                label: "Celebrate Accepted",
+                                                type: "toggle",
+                                                val: celebrateAccepted,
+                                                set: (v: boolean) => setSetting("celebrateAccepted", v)
+                                            },
+                                            {
+                                                label: "Celebration sound",
+                                                type: "toggle",
+                                                val: celebrationSound,
+                                                set: (v: boolean) => setSetting("celebrationSound", v)
                                             },
                                         ].map((item, idx) => (
                                             <div 

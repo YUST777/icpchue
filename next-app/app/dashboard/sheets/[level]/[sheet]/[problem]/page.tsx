@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic';
 // Lazy-load heavy components that aren't needed on initial render
 const OnboardingTour = dynamic(() => import('@/components/mirror/OnboardingTour'), { ssr: false });
 const SubmissionDetailModal = dynamic(() => import('@/components/mirror/SubmissionDetailModal'), { ssr: false });
+const AcceptedCelebration = dynamic(() => import('@/components/mirror/AcceptedCelebration'), { ssr: false });
 
 // Hooks
 import { useProblemData } from '@/hooks/contest/useProblemData';
@@ -651,6 +652,9 @@ function MirrorUI({
                     >
                         <div className="absolute inset-y-0 -left-1 -right-1" />
                     </div>
+
+                    {/* Confetti + chime + hype banner on a confirmed Accepted */}
+                    <AcceptedCelebration cfStatus={cfStatus} />
 
                     <CodeWorkspace
                         code={code}
