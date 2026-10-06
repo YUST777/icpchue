@@ -228,7 +228,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 set: (v: boolean) => setSetting("lineNumbers", v ? "relative" : "on") 
                                             },
                                             {
-                                                label: "Celebrate Accepted",
+                                                label: "Confetti on Accepted",
                                                 type: "toggle",
                                                 val: celebrateAccepted,
                                                 set: (v: boolean) => setSetting("celebrateAccepted", v)
