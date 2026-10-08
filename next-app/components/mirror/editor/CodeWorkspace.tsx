@@ -199,12 +199,13 @@ export default function CodeWorkspace({
             const filename = langFileMap[language];
             if (!filename) return; // clang-format doesn't support this language
             const mod = await loadFormatter();
-            const formatted = mod.format(code, filename, "Chromium");
+            // Style follows the editor's tab size setting.
+            const formatted = mod.format(code, filename, `{BasedOnStyle: Chromium, IndentWidth: ${tabSize}}`);
             if (formatted) setCode(formatted);
         } catch (err) {
             console.error("Failed to format code:", err);
         }
-    }, [code, setCode, language]);
+    }, [code, setCode, language, tabSize]);
 
     // Monaco editor ref
     const editorInstanceRef = useRef<Parameters<OnMount>[0] | null>(null);
