@@ -106,11 +106,11 @@ export default function CardUploadPage() {
         <div className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-hidden">
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-white/[0.02] rounded-full blur-[140px]" />
+                <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-white/[0.02] rounded-full blur-[150px]" />
             </div>
 
             {/* Header */}
-            <header className="relative z-10 w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
+            <header className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-90">
                     <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white/5 border border-white/10 p-1 flex items-center justify-center">
                         <Image
@@ -130,10 +130,10 @@ export default function CardUploadPage() {
             </header>
 
             {/* Main Content */}
-            <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
-                <div className="w-full max-w-md">
+            <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
+                <div className="w-full max-w-3xl">
                     {success ? (
-                        <div className="bg-[#16161C]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="bg-[#16161C]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 sm:p-12 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-w-lg mx-auto">
                             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-5">
                                 <CheckCircle2 size={36} />
                             </div>
@@ -141,16 +141,16 @@ export default function CardUploadPage() {
                             <p className="text-sm text-white/60 leading-relaxed mb-6">
                                 تم حفظ الصورة بأمان وربطها برقمك الجامعي ({studentId}).
                             </p>
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={resetForm}
-                                    className="w-full py-3 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm transition-all border border-white/10"
+                                    className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm transition-all border border-white/10"
                                 >
                                     رفع بطاقة أخرى
                                 </button>
                                 <Link
                                     href="/"
-                                    className="w-full py-3 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] text-black font-semibold text-sm transition-all text-center flex items-center justify-center gap-2"
+                                    className="flex-1 py-3 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] text-black font-semibold text-sm transition-all text-center flex items-center justify-center gap-2"
                                 >
                                     <span>العودة للرئيسية</span>
                                     <ArrowRight size={16} />
@@ -158,25 +158,25 @@ export default function CardUploadPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-[#16161C]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-                            <div className="mb-6 text-center">
-                                <h1 className="text-xl font-bold tracking-tight text-white">توثيق البطاقة الشخصية</h1>
-                                <p className="text-xs text-white/50 mt-1.5">
+                        <div className="bg-[#16161C]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-9 shadow-2xl relative overflow-hidden">
+                            <div className="mb-7 text-center sm:text-right border-b border-white/5 pb-5">
+                                <h1 className="text-2xl font-bold tracking-tight text-white">توثيق البطاقة الشخصية</h1>
+                                <p className="text-xs sm:text-sm text-white/50 mt-1">
                                     قم بإدخال كود الطالب الخاص بك ورفع صورة واضحة للبطاقة الشخصية (الوجه الأمامي)
                                 </p>
                             </div>
 
                             {error && (
-                                <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5 leading-relaxed">
-                                    <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+                                <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs sm:text-sm flex items-start gap-2.5 leading-relaxed">
+                                    <AlertCircle size={18} className="shrink-0 mt-0.5 text-rose-400" />
                                     <span>{error}</span>
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                {/* Student ID Input */}
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Student ID Input (Top Horizontal Row) */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-white/80 mb-2">
+                                    <label className="block text-xs sm:text-sm font-semibold text-white/80 mb-2">
                                         كود الطالب (Horus ID) <span className="text-[#E8C15A]">*</span>
                                     </label>
                                     <input
@@ -195,99 +195,106 @@ export default function CardUploadPage() {
                                     </p>
                                 </div>
 
-                                {/* National ID Example Card */}
-                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 overflow-hidden">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[11px] font-medium text-white/70">
-                                            شكل البطاقة المطلوبة (الوجه الأمامي):
-                                        </span>
-                                        <span className="text-[10px] text-[#E8C15A] font-mono px-2 py-0.5 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                                            مثال توضيحي
-                                        </span>
-                                    </div>
-                                    <div className="relative w-full h-36 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
-                                        <Image
-                                            src="/images/egyptian-id-example.png"
-                                            alt="مثال البطاقة الشخصية المصرية"
-                                            width={600}
-                                            height={375}
-                                            className="w-full h-full object-contain"
-                                            priority
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-white/40 mt-2 text-center">
-                                        تأكد من وضوح الصورة وظهور الرقم القومي والاسم بالكامل دون انعكاس إضاءة شديد.
-                                    </p>
-                                </div>
-
-                                {/* National ID Photo Upload Dropzone */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-white/80 mb-2">
-                                        صورة البطاقة الشخصية <span className="text-[#E8C15A]">*</span>
-                                    </label>
-
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/jpg"
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                        id="card-upload-input"
-                                    />
-
-                                    {!file ? (
-                                        <label
-                                            htmlFor="card-upload-input"
-                                            className="cursor-pointer flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 hover:border-[#E8C15A]/60 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all group text-center"
-                                        >
-                                            <div className="w-12 h-12 rounded-xl bg-white/5 group-hover:bg-[#E8C15A]/10 text-white/60 group-hover:text-[#E8C15A] flex items-center justify-center mb-3 transition-colors">
-                                                <UploadCloud size={24} />
+                                {/* Wide 2-Column Grid: Example on Left / Upload on Right */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+                                    {/* Column 1: Example Guide */}
+                                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2.5">
+                                                <span className="text-xs font-medium text-white/80">
+                                                    شكل البطاقة المطلوبة (الوجه الأمامي):
+                                                </span>
+                                                <span className="text-[10px] text-[#E8C15A] font-mono px-2 py-0.5 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                                                    مثال توضيحي
+                                                </span>
                                             </div>
-                                            <span className="text-xs font-medium text-white/90 group-hover:text-white">
-                                                اضغط هنا لاختيار أو تصوير البطاقة الشخصية
-                                            </span>
-                                            <span className="text-[11px] text-white/40 mt-1">
-                                                JPG, PNG, WebP (بحد أقصى 5 ميجابايت)
-                                            </span>
-                                        </label>
-                                    ) : (
-                                        <div className="relative border border-white/15 rounded-xl p-3 bg-white/[0.02] overflow-hidden">
-                                            {previewUrl && (
-                                                <div className="relative w-full h-44 rounded-lg overflow-hidden bg-black/40 mb-3 border border-white/10">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={previewUrl}
-                                                        alt="National ID preview"
-                                                        className="w-full h-full object-contain"
-                                                    />
-                                                </div>
-                                            )}
-                                            <div className="flex items-center justify-between text-xs">
-                                                <div className="flex items-center gap-2 overflow-hidden text-white/70">
-                                                    <FileText size={16} className="text-[#E8C15A] shrink-0" />
-                                                    <span className="truncate font-mono">{file.name}</span>
-                                                    <span className="text-white/40 shrink-0">
-                                                        ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRemoveFile}
-                                                    className="p-1 text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors shrink-0"
-                                                    title="إلغاء الملف"
-                                                >
-                                                    <X size={16} />
-                                                </button>
+                                            <div className="relative w-full h-44 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center p-2">
+                                                <Image
+                                                    src="/images/egyptian-id-example.png"
+                                                    alt="مثال البطاقة الشخصية المصرية"
+                                                    width={600}
+                                                    height={375}
+                                                    className="w-full h-full object-contain"
+                                                    priority
+                                                />
                                             </div>
                                         </div>
-                                    )}
+                                        <p className="text-[11px] text-white/40 mt-3 text-center leading-relaxed">
+                                            تأكد من وضوح الصورة وظهور الرقم القومي والاسم بالكامل دون انعكاس إضاءة.
+                                        </p>
+                                    </div>
+
+                                    {/* Column 2: Upload Dropzone */}
+                                    <div className="flex flex-col justify-between">
+                                        <div className="h-full flex flex-col">
+                                            <label className="block text-xs sm:text-sm font-semibold text-white/80 mb-2">
+                                                صورة البطاقة الشخصية <span className="text-[#E8C15A]">*</span>
+                                            </label>
+
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/jpg"
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                                id="card-upload-input"
+                                            />
+
+                                            {!file ? (
+                                                <label
+                                                    htmlFor="card-upload-input"
+                                                    className="cursor-pointer flex-1 min-h-[176px] flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 hover:border-[#E8C15A]/60 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all group text-center"
+                                                >
+                                                    <div className="w-12 h-12 rounded-xl bg-white/5 group-hover:bg-[#E8C15A]/10 text-white/60 group-hover:text-[#E8C15A] flex items-center justify-center mb-3 transition-colors">
+                                                        <UploadCloud size={24} />
+                                                    </div>
+                                                    <span className="text-xs sm:text-sm font-medium text-white/90 group-hover:text-white">
+                                                        اضغط هنا لاختيار أو تصوير البطاقة
+                                                    </span>
+                                                    <span className="text-[11px] text-white/40 mt-1">
+                                                        JPG, PNG, WebP (بحد أقصى 5 ميجابايت)
+                                                    </span>
+                                                </label>
+                                            ) : (
+                                                <div className="flex-1 flex flex-col justify-between border border-white/15 rounded-xl p-3 bg-white/[0.02] overflow-hidden">
+                                                    {previewUrl && (
+                                                        <div className="relative w-full h-36 rounded-lg overflow-hidden bg-black/40 mb-2 border border-white/10">
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img
+                                                                src={previewUrl}
+                                                                alt="National ID preview"
+                                                                className="w-full h-full object-contain"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center justify-between text-xs pt-1">
+                                                        <div className="flex items-center gap-2 overflow-hidden text-white/70">
+                                                            <FileText size={16} className="text-[#E8C15A] shrink-0" />
+                                                            <span className="truncate font-mono">{file.name}</span>
+                                                            <span className="text-white/40 shrink-0">
+                                                                ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRemoveFile}
+                                                            className="p-1 text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors shrink-0"
+                                                            title="إلغاء الملف"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
                                     disabled={loading || !file || !studentId}
-                                    className="w-full py-3 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 text-black font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#E8C15A]/10"
+                                    className="w-full py-3.5 px-5 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 text-black font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#E8C15A]/10 mt-2"
                                 >
                                     {loading ? (
                                         <>
