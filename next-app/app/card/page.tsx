@@ -10,7 +10,7 @@ import {
     Loader2,
     X,
     FileText,
-    ArrowRight
+    ArrowLeft
 } from 'lucide-react';
 
 export default function CardUploadPage() {
@@ -59,7 +59,7 @@ export default function CardUploadPage() {
 
         const cleanSid = studentId.replace(/\D/g, '').trim();
         if (!cleanSid || cleanSid.length < 5 || cleanSid.length > 12) {
-            setError('يرجى إدخال كود الطالب / الرقم الجامعي بشكل صحيح (مثال: 8251234).');
+            setError('يرجى إدخال الرقم الجامعي بشكل صحيح (مثال: 8251234).');
             return;
         }
 
@@ -103,7 +103,7 @@ export default function CardUploadPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-hidden">
+        <div dir="rtl" className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-hidden font-sans">
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-white/[0.02] rounded-full blur-[150px]" />
@@ -122,9 +122,9 @@ export default function CardUploadPage() {
                             priority
                         />
                     </div>
-                    <div className="flex flex-col">
-                        <span className="font-bold tracking-tight text-sm text-white/95">ICPC HUE</span>
-                        <span className="text-[11px] text-white/40 font-mono -mt-0.5">Verification Portal</span>
+                    <div className="flex flex-col text-right">
+                        <span className="font-bold tracking-tight text-sm text-white/95">مجتمع حورس للبرمجة (ICPC HUE)</span>
+                        <span className="text-[11px] text-white/40 -mt-0.5">منظومة توثيق الطلاب</span>
                     </div>
                 </Link>
             </header>
@@ -139,7 +139,7 @@ export default function CardUploadPage() {
                             </div>
                             <h2 className="text-2xl font-bold tracking-tight mb-2">تم رفع البطاقة الشخصية بنجاح!</h2>
                             <p className="text-sm text-white/60 leading-relaxed mb-6">
-                                تم حفظ الصورة بأمان وربطها برقمك الجامعي ({studentId}).
+                                تم حفظ الصورة بأمان وربطها برقمك الجامعي (<span dir="ltr" className="font-mono text-white">{studentId}</span>).
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <button
@@ -153,31 +153,31 @@ export default function CardUploadPage() {
                                     className="flex-1 py-3 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] text-black font-semibold text-sm transition-all text-center flex items-center justify-center gap-2"
                                 >
                                     <span>العودة للرئيسية</span>
-                                    <ArrowRight size={16} />
+                                    <ArrowLeft size={16} />
                                 </Link>
                             </div>
                         </div>
                     ) : (
                         <div className="bg-[#16161C]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-9 shadow-2xl relative overflow-hidden">
-                            <div className="mb-7 text-center sm:text-right border-b border-white/5 pb-5">
+                            <div className="mb-7 text-right border-b border-white/5 pb-5">
                                 <h1 className="text-2xl font-bold tracking-tight text-white">توثيق البطاقة الشخصية</h1>
                                 <p className="text-xs sm:text-sm text-white/50 mt-1">
-                                    قم بإدخال كود الطالب الخاص بك ورفع صورة واضحة للبطاقة الشخصية (الوجه الأمامي)
+                                    قم بإدخال الرقم الجامعي الخاص بك ورفع صورة واضحة للبطاقة الشخصية (الوجه الأمامي)
                                 </p>
                             </div>
 
                             {error && (
-                                <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs sm:text-sm flex items-start gap-2.5 leading-relaxed">
+                                <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs sm:text-sm flex items-start gap-2.5 leading-relaxed text-right">
                                     <AlertCircle size={18} className="shrink-0 mt-0.5 text-rose-400" />
                                     <span>{error}</span>
                                 </div>
                             )}
 
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                {/* Student ID Input (Top Horizontal Row) */}
-                                <div>
+                                {/* Student ID Input */}
+                                <div className="text-right">
                                     <label className="block text-xs sm:text-sm font-semibold text-white/80 mb-2">
-                                        كود الطالب (Horus ID) <span className="text-[#E8C15A]">*</span>
+                                        الرقم الجامعي / كود الطالب <span className="text-[#E8C15A]">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -188,23 +188,23 @@ export default function CardUploadPage() {
                                         onChange={(e) => setStudentId(e.target.value.replace(/[^0-9]/g, ''))}
                                         maxLength={10}
                                         required
-                                        className="w-full px-4 py-3 bg-[#1A1A22] border border-white/10 rounded-xl text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-[#E8C15A] focus:ring-1 focus:ring-[#E8C15A] transition-all"
+                                        className="w-full px-4 py-3 bg-[#1A1A22] border border-white/10 rounded-xl text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-[#E8C15A] focus:ring-1 focus:ring-[#E8C15A] transition-all text-right"
                                     />
                                     <p className="text-[11px] text-white/40 mt-1.5">
                                         الرقم الجامعي المطبوع على الكارنيه أو إشعار القيد.
                                     </p>
                                 </div>
 
-                                {/* Wide 2-Column Grid: Example on Left / Upload on Right */}
+                                {/* Wide 2-Column Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
                                     {/* Column 1: Example Guide */}
-                                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex flex-col justify-between">
+                                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex flex-col justify-between text-right">
                                         <div>
                                             <div className="flex items-center justify-between mb-2.5">
                                                 <span className="text-xs font-medium text-white/80">
                                                     شكل البطاقة المطلوبة (الوجه الأمامي):
                                                 </span>
-                                                <span className="text-[10px] text-[#E8C15A] font-mono px-2 py-0.5 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                                                <span className="text-[10px] text-[#E8C15A] font-medium px-2 py-0.5 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20">
                                                     مثال توضيحي
                                                 </span>
                                             </div>
@@ -225,7 +225,7 @@ export default function CardUploadPage() {
                                     </div>
 
                                     {/* Column 2: Upload Dropzone */}
-                                    <div className="flex flex-col justify-between">
+                                    <div className="flex flex-col justify-between text-right">
                                         <div className="h-full flex flex-col">
                                             <label className="block text-xs sm:text-sm font-semibold text-white/80 mb-2">
                                                 صورة البطاقة الشخصية <span className="text-[#E8C15A]">*</span>
@@ -262,7 +262,7 @@ export default function CardUploadPage() {
                                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                                             <img
                                                                 src={previewUrl}
-                                                                alt="National ID preview"
+                                                                alt="معاينة البطاقة الشخصية"
                                                                 className="w-full h-full object-contain"
                                                             />
                                                         </div>
@@ -270,8 +270,8 @@ export default function CardUploadPage() {
                                                     <div className="flex items-center justify-between text-xs pt-1">
                                                         <div className="flex items-center gap-2 overflow-hidden text-white/70">
                                                             <FileText size={16} className="text-[#E8C15A] shrink-0" />
-                                                            <span className="truncate font-mono">{file.name}</span>
-                                                            <span className="text-white/40 shrink-0">
+                                                            <span className="truncate font-mono" dir="ltr">{file.name}</span>
+                                                            <span className="text-white/40 shrink-0 font-mono" dir="ltr">
                                                                 ({(file.size / (1024 * 1024)).toFixed(2)} MB)
                                                             </span>
                                                         </div>
@@ -304,7 +304,7 @@ export default function CardUploadPage() {
                                     ) : (
                                         <>
                                             <span>رفع وتوثيق البطاقة الشخصية</span>
-                                            <ArrowRight size={16} />
+                                            <ArrowLeft size={16} />
                                         </>
                                     )}
                                 </button>
