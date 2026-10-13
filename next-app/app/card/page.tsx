@@ -179,22 +179,17 @@ export default function CardUploadPage() {
                                     <label className="block text-xs font-semibold text-white/80 mb-2">
                                         كود الطالب (Horus ID) <span className="text-[#E8C15A]">*</span>
                                     </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            dir="ltr"
-                                            placeholder="مثال: 8251234"
-                                            value={studentId}
-                                            onChange={(e) => setStudentId(e.target.value.replace(/[^0-9]/g, ''))}
-                                            maxLength={10}
-                                            required
-                                            className="w-full px-4 py-3 bg-[#1A1A22] border border-white/10 rounded-xl text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-[#E8C15A] focus:ring-1 focus:ring-[#E8C15A] transition-all"
-                                        />
-                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-white/30">
-                                            HUE
-                                        </span>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        dir="ltr"
+                                        placeholder="مثال: 8251234"
+                                        value={studentId}
+                                        onChange={(e) => setStudentId(e.target.value.replace(/[^0-9]/g, ''))}
+                                        maxLength={10}
+                                        required
+                                        className="w-full px-4 py-3 bg-[#1A1A22] border border-white/10 rounded-xl text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-[#E8C15A] focus:ring-1 focus:ring-[#E8C15A] transition-all"
+                                    />
                                     <p className="text-[11px] text-white/40 mt-1.5">
                                         الرقم الجامعي المطبوع على الكارنيه أو إشعار القيد.
                                     </p>
@@ -210,13 +205,13 @@ export default function CardUploadPage() {
                                             مثال توضيحي
                                         </span>
                                     </div>
-                                    <div className="relative w-full h-32 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                    <div className="relative w-full h-36 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
                                         <Image
                                             src="/images/egyptian-id-example.png"
                                             alt="مثال البطاقة الشخصية المصرية"
                                             width={600}
                                             height={375}
-                                            className="w-full h-full object-cover opacity-90"
+                                            className="w-full h-full object-contain"
                                             priority
                                         />
                                     </div>
