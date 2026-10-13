@@ -4,12 +4,10 @@ import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-    IdCard,
     UploadCloud,
     CheckCircle2,
     AlertCircle,
     Loader2,
-    ShieldCheck,
     X,
     FileText,
     ArrowRight
@@ -66,7 +64,7 @@ export default function CardUploadPage() {
         }
 
         if (!file) {
-            setError('يرجى اختيار أو التقاط صورة الكارنيه.');
+            setError('يرجى اختيار أو التقاط صورة البطاقة الشخصية.');
             return;
         }
 
@@ -108,8 +106,7 @@ export default function CardUploadPage() {
         <div className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-hidden">
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-[#E8C15A]/5 rounded-full blur-[140px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-blue-500/5 rounded-full blur-[130px]" />
+                <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-white/[0.02] rounded-full blur-[140px]" />
             </div>
 
             {/* Header */}
@@ -127,14 +124,9 @@ export default function CardUploadPage() {
                     </div>
                     <div className="flex flex-col">
                         <span className="font-bold tracking-tight text-sm text-white/95">ICPC HUE</span>
-                        <span className="text-[11px] text-white/40 font-mono -mt-0.5">ID Verification Portal</span>
+                        <span className="text-[11px] text-white/40 font-mono -mt-0.5">Verification Portal</span>
                     </div>
                 </Link>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-white/60">
-                    <ShieldCheck size={14} className="text-[#E8C15A]" />
-                    <span>256-Bit Encrypted</span>
-                </div>
             </header>
 
             {/* Main Content */}
@@ -145,16 +137,16 @@ export default function CardUploadPage() {
                             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-5">
                                 <CheckCircle2 size={36} />
                             </div>
-                            <h2 className="text-2xl font-bold tracking-tight mb-2">تم رفع الكارنيه بنجاح!</h2>
+                            <h2 className="text-2xl font-bold tracking-tight mb-2">تم رفع البطاقة الشخصية بنجاح!</h2>
                             <p className="text-sm text-white/60 leading-relaxed mb-6">
-                                تم حفظ الصورة بأمان وتشفيرها داخل السحابة وربطها برقمك الجامعي ({studentId}).
+                                تم حفظ الصورة بأمان وربطها برقمك الجامعي ({studentId}).
                             </p>
                             <div className="flex flex-col gap-3">
                                 <button
                                     onClick={resetForm}
                                     className="w-full py-3 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm transition-all border border-white/10"
                                 >
-                                    رفع كارنيه آخر
+                                    رفع بطاقة أخرى
                                 </button>
                                 <Link
                                     href="/"
@@ -167,16 +159,10 @@ export default function CardUploadPage() {
                         </div>
                     ) : (
                         <div className="bg-[#16161C]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-                            {/* Card Accent Top Bar */}
-                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#E8C15A] to-transparent" />
-
                             <div className="mb-6 text-center">
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/20 text-[#E8C15A] mb-3">
-                                    <IdCard size={24} />
-                                </div>
-                                <h1 className="text-xl font-bold tracking-tight text-white">توثيق كارنيه الطالب</h1>
+                                <h1 className="text-xl font-bold tracking-tight text-white">توثيق البطاقة الشخصية</h1>
                                 <p className="text-xs text-white/50 mt-1.5">
-                                    قم بإدخال كود الطالب الخاص بك ورفع صورة واضحة للكارنيه
+                                    قم بإدخال كود الطالب الخاص بك ورفع صورة واضحة للبطاقة الشخصية (الوجه الأمامي)
                                 </p>
                             </div>
 
@@ -214,10 +200,35 @@ export default function CardUploadPage() {
                                     </p>
                                 </div>
 
-                                {/* Card Photo Upload Dropzone */}
+                                {/* National ID Example Card */}
+                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 overflow-hidden">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[11px] font-medium text-white/70">
+                                            شكل البطاقة المطلوبة (الوجه الأمامي):
+                                        </span>
+                                        <span className="text-[10px] text-[#E8C15A] font-mono px-2 py-0.5 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                                            مثال توضيحي
+                                        </span>
+                                    </div>
+                                    <div className="relative w-full h-32 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                        <Image
+                                            src="/images/egyptian-id-example.png"
+                                            alt="مثال البطاقة الشخصية المصرية"
+                                            width={600}
+                                            height={375}
+                                            className="w-full h-full object-cover opacity-90"
+                                            priority
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-white/40 mt-2 text-center">
+                                        تأكد من وضوح الصورة وظهور الرقم القومي والاسم بالكامل دون انعكاس إضاءة شديد.
+                                    </p>
+                                </div>
+
+                                {/* National ID Photo Upload Dropzone */}
                                 <div>
                                     <label className="block text-xs font-semibold text-white/80 mb-2">
-                                        صورة الكارنيه <span className="text-[#E8C15A]">*</span>
+                                        صورة البطاقة الشخصية <span className="text-[#E8C15A]">*</span>
                                     </label>
 
                                     <input
@@ -238,7 +249,7 @@ export default function CardUploadPage() {
                                                 <UploadCloud size={24} />
                                             </div>
                                             <span className="text-xs font-medium text-white/90 group-hover:text-white">
-                                                اضغط هنا لاختيار أو تصوير الكارنيه
+                                                اضغط هنا لاختيار أو تصوير البطاقة الشخصية
                                             </span>
                                             <span className="text-[11px] text-white/40 mt-1">
                                                 JPG, PNG, WebP (بحد أقصى 5 ميجابايت)
@@ -251,7 +262,7 @@ export default function CardUploadPage() {
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
                                                         src={previewUrl}
-                                                        alt="Card preview"
+                                                        alt="National ID preview"
                                                         className="w-full h-full object-contain"
                                                     />
                                                 </div>
@@ -277,12 +288,6 @@ export default function CardUploadPage() {
                                     )}
                                 </div>
 
-                                {/* Security Notice */}
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-2.5 text-[11px] text-white/50">
-                                    <ShieldCheck size={16} className="text-[#E8C15A] shrink-0" />
-                                    <span>يتم تخزين بياناتك بصورة مشفرة على Supabase Storage ولن تظهر للعامة.</span>
-                                </div>
-
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
@@ -292,11 +297,11 @@ export default function CardUploadPage() {
                                     {loading ? (
                                         <>
                                             <Loader2 size={18} className="animate-spin" />
-                                            <span>جاري الرفع والتشفير...</span>
+                                            <span>جاري الرفع...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <span>رفع وتوثيق الكارنيه</span>
+                                            <span>رفع وتوثيق البطاقة الشخصية</span>
                                             <ArrowRight size={16} />
                                         </>
                                     )}
@@ -306,11 +311,6 @@ export default function CardUploadPage() {
                     )}
                 </div>
             </main>
-
-            {/* Footer */}
-            <footer className="relative z-10 w-full max-w-5xl mx-auto px-6 py-4 text-center text-[11px] font-mono text-white/30">
-                ICPC Horus University Community &bull; Secure Storage Bucket &bull; 2026
-            </footer>
         </div>
     );
 }
