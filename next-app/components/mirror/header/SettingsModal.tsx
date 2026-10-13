@@ -9,7 +9,7 @@ import {
     Keyboard,
     ChevronDown,
 } from "lucide-react";
-import { useEditorStore, KeyBinding } from "@/hooks/contest/useEditorStore";
+import { useEditorStore } from "@/hooks/contest/useEditorStore";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -90,7 +90,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         fontFamily,
         fontSize,
         fontLigatures,
-        keyBinding,
         tabSize,
         wordWrap,
         lineNumbers,
@@ -200,13 +199,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 type: "toggle", 
                                                 val: fontLigatures, 
                                                 set: (v: boolean) => setSetting("fontLigatures", v) 
-                                            },
-                                            { 
-                                                label: "Key binding", 
-                                                type: "select", 
-                                                val: keyBinding, 
-                                                set: (v: string) => setSetting("keyBinding", v as KeyBinding), 
-                                                opts: ["Standard", "Vim"] 
                                             },
                                             { 
                                                 label: "Tab size", 

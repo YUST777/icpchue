@@ -1,13 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type KeyBinding = 'Standard' | 'Vim';
-
 interface EditorSettings {
     fontFamily: string;
     fontSize: number;
     fontLigatures: boolean;
-    keyBinding: KeyBinding;
     tabSize: number;
     wordWrap: 'on' | 'off';
     lineNumbers: 'on' | 'relative';
@@ -26,7 +23,6 @@ export const useEditorStore = create<EditorStore>()(
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 13,
             fontLigatures: true,
-            keyBinding: 'Standard',
             tabSize: 4,
             wordWrap: 'off',
             lineNumbers: 'on',
