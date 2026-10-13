@@ -139,14 +139,14 @@ export default function CardUploadPage() {
     };
 
     return (
-        <div dir="rtl" className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-hidden font-sans">
+        <div dir="rtl" className="min-h-screen bg-[#0D0D11] text-white flex flex-col justify-between selection:bg-[#E8C15A]/30 selection:text-[#E8C15A] relative overflow-y-auto font-sans">
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-white/[0.02] rounded-full blur-[150px]" />
             </div>
 
             {/* Main Content */}
-            <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
+            <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-6 pb-24 sm:py-10">
                 <div className="w-full max-w-3xl">
                     {success ? (
                         <div className="bg-[#16161C]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 sm:p-12 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-w-lg mx-auto">
@@ -224,7 +224,7 @@ export default function CardUploadPage() {
                                                     مثال توضيحي
                                                 </span>
                                             </div>
-                                            <div className="relative w-full h-44 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center p-2">
+                                            <div className="relative w-full h-28 sm:h-40 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center p-1">
                                                 <Image
                                                     src="/images/egyptian-id-example.png"
                                                     alt="مثال البطاقة الشخصية المصرية"
@@ -259,7 +259,7 @@ export default function CardUploadPage() {
                                             {!file ? (
                                                 <label
                                                     htmlFor="card-upload-input"
-                                                    className="cursor-pointer flex-1 min-h-[176px] flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 hover:border-[#E8C15A]/60 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all group text-center"
+                                                    className="cursor-pointer flex-1 min-h-[120px] sm:min-h-[160px] flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 hover:border-[#E8C15A]/60 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all group text-center"
                                                 >
                                                     <div className="w-12 h-12 rounded-xl bg-white/5 group-hover:bg-[#E8C15A]/10 text-white/60 group-hover:text-[#E8C15A] flex items-center justify-center mb-3 transition-colors">
                                                         <UploadCloud size={24} />
