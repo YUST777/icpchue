@@ -13,6 +13,30 @@ import {
     ArrowLeft
 } from 'lucide-react';
 
+// Downscale + re-encode in the browser so phone photos (often 4-10MB) fit
+// under Vercel's 4.5MB request limit. Falls back to the original file if the
+// browser can't decode it (e.g. HEIC on desktop Chrome).
+async function compressImage(file: File, maxDim = 2000, quality = 0.85): Promise<File> {
+    try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+        const w = Math.round(bitmap.width * scale);
+        const h = Math.round(bitmap.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return file;
+        ctx.drawImage(bitmap, 0, 0, w, h);
+        bitmap.close();
+        const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+        if (!blob) return file;
+        return new File([blob], 'national-id.jpg', { type: 'image/jpeg' });
+    } catch {
+        return file;
+    }
+}
+
 export default function CardUploadPage() {
     const [studentId, setStudentId] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -22,24 +46,36 @@ export default function CardUploadPage() {
     const [success, setSuccess] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [processing, setProcessing] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (!selected) return;
 
-        if (selected.size > 5 * 1024 * 1024) {
-            setError('حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت).');
-            return;
-        }
-
-        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-        if (!validTypes.includes(selected.type.toLowerCase())) {
-            setError('صيغة الملف غير مدعومة. يرجى اختيار صورة بصيغة JPG أو PNG أو WebP.');
+        if (selected.type && !selected.type.toLowerCase().startsWith('image/')) {
+            setError('يرجى اختيار صورة فقط (JPG أو PNG أو WebP).');
             return;
         }
 
         setError(null);
-        setFile(selected);
-        setPreviewUrl(URL.createObjectURL(selected));
+        setProcessing(true);
+        const compressed = await compressImage(selected);
+        setProcessing(false);
+
+        if (compressed.size > 4 * 1024 * 1024) {
+            setError('حجم الصورة كبير جداً. يرجى التقاط صورة أصغر أو بصيغة JPG.');
+            return;
+        }
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(compressed.type.toLowerCase())) {
+            setError('صيغة الصورة غير مدعومة. يرجى اختيار صورة بصيغة JPG أو PNG أو WebP.');
+            return;
+        }
+
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setFile(compressed);
+        setPreviewUrl(URL.createObjectURL(compressed));
     };
 
     const handleRemoveFile = () => {
@@ -114,7 +150,7 @@ export default function CardUploadPage() {
                 <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-90">
                     <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white/5 border border-white/10 p-1 flex items-center justify-center">
                         <Image
-                            src="/images/horus-logo.png"
+                            src="/icpchue-logo.webp"
                             alt="ICPC HUE"
                             width={32}
                             height={32}
@@ -234,7 +270,7 @@ export default function CardUploadPage() {
                                             <input
                                                 ref={fileInputRef}
                                                 type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/jpg"
+                                                accept="image/*"
                                                 onChange={handleFileChange}
                                                 className="hidden"
                                                 id="card-upload-input"
@@ -249,10 +285,10 @@ export default function CardUploadPage() {
                                                         <UploadCloud size={24} />
                                                     </div>
                                                     <span className="text-xs sm:text-sm font-medium text-white/90 group-hover:text-white">
-                                                        اضغط هنا لاختيار أو تصوير البطاقة
+                                                        {processing ? 'جاري تجهيز الصورة...' : 'اضغط هنا لاختيار أو تصوير البطاقة'}
                                                     </span>
                                                     <span className="text-[11px] text-white/40 mt-1">
-                                                        JPG, PNG, WebP (بحد أقصى 5 ميجابايت)
+                                                        JPG أو PNG أو WebP
                                                     </span>
                                                 </label>
                                             ) : (
@@ -293,7 +329,7 @@ export default function CardUploadPage() {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={loading || !file || !studentId}
+                                    disabled={loading || processing || !file || !studentId}
                                     className="w-full py-3.5 px-5 rounded-xl bg-[#E8C15A] hover:bg-[#d4af4a] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 text-black font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#E8C15A]/10 mt-2"
                                 >
                                     {loading ? (
