@@ -145,26 +145,6 @@ export default function CardUploadPage() {
                 <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-white/[0.02] rounded-full blur-[150px]" />
             </div>
 
-            {/* Header */}
-            <header className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-90">
-                    <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white/5 border border-white/10 p-1 flex items-center justify-center">
-                        <Image
-                            src="/icpchue-logo.webp"
-                            alt="ICPC HUE"
-                            width={32}
-                            height={32}
-                            className="object-contain"
-                            priority
-                        />
-                    </div>
-                    <div className="flex flex-col text-right">
-                        <span className="font-bold tracking-tight text-sm text-white/95">مجتمع حورس للبرمجة (ICPC HUE)</span>
-                        <span className="text-[11px] text-white/40 -mt-0.5">منظومة توثيق الطلاب</span>
-                    </div>
-                </Link>
-            </header>
-
             {/* Main Content */}
             <main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
                 <div className="w-full max-w-3xl">
