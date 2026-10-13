@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         // 2. Validate Card Image
         if (!cardFile || cardFile.size === 0) {
             return NextResponse.json({
-                error: 'يرجى رفع صورة الكارنيه / إثبات القيد.'
+                error: 'يرجى رفع صورة البطاقة الشخصية.'
             }, { status: 400 });
         }
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: 'تم رفع صورة الكارنيه وتوثيقها بنجاح!',
+            message: 'تم رفع صورة البطاقة الشخصية وتوثيقها بنجاح!',
             student_id: studentId
         });
 
