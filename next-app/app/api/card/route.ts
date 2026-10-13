@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
             studentId,
             studentIdBlindIndex,
             storagePath,
-            cardFile.name.slice(0, 255),
+            cardFile.name.replace(/[^\w.\-]/g, '_').slice(0, 100),
             mimeType,
             cardFile.size,
             ip,
