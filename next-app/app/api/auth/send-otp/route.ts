@@ -8,6 +8,7 @@ import { findAuthUserByEmail } from '@/lib/supabase/admin';
 import { isHorusEmail, normalizeHorusEmail } from '@/lib/auth/horus-email';
 
 const MAX_BODY_BYTES = 8 * 1024;
+const RESEND_GAP_SECONDS = 60;
 
 function retryAfterSeconds(reset: number) {
     return Math.max(1, Math.ceil((reset - Date.now()) / 1000));
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
         if (!isHorusEmail(normalizedEmail)) {
             return NextResponse.json({
-                error: 'Use your Horus University email (your student ID followed by @horus.edu.eg).'
+                error: 'Use your Horus University email (your student ID, up to 9 digits, followed by @horus.edu.eg).'
             }, { status: 400 });
         }
 
@@ -65,6 +66,19 @@ export async function POST(req: NextRequest) {
                 { status: 429, headers: { 'Retry-After': String(retryAfterSeconds(limitByEmail.reset)) } }
             );
         }
+        // One code per minute per address. Each new code cancels the previous
+        // one, so a faster resend only makes the code in the inbox stale.
+        const gap = await rateLimit(`send-otp-gap:${normalizedEmail}`, 1, RESEND_GAP_SECONDS);
+        if (!gap.success) {
+            return NextResponse.json({
+                success: true,
+                alreadySent: true,
+                retryAfter: retryAfterSeconds(gap.reset),
+                email: normalizedEmail,
+                message: 'A code was already sent to this email a moment ago.',
+            });
+        }
+
         const blindIndex = createBlindIndex(normalizedEmail);
         const existingUser = await query(
             'SELECT id FROM users WHERE email_blind_index = $1',
