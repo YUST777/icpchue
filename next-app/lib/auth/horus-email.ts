@@ -57,6 +57,12 @@ export function normalizeHorusEmail(raw: unknown): string {
     return `${local}@${domain}`;
 }
 
+// Student IDs are at most 9 digits. Longer numbers are almost always a phone
+// number typed by mistake, which sends the code to a mailbox that does not exist.
+export const MAX_STUDENT_ID_DIGITS = 9;
+
 export function isHorusEmail(email: string): boolean {
-    return email.length <= 254 && HORUS_EMAIL_RE.test(email);
+    if (email.length > 254 || !HORUS_EMAIL_RE.test(email)) return false;
+    const local = email.slice(0, email.indexOf('@'));
+    return !/^\d+$/.test(local) || local.length <= MAX_STUDENT_ID_DIGITS;
 }

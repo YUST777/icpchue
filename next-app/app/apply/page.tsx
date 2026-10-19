@@ -13,6 +13,8 @@ import { facultyOptions, levelOptions } from '@/app/register/constants';
 import { isHorusEmail, normalizeHorusEmail, toAsciiDigits } from '@/lib/auth/horus-email';
 
 const APPLY_DRAFT_KEY = 'icpchue:apply:level0:v1';
+// A new code can be requested at most once a minute; each new code cancels the previous one.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const emailSchema = z.object({
     email: z.string()
@@ -21,7 +23,7 @@ const emailSchema = z.object({
             .min(1, 'Email is required')
             .refine(
                 (value) => isHorusEmail(value),
-                'Use your Horus University email: your student ID followed by @horus.edu.eg (not Gmail).'
+                'Use your Horus University email: your student ID (up to 9 digits) followed by @horus.edu.eg (not Gmail).'
             )),
 });
 
@@ -328,7 +330,7 @@ export default function ApplyPage() {
             } else {
                 // alreadySent: a code went to this address seconds ago (double
                 // tap or refresh); the student should use that one.
-                setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(1, data.retryAfter) : 60);
+                setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(RESEND_COOLDOWN_SECONDS, data.retryAfter) : RESEND_COOLDOWN_SECONDS);
                 setStep(4);
                 setTimeout(() => otpInputRef.current?.focus(), 150);
             }
@@ -406,7 +408,7 @@ export default function ApplyPage() {
         setSubmitError(null);
         try {
             const data = await sendOtp(email);
-            setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(1, data.retryAfter) : 60);
+            setResendCooldown(typeof data.retryAfter === 'number' ? Math.max(RESEND_COOLDOWN_SECONDS, data.retryAfter) : RESEND_COOLDOWN_SECONDS);
             if (!data.alreadySent) setOtp('');
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : 'Failed to resend');
