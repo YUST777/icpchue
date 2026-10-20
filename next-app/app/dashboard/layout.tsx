@@ -7,7 +7,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
-import { Skeleton } from '@/components/ui/Skeleton';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
@@ -275,27 +274,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     const handleNav = (path: string) => { router.push(path); setMobileMenuOpen(false); };
 
+    // Only a first visit (no remembered login) waits here; returning students
+    // render straight away while the session is checked in the background.
     if (loading) return (
-        <div className="min-h-screen bg-[#0B0B0C] flex">
-            {/* Sidebar skeleton — matches the real sidebar width */}
-            <div className="hidden md:flex w-[256px] shrink-0 border-r border-white/5 flex-col p-6 gap-6">
-                <Skeleton className="h-8 w-32 rounded-lg" />
-                <div className="space-y-2 mt-4">
-                    {[1,2,3,4,5,6].map(i => (
-                        <Skeleton key={i} className="h-10 w-full rounded-lg" />
-                    ))}
-                </div>
-            </div>
-            {/* Content skeleton */}
-            <div className="flex-1 p-4 md:p-8 space-y-6">
-                <Skeleton className="h-7 w-40 rounded-lg" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Skeleton className="h-28 rounded-xl" />
-                    <Skeleton className="h-28 rounded-xl" />
-                    <Skeleton className="h-28 rounded-xl" />
-                </div>
-                <Skeleton className="h-64 rounded-xl" />
-            </div>
+        <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center" role="status" aria-label="Loading">
+            <Image src="/icpchue-logo.webp" alt="" width={56} height={56} priority className="animate-pulse opacity-80" />
         </div>
     );
     return (
