@@ -2,10 +2,21 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes that require authentication — redirect to /login if no valid session
-const PROTECTED_PREFIXES = ['/dashboard'];
+export const PROTECTED_PREFIXES = ['/dashboard'];
 
 // Routes that authenticated users should NOT see — redirect to /dashboard
-const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password', '/reset-password'];
+export const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password', '/reset-password'];
+
+/**
+ * Only pages that redirect on auth state need the Supabase round trip.
+ * API routes verify the session themselves (lib/auth/auth.ts, cached), and
+ * public pages read it in the browser, so calling getUser() here for them
+ * only doubled every request's latency and caused middleware timeouts.
+ */
+export function needsSessionCheck(pathname: string): boolean {
+    return PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix))
+        || AUTH_ONLY_PAGES.includes(pathname);
+}
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next();
