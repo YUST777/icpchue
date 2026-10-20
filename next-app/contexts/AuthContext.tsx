@@ -53,6 +53,57 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// The last signed-in user is remembered in the browser so the dashboard can
+// render immediately on the next visit instead of blocking on the session
+// check (getSession + /api/auth/me), which can take many seconds when the
+// token needs refreshing or several tabs contend for Supabase's auth lock.
+// The session is still verified in the background; protected data is
+// enforced by the API either way. The phone number is never stored.
+const SNAPSHOT_KEY = `icpchue:auth:${CACHE_VERSION}`;
+const PROFILE_FETCH_TIMEOUT_MS = 10_000;
+
+type AuthSnapshot = { user: User; profile: Profile | null };
+
+function readSnapshot(): AuthSnapshot | null {
+    try {
+        const raw = window.localStorage.getItem(SNAPSHOT_KEY);
+        const snap = raw ? JSON.parse(raw) as AuthSnapshot : null;
+        return snap?.user ? snap : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeSnapshot(user: User | null, profile: Profile | null) {
+    try {
+        if (!user) {
+            window.localStorage.removeItem(SNAPSHOT_KEY);
+            return;
+        }
+        const safeProfile = profile ? { ...profile, telephone: '' } : null;
+        window.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ user, profile: safeProfile }));
+    } catch {
+        // Storage can be unavailable (private mode, quota); the live check still runs.
+    }
+}
+
+const isAuthRejection = (error: unknown) =>
+    error instanceof Error && /\b(401|403|404)\b/.test(error.message);
+
+/** /api/auth/me with a timeout and one retry for slow or dropped networks. */
+async function fetchProfile() {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
+                credentials: 'include',
+                signal: AbortSignal.timeout(PROFILE_FETCH_TIMEOUT_MS),
+            }, 300);
+        } catch (error) {
+            if (attempt >= 2 || isAuthRejection(error)) throw error;
+        }
+    }
+}
+
 interface AuthProviderProps {
     children: ReactNode;
 }
@@ -79,17 +130,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setIsAuthenticated(false);
         setUser(null);
         setProfile(null);
+        writeSnapshot(null, null);
         clearApiCache();
     }, [supabase.auth]);
 
     const fetchUserProfile = useCallback(async () => {
         try {
-            const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
-                credentials: 'include',
-            }, 300);
+            const data = await fetchProfile();
 
             setUser(data.user);
             setProfile(data.profile);
+            writeSnapshot(data.user, data.profile);
         } catch (error) {
             console.error('[AuthContext] Refresh profile error:', error);
         }
@@ -106,25 +157,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth state from Supabase session
     useEffect(() => {
         const initAuth = async () => {
+            const snapshot = readSnapshot();
+            if (snapshot) {
+                setUser(snapshot.user);
+                setProfile(snapshot.profile);
+                setIsAuthenticated(true);
+                setLoading(false);
+            }
+
+            const signOutLocally = () => {
+                setUser(null);
+                setProfile(null);
+                setIsAuthenticated(false);
+                writeSnapshot(null, null);
+            };
+
             try {
                 const { data: { session } } = await supabase.auth.getSession();
 
                 if (session) {
                     // Fetch the app profile from our API
-                    const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
-                        credentials: 'include',
-                    }, 300);
+                    const data = await fetchProfile();
 
                     if (data.user) {
                         setUser(data.user);
                         setProfile(data.profile);
                         setIsAuthenticated(true);
+                        writeSnapshot(data.user, data.profile);
+                    } else {
+                        signOutLocally();
                     }
+                } else {
+                    signOutLocally();
                 }
-            } catch (error: any) {
-                if (error.message?.includes('401') || error.message?.includes('403')) {
-                    // Session expired
-                }
+            } catch (error) {
+                // An expired session signs out; a slow or failed network keeps
+                // the remembered user so the student is not kicked out offline.
+                if (isAuthRejection(error)) signOutLocally();
             }
             setLoading(false);
         };
@@ -137,18 +206,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setUser(null);
                 setProfile(null);
                 setIsAuthenticated(false);
+                writeSnapshot(null, null);
                 clearApiCache();
             } else if (session && event === 'SIGNED_IN') {
                 // Only clear cache on actual sign-in, not token refresh
                 clearApiCache();
                 try {
-                    const data = await fetchWithCache<any>(`/api/auth/me?_v=${CACHE_VERSION}`, {
-                        credentials: 'include',
-                    }, 300);
+                    const data = await fetchProfile();
                     if (data.user) {
                         setUser(data.user);
                         setProfile(data.profile);
                         setIsAuthenticated(true);
+                        writeSnapshot(data.user, data.profile);
                     }
                 } catch {
                     // Will retry on next interaction
