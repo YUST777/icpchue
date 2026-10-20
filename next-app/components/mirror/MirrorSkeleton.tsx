@@ -1,113 +1,105 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-export default function MirrorSkeleton() {
-    return (
-        <div className="fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col overflow-hidden">
-            {/* Header Skeleton */}
-            <div className="flex flex-col gap-4 border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0">
-                <div className="flex items-center justify-between gap-4 h-9 relative">
-                    <div className="flex items-center gap-3 overflow-hidden flex-1">
-                        <Skeleton className="h-8 w-8 rounded-md" /> {/* Back button */}
-                        <Skeleton className="h-8 w-24 rounded-lg hidden sm:block" /> {/* Problems button */}
-                    </div>
-                    
-                    {/* Centered Buttons Skeleton */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5">
-                        <Skeleton className="h-9 w-9 rounded-lg" />
-                        <Skeleton className="h-9 w-28 rounded-lg" />
-                        <Skeleton className="h-9 w-9 rounded-lg" />
-                    </div>
+// Mirrors the real problem page block for block (ProblemHeader, ProblemTabs,
+// EditorToolbar, collapsed test panel) so nothing jumps when it swaps in.
+const TAB_WIDTHS = [96, 112, 92, 84, 104]; // Description, Submissions, Analytics, Solution, Whiteboard
+const CODE_LINES = [52, 44, 0, 30, 58, 40, 0, 26, 8];
+const DEFAULT_PANEL_WIDTH = 50; // useResizableLayout default
 
-                    <div className="flex items-center gap-2 shrink-0">
-                        <Skeleton className="h-8 w-8 rounded-full" />
+export default function MirrorSkeleton() {
+    const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+
+    // Same saved split as the real page, so the divider does not jump.
+    useEffect(() => {
+        try {
+            const saved = parseFloat(localStorage.getItem("verdict-layout-width") || "");
+            if (!isNaN(saved) && saved >= 20 && saved <= 80) setPanelWidth(saved);
+        } catch {
+            // Storage unavailable: keep the default split.
+        }
+    }, []);
+
+    return (
+        <div className="fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col overflow-hidden" role="status" aria-label="Loading problem">
+            {/* ProblemHeader: px-4 py-2 wrapper, h-12 sm:h-14 row */}
+            <div className="border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0">
+                <div className="h-12 sm:h-14 flex items-center justify-between px-3 sm:px-4 relative">
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-9 w-9 rounded-lg" />
+                        <Skeleton className="h-8 w-8 lg:w-32 rounded-md ml-2" />
+                        <Skeleton className="h-8 w-20 rounded-md" />
                     </div>
+                    <div className="hidden md:flex items-center gap-1.5 p-1 rounded-xl border border-white/5 lg:absolute lg:left-1/2 lg:-translate-x-1/2">
+                        <Skeleton className="hidden lg:block h-10 w-10 rounded-lg" />
+                        <Skeleton className="h-10 w-10 rounded-lg" />
+                        <Skeleton className="h-10 w-24 lg:w-[120px] rounded-lg" />
+                        <Skeleton className="h-10 w-10 rounded-lg" />
+                    </div>
+                    <div className="hidden md:flex items-center gap-2">
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-8 w-14 rounded-md" />
+                        <Skeleton className="h-8 w-16 rounded-md" />
+                    </div>
+                    <Skeleton className="md:hidden h-8 w-24 rounded-lg" />
                 </div>
             </div>
 
-            {/* Main Content Skeleton */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left Panel Skeleton (~40%) */}
-                <div className="hidden md:flex flex-col w-[40%] border-r border-white/5 bg-[#0B0B0C] shrink-0">
-                    <div className="flex items-center gap-1 p-2 border-b border-white/5 bg-[#121212]/50">
-                        <Skeleton className="h-7 w-20 rounded-md" />
-                        <Skeleton className="h-7 w-20 rounded-md" />
-                        <Skeleton className="h-7 w-20 rounded-md" />
-                    </div>
-                    <div className="p-6 space-y-6 overflow-y-auto">
-                        <div className="space-y-3">
-                            <Skeleton className="h-8 w-1/3 rounded-lg" />
-                            <div className="flex gap-2">
-                                <Skeleton className="h-5 w-16 rounded-full" />
-                                <Skeleton className="h-5 w-16 rounded-full" />
+                {/* Left panel: tabs + description, at the saved width */}
+                <div className="hidden md:flex flex-col shrink-0 border-r border-white/5 bg-[#0B0B0C] min-w-0" style={{ width: `${panelWidth}%` }}>
+                    <div className="flex border-b border-white/10 bg-[#1a1a1a] shrink-0 overflow-hidden">
+                        {TAB_WIDTHS.map((w, i) => (
+                            <div key={i} className="min-h-[44px] px-3 sm:px-6 flex items-center shrink-0">
+                                <Skeleton className="h-3.5 rounded" style={{ width: w }} />
                             </div>
+                        ))}
+                    </div>
+                    <div className="p-6 sm:p-8 space-y-5 overflow-hidden">
+                        <Skeleton className="h-10 w-2/3 rounded-lg" />
+                        <div className="flex gap-4">
+                            <Skeleton className="h-5 w-24 rounded" />
+                            <Skeleton className="h-5 w-24 rounded" />
                         </div>
-
-                        <div className="space-y-4 pt-4">
+                        <div className="h-px bg-white/5" />
+                        <div className="space-y-3">
                             <Skeleton className="h-4 w-full rounded" />
-                            <Skeleton className="h-4 w-full rounded" />
-                            <Skeleton className="h-4 w-5/6 rounded" />
-                            <Skeleton className="h-4 w-full rounded" />
+                            <Skeleton className="h-4 w-11/12 rounded" />
                             <Skeleton className="h-4 w-4/6 rounded" />
                         </div>
-
-                        <div className="space-y-4 pt-8">
-                            <Skeleton className="h-6 w-1/4 rounded-md" />
-                            <div className="bg-white/5 rounded-xl p-4 space-y-3 border border-white/5">
-                                <Skeleton className="h-4 w-full rounded" />
-                                <Skeleton className="h-4 w-3/4 rounded" />
-                            </div>
+                        <div className="space-y-3 pt-2">
+                            <Skeleton className="h-4 w-1/2 rounded" />
+                            <Skeleton className="h-4 w-2/5 rounded" />
+                            <Skeleton className="h-4 w-1/2 rounded" />
                         </div>
+                        <Skeleton className="h-20 w-full rounded-xl" />
                     </div>
                 </div>
 
-                {/* Resizer Skeleton */}
                 <div className="hidden md:block w-1 bg-white/5 shrink-0" />
 
-                {/* Right Panel/Editor Skeleton (~60%) */}
-                <div className="flex-1 flex flex-col bg-[#121213]">
-                    {/* Editor Header Skeleton - Single Action Row */}
-                    <div className="flex items-center justify-between px-4 h-10 border-b border-white/5 bg-[#1a1a1b]">
+                {/* Editor: toolbar, code, collapsed test panel */}
+                <div className="flex-1 flex flex-col bg-[#1e1e1e] min-w-0">
+                    <div className="h-10 px-3 flex items-center justify-between bg-[#1a1a1a] border-b border-white/10 shrink-0">
+                        <Skeleton className="h-4 w-12 rounded" />
                         <div className="flex items-center gap-4">
-                            <Skeleton className="h-5 w-20 rounded" />
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Skeleton className="h-5 w-5 rounded" />
-                            <Skeleton className="h-5 w-5 rounded" />
-                            <Skeleton className="h-5 w-5 rounded" />
-                            <Skeleton className="h-5 w-5 rounded" />
+                            {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-4 w-4 rounded" />)}
                         </div>
                     </div>
-
-                    {/* Editor Area */}
-                    <div className="flex-1 font-mono">
-                        <div className="space-y-2">
-                            {[65, 45, 80, 35, 55, 70, 40, 60, 50, 75, 30, 85, 45, 55, 65].map((w, i) => (
-                                <div key={i} className="flex gap-4">
-                                    <Skeleton className="h-4 w-4 opacity-20 shrink-0" />
-                                    <Skeleton 
-                                        className="h-4 rounded opacity-40" 
-                                        style={{ width: `${w}%` }} 
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Bottom Panel Skeleton */}
-                    <div className="h-[45%] border-t border-white/10 bg-[#0B0B0C] flex flex-col">
-                        <div className="h-9 border-b border-white/5 flex items-center px-4 gap-4">
-                            <Skeleton className="h-5 w-16 rounded" />
-                            <Skeleton className="h-5 w-16 rounded" />
-                        </div>
-                        <div className="flex-1 p-4 space-y-4">
-                            <Skeleton className="h-10 w-full rounded-xl" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <Skeleton className="h-20 rounded-xl" />
-                                <Skeleton className="h-20 rounded-xl" />
+                    <div className="flex-1 pt-3 space-y-[9px] overflow-hidden">
+                        {CODE_LINES.map((w, i) => (
+                            <div key={i} className="flex items-center gap-6 pl-6 h-[15px]">
+                                <Skeleton className="h-3 w-3 opacity-30 shrink-0" />
+                                {w > 0 && <Skeleton className="h-3 rounded opacity-50" style={{ width: `${w}%` }} />}
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                    <div className="h-[42px] shrink-0 bg-[#1a1a1a] flex items-center gap-6 px-5 border-t border-white/10">
+                        <Skeleton className="h-4 w-20 rounded" />
+                        <Skeleton className="h-4 w-24 rounded" />
+                        <Skeleton className="h-4 w-24 rounded" />
                     </div>
                 </div>
             </div>

@@ -15,12 +15,30 @@ interface CurrentSheetWidgetProps {
 export default function CurrentSheetWidget({ sheet, loading = false }: CurrentSheetWidgetProps) {
     if (loading) {
         return (
-            <div className="bg-[#121212] rounded-xl border border-white/5 p-6 h-full min-h-[320px] space-y-4">
-                <Skeleton className="h-5 w-32 rounded" />
-                <Skeleton className="h-40 w-full rounded-xl" />
-                <Skeleton className="h-4 w-48 rounded" />
-                <Skeleton className="h-2 w-full rounded-full" />
-                <Skeleton className="h-10 w-full rounded-lg" />
+            // Same frame as the loaded card: image banner, sheet badge + title, progress, button.
+            <div className="h-full flex flex-col" role="status" aria-label="Loading current sheet">
+                <div className="rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden flex-1">
+                    <div className="bg-[#0f0f0f] rounded-[23px] overflow-hidden h-full flex flex-col">
+                        <Skeleton className="flex-1 w-full min-h-[180px] rounded-none" />
+                        <div className="p-5 pt-0 mt-auto">
+                            <div className="flex items-center gap-3 mb-3">
+                                <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                                <div className="space-y-1.5">
+                                    <Skeleton className="h-7 md:h-8 w-48 rounded" />
+                                    <Skeleton className="h-4 w-32 rounded" />
+                                </div>
+                            </div>
+                            <div className="mb-4">
+                                <div className="flex justify-between mb-1.5">
+                                    <Skeleton className="h-4 w-20 rounded" />
+                                    <Skeleton className="h-4 w-8 rounded" />
+                                </div>
+                                <Skeleton className="h-2 w-full rounded-full" />
+                            </div>
+                            <Skeleton className="h-[46px] w-full rounded-xl" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

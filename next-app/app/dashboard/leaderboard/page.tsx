@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
                             {loading ? (
                                 <div className="flex-1">
                                     {Array.from({length: 10}).map((_, i) => (
-                                        <div key={i} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/[0.03]">
+                                        <div key={i} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 px-3 sm:px-4 h-[56px] items-center border-b border-white/[0.03]">
                                             <div className="col-span-1"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></div>
                                             <div className="col-span-2 sm:col-span-4"><Skeleton className="h-4 w-3/4 rounded" /></div>
                                             <div className="col-span-3"><Skeleton className="h-5 w-10 rounded-full" /></div>
@@ -258,7 +258,7 @@ export default function LeaderboardPage() {
                             {loading ? (
                                 <div className="flex-1">
                                     {Array.from({length: 10}).map((_, i) => (
-                                        <div key={i} className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 py-3 border-b border-white/[0.03]">
+                                        <div key={i} className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 h-[56px] items-center border-b border-white/[0.03]">
                                             <Skeleton className="h-5 w-5 rounded-full mx-auto" />
                                             <Skeleton className="h-4 w-3/4 rounded" />
                                             <Skeleton className="h-4 w-10 rounded ml-auto" />
