@@ -9,6 +9,13 @@ import Providers from '@/components/core/Providers';
 import { useAuth } from '@/contexts/AuthContext';
 import { camps } from '@/lib/sessionData';
 import { getEmbedUrl, getDirectWatchUrl } from '@/lib/video/videoUtils';
+import { SessionWatchProvider, TrackedYouTube } from '@/components/sessions/SessionWatch';
+
+/** The 11-character YouTube id behind an id or URL, or null for other hosts (Drive). */
+function youTubeId(videoIdOrUrl: string): string | null {
+    const embed = getEmbedUrl(videoIdOrUrl);
+    return /youtube(-nocookie)?\.com\/embed\/([\w-]{11})/.exec(embed)?.[2] ?? null;
+}
 
 function DashboardSessionContent() {
     const params = useParams();
@@ -72,7 +79,10 @@ function DashboardSessionContent() {
         );
     }
 
+    const ytId = session.videoId ? youTubeId(session.videoId) : null;
+
     return (
+        <SessionWatchProvider campSlug={camp.slug} sessionSlug={session.slug} videoId={ytId ?? undefined}>
         <div className="min-h-screen bg-black text-white font-sans pb-24">
             <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12 animate-fade-in">
                 <div className="mb-8 sm:mb-12">
@@ -94,14 +104,18 @@ function DashboardSessionContent() {
                 <div className="mb-12 sm:mb-16">
                     {session.videoId ? (
                         <div className="aspect-video w-full bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-                            <iframe
-                                src={getEmbedUrl(session.videoId)}
-                                width="100%"
-                                height="100%"
-                                allow="autoplay; fullscreen"
-                                allowFullScreen
-                                className="w-full h-full"
-                            ></iframe>
+                            {ytId ? (
+                                <TrackedYouTube videoId={ytId} title={session.title} fallbackSrc={getEmbedUrl(session.videoId)} />
+                            ) : (
+                                <iframe
+                                    src={getEmbedUrl(session.videoId)}
+                                    width="100%"
+                                    height="100%"
+                                    allow="autoplay; fullscreen"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                ></iframe>
+                            )}
                         </div>
                     ) : (
                         <div className="aspect-video w-full bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
@@ -135,6 +149,7 @@ function DashboardSessionContent() {
                 </article>
             </div>
         </div>
+        </SessionWatchProvider>
     );
 }
 

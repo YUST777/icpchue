@@ -14,6 +14,7 @@ import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubm
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
 import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
 import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
+import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
 import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
 
 export default function TraineeDossierPage() {
@@ -498,6 +499,11 @@ export default function TraineeDossierPage() {
                     sessions={data.time_sessions || []}
                     timeHorizon={timeHorizon}
                 />
+            )}
+
+            {/* Recorded sessions: video watch time, coverage, slides */}
+            {activeTab === 'sessions' && (
+                <SessionWatchView rows={data.session_watch || []} />
             )}
 
             {/* Tab 3: Submissions Feed */}

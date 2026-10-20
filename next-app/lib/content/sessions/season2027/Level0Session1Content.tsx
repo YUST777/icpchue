@@ -46,7 +46,7 @@ export default function Level0Session1Content() {
                     <Target className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Assignment</h2>
                 </div>
-                <p className="text-white/70">Solve the first 16 problems of <span className="font-semibold text-white">Sheet A</span> (A to P).</p>
+                <p className="text-white/70">Solve the first 16 problems of <Link href="/dashboard/sheets/level-0/sheet-a" className="font-semibold text-[#d59928] hover:underline">Sheet A</Link> (A to P).</p>
                 <div className="grid sm:grid-cols-2 gap-2">
                     {ASSIGNMENT.map(([letter, title]) => (
                         <Link
