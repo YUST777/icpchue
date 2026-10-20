@@ -6,6 +6,7 @@ import Session5Content from './content/sessions/Session5Content';
 import Session6Content from './content/sessions/Session6Content';
 import Session7Content from './content/sessions/Session7Content';
 import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Programming1Content';
+import Level0Session1Content from './content/sessions/season2027/Level0Session1Content';
 
 // --- Data Definitions ---
 
@@ -41,6 +42,31 @@ export interface Camp {
 }
 
 export const camps: Camp[] = [
+    {
+        slug: "level0-2027",
+        season: '2027',
+        title: "Level 0",
+        description: "Season 2027 beginner track: C++ from your first program to problem solving, every Saturday.",
+        image: '/images/lessons/levels_camp/level0-2027/cover.webp',
+        publicVisible: false,
+        dashboardVisible: true,
+        sessions: [
+            {
+                id: 101,
+                campSlug: 'level0-2027',
+                number: '1',
+                displayNumber: '01',
+                slug: 'welcome-cpp-basics',
+                tag: 'Fundamentals',
+                title: 'Welcome to ICPC HUE & C++ Basics',
+                desc: 'How the season works, our tools (icpchue.com, VS Code, Codeforces), and your first C++: input/output, data types, overflow, ASCII, operators and conditions.',
+                description: 'Our rules, our tools and your first C++ code. Set up your accounts, learn input/output, variables and data types, avoid the two classic Wrong Answers (overflow and ASCII), and solve your first problems.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session01.webp',
+                videoId: 'hqJqxZxsqTM',
+                content: <Level0Session1Content />
+            },
+        ],
+    },
     {
         slug: "level0",
         season: '2026',
