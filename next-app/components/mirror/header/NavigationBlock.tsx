@@ -32,7 +32,7 @@ export function NavigationBlock({
                         className="flex items-center gap-2 px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-sm whitespace-nowrap"
                     >
                         <ListVideo size={16} className="opacity-70" />
-                        <span className="hidden sm:inline">Problem List</span>
+                        <span className="hidden lg:inline">Problem List</span>
                     </button>
                 ) : (
                     <Link
@@ -40,7 +40,7 @@ export function NavigationBlock({
                         className="flex items-center gap-2 px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-sm whitespace-nowrap"
                     >
                         <ListVideo size={16} className="opacity-70" />
-                        <span className="hidden sm:inline">Problem List</span>
+                        <span className="hidden lg:inline">Problem List</span>
                     </Link>
                 )}
             </Tooltip>
