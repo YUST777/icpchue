@@ -85,19 +85,22 @@ export default function ProblemHeader({
                     />
                 </div>
 
-                {/* Center: Submit & Run Actions (Prominent) */}
-                <div className="hidden lg:flex flex-col min-w-0 flex-1 items-center justify-center absolute left-1/2 -translate-x-1/2">
+                {/* Center: Submit & Run Actions (Prominent). Shown wherever the split
+                    editor is (md+): laptops with Windows display scaling or browser
+                    zoom report widths under 1024px and lost the Submit button. Below
+                    lg it sits in the header flow so it cannot overlap the navigation. */}
+                <div className="hidden md:flex flex-col min-w-0 flex-1 items-center justify-center lg:absolute lg:left-1/2 lg:-translate-x-1/2">
                     <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.02] border border-white/5">
                         <Tooltip content="Quick Search" shortcut={["Ctrl", "K"]} position="bottom">
                             <button
                                 onClick={toggleSearch}
-                                className="p-2 w-10 h-10 flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white/40 hover:text-[#E8C15A] rounded-lg transition-all border border-white/5 hover:border-[#E8C15A]/20"
+                                className="p-2 w-10 h-10 hidden lg:flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white/40 hover:text-[#E8C15A] rounded-lg transition-all border border-white/5 hover:border-[#E8C15A]/20"
                             >
                                 <Search size={18} />
                             </button>
                         </Tooltip>
 
-                        <div className="w-px h-4 bg-white/5 mx-0.5" />
+                        <div className="hidden lg:block w-px h-4 bg-white/5 mx-0.5" />
 
                         <Tooltip content="Run Local Tests" shortcut={["Ctrl", "'"]} position="bottom">
                             <button
@@ -113,7 +116,7 @@ export default function ProblemHeader({
                             <button
                                 onClick={onSubmit}
                                 disabled={submitting}
-                                className="flex items-center gap-2 px-5 h-10 bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all border border-white/5 hover:border-white/10 min-w-[120px] justify-center"
+                                className="flex items-center gap-2 px-3 lg:px-5 h-10 bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all border border-white/5 hover:border-white/10 lg:min-w-[120px] justify-center"
                             >
                                 <CloudUpload size={18} className="text-[#E8C15A]" />
                                 <span className="text-sm">Submit</span>
