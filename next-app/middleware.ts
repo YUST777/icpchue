@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { updateSession } from './lib/supabase/middleware';
+import { needsSessionCheck, updateSession } from './lib/supabase/middleware';
 import { getClientIp } from './lib/security/request';
 
 // Simple in-memory rate limiter (per instance)
@@ -11,9 +11,11 @@ const MAX_REQUESTS = 500; // 500 requests per minute per IP
 export async function middleware(request: NextRequest) {
     let response: NextResponse;
 
-    // Skip session update for auth callback paths — they handle their own Supabase clients
+    // Only dashboard and login/register pages need the Supabase session check;
+    // API routes, auth callbacks and public pages handle auth themselves.
     const pathname = request.nextUrl.pathname;
-    if (pathname.startsWith('/auth/callback') || pathname.startsWith('/api/auth/callback')) {
+    if (!needsSessionCheck(pathname)) {
+        // API routes and public pages: no Supabase round trip here.
         response = NextResponse.next({ request });
     } else {
         try {
