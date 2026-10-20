@@ -59,26 +59,11 @@ export default function SheetsPage() {
 
     if (authLoading) {
         return (
-            <div className="space-y-8">
-                {/* Hero skeleton */}
-                <div className="bg-[#1a1a1a] rounded-2xl p-6 md:p-8 border border-white/5">
-                    <div className="flex items-center gap-4 mb-4">
-                        <Skeleton className="h-12 w-12 rounded-xl" />
-                        <div className="space-y-2">
-                            <Skeleton className="h-8 w-56 rounded-lg" />
-                            <Skeleton className="h-4 w-72 rounded" />
-                        </div>
-                    </div>
-                    <Skeleton className="h-4 w-full max-w-xl rounded" />
-                    <Skeleton className="h-4 w-3/4 rounded mt-1.5" />
-                </div>
-                {/* Level cards skeleton */}
+            <div className="space-y-8" role="status" aria-label="Loading levels">
                 <div className="space-y-4">
-                    <Skeleton className="h-6 w-40 rounded" />
+                    <Skeleton className="h-7 w-44 rounded" />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {[1,2,3].map(i => (
-                            <Skeleton key={i} className="h-96 rounded-3xl" />
-                        ))}
+                        {[0, 1, 2].map(i => <LevelCardSkeleton key={i} />)}
                     </div>
                 </div>
             </div>
@@ -122,9 +107,7 @@ export default function SheetsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {loading ? (
-                            Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="h-96 rounded-3xl bg-white/5 animate-pulse" />
-                            ))
+                            Array.from({ length: 3 }).map((_, i) => <LevelCardSkeleton key={i} />)
                         ) : (
                             <>
                                 {levels.map((level) => (
@@ -274,5 +257,25 @@ export default function SheetsPage() {
                 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
             `}</style>
         </>
+    );
+}
+
+/** Same frame as a level card (image, title, description, button) with grey bars inside. */
+function LevelCardSkeleton() {
+    return (
+        <div className="rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
+            <div className="bg-[#0f0f0f] rounded-[23px] overflow-hidden flex flex-col">
+                <Skeleton className="h-48 w-full rounded-none" />
+                <div className="p-5 pt-4">
+                    <div className="mb-3">
+                        <Skeleton className="h-7 w-28 rounded mb-1" />
+                        <Skeleton className="h-4 w-36 rounded" />
+                    </div>
+                    <Skeleton className="h-4 w-full rounded mb-1.5" />
+                    <Skeleton className="h-4 w-3/4 rounded mb-4" />
+                    <Skeleton className="h-[46px] w-full rounded-xl" />
+                </div>
+            </div>
+        </div>
     );
 }

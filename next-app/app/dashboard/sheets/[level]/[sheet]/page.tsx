@@ -250,41 +250,48 @@ export default function SheetDetailPage() {
     }, [authLoading, user, router]);
 
     if (authLoading || loading) {
+        // Same containers as the loaded page below, with grey bars in place of text.
         return (
-            <div className="space-y-6">
-                {/* Hero skeleton */}
-                <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
-                    <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                            <Skeleton className="h-8 w-40 rounded-lg" />
-                            <Skeleton className="h-4 w-72 rounded" />
+            <div className="space-y-6" role="status" aria-label="Loading sheet">
+                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 border border-white/10">
+                    <div className="flex items-start justify-between flex-wrap gap-4">
+                        <div>
+                            <Skeleton className="h-8 md:h-9 w-48 rounded-lg mb-2" />
+                            <Skeleton className="h-5 w-72 max-w-full rounded" />
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="text-center space-y-1">
-                                <Skeleton className="h-7 w-8 rounded mx-auto" />
-                                <Skeleton className="h-3 w-10 rounded" />
+                            <div className="flex flex-col items-center gap-1">
+                                <Skeleton className="h-8 w-8 rounded" />
+                                <Skeleton className="h-4 w-10 rounded" />
                             </div>
-                            <div className="w-px h-10 bg-white/5" />
-                            <div className="text-center space-y-1">
-                                <Skeleton className="h-7 w-8 rounded mx-auto" />
-                                <Skeleton className="h-3 w-14 rounded" />
+                            <div className="w-px h-10 bg-white/10" />
+                            <div className="flex flex-col items-center gap-1">
+                                <Skeleton className="h-8 w-8 rounded" />
+                                <Skeleton className="h-4 w-14 rounded" />
                             </div>
                         </div>
                     </div>
-                    <div className="mt-4 space-y-1">
-                        <Skeleton className="h-3 w-16 rounded" />
+                    <div className="mt-4">
+                        <div className="flex justify-between mb-1">
+                            <Skeleton className="h-4 w-14 rounded" />
+                            <Skeleton className="h-4 w-8 rounded" />
+                        </div>
                         <Skeleton className="h-2 w-full rounded-full" />
                     </div>
                 </div>
-                {/* Tabs skeleton */}
-                <div className="flex gap-2 border-b border-white/5 pb-px">
-                    <Skeleton className="h-8 w-24 rounded" />
-                    <Skeleton className="h-8 w-32 rounded" />
+
+                <div className="flex gap-2 border-b border-white/10">
+                    <div className="px-4 py-3 border-b-2 border-transparent"><Skeleton className="h-5 w-24 rounded" /></div>
+                    <div className="px-4 py-3 border-b-2 border-transparent"><Skeleton className="h-5 w-36 rounded" /></div>
                 </div>
-                {/* Problem cards grid skeleton */}
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: 16 }).map((_, i) => (
-                        <Skeleton key={i} className="aspect-square rounded-xl" />
+                        <div key={i} className="rounded-xl p-4 border border-white/10 bg-[#121212] flex flex-col items-center">
+                            <Skeleton className="h-8 w-6 rounded mb-1" />
+                            <Skeleton className="h-[15px] w-4/5 rounded mb-1" />
+                            <div className="h-[14px] mt-1" />
+                        </div>
                     ))}
                 </div>
             </div>
