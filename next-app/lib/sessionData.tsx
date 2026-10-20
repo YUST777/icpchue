@@ -24,6 +24,10 @@ export interface Session {
     content?: React.ReactNode;
 }
 
+export const SEASONS = ['2027', '2026'] as const;
+export type Season = (typeof SEASONS)[number];
+export const CURRENT_SEASON: Season = '2027';
+
 export interface Camp {
     slug: string;
     title: string;
@@ -32,11 +36,14 @@ export interface Camp {
     sessions: Session[];
     publicVisible?: boolean;
     dashboardVisible?: boolean;
+    /** Training season the camp belongs to; shown under that tab on /dashboard/sessions. */
+    season: Season;
 }
 
 export const camps: Camp[] = [
     {
         slug: "level0",
+        season: '2026',
         title: "Level 0",
         description: "Fundamental C++ concepts including Data Types, I/O, Control Flow, and Loops.",
         image: '/images/lessons/levels_camp/level0/cover.webp',
@@ -156,6 +163,7 @@ export const camps: Camp[] = [
     },
     {
         slug: "programming1",
+        season: '2026',
         title: "Programming 1 Camp",
         description: "Master the basics of Programming 1.",
         image: '/images/lessons/pro1/pro1camp.webp',
@@ -194,6 +202,7 @@ export const camps: Camp[] = [
     },
     {
         slug: "level1",
+        season: '2026',
         title: "Level 1",
         description: "Advanced topics for competitive programming.",
         image: '/images/lessons/levels_camp/level1/cover.webp',
