@@ -21,6 +21,14 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+/** Where to go after login: a ?redirect= path inside this site, else the dashboard. */
+function postLoginPath(): string {
+    if (typeof window === 'undefined') return '/dashboard';
+    const target = new URLSearchParams(window.location.search).get('redirect') || '';
+    // Same-site paths only ("/x", never "//host" or "/\\host"), so the link cannot send users elsewhere.
+    return /^\/(?![/\\])/.test(target) ? target : '/dashboard';
+}
+
 export default function Login() {
     const [showTutorial, setShowTutorial] = useState(false);
     const [email, setEmail] = useState('');
@@ -38,7 +46,7 @@ export default function Login() {
     // Redirect if already logged in
     useEffect(() => {
         if (isAuthenticated) {
-            router.replace('/dashboard');
+            router.replace(postLoginPath());
         }
     }, [isAuthenticated, router]);
 
@@ -133,7 +141,7 @@ export default function Login() {
 
         try {
             await login(email, password);
-            router.replace('/dashboard');
+            router.replace(postLoginPath());
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : 'Login failed');
             isSubmittingRef.current = false;
