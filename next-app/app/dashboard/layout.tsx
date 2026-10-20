@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -115,23 +115,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Persist sidebar state
-    useEffect(() => {
-        // SSR-safe localStorage access
-        if (typeof window === 'undefined') return;
-
+    // Restore the saved sidebar state before the first paint, so a collapsed
+    // sidebar does not render open and then animate shut on every refresh.
+    useLayoutEffect(() => {
         try {
             const saved = localStorage.getItem('sidebarCollapsed');
-            if (saved !== null) {
-                setTimeout(() => setIsSidebarCollapsed(saved === 'true'), 0);
-            }
-            requestAnimationFrame(() => {
-                setTransitionsEnabled(true);
-            });
+            if (saved !== null) setIsSidebarCollapsed(saved === 'true');
         } catch (error) {
             console.warn('Failed to load sidebar state from localStorage:', error);
-            setTimeout(() => setTransitionsEnabled(true), 0);
         }
+    }, []);
+
+    // Animate only user toggles: enable transitions two frames after the
+    // restored width has been painted.
+    useEffect(() => {
+        let second = 0;
+        const first = requestAnimationFrame(() => {
+            second = requestAnimationFrame(() => setTransitionsEnabled(true));
+        });
+        return () => {
+            cancelAnimationFrame(first);
+            cancelAnimationFrame(second);
+        };
     }, []);
 
     const toggleSidebar = (collapsed: boolean) => {
