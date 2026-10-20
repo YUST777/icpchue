@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes that require authentication — redirect to /login if no valid session
-export const PROTECTED_PREFIXES = ['/dashboard'];
+export const PROTECTED_PREFIXES = ['/dashboard', '/mentorwhatsapp'];
 
 // Routes that authenticated users should NOT see — redirect to /dashboard
 export const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password', '/reset-password'];
