@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { useSessionWatch } from './SessionWatch';
 
 interface SlideViewerProps {
     /** Folder under /public holding slide-01.webp, slide-02.webp, ... */
@@ -23,6 +24,10 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
     const go = useCallback((delta: number) => {
         setIndex((i) => Math.min(count, Math.max(1, i + delta)));
     }, [count]);
+
+    // Report each slide opened (mentors see which slides a trainee went through).
+    const watch = useSessionWatch();
+    useEffect(() => { watch?.slideSeen(index); }, [index, watch]);
 
     // Slides are pre-sized webp files; warm the neighbours so paging is instant.
     useEffect(() => {

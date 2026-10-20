@@ -725,6 +725,36 @@ export async function GET(
             };
         });
 
+        // 11. Recorded sessions: video watch time, coverage and slides (session_watch)
+        const sessionWatchRes = userId ? await query(`
+            SELECT camp_slug, session_slug, watched_seconds, page_seconds, duration_seconds,
+                   max_position_seconds, COALESCE(array_length(watched_buckets, 1), 0)::int AS buckets_watched,
+                   COALESCE(array_length(slides_seen, 1), 0)::int AS slides_seen, plays,
+                   first_seen_at, last_beat_at
+            FROM session_watch
+            WHERE user_id = $1
+            ORDER BY last_beat_at DESC
+        `, [userId]) : { rows: [] };
+
+        const sessionWatch = sessionWatchRes.rows.map((r: any) => {
+            const duration = r.duration_seconds ? Number(r.duration_seconds) : null;
+            const totalBuckets = duration ? Math.max(1, Math.ceil(duration / 10)) : null;
+            return {
+                camp_slug: r.camp_slug,
+                session_slug: r.session_slug,
+                watched_seconds: r.watched_seconds,
+                page_seconds: r.page_seconds,
+                duration_seconds: duration,
+                max_position_seconds: r.max_position_seconds,
+                // Share of the video actually played (10s parts), not just how far they skipped.
+                coverage_pct: totalBuckets ? Math.min(100, Math.round((r.buckets_watched / totalBuckets) * 100)) : null,
+                slides_seen: r.slides_seen,
+                plays: r.plays,
+                first_seen_at: r.first_seen_at,
+                last_seen_at: r.last_beat_at,
+            };
+        });
+
         const responsePayload = {
             profile,
             metrics,
@@ -737,6 +767,7 @@ export async function GET(
             user_notes: userNotes,
             time_on_problems: timeOnProblems,
             time_sessions: timeSessions,
+            session_watch: sessionWatch,
             behavioral_analysis: {
                 cheating_flags: flaggedProblems.length || profile.cheating_flags || 0,
                 risk_score: flaggedProblems.length > 3 ? 'HIGH' : flaggedProblems.length > 0 ? 'MEDIUM' : 'LOW',
