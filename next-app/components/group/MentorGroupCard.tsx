@@ -56,6 +56,11 @@ export function MentorGroupCard({ result, error }: { result: Result | null; erro
                                 href={result.group.inviteLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() => {
+                                    // Record the tap without delaying WhatsApp opening.
+                                    const ok = navigator.sendBeacon?.('/api/mentor-group', new Blob(['{}'], { type: 'text/plain' }));
+                                    if (!ok) fetch('/api/mentor-group', { method: 'POST', keepalive: true, credentials: 'include' }).catch(() => {});
+                                }}
                                 className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#25D366] text-[#0B0B0C] font-bold text-base hover:brightness-110 transition"
                             >
                                 <MessageCircle className="w-5 h-5" />

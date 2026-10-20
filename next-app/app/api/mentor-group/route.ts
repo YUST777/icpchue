@@ -23,10 +23,15 @@ export async function GET(req: NextRequest) {
         const studentId = /^(\d{5,12})@horus\.edu\.eg$/.exec(email)?.[1] ?? null;
         if (!studentId) return NextResponse.json({ status: 'not_enrolled' });
 
+        // Already placed: record the visit (mentors follow up with who never opened it).
         const existing = await query(
-            `SELECT g.name, g.mentor_name, g.invite_link
-             FROM mentor_group_members m JOIN mentor_groups g ON g.id = m.group_id
-             WHERE m.season = $1 AND m.student_id = $2`,
+            `WITH opened AS (
+                UPDATE mentor_group_members
+                   SET last_opened_at = now(), first_opened_at = COALESCE(first_opened_at, now()), open_count = open_count + 1
+                 WHERE season = $1 AND student_id = $2
+                RETURNING group_id
+             )
+             SELECT g.name, g.mentor_name, g.invite_link FROM opened JOIN mentor_groups g ON g.id = opened.group_id`,
             [SEASON, studentId]
         );
         if (existing.rows[0]) return NextResponse.json({ status: 'assigned', group: groupJson(existing.rows[0]) });
@@ -64,7 +69,8 @@ export async function GET(req: NextRequest) {
             );
             if (!pick.rows[0]) return { status: 'full' };
             await client.query(
-                'INSERT INTO mentor_group_members (season, student_id, group_id, source) VALUES ($1, $2, $3, $4)',
+                `INSERT INTO mentor_group_members (season, student_id, group_id, source, first_opened_at, last_opened_at, open_count)
+                 VALUES ($1, $2, $3, $4, now(), now(), 1)`,
                 [SEASON, studentId, pick.rows[0].id, 'auto']
             );
             return { status: 'assigned', group: groupJson(pick.rows[0]) };
@@ -73,5 +79,25 @@ export async function GET(req: NextRequest) {
     } catch (error) {
         console.error('[Mentor Group] Failed:', error instanceof Error ? error.message : error);
         return NextResponse.json({ error: 'Could not load your mentor group.' }, { status: 500 });
+    }
+}
+
+/** Records a tap on "Join on WhatsApp" (the closest signal the site has that a trainee joined). */
+export async function POST(req: NextRequest) {
+    try {
+        const user = await verifyAuth(req);
+        if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+        const studentId = /^(\d{5,12})@horus\.edu\.eg$/.exec((user.email || '').trim().toLowerCase())?.[1];
+        if (!studentId) return NextResponse.json({ ok: true });
+        await query(
+            `UPDATE mentor_group_members
+                SET join_clicks = join_clicks + 1, first_join_click_at = COALESCE(first_join_click_at, now())
+              WHERE season = $1 AND student_id = $2`,
+            [SEASON, studentId]
+        );
+        return NextResponse.json({ ok: true });
+    } catch (error) {
+        console.error('[Mentor Group] Join click failed:', error instanceof Error ? error.message : error);
+        return NextResponse.json({ ok: false }, { status: 500 });
     }
 }
