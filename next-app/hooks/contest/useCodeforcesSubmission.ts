@@ -292,10 +292,17 @@ export function useCodeforcesSubmission({
                             });
                         }
                     } else {
+                        // Show the server's reason (e.g. the account has no linked
+                        // Codeforces handle) instead of a generic failure.
+                        const data = await verifyRes.json().catch(() => ({}));
+                        const needsCfLink = data.code === 'CF_HANDLE_NOT_LINKED' || data.error === 'CF handle mismatch';
                         setCfStatus({
                             status: 'error',
                             substatus: 'verify-pending',
-                            error: 'Failed to record verification on the server.'
+                            needsCfLink,
+                            error: data.error === 'CF handle mismatch'
+                                ? `Your icpchue.com account is linked to a different Codeforces account than the one you are logged into (${resolvedHandle || cfHandle}). Log in to Codeforces with your linked account, or re-link it below.`
+                                : data.error || 'Failed to record verification on the server. Please try again.'
                         });
                     }
                 } catch (err: any) {
