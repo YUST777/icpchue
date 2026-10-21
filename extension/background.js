@@ -29,6 +29,7 @@ const EXT_VERSION = '1.5.0';
 const MAX_PROBLEM_HISTORY_PAGES = 50;
 const CF_FETCH_TIMEOUT_MS = 12_000;
 const VERIFIED_SESSION_CACHE_MS = 60_000;
+const VERIFIED_SESSION_KEY = 'cfVerifiedSession';
 
 // ─── Handle cache ────────────────────────────────────────────────────
 let handleCache = {
@@ -107,7 +108,18 @@ async function checkLogin(allowRecentVerification = false) {
         // account and potentially try to sync the wrong session.
         // Verify the live homepage on every status check instead.
         try {
-            const res = await cfFetchPage('https://codeforces.com/', { alwaysTryDirect: true, allowNewTab: allowRecentVerification });
+            // A plain check (page load, popup) opens a Codeforces tab only when
+            // this session was never checked before; after that the saved
+            // result for the same session cookies answers it.
+            let savedForSession = false;
+            try {
+                const saved = (await chrome.storage.local.get(VERIFIED_SESSION_KEY))[VERIFIED_SESSION_KEY];
+                savedForSession = !!(saved && saved.sessionKey === currentSessionKey);
+            } catch { /* ignore */ }
+            const res = await cfFetchPage('https://codeforces.com/', {
+                alwaysTryDirect: true,
+                allowNewTab: allowRecentVerification || !savedForSession,
+            });
             if (res.error) throw new Error(res.error);
             const html = res.text;
 
@@ -129,10 +141,23 @@ async function checkLogin(allowRecentVerification = false) {
                 handleCache.handle = handle;
                 handleCache.sessionKey = currentSessionKey;
                 handleCache.verifiedAt = Date.now();
+                try { await chrome.storage.local.set({ [VERIFIED_SESSION_KEY]: { handle, sessionKey: currentSessionKey } }); } catch { /* ignore */ }
                 return { loggedIn: true, handle };
             }
+            // A real Codeforces page without a login: definitely logged out.
+            // Remember that for these cookies so page loads stop re-checking.
+            try { await chrome.storage.local.set({ [VERIFIED_SESSION_KEY]: { handle: null, sessionKey: currentSessionKey } }); } catch { /* ignore */ }
         } catch {
-            // Network failures must not fall back to a stale cookie/cache.
+            // Cloudflare blocked the check (or the network failed), so the
+            // homepage could not be read. The same session cookies as a login
+            // verified earlier mean the same login: report that handle. Any
+            // login/logout changes the session cookies and voids this.
+            try {
+                const saved = (await chrome.storage.local.get(VERIFIED_SESSION_KEY))[VERIFIED_SESSION_KEY];
+                if (saved && currentSessionKey && saved.sessionKey === currentSessionKey && saved.handle) {
+                    return { loggedIn: true, handle: saved.handle, fromSavedSession: true };
+                }
+            } catch { /* ignore */ }
         }
 
         handleCache.handle = null;
@@ -187,6 +212,13 @@ async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId
     if (!page.ok) return { success: false, error: `HTTP_${page.status}` };
     if (page.text.includes('Login into Codeforces') || /\/enter\b/.test(page.url || '')) {
         return { success: false, error: 'NOT_LOGGED_IN' };
+    }
+    // Codeforces redirects a missing or foreign submission id to the last
+    // submission viewed (or to /my): only accept the page for this exact id.
+    const idRe = new RegExp(`/submission/${Number(submissionId)}(?:[/?#]|$)`);
+    const titleMatch = page.text.match(/<title>\s*Submission\s*#\s*(\d+)/i);
+    if (!idRe.test(page.url || '') || (titleMatch && titleMatch[1] !== String(Number(submissionId)))) {
+        return { success: false, error: 'SUBMISSION_NOT_FOUND' };
     }
     const sourceCode = parseSourceCode(page.text);
     return sourceCode ? { success: true, sourceCode, via: page.via } : { success: false, error: 'SOURCE_NOT_AVAILABLE' };
