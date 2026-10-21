@@ -1384,3 +1384,19 @@ iframe[title*="reCAPTCHA"],
   src: url('./fonts/FiraCode/fira-code-latin-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
+
+/* The problem page (IDE) sizes its own controls. The generic mobile rules above
+   (button padding 14px 28px, min-height 48px, input padding) are unlayered, so they
+   beat Tailwind utilities and inflated its icon buttons until the header ran off the
+   screen; they also padded Monaco's hidden input. Hand those back to the component
+   classes inside .mirror-ui (font-size stays: 16px keeps iOS from zooming inputs). */
+.mirror-ui button,
+.mirror-ui a[class*="button"],
+.mirror-ui a[class*="btn"],
+.mirror-ui input,
+.mirror-ui select,
+.mirror-ui textarea {
+  padding: revert-layer;
+  min-height: revert-layer;
+  min-width: revert-layer;
+}
