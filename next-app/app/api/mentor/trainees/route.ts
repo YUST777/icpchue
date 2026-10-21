@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
+import { mentorVisibleUserIds } from '@/lib/auth/mentor-scope';
 
 // High-speed In-Memory Cache (30s TTL)
 interface CacheEntry {
@@ -183,6 +184,10 @@ export async function GET(req: NextRequest) {
                 expiresAt: Date.now() + CACHE_TTL_MS,
             };
         }
+
+        // A mentor with an assigned group sees only that group (cards included).
+        const visible = await mentorVisibleUserIds(mentorUser);
+        if (visible) allTrainees = allTrainees.filter((t) => t.user_id != null && visible.has(Number(t.user_id)));
 
         // 2. Client-side Search, Level Filter, Status Filter with Arabic Normalization
         // Copy so sorting below never reorders the shared cached array.
