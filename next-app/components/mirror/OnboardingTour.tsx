@@ -38,6 +38,10 @@ export default function OnboardingTour({
     useEffect(() => {
         const hasSeen = localStorage.getItem(ONBOARDING_STORAGE_KEY);
         if (hasSeen && !forceShow) return;
+        // The tour describes the side-by-side desktop layout. On a phone it
+        // pointed at hidden panels and scrolled the page; show it on a
+        // computer instead (not marked as seen).
+        if (window.innerWidth < 768 && !forceShow) return;
 
         const timer = setTimeout(() => setReady(true), delay);
         return () => clearTimeout(timer);

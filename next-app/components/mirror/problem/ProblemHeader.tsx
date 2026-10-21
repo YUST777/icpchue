@@ -58,8 +58,8 @@ export default function ProblemHeader({
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     return (
-        <div className="flex flex-col gap-4 border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0 relative z-[100]">
-            <div className="h-12 sm:h-14 flex items-center justify-between px-3 sm:px-4 w-full min-h-[48px] relative">
+        <div className="flex flex-col gap-4 border-b border-white/10 bg-[#121212] px-2 sm:px-4 py-1.5 sm:py-2 shrink-0 relative z-[100]">
+            <div className="h-12 sm:h-14 flex items-center justify-between px-1 sm:px-4 w-full min-h-[48px] relative">
                 {/* Left Side: Logo + Navigation */}
                 <div className="flex items-center gap-2">
                     <HeaderLogo navigationBaseUrl={navigationBaseUrl} />

@@ -13,7 +13,8 @@ export function getVerdictIcon(verdict: string) {
     if (verdict.includes('Time')) return <Clock size={18} className="text-yellow-400" />;
     if (verdict.includes('Memory')) return <Database size={18} className="text-blue-400" />;
     if (verdict.includes('Testing') || verdict.includes('Running')) return <Loader2 size={18} className="text-blue-400 animate-spin" />;
-    if (verdict.includes('Queue') || verdict === 'Submitted') return <Loader2 size={18} className="text-gray-400 animate-spin" />;
+    if (verdict === 'Submitted') return <CheckCircle2 size={18} className="text-[#E8C15A]" />;
+    if (verdict.includes('Queue')) return <Loader2 size={18} className="text-gray-400 animate-spin" />;
     if (verdict.includes('Timeout')) return <Clock size={18} className="text-orange-400" />;
     if (verdict.includes('Compilation')) return <XCircle size={18} className="text-orange-400" />;
     if (verdict.includes('Runtime')) return <XCircle size={18} className="text-purple-400" />;
@@ -40,6 +41,7 @@ export function getCFStatusColor(cfStatus: CFSubmissionStatus | null) {
         case 'waiting': return 'text-yellow-400';
         case 'testing': return 'text-blue-400';
         case 'done':
+            if (cfStatus.verdict === 'Submitted') return 'text-[#E8C15A]';
             return cfStatus.verdict === 'OK' || cfStatus.verdict === 'Accepted'
                 ? 'text-green-400'
                 : 'text-red-400';
@@ -55,6 +57,7 @@ export function getCFStatusBg(cfStatus: CFSubmissionStatus | null) {
         case 'waiting': return 'bg-yellow-500/10 border-yellow-500/20';
         case 'testing': return 'bg-blue-500/10 border-blue-500/20';
         case 'done':
+            if (cfStatus.verdict === 'Submitted') return 'bg-[#E8C15A]/10 border-[#E8C15A]/20';
             return cfStatus.verdict === 'OK' || cfStatus.verdict === 'Accepted'
                 ? 'bg-green-500/10 border-green-500/20'
                 : 'bg-red-500/10 border-red-500/20';
