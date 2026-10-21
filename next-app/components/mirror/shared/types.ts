@@ -122,6 +122,8 @@ export interface CFSubmissionStatus {
     failedTestCase?: number;
     needsCaptcha?: boolean;
     needsLogin?: boolean;
+    /** The server needs this account's Codeforces handle linked (or it differs) before it can record solves. */
+    needsCfLink?: boolean;
     captchaUrl?: string;
 }
 

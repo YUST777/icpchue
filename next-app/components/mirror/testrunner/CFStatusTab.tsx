@@ -162,6 +162,15 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     </div>
                 )}
 
+                {hasError && cfStatus?.needsCfLink && (
+                    <a
+                        href="/api/auth/codeforces/login"
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-white/10 border border-white/15 text-xs font-bold text-white hover:bg-white/15 transition-colors"
+                    >
+                        Link Codeforces account
+                    </a>
+                )}
+
                 {/* Manual handle field — only when the user chooses to override
                     the session-resolved handle (or no extension is present). */}
                 {showHandleField && (
