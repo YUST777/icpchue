@@ -552,8 +552,11 @@ function isAcceptedVerdict(v) {
 }
 
 function isChallengePage(res, html) {
+    // Only markers of an actual challenge page. Cloudflare may also inject its
+    // /cdn-cgi/challenge-platform/ script into normal pages, so that path alone
+    // must not count (it would make every Codeforces page look blocked).
     return /<title>\s*(Just a moment|Attention Required)/i.test(html) ||
-        /\/cdn-cgi\/challenge-platform\/|cf_chl_opt|cf-chl-/i.test(html) ||
+        /window\._cf_chl_opt|cf_chl_opt\s*=/i.test(html) ||
         ((res.status === 403 || res.status === 503) && /cloudflare/i.test(html));
 }
 
@@ -770,7 +773,7 @@ const LIVE_POLL_MS = 2000;
 const LIVE_MAX_MS = 5 * 60_000;
 const LIVE_FRESH_MS = 3 * 60_000;
 const ICPC_TABS_KEY = 'icpcTabIds';
-const liveActive = new Set();
+const liveActive = new Map(); // contest key -> { wake }
 
 function isPendingVerdict(v) {
     const t = String(v || '').trim();
@@ -811,47 +814,47 @@ function parseStatusPageUrl(url) {
 
 async function trackLiveVerdict({ contestId, urlType, groupId }) {
     const key = `${urlType}:${groupId || ''}:${contestId}`;
-    if (liveActive.has(key)) return;
-    liveActive.add(key);
+    // Already following this contest: just make it look again (a second
+    // submission made while the first is still being judged).
+    if (liveActive.has(key)) { liveActive.get(key).wake = true; return; }
+    const state = { wake: false };
+    liveActive.set(key, state);
+    const sent = new Map(); // submission id -> { signature, pending }
     try {
         const started = Date.now();
-        let subId = null;
-        let lastSent = '';
         while (Date.now() - started < LIVE_MAX_MS) {
+            state.wake = false;
             const read = await readStatusPages((page) => getStatusUrl(contestId, urlType, groupId, null, page), 1);
             if (read.error) break;
-            let row;
-            if (subId) {
-                row = read.rows.find((r) => r.id === subId);
-            } else {
-                // The submission just made: still being judged, or created moments ago.
-                row = read.rows
-                    .filter((r) => isPendingVerdict(r.verdict) ||
-                        (r.creationTimeSeconds && Date.now() - r.creationTimeSeconds * 1000 < LIVE_FRESH_MS))
-                    .sort((a, b) => b.id - a.id)[0];
-                if (!row) break; // just a visit to the page, nothing new
+            const now = Date.now();
+            // Submissions still being judged, made moments ago, or already
+            // followed and not final yet.
+            const rows = read.rows.filter((r) => sent.has(r.id)
+                ? sent.get(r.id).pending
+                : isPendingVerdict(r.verdict) ||
+                    (r.creationTimeSeconds && now - r.creationTimeSeconds * 1000 < LIVE_FRESH_MS));
+            for (const row of rows.sort((a, b) => a.id - b.id)) {
+                const pending = isPendingVerdict(row.verdict);
+                const testMatch = String(row.verdict || '').match(/test\s+(\d+)/i);
+                const update = {
+                    type: 'CF_LIVE_VERDICT',
+                    contestId: String(contestId),
+                    problemIndex: String(row.problemIndex || '').toUpperCase(),
+                    submissionId: row.id,
+                    verdict: row.verdict || 'In queue',
+                    pending,
+                    testNumber: testMatch ? Number(testMatch[1]) : null,
+                    timeMs: row.timeConsumedMillis || 0,
+                    memoryKb: Math.round((row.memoryConsumedBytes || 0) / 1024),
+                };
+                const signature = `${update.verdict}|${pending}`;
+                if (!sent.has(row.id) || sent.get(row.id).signature !== signature) {
+                    sent.set(row.id, { signature, pending });
+                    await broadcastToIcpc(update);
+                }
             }
-            if (!row) { await sleep(LIVE_POLL_MS); continue; }
-            subId = row.id;
-            const pending = isPendingVerdict(row.verdict);
-            const testMatch = String(row.verdict || '').match(/test\s+(\d+)/i);
-            const update = {
-                type: 'CF_LIVE_VERDICT',
-                contestId: String(contestId),
-                problemIndex: String(row.problemIndex || '').toUpperCase(),
-                submissionId: row.id,
-                verdict: row.verdict || 'In queue',
-                pending,
-                testNumber: testMatch ? Number(testMatch[1]) : null,
-                timeMs: row.timeConsumedMillis || 0,
-                memoryKb: Math.round((row.memoryConsumedBytes || 0) / 1024),
-            };
-            const signature = `${update.verdict}|${update.pending}`;
-            if (signature !== lastSent) {
-                lastSent = signature;
-                await broadcastToIcpc(update);
-            }
-            if (!pending) break;
+            const anyPending = [...sent.values()].some((v) => v.pending);
+            if (!anyPending && !state.wake) break; // nothing (left) to follow
             await sleep(LIVE_POLL_MS);
         }
     } catch { /* live updates are best-effort; manual Sync still works */ } finally {
