@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.4.0 — Background Service Worker
+ * Verdict Helper Extension v1.5.0 — Background Service Worker
  *
  * Self-contained Codeforces AC verification.
  * ─────────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@
  * Cookies NEVER leave the browser. No local/remote bridge is contacted.
  */
 
-const EXT_VERSION = '1.4.0';
+const EXT_VERSION = '1.5.0';
 
 // A Codeforces status page contains at most 50 rows. This cap supports up to
 // 2,500 attempts for one problem while preventing an accidental infinite scan.
@@ -208,10 +208,124 @@ async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId
     }
 }
 
+// ─── Source code through a real Codeforces page ──────────────────────
+// Codeforces protects submission pages with Cloudflare more strictly than
+// the /my status pages, so the background fetch above often gets the
+// "Just a moment..." challenge. A request made from inside a Codeforces tab
+// is same-origin and carries the clearance the browser already earned; a
+// real page load solves Cloudflare's automatic check by itself.
+const SOURCE_TAB_TIMEOUT_MS = 25_000;
+const CF_TAB_PATTERNS = ['*://codeforces.com/*', '*://*.codeforces.com/*'];
+
+// Runs inside a Codeforces page (no access to anything in this file).
+async function pageFetchSource(path) {
+    try {
+        const res = await fetch(path, { credentials: 'include' });
+        if (!res.ok) return { error: `HTTP_${res.status}` };
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        if (/just a moment/i.test(doc.title)) return { error: 'CLOUDFLARE_CHALLENGE' };
+        if (/\/enter\b/.test(res.url) || doc.querySelector('form#enterForm')) return { error: 'NOT_LOGGED_IN' };
+        const pre = doc.querySelector('#program-source-text, pre.program-source');
+        // Prettified pages hold one <li> per line; plain ones hold the raw text.
+        const lines = pre ? pre.querySelectorAll('li') : [];
+        const source = !pre ? '' : (lines.length ? Array.from(lines, (li) => li.textContent).join('\n') : pre.textContent);
+        return source ? { sourceCode: source } : { error: 'SOURCE_NOT_AVAILABLE' };
+    } catch (err) {
+        return { error: (err && err.message) || 'PAGE_FETCH_FAILED' };
+    }
+}
+
+// Runs inside the submission page opened in a background tab.
+function pageReadSource() {
+    if (/just a moment/i.test(document.title)) return { pending: true, error: 'CLOUDFLARE_CHALLENGE' };
+    if (document.readyState !== 'complete') return { pending: true, error: 'PAGE_LOADING' };
+    if (/\/enter\b/.test(location.pathname)) return { error: 'NOT_LOGGED_IN' };
+    const pre = document.querySelector('#program-source-text, pre.program-source');
+    // Codeforces' prettifier splits the code into one <li> per line.
+    const lines = pre ? pre.querySelectorAll('li') : [];
+    const source = !pre ? '' : (lines.length ? Array.from(lines, (li) => li.textContent).join('\n') : pre.textContent);
+    return source ? { sourceCode: source } : { error: 'SOURCE_NOT_AVAILABLE' };
+}
+
+async function runInTab(tabId, func, args = []) {
+    const [injection] = await chrome.scripting.executeScript({ target: { tabId }, func, args });
+    return injection ? injection.result : null;
+}
+
+const cleanSource = (s) => String(s || '').replace(/\r\n/g, '\n').slice(0, 64 * 1024);
+
+async function sourceViaOpenTab(url) {
+    const path = new URL(url).pathname;
+    const tabs = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'complete', discarded: false });
+    let lastError = 'NO_CODEFORCES_TAB';
+    for (const tab of tabs.slice(0, 3)) {
+        try {
+            const r = await runInTab(tab.id, pageFetchSource, [path]);
+            if (r && r.sourceCode) return { success: true, sourceCode: cleanSource(r.sourceCode), via: 'open-tab' };
+            if (r && r.error) lastError = r.error;
+            if (lastError === 'NOT_LOGGED_IN' || lastError === 'SOURCE_NOT_AVAILABLE') break;
+        } catch (err) {
+            lastError = (err && err.message) || 'TAB_SCRIPT_FAILED';
+        }
+    }
+    return { success: false, error: lastError };
+}
+
+async function sourceViaBackgroundTab(url) {
+    let tab;
+    try {
+        tab = await chrome.tabs.create({ url, active: false });
+        const deadline = Date.now() + SOURCE_TAB_TIMEOUT_MS;
+        let last = { error: 'PAGE_LOADING' };
+        while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, 1000));
+            try {
+                last = (await runInTab(tab.id, pageReadSource)) || last;
+            } catch (err) {
+                last = { pending: true, error: (err && err.message) || 'TAB_SCRIPT_FAILED' };
+            }
+            if (last.sourceCode) return { success: true, sourceCode: cleanSource(last.sourceCode), via: 'new-tab' };
+            if (!last.pending) break;
+        }
+        return { success: false, error: last.error === 'PAGE_LOADING' ? 'TAB_TIMEOUT' : last.error };
+    } catch (err) {
+        return { success: false, error: (err && err.message) || 'TAB_FAILED' };
+    } finally {
+        if (tab && tab.id != null) chrome.tabs.remove(tab.id).catch(() => {});
+    }
+}
+
+/**
+ * The exact submitted code, trying (1) a background fetch, (2) a fetch from
+ * inside an open Codeforces tab, (3) loading the submission page in a
+ * background tab. On failure `error` lists why each step failed, so the site
+ * can log the real reason instead of silently saving no code.
+ */
+async function readSubmissionSource(params) {
+    const direct = await fetchSubmissionSource(params);
+    if (direct.success || direct.error === 'INVALID_SUBMISSION_ID' || direct.error === 'NOT_LOGGED_IN') {
+        return direct.success ? { ...direct, via: 'fetch' } : direct;
+    }
+    const url = getSubmissionUrl(params.contestId, params.urlType, params.groupId, params.submissionId);
+    const errors = [`fetch:${direct.error}`];
+    if (chrome.scripting && chrome.tabs) {
+        const open = await sourceViaOpenTab(url);
+        if (open.success) return open;
+        errors.push(`open-tab:${open.error}`);
+        if (open.error !== 'SOURCE_NOT_AVAILABLE' && open.error !== 'NOT_LOGGED_IN') {
+            const fresh = await sourceViaBackgroundTab(url);
+            if (fresh.success) return fresh;
+            errors.push(`new-tab:${fresh.error}`);
+        }
+    }
+    return { success: false, error: errors.join(' | ') };
+}
+
 async function getSubmissionSource(params) {
     const login = await checkLogin(true);
     if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
-    return fetchSubmissionSource(params);
+    return readSubmissionSource(params);
 }
 
 // ─── HTML parsing (service worker has no DOMParser, use regex) ───────
@@ -448,12 +562,20 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
     const submissions = read.rows
         .filter(r => !wantIdx || (r.problemIndex || '').toUpperCase() === wantIdx)
         .sort((a, b) => b.id - a.id);
-    // Fetch only the latest source during sync; older sources load on demand.
-    if (submissions[0]) {
-        const source = await fetchSubmissionSource({ contestId, urlType, groupId, submissionId: submissions[0].id });
-        if (source.success && source.sourceCode) submissions[0].sourceCode = source.sourceCode;
-    }
     const ac = submissions.find(r => isAcceptedVerdict(r.verdict)) || null;
+    // Read the code of the latest attempt and of the accepted one (the one
+    // mentors inspect); older sources load on demand. A failure is reported
+    // on the row as sourceError.
+    for (const row of [submissions[0], ac]) {
+        if (!row || row.sourceCode || row.sourceError) continue;
+        const source = await readSubmissionSource({ contestId, urlType, groupId, submissionId: row.id });
+        if (source.success && source.sourceCode) {
+            row.sourceCode = source.sourceCode;
+            row.sourceVia = source.via;
+        } else {
+            row.sourceError = source.error || 'SOURCE_UNKNOWN_ERROR';
+        }
+    }
 
     return {
         success: true,

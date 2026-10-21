@@ -3,9 +3,10 @@
   "manifest_version": 3,
   "name": "Verdict Helper",
   "description": "One-click submission to Codeforces - the modern competitive programming interface helper.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "permissions": [
     "cookies",
+    "scripting",
     "storage"
   ],
   "host_permissions": [

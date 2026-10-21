@@ -245,6 +245,8 @@ export function useCodeforcesSubmission({
                             problemIndex: problemId,
                             cfHandle: resolvedHandle || cfHandle,
                             sourceCode: accepted.sourceCode || null,
+                            // Why the extension could not read the code (logged by the server).
+                            sourceError: accepted.sourceCode ? null : (accepted.sourceError || 'NOT_SENT_BY_EXTENSION'),
                             language: accepted.language || mapLanguageToExtension(language),
                             sheetId: sheetId || null,
                             urlType,

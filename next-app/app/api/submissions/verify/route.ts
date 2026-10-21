@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { 
             contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
-            cookies, isExtensionVerified, submissionId, timeMs, memoryKb
+            cookies, isExtensionVerified, submissionId, timeMs, memoryKb, sourceError
         } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
@@ -46,6 +46,11 @@ export async function POST(req: NextRequest) {
         if (sourceCode !== undefined && sourceCode !== null &&
             (typeof sourceCode !== 'string' || sourceCode.length > 64 * 1024)) {
             return NextResponse.json({ error: 'Source code is too large' }, { status: 400 });
+        }
+        // The extension could not read the submitted code: log why, so a
+        // Code Inspector gap is never a mystery again.
+        if (!sourceCode && typeof sourceError === 'string') {
+            console.warn(`[Verify] No source for ${targetContestId}${normalizedProblemIndex} (user ${user.id}): ${sourceError.slice(0, 300)}`);
         }
         if (cookies !== undefined && cookies !== null &&
             (typeof cookies !== 'string' || cookies.length > 16 * 1024)) {
