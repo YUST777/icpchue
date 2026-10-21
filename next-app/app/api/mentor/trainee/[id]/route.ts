@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
 import { parseCodeforcesUrl } from '@/lib/services/codeforces-backfill';
+import { mentorVisibleUserIds } from '@/lib/auth/mentor-scope';
 
 interface CacheEntry {
     data: any;
@@ -53,9 +54,12 @@ export async function GET(
 
         // The role is part of the key: mentors must never receive a staff dossier
         // that an owner's request cached a moment earlier.
+        // Mentors with an assigned group may only open their own trainees.
+        const visible = await mentorVisibleUserIds(mentorUser);
         const cacheKey = `dossier:${mentorUser.role}:${paramId.toLowerCase().trim()}:${subOffset}:${subLimit}`;
         const cached = dossierCache.get(cacheKey);
-        if (cached && cached.expiresAt > Date.now()) {
+        if (cached && cached.expiresAt > Date.now() &&
+            (!visible || (cached.data?.profile?.user_id != null && visible.has(Number(cached.data.profile.user_id))))) {
             return NextResponse.json(cached.data, {
                 headers: { 'X-Cache': 'HIT', 'Cache-Control': 'private, max-age=30' }
             });
@@ -130,6 +134,9 @@ export async function GET(
         // guessing an ID.
         if (mentorUser.role === 'mentor' && userRow?.role &&
             ['mentor', 'instructor', 'owner'].includes(String(userRow.role))) {
+            return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+        }
+        if (visible && (userId == null || !visible.has(Number(userId)))) {
             return NextResponse.json({ error: 'Student not found' }, { status: 404 });
         }
 
