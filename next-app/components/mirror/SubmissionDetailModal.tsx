@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Copy, RotateCcw, Check, ExternalLink, Clock, MemoryStick, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { extensionErrorMessage } from '@/lib/utils/codeforcesUtils';
+import { extensionAtLeast, SAFE_SOURCE_EXTENSION } from '@/lib/utils/extensionVersion';
 
 interface SubmissionDetailModalProps {
     isOpen: boolean;
@@ -82,7 +83,8 @@ export default function SubmissionDetailModal({
                 setSubmission((current: any) => current ? { ...current, sourceCode: event.data.sourceCode } : current);
                 // Persist the exact Codeforces source so the student and mentor
                 // see the same code on later opens, without sending cookies.
-                fetch(`/api/submissions/cf/${submissionData.id}`, {
+                // Older extensions could return another submission's page.
+                if (extensionAtLeast(SAFE_SOURCE_EXTENSION)) fetch(`/api/submissions/cf/${submissionData.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
