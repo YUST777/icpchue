@@ -115,6 +115,10 @@ export interface CFSubmissionStatus {
     time?: number;
     memory?: number;
     submissionId?: number;
+    /** The latest submission is not Accepted, but an earlier one was: the problem stays solved. */
+    solvedEarlier?: boolean;
+    /** e.g. https://codeforces.com/group/<id>/contest/<id> (links must follow the contest type). */
+    contestBaseUrl?: string;
     error?: string;
     isDuplicate?: boolean;
     compilationError?: string;

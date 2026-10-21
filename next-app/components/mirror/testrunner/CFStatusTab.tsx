@@ -248,6 +248,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     // states are handled by the sync panel). This guard narrows the type for TS.
     if (!cfStatus) return null;
 
+    const contestBase = cfStatus.contestBaseUrl || `https://codeforces.com/contest/${contestId}`;
     const statusColor = getCFStatusColor(cfStatus);
     const statusBg = getCFStatusBg(cfStatus);
 
@@ -378,6 +379,14 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 </div>
             )}
 
+            {/* The newest submission failed, but the problem was solved before */}
+            {cfStatus.status === 'done' && cfStatus.solvedEarlier && (
+                <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm">
+                    <CheckCircle2 size={16} />
+                    <span><span className="font-semibold">Solved.</span> Your earlier Accepted submission still counts; this is your newest attempt.</span>
+                </div>
+            )}
+
             {/* Accepted - All Tests Passed */}
             {cfStatus.status === 'done' && cfStatus.verdict === 'Accepted' && !!cfStatus.testNumber && (
                 <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
@@ -419,7 +428,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         Submission ID: <span className="text-white font-mono">#{cfStatus.submissionId}</span>
                     </div>
                     <a
-                        href={`https://codeforces.com/contest/${contestId}/submission/${cfStatus.submissionId}`}
+                        href={`${contestBase}/submission/${cfStatus.submissionId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 text-xs text-[#E8C15A] hover:text-[#E8C15A] transition-colors"
@@ -430,11 +439,22 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 </div>
             )}
 
+            {/* Re-check after submitting a fix directly on Codeforces */}
+            {cfStatus.status === 'done' && isExtensionInstalled && (
+                <button
+                    type="button"
+                    onClick={() => (window as any).__verdict_verify_cf?.()}
+                    className="w-full flex items-center justify-center gap-2 p-2 bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 rounded-lg border border-[#E8C15A]/30 text-xs font-semibold text-[#E8C15A] transition-colors"
+                >
+                    Check again
+                </button>
+            )}
+
             {/* Quick Links */}
             {contestId && problemId && (
                 <div className="flex gap-2">
                     <a
-                        href={`https://codeforces.com/contest/${contestId}/my`}
+                        href={`${contestBase}/my`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-2 p-2 bg-[#252526] hover:bg-[#2d2d2d] rounded-lg border border-white/5 text-xs text-[#888] hover:text-white transition-colors"
@@ -443,7 +463,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                         <ExternalLink size={10} />
                     </a>
                     <a
-                        href={`https://codeforces.com/contest/${contestId}/status/${problemId}`}
+                        href={`${contestBase}/status/${problemId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-2 p-2 bg-[#252526] hover:bg-[#2d2d2d] rounded-lg border border-white/5 text-xs text-[#888] hover:text-white transition-colors"
