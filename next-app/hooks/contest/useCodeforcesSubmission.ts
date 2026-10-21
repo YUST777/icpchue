@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
 import { mapLanguageToExtension, getSubmitUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
 
@@ -221,13 +221,11 @@ export function useCodeforcesSubmission({
                     // show its real verdict instead of claiming no AC exists.
                     if (!accepted) {
                         setCfStatus({
-                            // Keep the sync panel available so the student can
-                            // submit a fix and check again, while still showing
-                            // the real failed verdict instead of "no AC".
-                            status: 'error',
+                            // The real verdict of the latest submission; the
+                            // status panel offers "Check again" for a fix.
+                            status: 'done',
                             verdict: latestVerdict,
-                            substatus: 'verify-pending',
-                            error: `Latest Codeforces result: ${latestVerdict}. Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'} for this problem; it is not solved yet.`,
+                            substatus: `Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'} for this problem; it is not solved yet.`,
                             time: latestSubmission?.timeConsumedMillis || 0,
                             memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
                             submissionId: latestSubmission?.id,
@@ -276,10 +274,10 @@ export function useCodeforcesSubmission({
                                 });
                             } else {
                                 setCfStatus({
-                                    status: 'error',
+                                    status: 'done',
                                     verdict: latestVerdict,
-                                    substatus: 'verify-pending',
-                                    error: `Latest Codeforces result: ${latestVerdict}. Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'}; this problem remains solved from an earlier Accepted submission.`,
+                                    solvedEarlier: true,
+                                    substatus: `Recorded ${submissions.length} attempt${submissions.length === 1 ? '' : 's'} for this problem.`,
                                     time: latestSubmission?.timeConsumedMillis || 0,
                                     memory: Math.round((latestSubmission?.memoryConsumedBytes || 0) / 1024),
                                     submissionId: latestSubmission?.id,
@@ -451,8 +449,19 @@ export function useCodeforcesSubmission({
         return () => window.removeEventListener('message', onLive);
     }, [contestId, problemId, setIsTestPanelVisible, setTestPanelActiveTab]);
 
+    // Links in the status panel must point at the right kind of contest.
+    const contestBaseUrl = urlType === 'group' && groupId
+        ? `https://codeforces.com/group/${groupId}/contest/${contestId}`
+        : urlType === 'gym'
+            ? `https://codeforces.com/gym/${contestId}`
+            : `https://codeforces.com/contest/${contestId}`;
+    const cfStatusWithLinks = useMemo(
+        () => (cfStatus ? { ...cfStatus, contestBaseUrl } : null),
+        [cfStatus, contestBaseUrl]
+    );
+
     return {
-        cfStatus,
+        cfStatus: cfStatusWithLinks,
         handleSubmit,
         submitting
     };
