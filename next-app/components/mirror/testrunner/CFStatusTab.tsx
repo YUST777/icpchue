@@ -96,6 +96,23 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     // button: open the problem, solve on CF, come back and sync — no Submit needed.
     const showSyncPanel = isExtensionInstalled && (!cfStatus || cfStatus.status === 'idle' || isVerifyPending);
 
+    // ── Phone: browsers there cannot install extensions ──
+    const isPhone = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if ((!cfStatus || cfStatus.status === 'idle') && !isExtensionInstalled && isPhone) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-[#888] gap-3 p-4 text-center">
+                <div className="w-14 h-14 rounded-full bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
+                    <Send size={24} />
+                </div>
+                <p className="text-base font-bold text-white">Submitting from your phone</p>
+                <p className="text-sm leading-relaxed max-w-xs">
+                    Press <span className="text-white font-semibold">Submit</span>: your code is copied and Codeforces opens. Paste it there and submit.
+                    Your verdict and code sync to ICPC HUE the next time you open it on a computer with Verdict Helper.
+                </p>
+            </div>
+        );
+    }
+
     // ── Extension missing: prompt to install ──
     if ((!cfStatus || cfStatus.status === 'idle') && !isExtensionInstalled) {
         return (
