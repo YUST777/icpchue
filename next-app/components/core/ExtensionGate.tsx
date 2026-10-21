@@ -28,7 +28,7 @@ export default function ExtensionGate({ children }: ExtensionGateProps) {
             const timeout = setTimeout(() => {
                 window.removeEventListener('message', handler);
                 resolve({ loggedIn: false });
-            }, 3000);
+            }, 10000);
 
             const handler = (event: MessageEvent) => {
                 if (event.data?.type === 'VERDICT_LOGIN_STATUS') {

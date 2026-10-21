@@ -338,7 +338,9 @@ export function useCodeforcesSubmission({
                     error: 'The extension did not respond. Please reload the page and try again.'
                 });
                 setSubmitting(false);
-            }, 20000);
+                // Opening a Codeforces tab when Cloudflare blocks the extension's
+                // background read plus reading two sources can take ~30s.
+            }, 75000);
 
             return;
         }

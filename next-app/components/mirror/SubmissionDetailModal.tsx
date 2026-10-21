@@ -110,7 +110,7 @@ export default function SubmissionDetailModal({
         timer = window.setTimeout(() => {
             cleanup();
             setSourceError('The extension did not respond. Reload the page and try again.');
-        }, 15_000);
+        }, 45_000);
     };
 
     const handleCopy = () => {
