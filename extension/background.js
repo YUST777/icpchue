@@ -107,15 +107,9 @@ async function checkLogin(allowRecentVerification = false) {
         // account and potentially try to sync the wrong session.
         // Verify the live homepage on every status check instead.
         try {
-            const res = await fetchWithTimeout('https://codeforces.com/', {
-                credentials: 'include',
-                redirect: 'follow',
-                headers: {
-                    'User-Agent': navigator.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                },
-            }, CF_FETCH_TIMEOUT_MS);
-            const html = await res.text();
+            const res = await cfFetchPage('https://codeforces.com/');
+            if (res.error) throw new Error(res.error);
+            const html = res.text;
 
             const redirectedToLogin = /\/enter(?:[/?#]|$)|\/register(?:[/?#]|$)/i.test(res.url || '');
             const hasLogoutLink = /(?:href|action)=["'][^"']*\/logout(?:[/?#"']|$)/i.test(html) ||
@@ -188,64 +182,45 @@ async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId
     if (!Number.isSafeInteger(Number(submissionId)) || Number(submissionId) <= 0) {
         return { success: false, error: 'INVALID_SUBMISSION_ID' };
     }
-    try {
-        const res = await fetchWithTimeout(getSubmissionUrl(contestId, urlType, groupId, submissionId), {
-            credentials: 'include',
-            headers: {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            },
-        });
-        if (!res.ok) return { success: false, error: `HTTP_${res.status}` };
-        const html = await res.text();
-        if (html.includes('<title>Just a moment...</title>')) return { success: false, error: 'CLOUDFLARE_CHALLENGE' };
-        if (html.includes('Login into Codeforces') || /\/enter\b/.test(res.url)) {
-            return { success: false, error: 'NOT_LOGGED_IN' };
-        }
-        const sourceCode = parseSourceCode(html);
-        return sourceCode ? { success: true, sourceCode } : { success: false, error: 'SOURCE_NOT_AVAILABLE' };
-    } catch (err) {
-        return { success: false, error: err.name === 'AbortError' ? 'FETCH_TIMEOUT' : (err.message || 'FETCH_FAILED') };
+    const page = await cfFetchPage(getSubmissionUrl(contestId, urlType, groupId, submissionId));
+    if (page.error) return { success: false, error: page.error };
+    if (!page.ok) return { success: false, error: `HTTP_${page.status}` };
+    if (page.text.includes('Login into Codeforces') || /\/enter\b/.test(page.url || '')) {
+        return { success: false, error: 'NOT_LOGGED_IN' };
     }
+    const sourceCode = parseSourceCode(page.text);
+    return sourceCode ? { success: true, sourceCode, via: page.via } : { success: false, error: 'SOURCE_NOT_AVAILABLE' };
 }
 
-// ─── Source code through a real Codeforces page ──────────────────────
-// Codeforces protects submission pages with Cloudflare more strictly than
-// the /my status pages, so the background fetch above often gets the
-// "Just a moment..." challenge. A request made from inside a Codeforces tab
-// is same-origin and carries the clearance the browser already earned; a
-// real page load solves Cloudflare's automatic check by itself.
-const SOURCE_TAB_TIMEOUT_MS = 25_000;
+// ─── Reading Codeforces when Cloudflare blocks the background ─────────
+// Cloudflare often answers the service worker's fetches with its "Just a
+// moment..." challenge while the very same page opens fine in a tab (seen on
+// both /my status pages and submission pages). A fetch made from inside a
+// Codeforces tab is same-origin and carries the clearance the browser earned,
+// so every Codeforces read falls back to that. If no Codeforces tab is open,
+// one is opened in the background (Cloudflare's automatic check passes in a
+// real page), reused while syncing, and closed when idle.
+const BRIDGE_READY_TIMEOUT_MS = 25_000;
+const BRIDGE_IDLE_CLOSE_MS = 60_000;
+const SW_BLOCKED_REMEMBER_MS = 10 * 60_000;
 const CF_TAB_PATTERNS = ['*://codeforces.com/*', '*://*.codeforces.com/*'];
 
-// Runs inside a Codeforces page (no access to anything in this file).
-async function pageFetchSource(path) {
+let swBlockedUntil = 0;     // skip the doomed background fetch for a while
+let bridgeTabId = null;     // a tab this extension opened itself
+let bridgeCloseTimer = null;
+
+// Runs inside a Codeforces page (it cannot see anything in this file).
+async function pageFetchHtml(path) {
     try {
         const res = await fetch(path, { credentials: 'include' });
-        if (!res.ok) return { error: `HTTP_${res.status}` };
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        if (/just a moment/i.test(doc.title)) return { error: 'CLOUDFLARE_CHALLENGE' };
-        if (/\/enter\b/.test(res.url) || doc.querySelector('form#enterForm')) return { error: 'NOT_LOGGED_IN' };
-        const pre = doc.querySelector('#program-source-text, pre.program-source');
-        // Prettified pages hold one <li> per line; plain ones hold the raw text.
-        const lines = pre ? pre.querySelectorAll('li') : [];
-        const source = !pre ? '' : (lines.length ? Array.from(lines, (li) => li.textContent).join('\n') : pre.textContent);
-        return source ? { sourceCode: source } : { error: 'SOURCE_NOT_AVAILABLE' };
+        return { ok: res.ok, status: res.status, url: res.url, text: await res.text() };
     } catch (err) {
         return { error: (err && err.message) || 'PAGE_FETCH_FAILED' };
     }
 }
 
-// Runs inside the submission page opened in a background tab.
-function pageReadSource() {
-    if (/just a moment/i.test(document.title)) return { pending: true, error: 'CLOUDFLARE_CHALLENGE' };
-    if (document.readyState !== 'complete') return { pending: true, error: 'PAGE_LOADING' };
-    if (/\/enter\b/.test(location.pathname)) return { error: 'NOT_LOGGED_IN' };
-    const pre = document.querySelector('#program-source-text, pre.program-source');
-    // Codeforces' prettifier splits the code into one <li> per line.
-    const lines = pre ? pre.querySelectorAll('li') : [];
-    const source = !pre ? '' : (lines.length ? Array.from(lines, (li) => li.textContent).join('\n') : pre.textContent);
-    return source ? { sourceCode: source } : { error: 'SOURCE_NOT_AVAILABLE' };
+function pageState() {
+    return { title: document.title, ready: document.readyState };
 }
 
 async function runInTab(tabId, func, args = []) {
@@ -253,79 +228,94 @@ async function runInTab(tabId, func, args = []) {
     return injection ? injection.result : null;
 }
 
-const cleanSource = (s) => String(s || '').replace(/\r\n/g, '\n').slice(0, 64 * 1024);
-
-async function sourceViaOpenTab(url) {
-    const path = new URL(url).pathname;
-    const tabs = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'complete', discarded: false });
-    let lastError = 'NO_CODEFORCES_TAB';
-    for (const tab of tabs.slice(0, 3)) {
-        try {
-            const r = await runInTab(tab.id, pageFetchSource, [path]);
-            if (r && r.sourceCode) return { success: true, sourceCode: cleanSource(r.sourceCode), via: 'open-tab' };
-            if (r && r.error) lastError = r.error;
-            if (lastError === 'NOT_LOGGED_IN' || lastError === 'SOURCE_NOT_AVAILABLE') break;
-        } catch (err) {
-            lastError = (err && err.message) || 'TAB_SCRIPT_FAILED';
-        }
-    }
-    return { success: false, error: lastError };
+function scheduleBridgeClose() {
+    if (bridgeCloseTimer) clearTimeout(bridgeCloseTimer);
+    bridgeCloseTimer = setTimeout(() => {
+        if (bridgeTabId != null) chrome.tabs.remove(bridgeTabId).catch(() => {});
+        bridgeTabId = null;
+    }, BRIDGE_IDLE_CLOSE_MS);
 }
 
-async function sourceViaBackgroundTab(url) {
-    let tab;
-    try {
-        tab = await chrome.tabs.create({ url, active: false });
-        const deadline = Date.now() + SOURCE_TAB_TIMEOUT_MS;
-        let last = { error: 'PAGE_LOADING' };
-        while (Date.now() < deadline) {
-            await new Promise((r) => setTimeout(r, 1000));
-            try {
-                last = (await runInTab(tab.id, pageReadSource)) || last;
-            } catch (err) {
-                last = { pending: true, error: (err && err.message) || 'TAB_SCRIPT_FAILED' };
-            }
-            if (last.sourceCode) return { success: true, sourceCode: cleanSource(last.sourceCode), via: 'new-tab' };
-            if (!last.pending) break;
-        }
-        return { success: false, error: last.error === 'PAGE_LOADING' ? 'TAB_TIMEOUT' : last.error };
-    } catch (err) {
-        return { success: false, error: (err && err.message) || 'TAB_FAILED' };
-    } finally {
-        if (tab && tab.id != null) chrome.tabs.remove(tab.id).catch(() => {});
+async function waitForTabReady(tabId) {
+    const deadline = Date.now() + BRIDGE_READY_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+        await sleep(800);
+        try {
+            const st = await runInTab(tabId, pageState);
+            if (st && st.ready === 'complete' && !/just a moment|attention required/i.test(st.title || '')) return true;
+        } catch { /* page still navigating */ }
     }
+    return false;
+}
+
+/** Tabs to fetch through: open Codeforces tabs first, then our own one. */
+async function bridgeTabs() {
+    const ids = [];
+    if (bridgeTabId != null) {
+        try { await chrome.tabs.get(bridgeTabId); ids.push(bridgeTabId); } catch { bridgeTabId = null; }
+    }
+    const open = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'complete', discarded: false });
+    for (const t of open) if (!ids.includes(t.id) && ids.length < 3) ids.push(t.id);
+    return ids;
+}
+
+async function fetchViaTab(url) {
+    const path = new URL(url).pathname + new URL(url).search;
+    let lastError = 'NO_CODEFORCES_TAB';
+    const tryTabs = async (ids) => {
+        for (const id of ids) {
+            try {
+                const r = await runInTab(id, pageFetchHtml, [path]);
+                if (r && !r.error) return r;
+                lastError = (r && r.error) || 'TAB_SCRIPT_FAILED';
+            } catch (err) {
+                lastError = (err && err.message) || 'TAB_SCRIPT_FAILED';
+            }
+        }
+        return null;
+    };
+    let r = await tryTabs(await bridgeTabs());
+    if (!r && bridgeTabId == null) {
+        // No usable Codeforces tab: open one quietly in the background.
+        const tab = await chrome.tabs.create({ url: 'https://codeforces.com/', active: false });
+        bridgeTabId = tab.id;
+        if (await waitForTabReady(tab.id)) r = await tryTabs([tab.id]);
+        else lastError = 'CLOUDFLARE_CHALLENGE_IN_TAB';
+    }
+    if (bridgeTabId != null) scheduleBridgeClose();
+    return r ? { ...r, via: 'tab' } : { error: lastError };
 }
 
 /**
- * The exact submitted code, trying (1) a background fetch, (2) a fetch from
- * inside an open Codeforces tab, (3) loading the submission page in a
- * background tab. On failure `error` lists why each step failed, so the site
- * can log the real reason instead of silently saving no code.
+ * GET a Codeforces page as { ok, status, url, text, via } or { error }.
+ * Tries the background fetch, then falls back to a Codeforces tab.
  */
-async function readSubmissionSource(params) {
-    const direct = await fetchSubmissionSource(params);
-    if (direct.success || direct.error === 'INVALID_SUBMISSION_ID' || direct.error === 'NOT_LOGGED_IN') {
-        return direct.success ? { ...direct, via: 'fetch' } : direct;
-    }
-    const url = getSubmissionUrl(params.contestId, params.urlType, params.groupId, params.submissionId);
-    const errors = [`fetch:${direct.error}`];
-    if (chrome.scripting && chrome.tabs) {
-        const open = await sourceViaOpenTab(url);
-        if (open.success) return open;
-        errors.push(`open-tab:${open.error}`);
-        if (open.error !== 'SOURCE_NOT_AVAILABLE' && open.error !== 'NOT_LOGGED_IN') {
-            const fresh = await sourceViaBackgroundTab(url);
-            if (fresh.success) return fresh;
-            errors.push(`new-tab:${fresh.error}`);
+async function cfFetchPage(url) {
+    let directError = null;
+    if (Date.now() >= swBlockedUntil) {
+        try {
+            const res = await fetchWithTimeout(url, {
+                credentials: 'include',
+                headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+            });
+            const text = await res.text();
+            if (!isChallengePage(res, text)) return { ok: res.ok, status: res.status, url: res.url, text, via: 'fetch' };
+            directError = 'CLOUDFLARE_CHALLENGE';
+            swBlockedUntil = Date.now() + SW_BLOCKED_REMEMBER_MS;
+        } catch (err) {
+            directError = err && err.name === 'AbortError' ? 'FETCH_TIMEOUT' : `FETCH_FAILED: ${err && err.message}`;
         }
     }
-    return { success: false, error: errors.join(' | ') };
+    if (!chrome.scripting || !chrome.tabs) return { error: directError || 'CLOUDFLARE_CHALLENGE' };
+    const viaTab = await fetchViaTab(url);
+    if (!viaTab.error && isChallengePage(viaTab, viaTab.text)) return { error: `fetch:${directError} | tab:CLOUDFLARE_CHALLENGE` };
+    return viaTab.error ? { error: `fetch:${directError || 'SKIPPED'} | tab:${viaTab.error}` } : viaTab;
 }
 
 async function getSubmissionSource(params) {
     const login = await checkLogin(true);
     if (!login.loggedIn) return { success: false, error: 'NOT_LOGGED_IN' };
-    return readSubmissionSource(params);
+    return fetchSubmissionSource(params);
 }
 
 // ─── HTML parsing (service worker has no DOMParser, use regex) ───────
@@ -491,26 +481,14 @@ async function readStatusPages(urlForPage, maxPages) {
 
     for (let page = 1; page <= maxPages; page++) {
         if (page > 1) await sleep(PAGE_DELAY_MS);
-        let res;
-        let html;
-        try {
-            res = await fetchWithTimeout(urlForPage(page), {
-                credentials: 'include',
-                headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
-            });
-            html = await res.text();
-        } catch (err) {
-            const error = err && err.name === 'AbortError' ? 'FETCH_TIMEOUT' : `FETCH_FAILED: ${err && err.message}`;
-            if (page === 1) return { error };
+        const res = await cfFetchPage(urlForPage(page));
+        if (res.error) {
+            const error = /CLOUDFLARE/.test(res.error) ? 'CLOUDFLARE_CHALLENGE' : res.error;
+            if (page === 1) return { error, detail: res.error };
             partial = error;
             break;
         }
-
-        if (isChallengePage(res, html)) {
-            if (page === 1) return { error: 'CLOUDFLARE_CHALLENGE' };
-            partial = 'CLOUDFLARE_CHALLENGE';
-            break;
-        }
+        const html = res.text;
         if (!res.ok) {
             if (page === 1) return { error: `HTTP_${res.status}` };
             if (res.status !== 400 && res.status !== 404) partial = `HTTP_${res.status}`;
@@ -568,7 +546,7 @@ async function getSubmissions({ contestId, problemIndex, urlType, groupId }) {
     // on the row as sourceError.
     for (const row of [submissions[0], ac]) {
         if (!row || row.sourceCode || row.sourceError) continue;
-        const source = await readSubmissionSource({ contestId, urlType, groupId, submissionId: row.id });
+        const source = await fetchSubmissionSource({ contestId, urlType, groupId, submissionId: row.id });
         if (source.success && source.sourceCode) {
             row.sourceCode = source.sourceCode;
             row.sourceVia = source.via;

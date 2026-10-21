@@ -1,5 +1,5 @@
 /**
- * Verdict Helper Extension v1.4.0 — Content Script
+ * Verdict Helper Extension v1.5.0 — Content Script
  *
  * Bridges window.postMessage (from the icpchue page) ↔ chrome.runtime.sendMessage
  * (to the background service worker). Also injects a marker element so the page
@@ -14,7 +14,7 @@
 (() => {
     const marker = document.createElement('div');
     marker.id = 'verdict-extension-installed';
-    marker.setAttribute('data-version', '1.4.0');
+    marker.setAttribute('data-version', '1.5.0');
     marker.style.display = 'none';
     document.documentElement.appendChild(marker);
 })();
