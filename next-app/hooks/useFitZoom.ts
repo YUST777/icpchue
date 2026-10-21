@@ -7,9 +7,10 @@ const DESIGN_WIDTH = 1600;
 const DESIGN_HEIGHT = 940;
 const MIN_ZOOM = 0.7;
 const MAX_ZOOM = 1;
-// Phones use the stacked mobile layout, which was tuned at this zoom.
+// Phones use the stacked mobile layout at full size: shrinking it made text
+// and tap targets too small and offsets Monaco's caret under CSS zoom.
 const MOBILE_BREAKPOINT = 768;
-const MOBILE_ZOOM = 0.85;
+const MOBILE_ZOOM = 1;
 
 function computeZoom(): number {
     if (typeof window === 'undefined') return MOBILE_ZOOM;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2 } from 'lucide-react';
+import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2, Play, CloudUpload } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, getLanguageById } from './EditorConstants';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -121,9 +121,11 @@ export default function EditorToolbar({
                 </div>
 
                 <div className="flex gap-4 items-center">
+                    <span className="hidden md:inline-flex">
                     <Tooltip content="Bookmark" position="bottom">
                         <Bookmark className='w-4 text-white/40 hover:text-white cursor-pointer transition-colors' />
                     </Tooltip>
+                    </span>
                     
                     <Tooltip content={isCopied ? 'Copied!' : 'Copy Code'} position="bottom">
                         {isCopied ? 
@@ -132,20 +134,50 @@ export default function EditorToolbar({
                         }
                     </Tooltip>
 
+                    <span className="hidden md:inline-flex">
                     <Tooltip content="Export as Image" shortcut={exportShortcut} position="bottom">
                         <Share2 onClick={onExport} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
                     </Tooltip>
+                    </span>
 
                     <Tooltip content="Format Code" position="bottom">
                         <Braces onClick={onFormat} className='w-4 cursor-pointer text-[#E8C15A]/60 hover:text-[#E8C15A] transition-colors' />
                     </Tooltip>
 
+                    <span className="hidden md:inline-flex">
                     <Tooltip content={isFullScreen ? 'Exit Full Screen' : 'Full screen'} position="bottom">
                         {isFullScreen ?
                             <Minimize2 onClick={handleExitFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' /> :
                             <Maximize2 onClick={handleFullScreen} className='w-4 ml-2 cursor-pointer text-white/40 hover:text-white transition-colors' />
                         }
                     </Tooltip>
+                    </span>
+
+                    {/* Phones: the header has no room for Run / Submit, so they live here. */}
+                    <div className="flex md:hidden items-center gap-1.5">
+                        {onRunTests && (
+                            <button
+                                type="button"
+                                onClick={onRunTests}
+                                disabled={submitting}
+                                aria-label="Run tests"
+                                className="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 text-xs font-semibold active:bg-white/10 disabled:opacity-50"
+                            >
+                                <Play size={13} fill="currentColor" />
+                                Run
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={onSubmit}
+                            disabled={submitting}
+                            aria-label="Submit to Codeforces"
+                            className="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-[#E8C15A] text-black text-xs font-bold active:bg-[#F0D06A] disabled:opacity-50"
+                        >
+                            <CloudUpload size={14} />
+                            Submit
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

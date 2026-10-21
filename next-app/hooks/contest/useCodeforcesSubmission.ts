@@ -93,6 +93,16 @@ export function useCodeforcesSubmission({
             const cfUrl = getSubmitUrl(contestId, problemId, urlType, groupId);
             window.open(cfUrl, '_blank');
 
+            // Without the extension (e.g. on a phone, where Chrome has no
+            // extensions) nothing pastes or syncs automatically: say so.
+            if (!document.getElementById('verdict-extension-installed')) {
+                setCfStatus({
+                    status: 'done',
+                    verdict: 'Submitted',
+                    substatus: 'Your code is copied. Paste it in the Codeforces page that just opened and press Submit there. Your verdict syncs to ICPC HUE the next time you open it on a computer with Verdict Helper.',
+                });
+            }
+
             // 3. Save submitted code snapshot to DB for tracking
             fetch('/api/user/code', {
                 method: 'POST',
