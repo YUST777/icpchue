@@ -54,7 +54,7 @@ export function MobileViewToggle({
         <div className="flex md:hidden bg-[#1a1a1a] p-0.5 rounded-lg border border-white/10 shrink-0">
             <button
                 onClick={() => setMobileView("problem")}
-                className={`p-1.5 rounded-md transition-all ${
+                className={`p-2 rounded-md transition-all ${
                     mobileView === "problem"
                         ? "bg-[#2a2a2a] text-white shadow-sm"
                         : "text-white/40 hover:text-white/60"
@@ -64,7 +64,7 @@ export function MobileViewToggle({
             </button>
             <button
                 onClick={() => setMobileView("code")}
-                className={`p-1.5 rounded-md transition-all ${
+                className={`p-2 rounded-md transition-all ${
                     mobileView === "code"
                         ? "bg-[#2a2a2a] text-white shadow-sm"
                         : "text-white/40 hover:text-white/60"

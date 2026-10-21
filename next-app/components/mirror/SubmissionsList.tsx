@@ -297,12 +297,12 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
 
     return (
         <div className="flex flex-col">
-            <div className="grid grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-4 py-2 text-[10px] font-bold text-[#444] uppercase tracking-wider border-b border-white/[0.03]">
+            <div className="grid grid-cols-[minmax(0,1fr)_56px_64px_16px] md:grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-3 md:px-4 py-2 text-[10px] font-bold text-[#444] uppercase tracking-wider border-b border-white/[0.03]">
                 <span>Status</span>
                 <span className="text-right">Runtime</span>
                 <span className="text-right">Memory</span>
-                <span className="text-right">Tests</span>
-                <span className="pl-4">Notes</span>
+                <span className="hidden md:block text-right">Tests</span>
+                <span className="hidden md:block pl-4">Notes</span>
                 <span />
             </div>
 
@@ -317,7 +317,7 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
                         onClick={() => onViewCode(sub.id)}
                         onMouseEnter={() => setHoveredId(sub.id)}
                         onMouseLeave={() => setHoveredId(null)}
-                        className={`group grid grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 items-center px-4 py-2.5 cursor-pointer transition-colors ${
+                        className={`group grid grid-cols-[minmax(0,1fr)_56px_64px_16px] md:grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 items-center px-3 md:px-4 py-2.5 cursor-pointer transition-colors ${
                             isHovered ? 'bg-white/[0.03]' : idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
                         }`}
                     >
@@ -327,12 +327,16 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
                                 <span className={`text-sm font-medium truncate ${colors.text}`}>{formatVerdict(sub.verdict)}</span>
                             </div>
                             <span className="text-[10px] text-[#555] pl-[22px]">{timeAgo(sub.submittedAt)}</span>
+                            {/* Phones have no Notes column: show a saved note here. */}
+                            {getNote(sub).notes && (
+                                <span className="md:hidden text-[10px] italic text-white/60 pl-[22px] truncate">{getNote(sub).notes}</span>
+                            )}
                         </div>
 
                         <span className="text-xs text-[#999] text-right">{formatTime(sub.timeMs)}</span>
                         <span className="text-xs text-[#999] text-right">{formatMemory(sub.memoryKb)}</span>
                         
-                        <span className="text-xs text-right tabular-nums">
+                        <span className="hidden md:block text-xs text-right tabular-nums">
                             {sub.testCasesPassed == null || sub.totalTestCases == null ? (
                                 <span className="text-[#555]" title="Codeforces does not expose test totals in submission history">—</span>
                             ) : (
@@ -343,7 +347,7 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
                             )}
                         </span>
 
-                        <div className="pl-4 min-w-0" onClick={(e) => { e.stopPropagation(); setNoteModalData(sub); }}>
+                        <div className="hidden md:block pl-4 min-w-0" onClick={(e) => { e.stopPropagation(); setNoteModalData(sub); }}>
                             <div className="flex items-center gap-2 group/note cursor-text">
                                 <span className={`text-[11px] truncate italic flex-1 ${getNote(sub).notes ? 'text-white/80' : 'text-[#444]'}`}>
                                     {getNote(sub).notes ? (

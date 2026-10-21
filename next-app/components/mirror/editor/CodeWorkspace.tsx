@@ -375,7 +375,8 @@ export default function CodeWorkspace({
                             lineNumbers,
                             tabSize,
                             detectIndentation: false,
-                            wordWrap,
+                            // Phones: wrap long lines instead of sideways scrolling.
+                            wordWrap: mobileView === 'code' && typeof window !== 'undefined' && window.innerWidth < 768 ? 'on' : wordWrap,
                             renderLineHighlight: 'all',
                             suggest: {
                                 filterGraceful: false,
@@ -438,7 +439,7 @@ export default function CodeWorkspace({
                     <div className="flex items-center px-1 bg-[#1a1a1a]" style={{ height: `${PANEL_TAB_BAR_HEIGHT - 10}px` }}>
                         <button
                             onClick={() => handleTabClick('testcase')}
-                            className={`flex items-center gap-2 px-4 h-full text-[13px] font-medium transition-colors relative ${testPanelTab === 'testcase'
+                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'testcase'
                                 ? 'text-white'
                                 : 'text-[#808080] hover:text-[#b0b0b0]'
                                 }`}
@@ -451,7 +452,7 @@ export default function CodeWorkspace({
                         </button>
                         <button
                             onClick={() => handleTabClick('result')}
-                            className={`flex items-center gap-2 px-4 h-full text-[13px] font-medium transition-colors relative ${testPanelTab === 'result'
+                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'result'
                                 ? 'text-white'
                                 : 'text-[#808080] hover:text-[#b0b0b0]'
                                 }`}
@@ -464,7 +465,7 @@ export default function CodeWorkspace({
                         </button>
                         <button
                             onClick={() => handleTabClick('codeforces')}
-                            className={`flex items-center gap-2 px-4 h-full text-[13px] font-medium transition-colors relative ${testPanelTab === 'codeforces'
+                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'codeforces'
                                 ? 'text-white'
                                 : 'text-[#808080] hover:text-[#b0b0b0]'
                                 }`}
@@ -473,6 +474,8 @@ export default function CodeWorkspace({
                                 cfStatus.status === 'done' ? (
                                     cfStatus.verdict === 'OK' || cfStatus.verdict === 'Accepted' ? (
                                         <CheckCircle2 size={14} className="text-green-400" />
+                                    ) : cfStatus.verdict === 'Submitted' ? (
+                                        <CheckCircle2 size={14} className="text-[#E8C15A]" />
                                     ) : (
                                         <XCircle size={14} className="text-red-400" />
                                     )
