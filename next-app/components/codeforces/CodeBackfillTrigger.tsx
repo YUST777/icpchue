@@ -67,7 +67,8 @@ export default function CodeBackfillTrigger() {
                 const missing: Missing[] = (await res.json()).submissions || [];
 
                 for (const s of missing) {
-                    if (cancelled || document.visibilityState !== 'visible') break;
+                    // Keeps going if the student switches tabs; only starts while visible.
+                    if (cancelled) break;
                     const r = await readSource(s);
                     if (r.success && typeof r.sourceCode === 'string' && r.sourceCode) {
                         await fetch(`/api/submissions/cf/${s.id}`, {
