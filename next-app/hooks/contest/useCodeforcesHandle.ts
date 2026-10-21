@@ -58,7 +58,7 @@ export function useCodeforcesHandle(): UseCodeforcesHandleReturn {
                     window.removeEventListener('message', messageHandler);
                     resolve(null);
                 }
-            }, 2000);
+            }, 10000);
 
             // Listen for extension response
             const messageHandler = (event: MessageEvent) => {

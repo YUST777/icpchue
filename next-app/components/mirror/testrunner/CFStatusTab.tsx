@@ -83,7 +83,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
 
         const timeout = setTimeout(() => {
             if (!done) window.removeEventListener('message', handler);
-        }, 4000);
+        }, 10000);
         return () => {
             window.removeEventListener('message', handler);
             clearTimeout(timeout);
