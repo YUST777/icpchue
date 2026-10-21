@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
 import { query, withTransaction } from '@/lib/db/db';
-import { createBlindIndex } from '@/lib/security/encryption';
 
 const SEASON = 2027;
 
@@ -36,20 +35,8 @@ export async function GET(req: NextRequest) {
         );
         if (existing.rows[0]) return NextResponse.json({ status: 'assigned', group: groupJson(existing.rows[0]) });
 
-        // Only this season's Level 0 applicants get a group. Account creation links the
-        // account to its registration (application_id), which is the reliable match: blind
-        // indexes written at /apply time may come from a rotated key and no longer match.
-        const enrolled = await query(
-            `SELECT 1 FROM level0_training_registrations
-             WHERE season_year = $1 AND status <> 'cancelled'
-               AND (($4::bigint IS NOT NULL AND application_id = $4::bigint)
-                    OR email_blind_index = $2 OR student_id_blind_index = $3)
-             LIMIT 1`,
-            [SEASON, createBlindIndex(email), createBlindIndex(studentId), user.applicationId ?? null]
-        );
-        if (!enrolled.rows[0]) console.warn('[Mentor Group] Not enrolled:', studentId, 'application', user.applicationId ?? 'none');
-        if (!enrolled.rows[0]) return NextResponse.json({ status: 'not_enrolled' });
-
+        // Every trainee with an account gets a group (2026 and 2027 seasons alike);
+        // the account itself is the proof of enrollment.
         // Serialize placements so two trainees cannot overfill the same group.
         const result = await withTransaction(async (client) => {
             await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`mentor-groups-${SEASON}`]);
