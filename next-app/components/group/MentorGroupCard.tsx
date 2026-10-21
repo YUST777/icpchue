@@ -38,7 +38,7 @@ export function MentorGroupCard({ result, error }: { result: Result | null; erro
 
                     {result?.status === 'assigned' && (
                         <>
-                            <p className="text-xs uppercase tracking-[0.2em] text-[#E8C15A] font-bold mb-2">Level 0 · Season 2027</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#E8C15A] font-bold mb-2">ICPC HUE · Season 2027</p>
                             <h1 className="text-2xl sm:text-3xl font-black mb-1">Your mentor group</h1>
                             <p className="text-white/60 text-sm mb-6" dir="rtl" lang="ar">ده جروب المنتور بتاعك، هيتابعك طول الموسم</p>
 
@@ -73,8 +73,8 @@ export function MentorGroupCard({ result, error }: { result: Result | null; erro
                     {result?.status === 'not_enrolled' && (
                         <div className="py-4">
                             <AlertCircle className="w-10 h-10 text-[#E8C15A] mx-auto mb-3" />
-                            <h1 className="text-xl font-bold mb-2">You&apos;re not in Level 0 · 2027</h1>
-                            <p className="text-sm text-white/60">Mentor groups are for students registered in the Level 0 training this season. If you think this is a mistake, contact the ICPC HUE team.</p>
+                            <h1 className="text-xl font-bold mb-2">Use your Horus University account</h1>
+                            <p className="text-sm text-white/60">Mentor groups are matched by your student ID, so sign in with your university email (your student ID @horus.edu.eg). If you think this is a mistake, contact the ICPC HUE team.</p>
                         </div>
                     )}
 
