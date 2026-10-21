@@ -107,7 +107,7 @@ async function checkLogin(allowRecentVerification = false) {
         // account and potentially try to sync the wrong session.
         // Verify the live homepage on every status check instead.
         try {
-            const res = await cfFetchPage('https://codeforces.com/');
+            const res = await cfFetchPage('https://codeforces.com/', { alwaysTryDirect: true, allowNewTab: allowRecentVerification });
             if (res.error) throw new Error(res.error);
             const html = res.text;
 
@@ -199,23 +199,59 @@ async function fetchSubmissionSource({ contestId, urlType, groupId, submissionId
 // Codeforces tab is same-origin and carries the clearance the browser earned,
 // so every Codeforces read falls back to that. If no Codeforces tab is open,
 // one is opened in the background (Cloudflare's automatic check passes in a
-// real page), reused while syncing, and closed when idle.
-const BRIDGE_READY_TIMEOUT_MS = 25_000;
-const BRIDGE_IDLE_CLOSE_MS = 60_000;
+// real page), shared by concurrent reads, and closed shortly after the sync.
+const BRIDGE_READY_TIMEOUT_MS = 20_000;
+// Must stay below the ~30s after which Chrome may stop an idle service worker,
+// or the close timer would never fire and leave the tab behind.
+const BRIDGE_IDLE_CLOSE_MS = 15_000;
 const SW_BLOCKED_REMEMBER_MS = 10 * 60_000;
-const CF_TAB_PATTERNS = ['*://codeforces.com/*', '*://*.codeforces.com/*'];
+const PAGE_FETCH_TIMEOUT_MS = 15_000;
+// Main site only: mirrors (m1/m2/m3.codeforces.com) have separate cookies.
+const CF_TAB_PATTERNS = ['*://codeforces.com/*', '*://www.codeforces.com/*'];
+const BRIDGE_STORAGE_KEY = 'cfBridgeTabId';
 
 let swBlockedUntil = 0;     // skip the doomed background fetch for a while
 let bridgeTabId = null;     // a tab this extension opened itself
+let bridgeOpening = null;   // shared promise while that tab is being opened
 let bridgeCloseTimer = null;
 
-// Runs inside a Codeforces page (it cannot see anything in this file).
-async function pageFetchHtml(path) {
+// A tab opened before the service worker was stopped: close it now.
+(async () => {
     try {
-        const res = await fetch(path, { credentials: 'include' });
+        const stored = (await chrome.storage.session.get(BRIDGE_STORAGE_KEY))[BRIDGE_STORAGE_KEY];
+        if (stored != null && stored !== bridgeTabId) await closeBridgeTab(stored);
+    } catch { /* storage.session unavailable: nothing to clean */ }
+})();
+
+async function closeBridgeTab(tabId) {
+    try {
+        const tab = await chrome.tabs.get(tabId);
+        // Never close a tab the student switched to and is now using.
+        if (!tab.active) await chrome.tabs.remove(tabId);
+    } catch { /* already closed */ }
+    if (bridgeTabId === tabId) bridgeTabId = null;
+    try { await chrome.storage.session.remove(BRIDGE_STORAGE_KEY); } catch { /* ignore */ }
+}
+
+function scheduleBridgeClose() {
+    if (bridgeCloseTimer) clearTimeout(bridgeCloseTimer);
+    bridgeCloseTimer = setTimeout(() => {
+        bridgeCloseTimer = null;
+        if (bridgeTabId != null) closeBridgeTab(bridgeTabId);
+    }, BRIDGE_IDLE_CLOSE_MS);
+}
+
+// Runs inside a Codeforces page (it cannot see anything in this file).
+async function pageFetchHtml(path, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(path, { credentials: 'include', signal: controller.signal });
         return { ok: res.ok, status: res.status, url: res.url, text: await res.text() };
     } catch (err) {
-        return { error: (err && err.message) || 'PAGE_FETCH_FAILED' };
+        return { error: err && err.name === 'AbortError' ? 'TAB_FETCH_TIMEOUT' : ((err && err.message) || 'PAGE_FETCH_FAILED') };
+    } finally {
+        clearTimeout(timer);
     }
 }
 
@@ -228,18 +264,10 @@ async function runInTab(tabId, func, args = []) {
     return injection ? injection.result : null;
 }
 
-function scheduleBridgeClose() {
-    if (bridgeCloseTimer) clearTimeout(bridgeCloseTimer);
-    bridgeCloseTimer = setTimeout(() => {
-        if (bridgeTabId != null) chrome.tabs.remove(bridgeTabId).catch(() => {});
-        bridgeTabId = null;
-    }, BRIDGE_IDLE_CLOSE_MS);
-}
-
 async function waitForTabReady(tabId) {
     const deadline = Date.now() + BRIDGE_READY_TIMEOUT_MS;
     while (Date.now() < deadline) {
-        await sleep(800);
+        await sleep(700);
         try {
             const st = await runInTab(tabId, pageState);
             if (st && st.ready === 'complete' && !/just a moment|attention required/i.test(st.title || '')) return true;
@@ -248,51 +276,73 @@ async function waitForTabReady(tabId) {
     return false;
 }
 
-/** Tabs to fetch through: open Codeforces tabs first, then our own one. */
-async function bridgeTabs() {
+async function openBridgeTab() {
+    if (bridgeOpening) return bridgeOpening;
+    bridgeOpening = (async () => {
+        try {
+            const tab = await chrome.tabs.create({ url: 'https://codeforces.com/', active: false });
+            bridgeTabId = tab.id;
+            try { await chrome.storage.session.set({ [BRIDGE_STORAGE_KEY]: tab.id }); } catch { /* ignore */ }
+            const ready = await waitForTabReady(tab.id);
+            return ready ? tab.id : null;
+        } catch {
+            return null; // e.g. no browser window to open a tab in
+        } finally {
+            bridgeOpening = null;
+        }
+    })();
+    return bridgeOpening;
+}
+
+/** Codeforces tabs to read through: ours first, then the student's own. */
+async function usableTabs() {
     const ids = [];
     if (bridgeTabId != null) {
         try { await chrome.tabs.get(bridgeTabId); ids.push(bridgeTabId); } catch { bridgeTabId = null; }
     }
-    const open = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'complete', discarded: false });
-    for (const t of open) if (!ids.includes(t.id) && ids.length < 3) ids.push(t.id);
+    try {
+        const open = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'complete', discarded: false });
+        for (const t of open) if (!ids.includes(t.id) && ids.length < 4) ids.push(t.id);
+    } catch { /* ignore */ }
     return ids;
 }
 
-async function fetchViaTab(url) {
-    const path = new URL(url).pathname + new URL(url).search;
-    let lastError = 'NO_CODEFORCES_TAB';
-    const tryTabs = async (ids) => {
-        for (const id of ids) {
-            try {
-                const r = await runInTab(id, pageFetchHtml, [path]);
-                if (r && !r.error) return r;
-                lastError = (r && r.error) || 'TAB_SCRIPT_FAILED';
-            } catch (err) {
-                lastError = (err && err.message) || 'TAB_SCRIPT_FAILED';
-            }
-        }
-        return null;
-    };
-    let r = await tryTabs(await bridgeTabs());
-    if (!r && bridgeTabId == null) {
-        // No usable Codeforces tab: open one quietly in the background.
-        const tab = await chrome.tabs.create({ url: 'https://codeforces.com/', active: false });
-        bridgeTabId = tab.id;
-        if (await waitForTabReady(tab.id)) r = await tryTabs([tab.id]);
-        else lastError = 'CLOUDFLARE_CHALLENGE_IN_TAB';
+/** If a Codeforces tab is still loading, wait (up to 10s) for it to finish. */
+async function waitForLoadingCodeforcesTab() {
+    const deadline = Date.now() + 10_000;
+    let waited = false;
+    while (Date.now() < deadline) {
+        let loading = [];
+        try { loading = await chrome.tabs.query({ url: CF_TAB_PATTERNS, status: 'loading' }); } catch { return waited; }
+        if (loading.length === 0) return waited;
+        waited = true;
+        await sleep(500);
     }
-    if (bridgeTabId != null) scheduleBridgeClose();
-    return r ? { ...r, via: 'tab' } : { error: lastError };
+    return waited;
+}
+
+async function fetchViaTabs(path, ids) {
+    let lastError = 'NO_CODEFORCES_TAB';
+    for (const id of ids) {
+        try {
+            const r = await runInTab(id, pageFetchHtml, [path, PAGE_FETCH_TIMEOUT_MS]);
+            if (r && !r.error && !isChallengePage(r, r.text)) return r;
+            lastError = (r && r.error) || (r ? 'CLOUDFLARE_CHALLENGE' : 'TAB_SCRIPT_FAILED');
+        } catch (err) {
+            lastError = (err && err.message) || 'TAB_SCRIPT_FAILED';
+        }
+    }
+    return { error: lastError };
 }
 
 /**
  * GET a Codeforces page as { ok, status, url, text, via } or { error }.
- * Tries the background fetch, then falls back to a Codeforces tab.
+ * Tries the background fetch, then an open Codeforces tab, then (when
+ * allowNewTab) a background tab this extension opens itself.
  */
-async function cfFetchPage(url) {
-    let directError = null;
-    if (Date.now() >= swBlockedUntil) {
+async function cfFetchPage(url, { allowNewTab = true, alwaysTryDirect = false } = {}) {
+    let directError = 'SKIPPED';
+    if (alwaysTryDirect || Date.now() >= swBlockedUntil) {
         try {
             const res = await fetchWithTimeout(url, {
                 credentials: 'include',
@@ -306,10 +356,21 @@ async function cfFetchPage(url) {
             directError = err && err.name === 'AbortError' ? 'FETCH_TIMEOUT' : `FETCH_FAILED: ${err && err.message}`;
         }
     }
-    if (!chrome.scripting || !chrome.tabs) return { error: directError || 'CLOUDFLARE_CHALLENGE' };
-    const viaTab = await fetchViaTab(url);
-    if (!viaTab.error && isChallengePage(viaTab, viaTab.text)) return { error: `fetch:${directError} | tab:CLOUDFLARE_CHALLENGE` };
-    return viaTab.error ? { error: `fetch:${directError || 'SKIPPED'} | tab:${viaTab.error}` } : viaTab;
+    if (!chrome.scripting || !chrome.tabs) return { error: `fetch:${directError}` };
+
+    const u = new URL(url);
+    const path = u.pathname + u.search;
+    let r = await fetchViaTabs(path, await usableTabs());
+    if (r.error && await waitForLoadingCodeforcesTab()) {
+        // e.g. the submit page icpchue just opened: use it once it has loaded.
+        r = await fetchViaTabs(path, await usableTabs());
+    }
+    if (r.error && allowNewTab && bridgeTabId == null) {
+        const opened = await openBridgeTab();
+        r = opened != null ? await fetchViaTabs(path, [opened]) : { error: 'COULD_NOT_OPEN_CODEFORCES_TAB' };
+    }
+    if (bridgeTabId != null) scheduleBridgeClose();
+    return r.error ? { error: `fetch:${directError} | tab:${r.error}` } : { ...r, via: 'tab' };
 }
 
 async function getSubmissionSource(params) {
@@ -668,7 +729,116 @@ async function takePendingSubmit(key) {
     return { pending: { code: stored.code, language: stored.language } };
 }
 
+// ─── Live verdict after a submit ─────────────────────────────────────
+// When a Codeforces tab lands on a contest's "my submissions"/status page
+// (where Codeforces sends you right after Submit), follow the newest
+// submission until its verdict is final and stream each state to the open
+// icpchue tabs, which then save the result without the student clicking Sync.
+const LIVE_POLL_MS = 2000;
+const LIVE_MAX_MS = 5 * 60_000;
+const LIVE_FRESH_MS = 3 * 60_000;
+const ICPC_TABS_KEY = 'icpcTabIds';
+const liveActive = new Set();
+
+function isPendingVerdict(v) {
+    const t = String(v || '').trim();
+    return !t || /in queue|running|testing|compil|pending|judging|waiting/i.test(t);
+}
+
+async function rememberIcpcTab(tabId) {
+    try {
+        const ids = (await chrome.storage.session.get(ICPC_TABS_KEY))[ICPC_TABS_KEY] || [];
+        if (!ids.includes(tabId)) await chrome.storage.session.set({ [ICPC_TABS_KEY]: [...ids, tabId].slice(-20) });
+    } catch { /* ignore */ }
+}
+
+async function broadcastToIcpc(message) {
+    let ids = [];
+    try { ids = (await chrome.storage.session.get(ICPC_TABS_KEY))[ICPC_TABS_KEY] || []; } catch { return; }
+    const alive = [];
+    for (const id of ids) {
+        try { await chrome.tabs.sendMessage(id, message); alive.push(id); } catch { /* tab closed or navigated away */ }
+    }
+    if (alive.length !== ids.length) {
+        try { await chrome.storage.session.set({ [ICPC_TABS_KEY]: alive }); } catch { /* ignore */ }
+    }
+}
+
+/** { contestId, urlType, groupId } for a Codeforces "my"/status page URL. */
+function parseStatusPageUrl(url) {
+    let m;
+    try { url = new URL(url); } catch { return null; }
+    if (!/^(www\.)?codeforces\.com$/.test(url.hostname)) return null;
+    const p = url.pathname.replace(/\/page\/\d+$/, '').replace(/\/$/, '');
+    if ((m = p.match(/^\/group\/([A-Za-z0-9]+)\/contest\/(\d+)\/(my|status)$/))) return { contestId: m[2], urlType: 'group', groupId: m[1] };
+    if ((m = p.match(/^\/gym\/(\d+)\/(my|status)$/))) return { contestId: m[1], urlType: 'gym', groupId: null };
+    if ((m = p.match(/^\/contest\/(\d+)\/(my|status)$/))) return { contestId: m[1], urlType: 'contest', groupId: null };
+    return null;
+}
+
+async function trackLiveVerdict({ contestId, urlType, groupId }) {
+    const key = `${urlType}:${groupId || ''}:${contestId}`;
+    if (liveActive.has(key)) return;
+    liveActive.add(key);
+    try {
+        const started = Date.now();
+        let subId = null;
+        let lastSent = '';
+        while (Date.now() - started < LIVE_MAX_MS) {
+            const read = await readStatusPages((page) => getStatusUrl(contestId, urlType, groupId, null, page), 1);
+            if (read.error) break;
+            let row;
+            if (subId) {
+                row = read.rows.find((r) => r.id === subId);
+            } else {
+                // The submission just made: still being judged, or created moments ago.
+                row = read.rows
+                    .filter((r) => isPendingVerdict(r.verdict) ||
+                        (r.creationTimeSeconds && Date.now() - r.creationTimeSeconds * 1000 < LIVE_FRESH_MS))
+                    .sort((a, b) => b.id - a.id)[0];
+                if (!row) break; // just a visit to the page, nothing new
+            }
+            if (!row) { await sleep(LIVE_POLL_MS); continue; }
+            subId = row.id;
+            const pending = isPendingVerdict(row.verdict);
+            const testMatch = String(row.verdict || '').match(/test\s+(\d+)/i);
+            const update = {
+                type: 'CF_LIVE_VERDICT',
+                contestId: String(contestId),
+                problemIndex: String(row.problemIndex || '').toUpperCase(),
+                submissionId: row.id,
+                verdict: row.verdict || 'In queue',
+                pending,
+                testNumber: testMatch ? Number(testMatch[1]) : null,
+                timeMs: row.timeConsumedMillis || 0,
+                memoryKb: Math.round((row.memoryConsumedBytes || 0) / 1024),
+            };
+            const signature = `${update.verdict}|${update.pending}`;
+            if (signature !== lastSent) {
+                lastSent = signature;
+                await broadcastToIcpc(update);
+            }
+            if (!pending) break;
+            await sleep(LIVE_POLL_MS);
+        }
+    } catch { /* live updates are best-effort; manual Sync still works */ } finally {
+        liveActive.delete(key);
+    }
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status !== 'complete' || !tab || !tab.url) return;
+    const target = parseStatusPageUrl(tab.url);
+    if (target) trackLiveVerdict(target);
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'ICPC_TAB_HELLO') {
+        if (sender && sender.tab && sender.tab.id != null) rememberIcpcTab(sender.tab.id);
+        sendResponse({ ok: true });
+        return true;
+    }
+
     if (message.type === 'PREPARE_SUBMIT') {
         storePendingSubmit(message).then(sendResponse).catch(() => sendResponse({ success: false }));
         return true;

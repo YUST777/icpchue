@@ -19,6 +19,17 @@
     document.documentElement.appendChild(marker);
 })();
 
+// ─── Live verdicts (extension → page) ────────────────────────────────
+// Register this tab so the extension can stream a submission's verdict to it
+// while Codeforces judges it, then relay each update to the page.
+try { chrome.runtime.sendMessage({ type: 'ICPC_TAB_HELLO' }).catch(() => {}); } catch { /* extension reloaded */ }
+chrome.runtime.onMessage.addListener((message) => {
+    if (message && message.type === 'CF_LIVE_VERDICT') {
+        const { type: _ignored, ...update } = message;
+        window.postMessage({ type: 'VERDICT_LIVE_STATUS', ...update }, '*');
+    }
+});
+
 // ─── Message Listener ────────────────────────────────────────────────
 window.addEventListener('message', async (event) => {
     if (event.source !== window) return;

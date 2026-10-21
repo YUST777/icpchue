@@ -419,6 +419,38 @@ export function useCodeforcesSubmission({
         };
     }, [handleVerify]);
 
+    // Live verdict from the extension (v1.5+): while Codeforces judges the
+    // submission, show "In queue" / "Testing on test N"; once it is final,
+    // save it automatically so the student never has to press Sync.
+    const handleVerifyRef = useRef(handleVerify);
+    handleVerifyRef.current = handleVerify;
+    const liveSavedRef = useRef<number | null>(null);
+    useEffect(() => {
+        const onLive = (event: MessageEvent) => {
+            const d = event.data;
+            if (event.source !== window || d?.type !== 'VERDICT_LIVE_STATUS') return;
+            if (String(d.contestId) !== String(contestId) ||
+                String(d.problemIndex).toUpperCase() !== String(problemId).toUpperCase()) return;
+            setIsTestPanelVisible(true);
+            setTestPanelActiveTab('codeforces');
+            if (d.pending) {
+                setCfStatus({
+                    status: d.testNumber ? 'testing' : 'waiting',
+                    substatus: d.testNumber ? undefined : (d.verdict || 'In queue...'),
+                    testNumber: d.testNumber || undefined,
+                    submissionId: d.submissionId,
+                });
+                return;
+            }
+            if (liveSavedRef.current === d.submissionId) return;
+            liveSavedRef.current = d.submissionId;
+            setCfStatus({ status: 'waiting', substatus: `${mapVerdict(String(d.verdict))}: saving your result...` });
+            handleVerifyRef.current();
+        };
+        window.addEventListener('message', onLive);
+        return () => window.removeEventListener('message', onLive);
+    }, [contestId, problemId, setIsTestPanelVisible, setTestPanelActiveTab]);
+
     return {
         cfStatus,
         handleSubmit,
