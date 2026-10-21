@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CFSubmissionStatus } from '@/components/mirror/types';
-import { mapLanguageToExtension, getSubmitUrl, mapVerdict } from '@/lib/utils/codeforcesUtils';
+import { mapLanguageToExtension, getSubmitUrl, mapVerdict, extensionErrorMessage } from '@/lib/utils/codeforcesUtils';
 
 interface UseCodeforcesSubmissionParams {
     code: string;
@@ -162,7 +162,7 @@ export function useCodeforcesSubmission({
                     setCfStatus({
                         status: 'error',
                         substatus: 'verify-pending',
-                        error: messages[error] || error || 'The extension could not read your Codeforces submissions.'
+                        error: messages[error] || extensionErrorMessage(error) || error || 'The extension could not read your Codeforces submissions.'
                     });
                     setSubmitting(false);
                     return;
