@@ -774,7 +774,8 @@ const liveActive = new Set();
 
 function isPendingVerdict(v) {
     const t = String(v || '').trim();
-    return !t || /in queue|running|testing|compil|pending|judging|waiting/i.test(t);
+    // "Compiling" is in progress; "Compilation error" is a final verdict.
+    return !t || /in queue|running|testing|compiling|pending|judging|waiting/i.test(t);
 }
 
 async function rememberIcpcTab(tabId) {
