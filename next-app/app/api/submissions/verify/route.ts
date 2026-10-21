@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         // this endpoint. A first-time link is allowed only when the bridge
         // proves ownership from the user's live Codeforces session below.
         const ownerResult = await query('SELECT codeforces_handle FROM users WHERE id = $1', [user.id]);
-        const linkedHandle = String(ownerResult.rows[0]?.codeforces_handle || '').trim();
+        let linkedHandle = String(ownerResult.rows[0]?.codeforces_handle || '').trim();
         if (linkedHandle && linkedHandle.toLowerCase() !== trimmedHandle.toLowerCase()) {
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
@@ -93,12 +93,28 @@ export async function POST(req: NextRequest) {
                 }, { status: 400 });
             }
         }
+        // First sync through the extension links the handle automatically: the
+        // extension read it from the student's own logged-in Codeforces session.
+        // A handle can belong to only one account (checked in the same statement),
+        // so nobody can claim a handle another student already uses, and once
+        // linked it stays fixed (mismatch check above).
         if (extensionHandoff && !linkedHandle) {
-            return NextResponse.json({
-                success: false,
-                error: 'Link your Codeforces account first, then verify the submission again.',
-                code: 'CF_HANDLE_NOT_LINKED'
-            }, { status: 403 });
+            const linked = await query(
+                `UPDATE users SET codeforces_handle = $1
+                  WHERE id = $2 AND COALESCE(codeforces_handle, '') = ''
+                    AND NOT EXISTS (SELECT 1 FROM users o WHERE o.id <> $2 AND LOWER(o.codeforces_handle) = LOWER($1))
+                  RETURNING id`,
+                [trimmedHandle, user.id]
+            );
+            if (!linked.rows[0]) {
+                console.warn('[Verify Route] Auto-link refused, handle already linked elsewhere:', trimmedHandle, 'user', user.id);
+                return NextResponse.json({
+                    success: false,
+                    error: `The Codeforces account "${trimmedHandle}" is already linked to another icpchue.com account. Log in to Codeforces with your own account, or contact the ICPC HUE team.`,
+                    code: 'CF_HANDLE_TAKEN'
+                }, { status: 409 });
+            }
+            linkedHandle = trimmedHandle;
         }
         let match = null;
         // Track whether the CF Bridge (the only thing that can read PRIVATE
