@@ -87,3 +87,21 @@ export function getProblemDescriptionUrl(contestId: string, problemId: string, u
     }
     return `https://codeforces.com/contest/${safeContestId}/problem/${safeProblemId}`;
 }
+
+/**
+ * A readable message for an error code from the Verdict Helper extension.
+ * Returns null for unknown codes so callers can keep their own fallback.
+ */
+export function extensionErrorMessage(error: unknown): string | null {
+    const e = String(error || '');
+    if (/context invalidated|receiving end does not exist/i.test(e)) {
+        return 'Verdict Helper was just updated. Refresh this page (F5), then try again.';
+    }
+    if (/NOT_LOGGED_IN/.test(e)) return 'You are not logged into Codeforces. Log in on codeforces.com, then try again.';
+    if (/CLOUDFLARE/.test(e)) return 'Codeforces is asking to verify you are human. Open codeforces.com in a tab, complete the check, then try again.';
+    if (/COULD_NOT_OPEN_CODEFORCES_TAB|NO_CODEFORCES_TAB/.test(e)) return 'Could not reach Codeforces. Open codeforces.com in a tab, then try again.';
+    if (/SUBMISSION_NOT_FOUND/.test(e)) return 'Codeforces did not find this submission on your account.';
+    if (/NO_SUBMISSIONS_TABLE/.test(e)) return 'Could not read your Codeforces submissions. Make sure you joined this contest/group on Codeforces.';
+    if (/TIMEOUT/.test(e)) return 'Codeforces took too long to answer. Try again in a moment.';
+    return null;
+}

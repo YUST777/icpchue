@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, RotateCcw, Check, ExternalLink, Clock, MemoryStick, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { extensionErrorMessage } from '@/lib/utils/codeforcesUtils';
 
 interface SubmissionDetailModalProps {
     isOpen: boolean;
@@ -93,7 +94,7 @@ export default function SubmissionDetailModal({
                     CLOUDFLARE_CHALLENGE: 'Open Codeforces once, complete any challenge, then try again.',
                     SOURCE_NOT_AVAILABLE: 'Codeforces did not make source available for this submission.',
                 };
-                setSourceError(errors[event.data.error] || 'Could not load source from Codeforces. Use “CF Original”.');
+                setSourceError(errors[event.data.error] || extensionErrorMessage(event.data.error) || 'Could not load source from Codeforces. Use “CF Original”.');
             }
         };
         window.addEventListener('message', onMessage);

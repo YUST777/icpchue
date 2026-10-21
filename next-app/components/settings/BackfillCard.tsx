@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Zap, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { extensionErrorMessage } from '@/lib/utils/codeforcesUtils';
 
 interface SheetPlan {
     sheetId: string;
@@ -115,13 +116,17 @@ export default function BackfillCard() {
         let discoveredHandle: string | null = null;
         let partialContests = 0;
         let failedContests = 0;
+        let lastExtensionError: string | undefined;
         let cursor = 0;
         const worker = async () => {
             while (cursor < targets.length && !cancelRef.current) {
                 const sheet = targets[cursor++];
                 setCurrentSheet(sheet.sheetName);
                 const extResult = await askExtensionForContest(sheet.contestId, sheet.urlType, sheet.groupId);
-                if (!extResult.success) failedContests++;
+                if (!extResult.success) {
+                    failedContests++;
+                    lastExtensionError = extResult.error;
+                }
                 if (extResult.success) {
                     if ((extResult as { partial?: string | null }).partial) partialContests++;
                     if (extResult.handle) discoveredHandle = extResult.handle;
@@ -141,7 +146,7 @@ export default function BackfillCard() {
         await worker();
 
         if (!cancelRef.current && targets.length > 0 && batches.length === 0) {
-            setError('The extension could not read any Codeforces contests. Check that you are logged in and try again.');
+            setError(extensionErrorMessage(lastExtensionError) || 'The extension could not read any Codeforces contests. Check that you are logged in and try again.');
             setPhase('error');
             return;
         }
