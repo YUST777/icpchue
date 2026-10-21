@@ -301,7 +301,7 @@ export default function TraineeDossierPage() {
             />
 
             {/* 2. Navigation Tabs & Time Horizon Selector */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-start justify-between gap-2">
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={setActiveTab} 
@@ -309,7 +309,7 @@ export default function TraineeDossierPage() {
                 />
 
                 {/* Global Time Filter Pills */}
-                <div className="flex items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs self-end sm:self-auto">
+                <div className="flex items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs self-end xl:self-auto shrink-0">
                     <span className="text-[10px] text-white/40 uppercase font-mono px-2 flex items-center gap-1">
                         <Clock size={11} className="text-[#E8C15A]" /> Time:
                     </span>

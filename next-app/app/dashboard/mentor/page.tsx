@@ -74,6 +74,9 @@ export default function MentorTraineesDirectoryPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [loadError, setLoadError] = useState<string | null>(null);
+    // Owners/instructors only: Mentor 1..7, to see one mentor's group.
+    const [mentorGroups, setMentorGroups] = useState<{ name: string; mentorName: string | null; trainees: number }[] | null>(null);
+    const [mentorFilter, setMentorFilter] = useState('');
 
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -92,6 +95,7 @@ export default function MentorTraineesDirectoryPage() {
             if (statusFilter !== 'all') params.set('status', statusFilter);
             if (timeRange !== 'all') params.set('timeRange', timeRange);
             if (sortBy) params.set('sortBy', sortBy);
+            if (mentorFilter) params.set('mentor', mentorFilter);
             params.set('page', String(page));
             params.set('limit', '30');
 
@@ -102,6 +106,7 @@ export default function MentorTraineesDirectoryPage() {
                 const data = await res.json();
                 setTrainees(data.trainees || []);
                 setSummary(data.summary || null);
+                setMentorGroups(data.mentor_groups || null);
                 setTotalPages(data.pagination?.total_pages || 1);
                 setTotalItems(data.pagination?.total_items || 0);
                 setLoadError(null);
@@ -126,12 +131,12 @@ export default function MentorTraineesDirectoryPage() {
         }, 200);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, levelFilter, statusFilter, timeRange, sortBy, page]);
+    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter, page]);
 
     // Any filter change starts again from the first page.
     useEffect(() => {
         setPage(1);
-    }, [search, levelFilter, statusFilter, timeRange, sortBy]);
+    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter]);
 
     const formatLastActive = (isoStr?: string | null) => {
         if (!isoStr) return 'Never';
@@ -163,6 +168,38 @@ export default function MentorTraineesDirectoryPage() {
                     </p>
                 </div>
             </div>
+
+            {/* Owners/instructors: pick a mentor to see the group they mentor */}
+            {mentorGroups && mentorGroups.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={() => setMentorFilter('')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                            mentorFilter === ''
+                                ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                : 'bg-[#121214]/90 text-white/60 border-white/[0.08] hover:text-white'
+                        }`}
+                    >
+                        All trainees
+                    </button>
+                    {mentorGroups.map((g) => (
+                        <button
+                            key={g.name}
+                            onClick={() => setMentorFilter(g.name)}
+                            disabled={g.trainees === 0}
+                            title={g.trainees === 0 ? 'No trainees assigned yet' : undefined}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+                                mentorFilter === g.name
+                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
+                                    : 'bg-[#121214]/90 text-white/60 border-white/[0.08] hover:text-white'
+                            }`}
+                        >
+                            {g.name}{g.mentorName ? ` · ${g.mentorName}` : ''}
+                            <span className="ml-1.5 text-white/40">{g.trainees}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* 2. Top Summary KPI Cards */}
             {summary && (

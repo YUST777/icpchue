@@ -27,7 +27,7 @@ interface TraineeTabNavProps {
 
 export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTabNavProps) {
     return (
-        <div className="border-b border-white/[0.08] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex gap-1 bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="min-w-0 border-b border-white/[0.08] flex flex-wrap gap-1 bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -35,7 +35,7 @@ export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTa
                     <button
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
-                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all active:scale-[0.98] ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
                             isActive
                                 ? 'text-[#E8C15A] bg-[#E8C15A]/15 font-semibold shadow-[inset_0_1px_0_rgba(232,193,90,0.25)] border border-[#E8C15A]/25'
                                 : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04] border border-transparent'
