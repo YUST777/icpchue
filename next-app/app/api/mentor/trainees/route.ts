@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
-import { mentorVisibleUserIds } from '@/lib/auth/mentor-scope';
+import { mentorVisibleUserIds, mentorGroupOptions, mentorGroupUserIds } from '@/lib/auth/mentor-scope';
 
 // High-speed In-Memory Cache (30s TTL)
 interface CacheEntry {
@@ -189,6 +189,15 @@ export async function GET(req: NextRequest) {
         const visible = await mentorVisibleUserIds(mentorUser);
         if (visible) allTrainees = allTrainees.filter((t) => t.user_id != null && visible.has(Number(t.user_id)));
 
+        // Owners and instructors can look at any one mentor's group ("Mentor 3").
+        const isStaffLead = mentorUser.role === 'owner' || mentorUser.role === 'instructor';
+        const mentorGroups = isStaffLead ? await mentorGroupOptions() : null;
+        const mentorParam = (url.searchParams.get('mentor') || '').trim();
+        if (isStaffLead && mentorParam && mentorGroups?.some((g) => g.name === mentorParam)) {
+            const groupIds = await mentorGroupUserIds(mentorParam);
+            allTrainees = allTrainees.filter((t) => t.user_id != null && groupIds.has(Number(t.user_id)));
+        }
+
         // 2. Client-side Search, Level Filter, Status Filter with Arabic Normalization
         // Copy so sorting below never reorders the shared cached array.
         let filtered = allTrainees.slice();
@@ -289,6 +298,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             success: true,
             summary,
+            mentor_groups: mentorGroups,
             pagination: {
                 page,
                 limit,
