@@ -24,12 +24,12 @@ export interface ExportTrainee {
     handle?: string;
 }
 
-export type ExportFormat = 'markdown' | 'zip' | 'html' | 'single';
+export type ExportFormat = 'markdown' | 'zip' | 'single';
 
 export interface ExportOptions {
     format: ExportFormat;
     includeMeta: boolean; // verdict / attempts / date header per problem
-    lineNumbers: boolean; // markdown + html only
+    lineNumbers: boolean; // markdown only
 }
 
 export function sheetGroup(e: ExportCodeEntry): string {
@@ -107,10 +107,6 @@ function numbered(code: string): string {
     return lines.map((l, i) => `${String(i + 1).padStart(w, ' ')} | ${l}`).join('\n');
 }
 
-function anchor(i: number): string {
-    return `p${i + 1}`;
-}
-
 /* ---------------------------------- Markdown ---------------------------------- */
 
 export function buildMarkdown(t: ExportTrainee, entries: ExportCodeEntry[], o: ExportOptions): string {
@@ -125,13 +121,11 @@ export function buildMarkdown(t: ExportTrainee, entries: ExportCodeEntry[], o: E
     out.push('');
     out.push('## Contents');
     out.push('');
-    let idx = 0;
     const groups = groupEntries(entries);
     for (const [g, list] of groups) {
         out.push(`**${g}**`);
         for (const e of list) {
             out.push(`- ${entryTitle(e)} - ${verdictLabel(e)}`);
-            idx++;
         }
         out.push('');
     }
@@ -161,7 +155,6 @@ export function buildMarkdown(t: ExportTrainee, entries: ExportCodeEntry[], o: E
             out.push('');
         }
     }
-    void idx;
     return out.join('\n');
 }
 
@@ -184,70 +177,6 @@ export function buildSingleFile(t: ExportTrainee, entries: ExportCodeEntry[], o:
         out.push('', '');
     }
     return { text: out.join('\n'), ext };
-}
-
-/* ------------------------------- Printable HTML ------------------------------- */
-
-function esc(s: string): string {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-export function buildHtml(t: ExportTrainee, entries: ExportCodeEntry[], o: ExportOptions): string {
-    const c = summaryCounts(entries);
-    const groups = groupEntries(entries);
-    let i = 0;
-    const toc = groups
-        .map(([g, list]) => {
-            const items = list
-                .map((e) => {
-                    const a = anchor(i++);
-                    return `<li><a href="#${a}">${esc(entryTitle(e))}</a> <span class="v ${vClass(e)}">${esc(verdictLabel(e))}</span></li>`;
-                })
-                .join('');
-            return `<h3>${esc(g)}</h3><ul>${items}</ul>`;
-        })
-        .join('');
-    i = 0;
-    const body = groups
-        .map(([g, list]) => {
-            const items = list
-                .map((e) => {
-                    const a = anchor(i++);
-                    const code = e.code.replace(/\r\n/g, '\n').replace(/\n+$/, '');
-                    const rendered = o.lineNumbers
-                        ? code
-                              .split('\n')
-                              .map((l) => `<span class="ln">${esc(l) || ' '}</span>`)
-                              .join('')
-                        : esc(code);
-                    const meta = o.includeMeta
-                        ? `<div class="meta"><span class="v ${vClass(e)}">${esc(verdictLabel(e))}</span>${e.attempts ? `<span>${e.attempts} attempt${e.attempts === 1 ? '' : 's'}</span>` : ''}${e.language ? `<span>${esc(e.language)}</span>` : ''}<span>${esc(fmtDate(e.updated_at))}</span></div>`
-                            : '';
-                    return `<section id="${a}"><h3>${esc(entryTitle(e))}</h3>${meta}<pre class="${o.lineNumbers ? 'num' : ''}"><code>${rendered}</code></pre></section>`;
-                })
-                .join('');
-            return `<h2>${esc(g)}</h2>${items}`;
-        })
-        .join('');
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Code Review - ${esc(t.name)}</title><style>
-:root{color-scheme:light}*{box-sizing:border-box}body{font:14px/1.5 system-ui,sans-serif;color:#1a1a1a;max-width:960px;margin:0 auto;padding:32px 20px}
-h1{margin:0 0 4px}h2{margin:36px 0 8px;padding-bottom:6px;border-bottom:2px solid #e8c15a}h3{margin:20px 0 6px;font-size:15px}
-.sub{color:#666;margin-bottom:16px}.sub b{color:#1a1a1a}ul{margin:4px 0 12px;padding-left:20px}a{color:#0b57d0;text-decoration:none}
-.meta{display:flex;gap:12px;flex-wrap:wrap;color:#666;font-size:12px;margin-bottom:6px}
-.v{font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;border:1px solid #ccc}.ok{background:#e6f4ea;border-color:#9fd3ae;color:#137333}.bad{background:#fce8e6;border-color:#f1aaa3;color:#b3261e}.draft{background:#f1f3f4;color:#555}.warn{background:#fef7e0;border-color:#f0d27a;color:#8a6100}
-pre{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:8px;padding:12px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;tab-size:4;margin:0}
-pre.num code{counter-reset:l;display:block}.ln{display:block;white-space:pre}.ln::before{counter-increment:l;content:counter(l);display:inline-block;width:3em;margin-right:12px;text-align:right;color:#999;user-select:none}
-section{break-inside:avoid-page}@media print{body{padding:0;max-width:none}pre{white-space:pre-wrap;word-break:break-word;overflow:visible}.toc{display:none}h2{break-before:auto}}
-</style></head><body><h1>Code Review - ${esc(t.name)}</h1>
-<div class="sub">Student ID <b>${esc(t.studentId)}</b>${t.handle ? ` | Codeforces <b>${esc(t.handle)}</b>` : ''} | ${c.total} problems (${c.solved} accepted, ${c.attempted} attempted, ${c.drafts} drafts) | ${new Date().toISOString().slice(0, 10)}</div>
-<div class="toc"><h2>Contents</h2>${toc}</div>${body}</body></html>`;
-}
-
-function vClass(e: ExportCodeEntry): string {
-    if (e.status === 'SOLVED') return 'ok';
-    if (e.status === 'DRAFT') return 'draft';
-    if (e.status === 'WRONG_ANSWER') return 'bad';
-    return 'warn';
 }
 
 /* ------------------------------------- ZIP ------------------------------------- */
@@ -364,9 +293,6 @@ export function runExport(t: ExportTrainee, entries: ExportCodeEntry[], o: Expor
     if (o.format === 'markdown') {
         name = `${base}.md`;
         downloadBlob(new Blob([buildMarkdown(t, entries, o)], { type: 'text/markdown;charset=utf-8' }), name);
-    } else if (o.format === 'html') {
-        name = `${base}.html`;
-        downloadBlob(new Blob([buildHtml(t, entries, o)], { type: 'text/html;charset=utf-8' }), name);
     } else if (o.format === 'single') {
         const { text, ext } = buildSingleFile(t, entries, o);
         name = `${base}.${ext}`;
