@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, Search, ChevronRight, Terminal, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { CodeExportPanel } from './CodeExportPanel';
+import type { ExportTrainee } from '@/lib/mentor/code-export';
 
 interface CodeEntry {
     key: string;
@@ -20,11 +22,12 @@ interface CodeEntry {
 
 interface CodeWorkspaceInspectorProps {
     codeCatalog: CodeEntry[];
+    trainee?: ExportTrainee;
 }
 
 type VerdictFilter = 'all' | 'ac' | 'wa' | 'tle' | 'draft';
 
-export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspectorProps) {
+export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorkspaceInspectorProps) {
     const [selectedKey, setSelectedKey] = useState<string>(codeCatalog[0]?.key || '');
     const [copied, setCopied] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -153,7 +156,9 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                     )}
                 </div>
 
-                {/* Right Corner: Sleek Verdict Filter Pills (Replaced static cpp) */}
+                {/* Right Corner: Export + Verdict Filter Pills */}
+                <div className="flex items-center gap-2">
+                {trainee && <CodeExportPanel trainee={trainee} catalog={codeCatalog} />}
                 <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/[0.06]">
                     {filterButtons.map((btn) => {
                         const isActive = verdictFilter === btn.id;
@@ -172,6 +177,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [] }: CodeWorkspaceInspec
                             </button>
                         );
                     })}
+                </div>
                 </div>
             </div>
 

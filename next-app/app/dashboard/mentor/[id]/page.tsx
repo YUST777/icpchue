@@ -521,7 +521,14 @@ export default function TraineeDossierPage() {
             {/* Tab 4: Clean Code Inspector */}
             {activeTab === 'workspace' && (
                 <div className="space-y-3">
-                    <CodeWorkspaceInspector codeCatalog={filteredCodeCatalog} />
+                    <CodeWorkspaceInspector
+                        codeCatalog={filteredCodeCatalog}
+                        trainee={{
+                            name: profile.name || 'Trainee',
+                            studentId: String(profile.student_id || profile.id || ''),
+                            handle: profile.codeforces_handle || undefined,
+                        }}
+                    />
                 </div>
             )}
 
