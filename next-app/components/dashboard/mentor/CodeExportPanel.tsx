@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Download, X, FileText, FolderArchive, FileCode2, Check, Minus, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Download, X, FileText, FolderArchive, FileCode2, Check, ChevronDown } from 'lucide-react';
 import {
     ExportCodeEntry,
     ExportFormat,
@@ -12,6 +13,16 @@ import {
     verdictLabel,
 } from '@/lib/mentor/code-export';
 
+/*
+ * Design notes (ux-ui-agent-skills rules applied):
+ * - globals.css forces 44px min size on every <button>/<input>, so the small
+ *   controls are real inputs (sr-only, min-size reset) with a drawn box overlay.
+ * - One SVG, two paths (check + dash), same stroke weight.
+ * - Every control: default / hover / focus-visible / active / selected / disabled.
+ * - One thing leads: the selected-count figure. Mobile is the base layout; the
+ *   two-pane split layers on at lg.
+ */
+
 interface Props {
     trainee: ExportTrainee;
     catalog: ExportCodeEntry[];
@@ -19,57 +30,87 @@ interface Props {
 
 type Quick = 'all' | 'ac' | 'not_ac' | 'drafts';
 
-const FORMATS: { id: ExportFormat; title: string; sub: string; ext: string; icon: React.ReactNode; tag?: string }[] = [
-    { id: 'markdown', title: 'Markdown', sub: 'Readable report, grouped by sheet', ext: '.md', icon: <FileText size={18} />, tag: 'Reading' },
-    { id: 'zip', title: 'ZIP', sub: 'Real source files in folders', ext: '.zip', icon: <FolderArchive size={18} />, tag: 'Running' },
-    { id: 'single', title: 'One file', sub: 'All code with headers, easy to diff', ext: '.cpp', icon: <FileCode2 size={18} /> },
+const FORMATS: { id: ExportFormat; title: string; sub: string; icon: React.ReactNode; tag?: string }[] = [
+    { id: 'markdown', title: 'Markdown report', sub: 'One readable file grouped by sheet', icon: <FileText size={18} />, tag: 'Reading' },
+    { id: 'zip', title: 'ZIP of files', sub: '.cpp / .py in sheet folders + index', icon: <FolderArchive size={18} />, tag: 'Running' },
+    { id: 'single', title: 'Single file', sub: 'All code with headers, easy to diff', icon: <FileCode2 size={18} /> },
 ];
 
-function Box({ state, onClick, label }: { state: 'on' | 'off' | 'mixed'; onClick: () => void; label: string }) {
+const RING = 'peer-focus-visible:ring-2 peer-focus-visible:ring-[#E8C15A]/70 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#0F0F11]';
+
+function CheckBox({
+    checked,
+    indeterminate = false,
+    onChange,
+    label,
+    children,
+    className = '',
+}: {
+    checked: boolean;
+    indeterminate?: boolean;
+    onChange: () => void;
+    label: string;
+    children?: React.ReactNode;
+    className?: string;
+}) {
+    const ref = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (ref.current) ref.current.indeterminate = indeterminate;
+    }, [indeterminate]);
+    const on = checked || indeterminate;
     return (
-        <button
-            type="button"
-            role="checkbox"
-            aria-checked={state === 'mixed' ? 'mixed' : state === 'on'}
-            aria-label={label}
-            onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-            }}
-            className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                state === 'off' ? 'border-white/25 bg-black/30 hover:border-white/50' : 'border-[#E8C15A] bg-[#E8C15A] text-black'
-            }`}
-        >
-            {state === 'on' && <Check size={12} strokeWidth={3.5} />}
-            {state === 'mixed' && <Minus size={12} strokeWidth={3.5} />}
-        </button>
+        <label className={`relative flex items-center gap-3 cursor-pointer select-none ${className}`}>
+            <input
+                ref={ref}
+                type="checkbox"
+                checked={checked}
+                onChange={onChange}
+                aria-label={label}
+                className="peer sr-only !min-h-0 !min-w-0"
+            />
+            <span
+                aria-hidden
+                className={`w-[18px] h-[18px] rounded-[5px] border-[1.5px] flex items-center justify-center shrink-0 transition-colors peer-active:scale-90 ${RING} ${
+                    on ? 'bg-[#E8C15A] border-[#E8C15A] text-black' : 'bg-black/30 border-white/30 hover:border-white/60'
+                }`}
+            >
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    {checked && !indeterminate && <path d="M3.5 8.5l3 3 6-7" />}
+                    {indeterminate && <path d="M4 8h8" />}
+                </svg>
+            </span>
+            {children}
+        </label>
     );
 }
 
 function Switch({ on, onChange, label, disabled }: { on: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
     return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={on}
-            disabled={disabled}
-            onClick={() => onChange(!on)}
-            className={`flex items-center gap-2.5 text-xs transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer text-white/75 hover:text-white'}`}
-        >
-            <span className={`relative w-8 h-[18px] rounded-full transition-colors ${on ? 'bg-[#E8C15A]' : 'bg-white/15'}`}>
-                <span className={`absolute top-[2px] left-[2px] w-[14px] h-[14px] rounded-full bg-white transition-transform ${on ? 'translate-x-[14px] !bg-black' : ''}`} />
+        <label className={`relative flex items-center justify-between gap-3 select-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer group'}`}>
+            <span className={`text-[13px] ${disabled ? 'text-white/50' : 'text-white/75 group-hover:text-white'} transition-colors`}>{label}</span>
+            <input
+                type="checkbox"
+                role="switch"
+                checked={on}
+                disabled={disabled}
+                onChange={(e) => onChange(e.target.checked)}
+                className="peer sr-only !min-h-0 !min-w-0"
+            />
+            <span aria-hidden className={`relative w-9 h-5 rounded-full shrink-0 transition-colors ${RING} ${on ? 'bg-[#E8C15A]' : 'bg-white/15 group-hover:bg-white/25'}`}>
+                <span className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] rounded-full transition-transform ${on ? 'translate-x-4 bg-black' : 'bg-white'}`} />
             </span>
-            {label}
-        </button>
+        </label>
     );
 }
 
 function verdictTone(e: ExportCodeEntry) {
     if (e.status === 'SOLVED') return 'text-[#E8C15A] bg-[#E8C15A]/10 border-[#E8C15A]/25';
-    if (e.status === 'DRAFT') return 'text-white/40 bg-white/5 border-white/10';
+    if (e.status === 'DRAFT') return 'text-white/45 bg-white/5 border-white/10';
     if (e.status === 'WRONG_ANSWER') return 'text-red-300 bg-red-500/10 border-red-500/25';
     return 'text-amber-300 bg-amber-500/10 border-amber-500/25';
 }
+
+const SMALL_BTN = '!min-h-0 !min-w-0';
 
 export function CodeExportPanel({ trainee, catalog }: Props) {
     const [open, setOpen] = useState(false);
@@ -151,6 +192,8 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
     };
 
     const chosen = useMemo(() => catalog.filter((e) => selected.has(e.key)), [catalog, selected]);
+    const chosenAc = chosen.filter((e) => e.status === 'SOLVED').length;
+    const chosenDrafts = chosen.filter((e) => e.status === 'DRAFT').length;
 
     const doExport = () => {
         if (chosen.length === 0) return;
@@ -171,126 +214,167 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
             <button
                 type="button"
                 onClick={openPanel}
-                className="px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-all text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer"
+                className={`${SMALL_BTN} px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-all text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
             >
                 <Download size={12} />
                 <span>Export code</span>
             </button>
 
-            {open && (
+            {open && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-4"
+                    className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-6"
                     onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}
                     role="dialog"
                     aria-modal="true"
                     aria-label="Export trainee code"
                 >
-                    <div className="w-full sm:max-w-xl max-h-[92vh] flex flex-col bg-[#0F0F11] border border-white/[0.09] rounded-t-3xl sm:rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden">
+                    <div className="w-full sm:max-w-5xl max-h-[94vh] sm:max-h-[86vh] flex flex-col bg-[#0F0F11] border border-white/[0.09] rounded-t-3xl sm:rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden">
                         {/* Header */}
-                        <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
                             <div className="w-10 h-10 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/20 text-[#E8C15A] flex items-center justify-center shrink-0">
                                 <Download size={18} />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h2 className="text-base font-semibold text-white leading-tight">Export code</h2>
-                                <p className="text-xs text-white/45 truncate">
+                                <p className="text-xs text-white/50 truncate">
                                     {trainee.name} <span className="text-white/25">/</span> {trainee.studentId}
-                                    {trainee.handle ? <span className="text-white/25"> / {trainee.handle}</span> : null}
+                                    {trainee.handle ? <span className="text-white/35"> / {trainee.handle}</span> : null}
                                 </p>
                             </div>
-                            <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-2 rounded-xl hover:bg-white/[0.06] text-white/50 hover:text-white transition-colors cursor-pointer">
+                            <button
+                                type="button"
+                                onClick={() => setOpen(false)}
+                                aria-label="Close"
+                                className={`${SMALL_BTN} w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/[0.07] active:scale-95 text-white/55 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                            >
                                 <X size={16} />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-5 [scrollbar-width:thin]">
-                            {/* Format */}
-                            <div className="grid grid-cols-3 gap-2">
-                                {FORMATS.map((f) => {
-                                    const active = format === f.id;
-                                    return (
-                                        <button
-                                            key={f.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setFormat(f.id);
-                                                setDone('');
-                                            }}
-                                            className={`relative text-left p-3 rounded-2xl border transition-all cursor-pointer ${
-                                                active ? 'border-[#E8C15A]/60 bg-[#E8C15A]/[0.08] shadow-[0_0_0_1px_rgba(232,193,90,0.15)]' : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04]'
-                                            }`}
-                                        >
-                                            <div className={active ? 'text-[#E8C15A]' : 'text-white/55'}>{f.icon}</div>
-                                            <div className={`mt-2 text-[13px] font-semibold ${active ? 'text-white' : 'text-white/80'}`}>{f.title}</div>
-                                            <div className="text-[11px] text-white/40 leading-snug mt-0.5">{f.sub}</div>
-                                            {f.tag && <span className="absolute top-2.5 right-2.5 text-[9px] font-mono uppercase tracking-wide text-[#E8C15A]/80">{f.tag}</span>}
-                                        </button>
-                                    );
-                                })}
+                        {/* Body: single column on mobile, two panes from lg */}
+                        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+                            {/* Left: format, options, summary */}
+                            <div className="p-5 space-y-6 lg:overflow-y-auto lg:border-r border-white/[0.06] [scrollbar-width:thin]">
+                                <section>
+                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40 mb-2.5">Format</h3>
+                                    <div role="radiogroup" aria-label="Export format" className="space-y-2">
+                                        {FORMATS.map((f) => (
+                                            <label key={f.id} className="relative block cursor-pointer group">
+                                                <input
+                                                    type="radio"
+                                                    name="export-format"
+                                                    checked={format === f.id}
+                                                    onChange={() => {
+                                                        setFormat(f.id);
+                                                        setDone('');
+                                                    }}
+                                                    className="peer sr-only !min-h-0 !min-w-0"
+                                                />
+                                                <div
+                                                    className={`flex items-center gap-3 p-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-all group-hover:bg-white/[0.05] group-active:scale-[0.99] peer-focus-visible:ring-2 peer-focus-visible:ring-[#E8C15A]/70 peer-checked:border-[#E8C15A]/60 peer-checked:bg-[#E8C15A]/[0.08] ${format === f.id ? 'text-[#E8C15A]' : 'text-white/55'}`}
+                                                >
+                                                    <span className="shrink-0">{f.icon}</span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className={`block text-[13px] font-semibold ${format === f.id ? 'text-white' : 'text-white/85'}`}>{f.title}</span>
+                                                        <span className="block text-[11px] text-white/45 leading-snug">{f.sub}</span>
+                                                    </span>
+                                                    {f.tag && <span className="text-[9px] font-mono uppercase tracking-wide text-[#E8C15A]/80 shrink-0">{f.tag}</span>}
+                                                    <span aria-hidden className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${format === f.id ? 'border-[#E8C15A]' : 'border-white/30'}`}>
+                                                        {format === f.id && <span className="w-2 h-2 rounded-full bg-[#E8C15A]" />}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3.5">
+                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40">Options</h3>
+                                    <Switch on={includeMeta} onChange={setIncludeMeta} label="Verdict, attempts and date" />
+                                    <Switch on={format === 'markdown' && lineNumbers} onChange={setLineNumbers} label="Line numbers (Markdown)" disabled={format !== 'markdown'} />
+                                </section>
+
+                                {/* Lead figure */}
+                                <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-5xl font-semibold tracking-tight text-white tabular-nums leading-none">{chosen.length}</span>
+                                        <span className="text-sm text-white/45">of {catalog.length} selected</span>
+                                    </div>
+                                    <div className="flex gap-4 mt-3 text-[11px] text-white/50">
+                                        <span><span className="text-[#E8C15A] font-semibold">{chosenAc}</span> accepted</span>
+                                        <span><span className="text-amber-300 font-semibold">{chosen.length - chosenAc - chosenDrafts}</span> attempted</span>
+                                        <span><span className="text-white/70 font-semibold">{chosenDrafts}</span> drafts</span>
+                                    </div>
+                                </section>
                             </div>
 
-                            {/* Problems */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2.5">
-                                    <span className="text-xs font-semibold text-white/80">
-                                        Problems <span className="text-white/35 font-normal">{chosen.length} of {catalog.length}</span>
-                                    </span>
+                            {/* Right: problems fill the full height */}
+                            <div className="p-5 flex flex-col min-h-0 min-w-0">
+                                <div className="flex items-center justify-between mb-3 shrink-0">
+                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40">Problems</h3>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setSelected(new Set());
                                             setDone('');
                                         }}
-                                        className="text-[11px] text-white/40 hover:text-white cursor-pointer"
+                                        className={`${SMALL_BTN} text-xs text-white/50 hover:text-white px-2 py-1 rounded-md hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                                     >
                                         Clear
                                     </button>
                                 </div>
-                                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                                <div className="flex flex-wrap gap-1.5 mb-3 shrink-0">
                                     {quickChips.map(([q, label]) => (
                                         <button
                                             key={q}
                                             type="button"
                                             onClick={() => quickPick(q)}
-                                            className="px-2.5 py-1 rounded-full text-[11px] text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] transition-colors cursor-pointer"
+                                            className={`${SMALL_BTN} px-3 py-1.5 rounded-full text-xs text-white/65 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] active:scale-95 border border-white/[0.08] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                                         >
-                                            {label} <span className="text-white/30 ml-0.5">{counts[q]}</span>
+                                            {label} <span className="text-white/35 ml-1 tabular-nums">{counts[q]}</span>
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="rounded-2xl border border-white/[0.07] bg-black/30 max-h-[260px] overflow-y-auto [scrollbar-width:thin]">
+                                <div className="rounded-2xl border border-white/[0.07] bg-black/30 overflow-y-auto max-h-72 lg:max-h-none lg:flex-1 min-h-0 [scrollbar-width:thin]">
                                     {groups.map(([g, list], gi) => {
                                         const n = list.filter((e) => selected.has(e.key)).length;
-                                        const state = n === list.length ? 'on' : n === 0 ? 'off' : 'mixed';
+                                        const all = n === list.length;
                                         const isCollapsed = collapsed.has(g);
                                         return (
                                             <div key={g} className={gi > 0 ? 'border-t border-white/[0.06]' : ''}>
-                                                <div
-                                                    onClick={() => toggleCollapse(g)}
-                                                    className="flex items-center gap-2.5 px-3 py-2 bg-[#141416] sticky top-0 z-10 cursor-pointer select-none"
-                                                >
-                                                    <Box state={state} onClick={() => toggleGroup(list)} label={`Select ${g}`} />
-                                                    <span className="text-xs font-semibold text-white/85 flex-1 truncate">{g}</span>
-                                                    <span className="text-[10px] font-mono text-white/35">{n}/{list.length}</span>
-                                                    <ChevronDown size={14} className={`text-white/30 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                                                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#141416] sticky top-0 z-10">
+                                                    <CheckBox checked={all} indeterminate={!all && n > 0} onChange={() => toggleGroup(list)} label={`Select all in ${g}`} className="flex-1 min-w-0">
+                                                        <span className="text-[13px] font-semibold text-white/90 truncate">{g}</span>
+                                                        <span className="text-[11px] font-mono text-white/35 tabular-nums">{n}/{list.length}</span>
+                                                    </CheckBox>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleCollapse(g)}
+                                                        aria-expanded={!isCollapsed}
+                                                        aria-label={isCollapsed ? `Expand ${g}` : `Collapse ${g}`}
+                                                        className={`${SMALL_BTN} p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/[0.07] active:scale-90 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                                    >
+                                                        <ChevronDown size={15} className={`transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                                                    </button>
                                                 </div>
                                                 {!isCollapsed &&
                                                     list.map((e) => {
                                                         const on = selected.has(e.key);
                                                         return (
-                                                            <div
+                                                            <CheckBox
                                                                 key={e.key}
-                                                                onClick={() => toggle(e.key)}
-                                                                className="flex items-center gap-2.5 pl-4 pr-3 py-1.5 hover:bg-white/[0.03] cursor-pointer"
+                                                                checked={on}
+                                                                onChange={() => toggle(e.key)}
+                                                                label={entryTitle(e)}
+                                                                className={`pl-6 pr-3 py-2 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors ${on ? 'bg-[#E8C15A]/[0.04]' : ''}`}
                                                             >
-                                                                <Box state={on ? 'on' : 'off'} onClick={() => toggle(e.key)} label={`Select ${entryTitle(e)}`} />
-                                                                <span className={`text-xs truncate flex-1 ${on ? 'text-white/85' : 'text-white/45'}`}>
-                                                                    <span className="font-mono text-white/40 mr-1.5">{e.problem_id}</span>
+                                                                <span className={`text-[13px] truncate flex-1 min-w-0 ${on ? 'text-white/90' : 'text-white/50'}`}>
+                                                                    <span className="font-mono text-white/40 mr-2">{e.problem_id}</span>
                                                                     {e.problem_title || e.display_label}
                                                                 </span>
-                                                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border shrink-0 ${verdictTone(e)}`}>{verdictLabel(e)}</span>
-                                                            </div>
+                                                                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border shrink-0 ${verdictTone(e)}`}>{verdictLabel(e)}</span>
+                                                            </CheckBox>
                                                         );
                                                     })}
                                             </div>
@@ -298,23 +382,17 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                     })}
                                 </div>
                             </div>
-
-                            {/* Options */}
-                            <div className="flex flex-wrap gap-x-6 gap-y-3 pt-1">
-                                <Switch on={includeMeta} onChange={setIncludeMeta} label="Verdict, attempts and date" />
-                                <Switch on={format === 'markdown' && lineNumbers} onChange={setLineNumbers} label="Line numbers" disabled={format !== 'markdown'} />
-                            </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] bg-black/30">
-                            <span className="text-xs truncate">
+                        <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] bg-black/30 shrink-0">
+                            <span className="text-xs truncate" aria-live="polite">
                                 {done ? (
                                     <span className="inline-flex items-center gap-1.5 text-[#E8C15A]">
                                         <Check size={13} /> Saved {done}
                                     </span>
                                 ) : (
-                                    <span className="text-white/45">
+                                    <span className="text-white/50">
                                         {chosen.length} problem{chosen.length === 1 ? '' : 's'} as {FORMATS.find((f) => f.id === format)?.title}
                                     </span>
                                 )}
@@ -323,14 +401,15 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 type="button"
                                 disabled={chosen.length === 0}
                                 onClick={doExport}
-                                className="px-5 py-2 rounded-xl text-[13px] font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer shrink-0"
+                                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-all flex items-center gap-2 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F11]"
                             >
-                                <Download size={14} />
+                                <Download size={15} />
                                 Export
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
