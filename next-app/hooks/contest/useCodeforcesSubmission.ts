@@ -220,7 +220,15 @@ export function useCodeforcesSubmission({
                         // matchingSubmissions === 0 only means this problem is not
                         // in the tracked curriculum; verification can still run.
                         if (!backfillRes.ok || !backfillData.success) {
-                            throw new Error('Found your Codeforces history, but failed to save it. Please try again.');
+                            // Say why instead of a generic failure.
+                            const why = backfillData.error === 'CF handle mismatch'
+                                ? `This ICPC HUE account is linked to a different Codeforces account than the one logged in here (${resolvedHandle || cfHandle}). Log into ICPC HUE with your own account, or into Codeforces with the account linked to it.`
+                                : backfillRes.status === 429
+                                    ? 'Too many sync attempts in a minute. Wait a minute, then press Check & Sync once.'
+                                    : backfillRes.status === 401
+                                        ? 'Your ICPC HUE login expired. Refresh the page and log in again.'
+                                        : `Found your Codeforces history, but the server could not save it (${backfillData.error || `HTTP ${backfillRes.status}`}). Please try again.`;
+                            throw new Error(why);
                         }
                     }
 

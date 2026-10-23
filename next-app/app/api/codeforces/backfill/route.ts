@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
         const finalHandle = submittedHandle || userHandle;
 
         if (userHandle && submittedHandle && submittedHandle.toLowerCase() !== userHandle.toLowerCase()) {
+            console.warn(`[backfill] handle mismatch: user ${user.id} is linked to ${userHandle}, Codeforces session is ${submittedHandle}`);
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
         if (!finalHandle) {
