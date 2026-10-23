@@ -23,6 +23,8 @@ interface SubmissionItem {
     memory_kb?: number | null;
     attempts: number;
     submitted_at: string;
+    url_type?: string;
+    group_id?: string | null;
     cf_submission_id?: string;
     source_code?: string;
 }
@@ -182,7 +184,11 @@ export function RecentSubmissionsTable({
 
                             {activeSubModal.cf_submission_id ? (
                                 <a
-                                    href={`https://codeforces.com/group/MWSDmqGsZm/contest/${activeSubModal.contest_id}/submission/${activeSubModal.cf_submission_id}`}
+                                    href={`${activeSubModal.url_type === 'group' && activeSubModal.group_id
+                                        ? `https://codeforces.com/group/${activeSubModal.group_id}/contest/${activeSubModal.contest_id}`
+                                        : activeSubModal.url_type === 'gym'
+                                            ? `https://codeforces.com/gym/${activeSubModal.contest_id}`
+                                            : `https://codeforces.com/contest/${activeSubModal.contest_id}`}/submission/${activeSubModal.cf_submission_id}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="text-[#E8C15A] hover:underline flex items-center gap-1 font-medium shrink-0"
@@ -257,6 +263,7 @@ export function RecentSubmissionsTable({
                     <thead className="sticky top-0 bg-[#121214] z-10">
                         <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium uppercase tracking-wider">
                             <th className="pb-2.5 pl-1.5 font-medium">Problem</th>
+                            <th className="pb-2.5 font-medium">When</th>
                             <th className="pb-2.5 text-center font-medium">Curriculum</th>
                             <th className="pb-2.5 text-left font-medium">Verdict</th>
                             <th className="pb-2.5 text-center font-medium">Language</th>
@@ -267,7 +274,7 @@ export function RecentSubmissionsTable({
                     <tbody className="divide-y divide-white/[0.04]">
                         {submissions.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="py-8 text-center text-white/35 text-xs font-mono">
+                                <td colSpan={7} className="py-8 text-center text-white/35 text-xs font-mono">
                                     No submissions recorded yet.
                                 </td>
                             </tr>
@@ -278,8 +285,11 @@ export function RecentSubmissionsTable({
                                     onClick={() => setActiveSubModal(sub)}
                                     className="hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors cursor-pointer group"
                                 >
-                                    <td className="py-2.5 pl-1.5 font-medium text-white/90 group-hover:text-[#E8C15A] transition-colors text-xs truncate max-w-[150px]">
-                                        {sub.problem}
+                                    <td className="py-2.5 pl-1.5 font-medium text-white/90 group-hover:text-[#E8C15A] transition-colors text-xs truncate max-w-[220px]" title={sub.problem}>
+                                        {sub.problem_index ? `${String(sub.problem_index).toUpperCase()}${sub.problem_title ? ` · ${sub.problem_title}` : ''}` : sub.problem}
+                                    </td>
+                                    <td className="py-2.5 text-white/50 font-mono text-[11px] whitespace-nowrap">
+                                        {formatDate(sub.submitted_at)}
                                     </td>
                                     <td className="py-2.5 text-center text-white/50 font-mono text-[11px]">
                                         {sub.sheet_info ? `${sub.sheet_info.level} / Sheet ${sub.sheet_info.sheet_letter}` : (sub.sheet_id ? `Sheet ${sub.sheet_id}` : '-')}

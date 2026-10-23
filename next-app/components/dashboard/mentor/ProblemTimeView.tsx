@@ -144,13 +144,16 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
     }
 
     const allSorted = [...problems].sort((a, b) => b.active_seconds - a.active_seconds);
-    const focus = stats.active / ((stats.active + stats.idle + stats.away) || 1);
+    // Focus: share of the time the page was in front of them that they were
+    // working (not idle). Time off the page is separate: students must leave
+    // it to submit on Codeforces, so it is not a lack of focus by itself.
+    const focus = stats.active / ((stats.active + stats.idle) || 1);
 
     return (
         <div className="space-y-3">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <Card icon={Timer} label="Active time" value={formatDuration(stats.active)} hint={`on ${problems.length} problems`} />
-                <Card icon={Target} label="Focus" value={`${Math.round(focus * 100)}%`} hint={`idle ${formatDuration(stats.idle)} · away ${formatDuration(stats.away)}`} />
+                <Card icon={Target} label="Focus" value={`${Math.round(focus * 100)}%`} hint={`idle ${formatDuration(stats.idle)} · off the page ${formatDuration(stats.away)} (incl. submitting on Codeforces)`} />
                 <Card icon={CheckCircle2} label="Avg time to solve" value={stats.solvedCount ? formatDuration(stats.avgSolve) : '—'} hint={`${stats.solvedCount} timed solves`} />
                 <Card icon={AlertTriangle} label="Needs help" value={String(flagged.filter((p) => p.reason === 'struggling').length)} hint={`${flagged.filter((p) => p.reason === 'slow').length} slow solves`} />
             </div>
