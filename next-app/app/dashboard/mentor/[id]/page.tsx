@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
     AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, 
-    XCircle, Clock, Circle, Search, BarChart3, HardDrive 
-} from 'lucide-react';
+    XCircle, Clock, Circle, Search, BarChart3, HardDrive, ArrowLeft } from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
 import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgressBreakdown';
@@ -332,6 +331,13 @@ export default function TraineeDossierPage() {
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
+            <button
+                onClick={() => (window.history.length > 1 ? router.back() : router.push('/dashboard/mentor'))}
+                className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-1"
+            >
+                <ArrowLeft size={14} /> All trainees
+            </button>
+
             <TraineeProfileCard 
                 profile={profile}
                 integrity={integrity && integrity.verdict !== 'clean' ? integrity.verdict : null} 
