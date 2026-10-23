@@ -1395,7 +1395,13 @@ iframe[title*="reCAPTCHA"],
 .mirror-ui a[class*="btn"],
 .mirror-ui input,
 .mirror-ui select,
-.mirror-ui textarea {
+.mirror-ui textarea,
+.mentor-ui button,
+.mentor-ui a[class*="button"],
+.mentor-ui a[class*="btn"],
+.mentor-ui input,
+.mentor-ui select,
+.mentor-ui textarea {
   padding: revert-layer;
   min-height: revert-layer;
   min-width: revert-layer;
