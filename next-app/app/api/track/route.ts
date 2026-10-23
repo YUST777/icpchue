@@ -15,7 +15,7 @@ const VALID_ACTIONS = new Set([
     // Behavior / cheating detection
     'tab_hidden', 'tab_visible', 'window_blur', 'window_focus',
     'text_copy', 'user_idle', 'heartbeat', 'problem_leave',
-    'context_menu',
+    'context_menu', 'statement_copy',
     // Enhanced tracking
     'scroll_depth', 'code_change', 'editor_selection',
     'resize_window', 'mouse_idle_zone', 'error_encounter',

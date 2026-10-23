@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
                 .filter((r) => r.members.some((m) => visible.has(m.userId)))
                 .map((r) => ({ ...r, members: r.members.map(mask) })),
             behaviour: report.behaviour.filter((b) => visible.has(b.student.userId)),
+            traps: report.traps
+                .filter((t) => visible.has(t.codeOwner.userId) || visible.has(t.copiedBy.userId))
+                .map((t) => ({ ...t, codeOwner: mask(t.codeOwner), copiedBy: mask(t.copiedBy) })),
+            copyPaste: report.copyPaste.filter((c) => visible.has(c.student.userId)),
         }, { headers: { 'Cache-Control': 'private, no-store' } });
     } catch (error) {
         console.error('[Integrity] Failed:', error instanceof Error ? error.message : error);

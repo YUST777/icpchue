@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldAlert, ShieldCheck, AlertTriangle, GitCompare, ClipboardPaste, Users, Loader2 } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, AlertTriangle, GitCompare, ClipboardPaste, Users, Loader2, Crosshair, Copy } from 'lucide-react';
 import { CompareModal, Person, reasonText, type PairCase, type PairProblem, type StudentRef } from './shared';
 
 export interface StudentIntegrity {
@@ -10,8 +10,13 @@ export interface StudentIntegrity {
     groupSize: number;
     groupProblems: number;
     pasted: { contestId: string; problem: string; label: string; chars: number; keystrokes: number; activeSeconds: number }[];
+    traps: { codeOwner: StudentRef; copiedBy: StudentRef; contestId: string; problem: string; label: string; trap: string; copiedAt: string }[];
+    copyPaste: { contestId: string; problem: string; label: string; copiedAt: string; pastedAfterSeconds: number; pastedChars: number }[];
     generatedAt: string;
 }
+
+const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const ago = (s: number) => (s < 90 ? `${s}s` : `${Math.round(s / 60)} min`);
 
 /** Code-match verdict for one trainee, shown at the top of the Cheating Flags tab. */
 export function CodeMatchesPanel({ me, data, loading }: { me: StudentRef; data: StudentIntegrity | null; loading: boolean }) {
@@ -30,7 +35,14 @@ export function CodeMatchesPanel({ me, data, loading }: { me: StudentRef; data: 
     const otherCount = data.matches.length;
     const problemCount = new Set(data.matches.flatMap((m) => m.problems.map((p) => `${p.contestId}:${p.problem}`))).size;
 
-    const banner = data.verdict === 'likely'
+    const ownTraps = data.traps.filter((t) => t.codeOwner.userId === me.userId);
+    const banner = ownTraps.length
+        ? {
+            box: 'bg-red-500/10 border-red-500/30', icon: <Crosshair size={20} className="text-red-400" />,
+            title: 'Caught by the AI trap',
+            text: `Their code contains a hidden variable name that is only given out inside copied problem statements, so it was written by an AI (or someone) reading the copied statement, not by the student. ${ownTraps.length} problem${ownTraps.length === 1 ? '' : 's'}.`,
+        }
+        : data.verdict === 'likely'
         ? {
             box: 'bg-red-500/10 border-red-500/30', icon: <ShieldAlert size={20} className="text-red-400" />,
             title: 'This student likely cheated',
@@ -60,6 +72,50 @@ export function CodeMatchesPanel({ me, data, loading }: { me: StudentRef; data: 
                     )}
                 </div>
             </div>
+
+            {data.traps.length > 0 && (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-white/80">
+                        <Crosshair size={14} className="text-red-400" /> AI trap
+                    </div>
+                    {data.traps.map((t) => {
+                        const own = t.codeOwner.userId === me.userId;
+                        const shared = t.codeOwner.userId !== t.copiedBy.userId;
+                        return (
+                            <div key={`${t.trap}:${t.codeOwner.userId}`} className="rounded-xl border border-red-500/25 bg-red-500/[0.06] px-3 py-2.5 text-xs text-white/75 space-y-1">
+                                <div className="text-white/90">{t.label}</div>
+                                <div>
+                                    {own ? 'Their code contains ' : 'Code by '}
+                                    {!own && <b className="text-white">{t.codeOwner.name}</b>}
+                                    {!own && ' contains '}
+                                    <code className="px-1 rounded bg-black/40 text-red-300">{t.trap}</code>
+                                    {', the name added when '}
+                                    {t.copiedBy.userId === me.userId ? <b className="text-white">this student</b> : <b className="text-white">{t.copiedBy.name}</b>}
+                                    {` copied the statement on ${when(t.copiedAt)}.`}
+                                    {shared && <span className="text-amber-300"> The statement was copied by one student and the code submitted by another.</span>}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {data.copyPaste.length > 0 && (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-white/80">
+                        <Copy size={14} className="text-[#E8C15A]" /> Copied the statement, then pasted a solution
+                    </div>
+                    <div className="rounded-xl border border-white/[0.08] bg-black/20 divide-y divide-white/[0.04]">
+                        {data.copyPaste.map((c) => (
+                            <div key={`${c.contestId}:${c.problem}:${c.copiedAt}`} className="flex items-center gap-3 px-3 py-2 text-[11px]">
+                                <span className="flex-1 text-white/75 truncate">{c.label}</span>
+                                <span className="text-white/45">copied {when(c.copiedAt)}</span>
+                                <span className="text-white/45 font-mono">pasted {c.pastedChars} chars {ago(c.pastedAfterSeconds)} later</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {data.matches.length > 0 && (
                 <div className="space-y-3">

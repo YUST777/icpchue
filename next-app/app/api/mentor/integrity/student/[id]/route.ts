@@ -23,6 +23,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
             result.matches = result.matches.map((m) => visible.has(m.other.userId)
                 ? m
                 : { ...m, other: { userId: m.other.userId, name: 'Another student', studentId: '', group: m.other.group } });
+            const hide = (s: typeof result.traps[number]['codeOwner']) => visible.has(s.userId) ? s : { userId: s.userId, name: 'Another student', studentId: '', group: s.group };
+            result.traps = result.traps.map((t) => ({ ...t, codeOwner: hide(t.codeOwner), copiedBy: hide(t.copiedBy) }));
         }
         return NextResponse.json(result, { headers: { 'Cache-Control': 'private, no-store' } });
     } catch (error) {

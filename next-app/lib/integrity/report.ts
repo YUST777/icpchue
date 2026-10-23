@@ -55,9 +55,32 @@ export interface BehaviourCase {
     pastedProblems: { contestId: string; problem: string; label: string; chars: number; keystrokes: number; activeSeconds: number }[];
 }
 
+/** Code containing a trap name issued when a statement was copied. */
+export interface TrapHit {
+    codeOwner: StudentRef;     // whose code contains the name
+    copiedBy: StudentRef;      // who copied the statement it was issued with
+    contestId: string;
+    problem: string;
+    label: string;
+    trap: string;
+    copiedAt: string;
+}
+
+/** A statement copy followed by a paste in the editor on the same problem. */
+export interface CopyPaste {
+    contestId: string;
+    problem: string;
+    label: string;
+    copiedAt: string;
+    pastedAfterSeconds: number;
+    pastedChars: number;
+}
+
 export interface IntegrityReport {
     generatedAt: string;
     stats: { codes: number; problems: number; students: number };
+    traps: TrapHit[];
+    copyPaste: { student: StudentRef; events: CopyPaste[] }[];
     pairs: PairCase[];
     rings: { members: StudentRef[]; problems: number }[];
     behaviour: BehaviourCase[];
@@ -225,8 +248,42 @@ async function buildReport(): Promise<IntegrityReport> {
     }
     const behaviourIds = [...pasted.entries()].filter(([, list]) => list.length >= 3).map(([id]) => id);
 
+    // AI trap: code (any attempt or draft) containing a name issued on a statement copy.
+    const [trapIssued, trapFound, copyPasteRes] = await Promise.all([
+        query(`SELECT metadata->>'trap' AS trap, user_id, contest_id, upper(problem_id) AS p, created_at
+                 FROM user_activity WHERE action = 'statement_copy' AND metadata->>'trap' IS NOT NULL`),
+        query(`SELECT DISTINCT user_id, contest_id, upper(problem_index) AS p, (regexp_match(source_code, 'ans_hx[a-z0-9]{5}'))[1] AS trap
+                 FROM submissions WHERE source_code ~ 'ans_hx[a-z0-9]{5}'
+               UNION
+               SELECT DISTINCT user_id, contest_id, upper(regexp_replace(problem_id, '^.*:', '')), (regexp_match(code, 'ans_hx[a-z0-9]{5}'))[1]
+                 FROM user_code WHERE code ~ 'ans_hx[a-z0-9]{5}'`),
+        query(`SELECT c.user_id, c.contest_id, upper(c.problem_id) AS p, c.created_at AS copied_at,
+                      EXTRACT(EPOCH FROM (pa.created_at - c.created_at))::int AS after_s,
+                      COALESCE((pa.metadata->>'len')::int, 0) AS chars
+                 FROM user_activity c
+                 JOIN LATERAL (
+                     SELECT created_at, metadata FROM user_activity x
+                      WHERE x.user_id = c.user_id AND x.action = 'code_paste' AND x.contest_id = c.contest_id
+                        AND upper(x.problem_id) = upper(c.problem_id)
+                        AND x.created_at BETWEEN c.created_at AND c.created_at + interval '20 minutes'
+                        AND COALESCE((x.metadata->>'len')::int, 0) >= 100
+                      ORDER BY x.created_at LIMIT 1
+                 ) pa ON true
+                WHERE c.action = 'statement_copy' AND COALESCE((c.metadata->>'sample')::boolean, false) = false
+                  AND COALESCE((c.metadata->>'len')::int, 0) >= 120`),
+    ]);
+    const issued = new Map<string, { user_id: string; contest_id: string; p: string; created_at: string }>();
+    for (const r of trapIssued.rows as { trap: string; user_id: string; contest_id: string; p: string; created_at: string }[]) issued.set(r.trap, r);
+    const trapRows = (trapFound.rows as { user_id: string; contest_id: string; p: string; trap: string }[])
+        .filter((r) => issued.has(r.trap));
+    const copyRows = copyPasteRes.rows as { user_id: string; contest_id: string; p: string; copied_at: string; after_s: number; chars: number }[];
+
     // Names, student IDs and mentor groups for everyone mentioned.
-    const ids = [...new Set([...scored.flatMap((p) => [p.a, p.b]), ...behaviourIds])];
+    const ids = [...new Set([
+        ...scored.flatMap((p) => [p.a, p.b]), ...behaviourIds,
+        ...trapRows.flatMap((r) => [Number(r.user_id), Number(issued.get(r.trap)!.user_id)]),
+        ...copyRows.map((r) => Number(r.user_id)),
+    ])];
     const people = await studentRefs(ids);
     const ref = (id: number): StudentRef => people.get(id) || { userId: id, name: `User ${id}`, studentId: '', group: null };
 
@@ -234,6 +291,20 @@ async function buildReport(): Promise<IntegrityReport> {
     return {
         generatedAt: new Date().toISOString(),
         stats: { codes: codes.length, problems: byProblem.size, students: students.size },
+        traps: trapRows.map((r) => {
+            const src = issued.get(r.trap)!;
+            return {
+                codeOwner: ref(Number(r.user_id)), copiedBy: ref(Number(src.user_id)),
+                contestId: r.contest_id, problem: r.p, label: labelOf(r.contest_id, r.p), trap: r.trap,
+                copiedAt: new Date(src.created_at).toISOString(),
+            };
+        }),
+        copyPaste: [...copyRows.reduce((m, r) => {
+            const id = Number(r.user_id);
+            if (!m.has(id)) m.set(id, []);
+            m.get(id)!.push({ contestId: r.contest_id, problem: r.p, label: labelOf(r.contest_id, r.p), copiedAt: new Date(r.copied_at).toISOString(), pastedAfterSeconds: Number(r.after_s) || 0, pastedChars: Number(r.chars) || 0 });
+            return m;
+        }, new Map<number, CopyPaste[]>())].map(([id, events]) => ({ student: ref(id), events })),
         pairs: scored.map((p) => ({ a: ref(p.a), b: ref(p.b), problems: p.problems, score: p.score, level: p.level })),
         rings: rings.map((m) => ({
             members: m.map(ref),
@@ -276,6 +347,9 @@ export interface StudentIntegrity {
     groupSize: number;
     groupProblems: number;
     pasted: BehaviourCase['pastedProblems'];
+    /** Trap names found in this student's code, or issued to them and found in someone else's. */
+    traps: TrapHit[];
+    copyPaste: CopyPaste[];
     generatedAt: string;
 }
 
@@ -287,11 +361,13 @@ export async function studentIntegrity(userId: number): Promise<StudentIntegrity
         .map((p) => ({ other: p.a.userId === userId ? p.b : p.a, problems: p.problems, level: p.level, score: p.score }));
     const ring = report.rings.find((r) => r.members.some((m) => m.userId === userId));
     const pasted = report.behaviour.find((b) => b.student.userId === userId)?.pastedProblems || [];
-    const verdict: StudentIntegrity['verdict'] = matches.some((m) => m.level === 'high') || ring
+    const traps = report.traps.filter((t) => t.codeOwner.userId === userId || t.copiedBy.userId === userId);
+    const copyPaste = report.copyPaste.find((c) => c.student.userId === userId)?.events || [];
+    const verdict: StudentIntegrity['verdict'] = traps.length || matches.some((m) => m.level === 'high') || ring
         ? 'likely'
-        : matches.length ? 'suspicious' : 'clean';
+        : matches.length || copyPaste.length >= 2 ? 'suspicious' : 'clean';
     return {
-        verdict, matches, pasted,
+        verdict, matches, pasted, traps, copyPaste,
         groupSize: ring ? ring.members.length : 0,
         groupProblems: ring ? ring.problems : 0,
         generatedAt: report.generatedAt,
