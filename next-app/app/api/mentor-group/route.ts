@@ -21,6 +21,10 @@ export async function GET(req: NextRequest) {
         const email = (user.email || '').trim().toLowerCase();
         const studentId = /^(\d{5,12})@horus\.edu\.eg$/.exec(email)?.[1] ?? null;
         if (!studentId) return NextResponse.json({ status: 'not_enrolled' });
+        // Mentors, instructors and owners lead groups; they are never placed in one as a trainee.
+        if (user.role === 'mentor' || user.role === 'instructor' || user.role === 'owner') {
+            return NextResponse.json({ status: 'staff' });
+        }
 
         // Already placed: record the visit (mentors follow up with who never opened it).
         const existing = await query(
@@ -64,6 +68,19 @@ export async function GET(req: NextRequest) {
                  VALUES ($1, $2, $3, $4, now(), now(), 1)`,
                 [SEASON, studentId, pick.rows[0].id, 'auto']
             );
+            // Auto-sync into mentor_trainees so the mentor immediately sees the trainee on their dashboard
+            const mentorRes = await client.query(
+                `SELECT mentor_user_id FROM mentor_trainees WHERE group_name = $1 LIMIT 1`,
+                [pick.rows[0].name]
+            );
+            if (mentorRes.rows[0]?.mentor_user_id) {
+                await client.query(
+                    `INSERT INTO mentor_trainees (mentor_user_id, student_id, group_name, assigned_at)
+                     VALUES ($1, $2, $3, now())
+                     ON CONFLICT (mentor_user_id, student_id) DO NOTHING`,
+                    [mentorRes.rows[0].mentor_user_id, studentId, pick.rows[0].name]
+                );
+            }
             return { status: 'assigned', group: groupJson(pick.rows[0]) };
         });
         return NextResponse.json(result);

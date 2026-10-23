@@ -7,7 +7,8 @@ import { MessageCircle, Users, AlertCircle, Loader2, ArrowLeft } from 'lucide-re
 export type Result =
     | { status: 'assigned'; group: { name: string; mentorName: string | null; inviteLink: string } }
     | { status: 'not_enrolled' }
-    | { status: 'full' };
+    | { status: 'full' }
+    | { status: 'staff' };
 
 /** What a trainee sees on /group for each state of their mentor group. */
 export function MentorGroupCard({ result, error }: { result: Result | null; error: string | null }) {
@@ -75,6 +76,15 @@ export function MentorGroupCard({ result, error }: { result: Result | null; erro
                             <AlertCircle className="w-10 h-10 text-[#E8C15A] mx-auto mb-3" />
                             <h1 className="text-xl font-bold mb-2">Use your Horus University account</h1>
                             <p className="text-sm text-white/60">Mentor groups are matched by your student ID, so sign in with your university email (your student ID @horus.edu.eg). If you think this is a mistake, contact the ICPC HUE team.</p>
+                        </div>
+                    )}
+
+                    {result?.status === 'staff' && (
+                        <div className="py-4">
+                            <AlertCircle className="w-10 h-10 text-[#E8C15A] mx-auto mb-3" />
+                            <h1 className="text-xl font-bold mb-2">You lead the mentor groups</h1>
+                            <p className="text-sm text-white/60">Mentors and admins are not placed in a group as trainees. Your trainees are on the mentor dashboard.</p>
+                            <Link href="/dashboard/mentor" className="mt-3 inline-block text-sm text-[#E8C15A] hover:underline">Open the mentor dashboard</Link>
                         </div>
                     )}
 
