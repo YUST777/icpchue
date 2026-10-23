@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { CFProblemData } from '../shared/types';
 import { Clock, HardDrive } from 'lucide-react';
@@ -28,15 +28,27 @@ function newTrapName(): string {
     return `ans_hx${id}`;
 }
 
-function handleStatementCopy(e: React.ClipboardEvent<HTMLDivElement>) {
+/**
+ * Page-level copy handler: the copy event goes to wherever the selection
+ * starts (often above the statement, e.g. Ctrl+A), so check whether the
+ * selection includes statement text rather than where the event landed.
+ */
+function onDocumentCopy(e: ClipboardEvent, statement: HTMLElement) {
     const sel = window.getSelection();
     const text = sel?.toString() || '';
-    if (!sel || !text.trim()) return;
-    const anchor = sel.anchorNode instanceof Element ? sel.anchorNode : sel.anchorNode?.parentElement;
-    const focus = sel.focusNode instanceof Element ? sel.focusNode : sel.focusNode?.parentElement;
-    const inSample = !!anchor?.closest('pre') && anchor?.closest('pre') === focus?.closest('pre');
-    if (inSample || text.length < TRAP_MIN_CHARS) {
-        window.dispatchEvent(new CustomEvent('icpchue:statement-copy', { detail: { len: text.length, sample: inSample, trap: null } }));
+    if (!sel || sel.rangeCount === 0 || !text.trim() || !e.clipboardData) return;
+    const range = sel.getRangeAt(0);
+    if (!range.intersectsNode(statement)) return;
+    // Statement text inside the selection, excluding the sample input/output blocks.
+    let statementChars = 0;
+    const walker = document.createTreeWalker(statement, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        if (!range.intersectsNode(n) || (n.parentElement && n.parentElement.closest('pre'))) continue;
+        statementChars += (n.textContent || '').trim().length;
+        if (statementChars >= TRAP_MIN_CHARS) break;
+    }
+    if (statementChars < TRAP_MIN_CHARS) {
+        window.dispatchEvent(new CustomEvent('icpchue:statement-copy', { detail: { len: text.length, sample: statementChars === 0, trap: null } }));
         return;
     }
     const trap = newTrapName();
@@ -65,10 +77,18 @@ export const CFProblemDescription = React.memo(function CFProblemDescription({ d
         }
     }, [data]); // Only run when data actually changes
 
+    // AI trap on statement copies (see onDocumentCopy).
+    const statementRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const handler = (e: ClipboardEvent) => { if (statementRef.current) onDocumentCopy(e, statementRef.current); };
+        document.addEventListener('copy', handler);
+        return () => document.removeEventListener('copy', handler);
+    }, []);
+
     if (!data) return null;
 
     return (
-        <div className="prose prose-invert max-w-none text-white/90 selection:bg-[#E8C15A]/30" onCopy={handleStatementCopy}>
+        <div className="prose prose-invert max-w-none text-white/90 selection:bg-[#E8C15A]/30" ref={statementRef}>
             {/* Load MathJax from CDN */}
             <Script
                 src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
