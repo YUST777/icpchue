@@ -19,7 +19,8 @@ import { analyze, similarity, type Analyzed } from './similarity';
 
 const MIN_TOKENS = 30;            // shorter solutions are too generic to compare
 const STRUCT_THRESHOLD = 0.85;    // structural similarity to call two solutions "the same"
-const EXACT_MIN_TOKENS = 40;
+const EXACT_MIN_TOKENS = 60;      // identical text only matters on solutions of real length
+const COMMON_SHARE = 0.25;        // a structure this share of the class wrote is "the usual solution"
 const PASTE_MIN_CHARS = 150;      // a solution this long with almost no typing was pasted
 
 export type Reason = 'identical' | 'rare_names' | 'rare_solution';
@@ -198,11 +199,15 @@ async function buildReport(): Promise<IntegrityReport> {
             if (s < STRUCT_THRESHOLD) continue;
             const A = list[i].a, B = list[j].a;
             const reasons: Reason[] = [];
-            const identical = A.exactText === B.exactText && Math.min(A.tokens, B.tokens) >= EXACT_MIN_TOKENS && (textFreq.get(A.exactText) || 0) <= rareMax;
+            const sameCount = Math.max(family[i], family[j]);
+            // The usual solution (many students wrote the same structure, e.g.
+            // "Basic Data Types") is never evidence, even with identical text.
+            const usualSolution = sameCount > Math.max(3, n * COMMON_SHARE);
+            const identical = !usualSolution && A.exactText === B.exactText &&
+                Math.min(A.tokens, B.tokens) >= EXACT_MIN_TOKENS && (textFreq.get(A.exactText) || 0) <= rareMax;
             if (identical) reasons.push('identical');
             const rareNames = [...A.identifiers].filter((id) => B.identifiers.has(id) && (nameFreq.get(id) || 0) <= rareMax);
             if (rareNames.length) reasons.push('rare_names');
-            const sameCount = Math.max(family[i], family[j]);
             // A shared approach is normal on short problems: it only supports
             // real evidence (identical text or the same unusual names).
             if (!reasons.length) continue;
