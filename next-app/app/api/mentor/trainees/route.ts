@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { verifyMentor } from '@/lib/auth/auth';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
 import { mentorVisibleUserIds, mentorGroupOptions, mentorGroupUserIds } from '@/lib/auth/mentor-scope';
+import { integrityVerdicts } from '@/lib/integrity/report';
 
 // High-speed In-Memory Cache (30s TTL)
 interface CacheEntry {
@@ -198,6 +199,20 @@ export async function GET(req: NextRequest) {
             allTrainees = allTrainees.filter((t) => t.user_id != null && groupIds.has(Number(t.user_id)));
         }
 
+        // Code-integrity verdicts (cached report; never hold the list up for long).
+        const verdicts = await Promise.race([
+            integrityVerdicts().catch(() => new Map<number, 'likely' | 'suspicious'>()),
+            new Promise<Map<number, 'likely' | 'suspicious'>>((r) => setTimeout(() => r(new Map()), 6000)),
+        ]);
+        allTrainees = allTrainees.map((t) => {
+            const integrity = t.user_id != null ? verdicts.get(Number(t.user_id)) || null : null;
+            return integrity
+                ? { ...t, integrity, status_badge: t.is_shadow_banned ? 'BANNED' : 'FLAGGED' }
+                : { ...t, integrity: null };
+        });
+        const isFlagged = (t: { flags_count: number; is_shadow_banned: boolean; integrity: string | null }) =>
+            t.flags_count > 0 || t.is_shadow_banned || !!t.integrity;
+
         // 2. Client-side Search, Level Filter, Status Filter with Arabic Normalization
         // Copy so sorting below never reorders the shared cached array.
         let filtered = allTrainees.slice();
@@ -233,7 +248,7 @@ export async function GET(req: NextRequest) {
                 if (statusFilter === 'active') return !t.is_inactive && !t.is_shadow_banned && t.flags_count === 0;
                 if (statusFilter === 'stuck') return t.is_stuck;
                 // Matches the "flagged" summary card, which also counts banned students.
-                if (statusFilter === 'flagged') return t.flags_count > 0 || t.is_shadow_banned;
+                if (statusFilter === 'flagged') return isFlagged(t);
                 if (statusFilter === 'banned') return t.is_shadow_banned;
                 if (statusFilter === 'inactive') return t.is_inactive;
                 return true;
@@ -285,7 +300,7 @@ export async function GET(req: NextRequest) {
             // Same rule as the "active" filter so the card matches the list.
             active_trainees: allTrainees.filter(t => !t.is_inactive && !t.is_shadow_banned && t.flags_count === 0).length,
             stuck_trainees: allTrainees.filter(t => t.is_stuck).length,
-            flagged_trainees: allTrainees.filter(t => t.flags_count > 0 || t.is_shadow_banned).length,
+            flagged_trainees: allTrainees.filter(isFlagged).length,
             inactive_trainees: allTrainees.filter(t => t.is_inactive).length,
             level_distribution: Object.fromEntries(['0', '1', '2', '3'].map((n) => [
                 `level_${n}`,
