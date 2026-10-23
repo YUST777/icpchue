@@ -58,6 +58,8 @@ interface TraineeItem {
     is_stuck: boolean;
     is_inactive: boolean;
     status_badge: 'ACTIVE' | 'STUCK' | 'FLAGGED' | 'BANNED' | 'INACTIVE';
+    /** Code-integrity verdict: same code as other students, AI trap, copy-then-paste. */
+    integrity?: 'likely' | 'suspicious' | null;
 }
 
 export default function MentorTraineesDirectoryPage() {
@@ -388,7 +390,11 @@ export default function MentorTraineesDirectoryPage() {
                                         {t.academic_level}
                                     </span>
 
-                                    {t.flags_count > 0 || t.is_shadow_banned ? (
+                                    {t.integrity ? (
+                                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
+                                            <ShieldAlert size={11} /> {t.integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
+                                        </span>
+                                    ) : t.flags_count > 0 || t.is_shadow_banned ? (
                                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                                             <ShieldAlert size={11} /> {t.flags_count ? `${t.flags_count} Flags` : 'Shadow Banned'}
                                         </span>
@@ -504,7 +510,11 @@ export default function MentorTraineesDirectoryPage() {
                                             {formatLastActive(t.last_active_at)}
                                         </td>
                                         <td className="py-3 px-4">
-                                            {t.flags_count > 0 || t.is_shadow_banned ? (
+                                            {t.integrity ? (
+                                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
+                                                    <ShieldAlert size={10} /> {t.integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
+                                                </span>
+                                            ) : t.flags_count > 0 || t.is_shadow_banned ? (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                                                     <ShieldAlert size={10} /> {t.flags_count ? `${t.flags_count} Flags` : 'Banned'}
                                                 </span>

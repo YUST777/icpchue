@@ -50,8 +50,8 @@ export function CompareModal({ pair, problem, onClose }: { pair: PairCase; probl
     // Lines present in both versions (ignoring spacing) are highlighted.
     const shared = useMemo(() => {
         if (!codes?.a || !codes?.b) return new Set<string>();
-        const bLines = new Set(codes.b.split('\n').map(norm).filter((l) => l.length > 3));
-        return new Set(codes.a.split('\n').map(norm).filter((l) => l.length > 3 && bLines.has(l)));
+        const bLines = new Set(codes.b.split('\n').map(norm).filter((l) => l.length > 3 && !BOILERPLATE.test(l)));
+        return new Set(codes.a.split('\n').map(norm).filter((l) => l.length > 3 && !BOILERPLATE.test(l) && bLines.has(l)));
     }, [codes]);
 
     return (
@@ -79,6 +79,8 @@ export function CompareModal({ pair, problem, onClose }: { pair: PairCase; probl
 }
 
 const norm = (l: string) => l.replace(/\s+/g, '');
+// Lines everyone writes (template, braces) are never evidence.
+const BOILERPLATE = /^(#include.*|usingnamespacestd;|intmain\(\)\{?|\{|\}|\};?|return0;|ios(_base)?::sync_with_stdio.*|cin\.tie.*)$/;
 
 function Pane({ who, code, shared }: { who: StudentRef; code: string | null | undefined; shared: Set<string> }) {
     return (

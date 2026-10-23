@@ -203,8 +203,10 @@ async function buildReport(): Promise<IntegrityReport> {
             const rareNames = [...A.identifiers].filter((id) => B.identifiers.has(id) && (nameFreq.get(id) || 0) <= rareMax);
             if (rareNames.length) reasons.push('rare_names');
             const sameCount = Math.max(family[i], family[j]);
-            if (n >= 6 && sameCount <= familyMax) reasons.push('rare_solution');
+            // A shared approach is normal on short problems: it only supports
+            // real evidence (identical text or the same unusual names).
             if (!reasons.length) continue;
+            if (n >= 6 && sameCount <= familyMax) reasons.push('rare_solution');
 
             const [ua, ub] = list[i].userId < list[j].userId ? [list[i].userId, list[j].userId] : [list[j].userId, list[i].userId];
             const pk = `${ua}~${ub}`;
@@ -219,7 +221,7 @@ async function buildReport(): Promise<IntegrityReport> {
     // Score: identical text and shared rare names weigh more than a rare structure.
     const scored = [...pairMap.values()].map((p) => {
         const score = p.problems.reduce((t, pr) => t + (pr.reasons.includes('identical') ? 3 : 0) + (pr.reasons.includes('rare_names') ? 2 : 0) + (pr.reasons.includes('rare_solution') ? 1 : 0), 0);
-        const level: PairCase['level'] = p.problems.length >= 4 || score >= 10 ? 'high' : p.problems.length >= 2 || score >= 4 ? 'medium' : 'low';
+        const level: PairCase['level'] = p.problems.length >= 3 || score >= 9 ? 'high' : p.problems.length >= 2 || score >= 5 ? 'medium' : 'low';
         return { ...p, score, level };
     }).sort((x, y) => y.score - x.score || y.problems.length - x.problems.length);
 
@@ -372,4 +374,19 @@ export async function studentIntegrity(userId: number): Promise<StudentIntegrity
         groupProblems: ring ? ring.problems : 0,
         generatedAt: report.generatedAt,
     };
+}
+
+/** userId -> verdict for everyone the report mentions (for the trainee list). */
+export async function integrityVerdicts(): Promise<Map<number, 'likely' | 'suspicious'>> {
+    const report = await getIntegrityReport();
+    const out = new Map<number, 'likely' | 'suspicious'>();
+    const mark = (id: number, v: 'likely' | 'suspicious') => { if (out.get(id) !== 'likely') out.set(id, v); };
+    for (const p of report.pairs) {
+        if (p.level === 'high') { mark(p.a.userId, 'likely'); mark(p.b.userId, 'likely'); }
+        else if (p.level === 'medium') { mark(p.a.userId, 'suspicious'); mark(p.b.userId, 'suspicious'); }
+    }
+    for (const r of report.rings) for (const m of r.members) mark(m.userId, 'likely');
+    for (const t of report.traps) mark(t.codeOwner.userId, 'likely');
+    for (const c of report.copyPaste) if (c.events.length >= 2) mark(c.student.userId, 'suspicious');
+    return out;
 }
