@@ -12,7 +12,6 @@ import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgr
 import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHeatmap90Days';
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
-import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
 import { CodeMatchesPanel, type StudentIntegrity } from '@/components/dashboard/mentor/integrity/CodeMatchesPanel';
 import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
@@ -312,7 +311,8 @@ export default function TraineeDossierPage() {
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
             <TraineeProfileCard 
-                profile={profile} 
+                profile={profile}
+                integrity={integrity && integrity.verdict !== 'clean' ? integrity.verdict : null} 
                 metrics={metrics || {}} 
             />
 
@@ -321,7 +321,7 @@ export default function TraineeDossierPage() {
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={setActiveTab} 
-                    flagsCount={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
+                    flagsCount={integrity ? integrity.matches.length + integrity.traps.length : 0}
                 />
 
                 {/* Global Time Filter Pills */}
@@ -555,12 +555,6 @@ export default function TraineeDossierPage() {
                         me={{ userId: profile.user_id, name: profile.name, studentId: profile.student_id || '', group: null }}
                         data={integrity}
                         loading={integrityLoading}
-                    />
-                    <FlaggedProblemsView 
-                        flaggedProblems={flagged_problems || []} 
-                        totalFlags={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
-                        isShadowBanned={profile.is_shadow_banned || false}
-                        cfHandle={profile.codeforces_handle}
                     />
                 </div>
             )}

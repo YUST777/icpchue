@@ -9,6 +9,8 @@ import {
 import { SiCodeforces } from 'react-icons/si';
 
 interface TraineeProfileCardProps {
+    /** Code-integrity verdict (Cheating Flags tab); null = clean or not checked yet. */
+    integrity?: 'likely' | 'suspicious' | null;
     profile: {
         id: number;
         name: string;
@@ -40,7 +42,7 @@ interface TraineeProfileCardProps {
     };
 }
 
-export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCardProps) {
+export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: TraineeProfileCardProps) {
     const formatDate = (isoString?: string | null) => {
         if (!isoString) return 'Never';
         const d = new Date(isoString);
@@ -118,7 +120,11 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
                         <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2.5 py-0.5 rounded-full border border-[#E8C15A]/25">
                             {profile.academic_level}
                         </span>
-                        {isFlagged ? (
+                        {integrity ? (
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/25' : 'text-amber-400 bg-amber-500/10 border-amber-500/25'}`}>
+                                <ShieldAlert size={10} /> {integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
+                            </span>
+                        ) : isFlagged ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded-full">
                                 <ShieldAlert size={10} /> {profile.cheating_flags ? `${profile.cheating_flags} Flags` : 'Shadow Banned'}
                             </span>

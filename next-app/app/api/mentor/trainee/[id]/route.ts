@@ -528,28 +528,11 @@ export async function GET(
             };
         });
 
-        // 6. Flagged Problems Forensics
-        const flaggedSubs = recentSubmissions.filter((s: any) => {
-            const rawSub = subsRes.rows.find((r: any) => r.id === s.id);
-            return rawSub?.paste_events > 5 || (rawSub?.time_to_solve_seconds && rawSub?.time_to_solve_seconds < 15 && rawSub?.verdict?.toLowerCase().includes('accepted'));
-        });
-
-        const flaggedProblems = flaggedSubs.map((sub: any) => {
-            const rawSub = subsRes.rows.find((r: any) => r.id === sub.id);
-            return {
-                submission_id: sub.id,
-                contest_id: sub.contest_id,
-                problem_index: sub.problem_index,
-                problem_title: sub.problem_title || `${sub.contest_id} ${sub.problem_index}`,
-                verdict: sub.verdict,
-                reason: rawSub?.paste_events > 5 ? `Excessive Paste Events (${rawSub.paste_events} pastes)` : 'Abnormally Fast Solve Time (< 15s)',
-                submitted_at: sub.submitted_at,
-                time_to_solve_seconds: rawSub?.time_to_solve_seconds,
-                paste_events: rawSub?.paste_events || 0,
-                cf_submission_id: sub.cf_submission_id,
-                source_code: sub.source_code,
-            };
-        });
+        // 6. The old automatic flags (Accepted within 15s of opening, 5+ pastes)
+        // fired on normal behaviour such as re-submitting a solution written
+        // elsewhere. Cheating evidence now comes from lib/integrity (code shared
+        // with other students, the AI trap, copy-then-paste).
+        const flaggedProblems: any[] = [];
 
         // 7. Heatmap
         const heatmapData = heatmapRes.rows.map((row: any) => ({
@@ -776,8 +759,7 @@ export async function GET(
             time_sessions: timeSessions,
             session_watch: sessionWatch,
             behavioral_analysis: {
-                cheating_flags: flaggedProblems.length || profile.cheating_flags || 0,
-                risk_score: flaggedProblems.length > 3 ? 'HIGH' : flaggedProblems.length > 0 ? 'MEDIUM' : 'LOW',
+                cheating_flags: profile.cheating_flags || 0,
             },
         };
 
