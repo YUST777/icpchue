@@ -83,7 +83,7 @@ export async function getUserStreak(userId: number | string) {
         const todayStr = new Date().toISOString().split('T')[0];
 
         const [streakRes, solvesRes] = await Promise.all([
-            query(`SELECT current_streak, max_streak, last_solve_date FROM public.user_streaks WHERE user_id = $1`, [userId]),
+            query(`SELECT current_streak, (SELECT MAX(max_streak) FROM public.user_streaks WHERE user_id = $1) AS max_streak, last_solve_date FROM public.user_streaks WHERE user_id = $1 ORDER BY last_solve_date DESC NULLS LAST LIMIT 1`, [userId]),
             query(`SELECT solve_count FROM public.daily_solves WHERE user_id = $1 AND solve_date = $2`, [userId, todayStr])
         ]);
 

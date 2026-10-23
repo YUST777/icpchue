@@ -196,7 +196,9 @@ export async function GET(
                     (SELECT MAX(submitted_at) FROM submissions WHERE user_id = $1 AND verdict IN ('Accepted', 'OK')) AS last_solve_at,
                     (SELECT COUNT(*) FROM submissions WHERE user_id = $1 AND submitted_at > now() - interval '7 days') AS subs_7d
             `, [userId]) : Promise.resolve({ rows: [] }),
-            userId ? query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`SELECT MAX(CASE WHEN last_solve_date >= (now() AT TIME ZONE 'Africa/Cairo')::date - 1 THEN current_streak ELSE 0 END) AS current_streak,
+                                  MAX(max_streak) AS max_streak, MAX(last_solve_date) AS last_solve_date
+                             FROM user_streaks WHERE user_id = $1`, [userId]) : Promise.resolve({ rows: [] }),
             Promise.resolve({ rows: [] }),
             query('SELECT COUNT(*) as count FROM curriculum_problems'),
             query(`
