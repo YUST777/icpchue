@@ -267,3 +267,33 @@ async function studentRefs(ids: number[]): Promise<Map<number, StudentRef>> {
     }
     return out;
 }
+
+export interface StudentIntegrity {
+    verdict: 'likely' | 'suspicious' | 'clean';
+    /** Other students with matching code, strongest first. */
+    matches: { other: StudentRef; problems: PairProblem[]; level: PairCase['level']; score: number }[];
+    /** Size of the group of 3+ students this one shares code with (0 if none). */
+    groupSize: number;
+    groupProblems: number;
+    pasted: BehaviourCase['pastedProblems'];
+    generatedAt: string;
+}
+
+/** One trainee's view of the report (for the Cheating Flags tab). */
+export async function studentIntegrity(userId: number): Promise<StudentIntegrity> {
+    const report = await getIntegrityReport();
+    const matches = report.pairs
+        .filter((p) => (p.a.userId === userId || p.b.userId === userId) && p.level !== 'low')
+        .map((p) => ({ other: p.a.userId === userId ? p.b : p.a, problems: p.problems, level: p.level, score: p.score }));
+    const ring = report.rings.find((r) => r.members.some((m) => m.userId === userId));
+    const pasted = report.behaviour.find((b) => b.student.userId === userId)?.pastedProblems || [];
+    const verdict: StudentIntegrity['verdict'] = matches.some((m) => m.level === 'high') || ring
+        ? 'likely'
+        : matches.length ? 'suspicious' : 'clean';
+    return {
+        verdict, matches, pasted,
+        groupSize: ring ? ring.members.length : 0,
+        groupProblems: ring ? ring.problems : 0,
+        generatedAt: report.generatedAt,
+    };
+}

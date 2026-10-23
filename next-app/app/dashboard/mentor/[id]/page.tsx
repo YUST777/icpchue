@@ -13,6 +13,7 @@ import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHea
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
 import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
+import { CodeMatchesPanel, type StudentIntegrity } from '@/components/dashboard/mentor/integrity/CodeMatchesPanel';
 import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
 import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
@@ -35,6 +36,21 @@ export default function TraineeDossierPage() {
     // Submissions pagination with deduplication
     const [submissionsList, setSubmissionsList] = useState<any[]>([]);
     const [loadingMoreSubs, setLoadingMoreSubs] = useState(false);
+    // Code matches with other students (Cheating Flags tab + its badge).
+    const [integrity, setIntegrity] = useState<StudentIntegrity | null>(null);
+    const [integrityLoading, setIntegrityLoading] = useState(false);
+    const integrityUserId = data?.profile?.user_id as number | undefined;
+    useEffect(() => {
+        if (!integrityUserId) return;
+        let cancelled = false;
+        setIntegrityLoading(true);
+        fetch(`/api/mentor/integrity/student/${integrityUserId}`, { credentials: 'include' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => { if (!cancelled) setIntegrity(d); })
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setIntegrityLoading(false); });
+        return () => { cancelled = true; };
+    }, [integrityUserId]);
 
     const fetchDossier = async (signal?: AbortSignal) => {
         if (!studentIdParam) return;
@@ -305,7 +321,7 @@ export default function TraineeDossierPage() {
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={setActiveTab} 
-                    flagsCount={behavioral_analysis?.cheating_flags || 0}
+                    flagsCount={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
                 />
 
                 {/* Global Time Filter Pills */}
@@ -535,9 +551,14 @@ export default function TraineeDossierPage() {
             {/* Tab 5: Warnings & Flags Audit Trail */}
             {activeTab === 'flags' && (
                 <div className="space-y-3">
+                    <CodeMatchesPanel
+                        me={{ userId: profile.user_id, name: profile.name, studentId: profile.student_id || '', group: null }}
+                        data={integrity}
+                        loading={integrityLoading}
+                    />
                     <FlaggedProblemsView 
                         flaggedProblems={flagged_problems || []} 
-                        totalFlags={behavioral_analysis?.cheating_flags || 0}
+                        totalFlags={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
                         isShadowBanned={profile.is_shadow_banned || false}
                         cfHandle={profile.codeforces_handle}
                     />
