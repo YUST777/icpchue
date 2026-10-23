@@ -112,7 +112,15 @@ export async function GET(req: NextRequest) {
                 ) a ON true
                 LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
                 LEFT JOIN latest_submissions ls ON u.id = ls.user_id
-                LEFT JOIN user_streaks us ON u.id = us.user_id
+                -- One row per user (user_streaks has a row per season); a streak only
+                -- counts while the last solve was today or yesterday (Cairo).
+                LEFT JOIN (
+                    SELECT user_id,
+                           MAX(CASE WHEN last_solve_date >= (now() AT TIME ZONE 'Africa/Cairo')::date - 1 THEN current_streak ELSE 0 END) AS current_streak,
+                           MAX(max_streak) AS max_streak,
+                           MAX(last_solve_date) AS last_solve_date
+                      FROM user_streaks GROUP BY user_id
+                ) us ON u.id = us.user_id
                 WHERE u.role NOT IN ('mentor', 'instructor', 'owner') OR u.role IS NULL
                 ORDER BY u.id DESC
             `);
