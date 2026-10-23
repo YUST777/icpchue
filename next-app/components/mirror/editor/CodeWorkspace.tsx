@@ -212,6 +212,13 @@ export default function CodeWorkspace({
         editorInstanceRef.current = editor;
         handleEditorDidMount(editor, monacoEditor);
 
+        // Monaco handles paste inside its own textarea, so the page-level
+        // 'paste' listener never saw it. Report it for behaviour tracking.
+        editor.onDidPaste((e) => {
+            const text = editor.getModel()?.getValueInRange(e.range) || '';
+            window.dispatchEvent(new CustomEvent('icpchue:code-paste', { detail: { text } }));
+        });
+
         // Scroll to top so content doesnt float in the middle under CSS zoom
         editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
         editor.revealLine(1);

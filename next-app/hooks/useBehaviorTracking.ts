@@ -77,10 +77,10 @@ export function useBehaviorTracking({
         return () => { window.removeEventListener('blur', onBlur); window.removeEventListener('focus', onFocus); };
     }, [track, ctx]);
 
-    // 3. Paste detection
+    // 3. Paste detection (page fields via 'paste'; the code editor reports
+    //    its own pastes through 'icpchue:code-paste').
     useEffect(() => {
-        const handler = (e: ClipboardEvent) => {
-            const text = e.clipboardData?.getData('text') || '';
+        const record = (text: string) => {
             pasteCountRef.current++;
             track({
                 action: 'code_paste', ...ctx(),
@@ -93,8 +93,18 @@ export function useBehaviorTracking({
                 },
             });
         };
-        document.addEventListener('paste', handler);
-        return () => document.removeEventListener('paste', handler);
+        const onDomPaste = (e: ClipboardEvent) => {
+            // The editor reports its own pastes; avoid counting them twice.
+            if ((e.target as Element | null)?.closest?.('.monaco-editor')) return;
+            record(e.clipboardData?.getData('text') || '');
+        };
+        const onEditorPaste = (e: Event) => record(String((e as CustomEvent).detail?.text || ''));
+        document.addEventListener('paste', onDomPaste);
+        window.addEventListener('icpchue:code-paste', onEditorPaste);
+        return () => {
+            document.removeEventListener('paste', onDomPaste);
+            window.removeEventListener('icpchue:code-paste', onEditorPaste);
+        };
     }, [track, ctx]);
 
     // 4. Copy detection

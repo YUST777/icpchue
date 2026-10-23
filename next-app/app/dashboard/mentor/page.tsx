@@ -167,6 +167,12 @@ export default function MentorTraineesDirectoryPage() {
                         Live analytics, individual curriculum tracking, and forensic code inspection.
                     </p>
                 </div>
+                <Link
+                    href="/dashboard/mentor/integrity"
+                    className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-xs font-semibold hover:bg-red-500/15"
+                >
+                    <ShieldAlert size={14} /> Code Integrity
+                </Link>
             </div>
 
             {/* Owners/instructors: pick a mentor to see the group they mentor */}
