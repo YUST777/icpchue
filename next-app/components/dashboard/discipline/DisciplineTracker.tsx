@@ -124,7 +124,17 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
     const [summary, setSummary] = useState<{ total_hours: number; active_days: number; mentor_reviews: number; total_entries: number } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [selectedWeek, setSelectedWeek] = useState<number | 'all'>('all');
+    // Mentors open on the current week instead of eight weeks of rows.
+    const [selectedWeek, setSelectedWeek] = useState<number | 'all'>(() => {
+        if (!isMentorView) return 'all';
+        const today = new Date();
+        for (let w = 1; w <= TOTAL_WEEKS; w++) {
+            const start = getDayDate(w, 1), end = getDayDate(w, 7);
+            end.setHours(23, 59, 59, 999);
+            if (today >= start && today <= end) return w;
+        }
+        return 'all';
+    });
     const [activeEditCell, setActiveEditCell] = useState<{ week: number; day: number; mode: 'day' | 'mentor' } | null>(null);
     const [tasksBuffer, setTasksBuffer] = useState('');
     const [refsBuffer, setRefsBuffer] = useState('');
@@ -343,6 +353,12 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 </div>
             </div>
 
+            {isMentorView && !loading && (summary?.total_entries || 0) === 0 ? (
+                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-8 text-center text-sm text-white/50">
+                    {traineeName || 'This trainee'} has not logged any study days yet.
+                </div>
+            ) : (
+            <>
             {/* ── Table ──────────────────────────────────── */}
             <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl overflow-hidden">
                 <div className="overflow-x-auto">
@@ -489,6 +505,8 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                     </table>
                 </div>
             </div>
+            </>
+            )}
 
             {/* ── Day Edit Modal (2 fields: Tasks + References) ── */}
             {activeEditCell && activeEditCell.mode === 'day' && (

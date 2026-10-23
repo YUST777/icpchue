@@ -234,7 +234,7 @@ export async function GET(
                         id, contest_id, problem_index, sheet_id, verdict, details,
                         language, time_ms, memory_kb, submitted_at, 
                         time_to_solve_seconds, paste_events, tab_switches, 
-                        cf_submission_id, source_code,
+                        cf_submission_id, source_code, url_type, group_id,
                         ROW_NUMBER() OVER (
                             PARTITION BY user_id, contest_id, problem_index 
                             ORDER BY submitted_at ASC NULLS LAST, cf_submission_id ASC NULLS LAST, id ASC
@@ -526,6 +526,8 @@ export async function GET(
                 attempts: parseInt(sub.real_attempt || '1', 10),
                 submitted_at: sub.submitted_at,
                 cf_submission_id: sub.cf_submission_id,
+                url_type: sub.url_type || 'contest',
+                group_id: sub.group_id || null,
                 source_code: sub.source_code || '',
             };
         });
