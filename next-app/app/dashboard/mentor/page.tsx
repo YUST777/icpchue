@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { yearLabel } from '@/lib/utils/levels';
 import { 
     Search, Users, AlertTriangle, ShieldAlert, CheckCircle2, 
     Clock, ArrowRight, LayoutGrid, Table, Flame, ExternalLink,
@@ -387,7 +388,7 @@ export default function MentorTraineesDirectoryPage() {
                                 {/* Top Badges */}
                                 <div className="flex items-center justify-between gap-2 mb-3">
                                     <span className="text-[11px] font-semibold text-[#E8C15A] px-2.5 py-0.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                                        {t.academic_level}
+                                        {yearLabel(t.academic_level)}{t.training_level != null ? ` · Training Lv ${t.training_level}` : ''}
                                     </span>
 
                                     {t.integrity ? (
@@ -485,7 +486,7 @@ export default function MentorTraineesDirectoryPage() {
                                         </td>
                                         <td className="py-3 px-4 text-white/70">
                                             <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px]">
-                                                {t.academic_level}
+                                                {yearLabel(t.academic_level)}{t.training_level != null ? ` · Training Lv ${t.training_level}` : ''}
                                             </span>
                                         </td>
                                         <td className="py-3 px-4 font-mono text-white/60">

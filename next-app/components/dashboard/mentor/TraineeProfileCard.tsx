@@ -1,5 +1,7 @@
 'use client';
 
+import { yearLabel } from '@/lib/utils/levels';
+
 import React from 'react';
 import Link from 'next/link';
 import { 
@@ -16,6 +18,7 @@ interface TraineeProfileCardProps {
         name: string;
         student_id: string;
         academic_level: string;
+        training_level?: string | null;
         faculty: string;
         phone?: string;
         email?: string;
@@ -118,7 +121,7 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
                             {profile.student_id}
                         </span>
                         <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2.5 py-0.5 rounded-full border border-[#E8C15A]/25">
-                            {profile.academic_level}
+                            {yearLabel(profile.academic_level)}{profile.training_level != null ? ` · Training Lv ${profile.training_level}` : ''}
                         </span>
                         {integrity ? (
                             <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/25' : 'text-amber-400 bg-amber-500/10 border-amber-500/25'}`}>
