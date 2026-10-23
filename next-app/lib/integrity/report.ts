@@ -90,13 +90,14 @@ async function loadCodes(extra = '', params: unknown[] = []): Promise<CodeRow[]>
             SELECT DISTINCT ON (user_id, contest_id, upper(problem_index))
                    user_id, contest_id, upper(problem_index) AS p, source_code AS code
               FROM submissions
-             WHERE source_code IS NOT NULL AND source_code <> '' AND verdict IN ('Accepted', 'OK') ${extra}
+             WHERE source_code IS NOT NULL AND source_code <> '' AND verdict IN ('Accepted', 'OK')
+               AND contest_id IS NOT NULL AND problem_index IS NOT NULL ${extra}
              ORDER BY user_id, contest_id, upper(problem_index), id DESC
         ), drafts AS (
             SELECT DISTINCT ON (user_id, contest_id, upper(regexp_replace(problem_id, '^.*:', '')))
                    user_id, contest_id, upper(regexp_replace(problem_id, '^.*:', '')) AS p, code
               FROM user_code
-             WHERE length(code) > 60 ${extra}
+             WHERE length(code) > 60 AND contest_id IS NOT NULL AND problem_id IS NOT NULL ${extra}
              ORDER BY user_id, contest_id, upper(regexp_replace(problem_id, '^.*:', '')), updated_at DESC
         )
         SELECT user_id, contest_id, p, code FROM subs
