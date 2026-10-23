@@ -5,11 +5,13 @@ import { query } from '@/lib/db/db';
 
 // The client flushes every 30s; allow some slack for throttled background tabs.
 const MAX_SECONDS_PER_BEAT = 120;
+// A frozen tab or a sleeping laptop reports its whole gap as away time at once.
+const MAX_AWAY_PER_BEAT = 12 * 60 * 60;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function seconds(value: unknown): number {
+function seconds(value: unknown, max = MAX_SECONDS_PER_BEAT): number {
     const n = Math.floor(Number(value));
-    return Number.isFinite(n) ? Math.min(MAX_SECONDS_PER_BEAT, Math.max(0, n)) : 0;
+    return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : 0;
 }
 
 /**
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
 
         const active = seconds(body.active);
         const idle = seconds(body.idle);
-        const away = seconds(body.away);
+        const away = seconds(body.away, MAX_AWAY_PER_BEAT);
         if (active + idle + away === 0) return NextResponse.json({ ok: true });
 
         await query(
@@ -50,7 +52,10 @@ export async function POST(req: NextRequest) {
                     GREATEST(0, EXTRACT(EPOCH FROM now() - problem_time_sessions.last_beat_at))::int + 5
                 ),
                 idle_seconds = problem_time_sessions.idle_seconds + EXCLUDED.idle_seconds,
-                away_seconds = problem_time_sessions.away_seconds + EXCLUDED.away_seconds,
+                away_seconds = problem_time_sessions.away_seconds + LEAST(
+                    EXCLUDED.away_seconds,
+                    GREATEST(0, EXTRACT(EPOCH FROM now() - problem_time_sessions.last_beat_at))::int + 5
+                ),
                 last_beat_at = now()
              WHERE problem_time_sessions.contest_id = EXCLUDED.contest_id
                AND problem_time_sessions.problem_index = EXCLUDED.problem_index`,
