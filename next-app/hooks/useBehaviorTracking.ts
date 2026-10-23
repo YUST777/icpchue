@@ -107,6 +107,19 @@ export function useBehaviorTracking({
         };
     }, [track, ctx]);
 
+    // 3b. Statement copies (and the trap name issued with them)
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const d = (e as CustomEvent).detail || {};
+            track({
+                action: 'statement_copy', ...ctx(),
+                metadata: { len: Number(d.len) || 0, sample: !!d.sample, trap: d.trap || null, timeMs: Date.now() - enterTimeRef.current },
+            });
+        };
+        window.addEventListener('icpchue:statement-copy', handler);
+        return () => window.removeEventListener('icpchue:statement-copy', handler);
+    }, [track, ctx]);
+
     // 4. Copy detection
     useEffect(() => {
         const handler = () => {
