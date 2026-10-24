@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData(`leaderboard:sheets:public:v5:level${level}`, 600, async () => {
+        const data = await getCachedData(`leaderboard:sheets:public:v6:level${level}`, 600, async () => {
             return await fetchLeaderboard(false, level);
         });
 
@@ -78,7 +78,9 @@ type Level = 0 | 1;
  */
 function cohortClause(level: Level): string {
     if (level === 0) {
-        return `AND (
+        // Students who went on to the ECPC teams are ranked on Level 1 only.
+        return `AND NOT (u.id = ANY($1::bigint[]))
+        AND (
             u.role IN ('mentor', 'instructor', 'owner')
             OR EXISTS (
                 SELECT 1 FROM level0_training_registrations r
@@ -127,7 +129,7 @@ function safeDecrypt(value: string | null): string | null {
 }
 
 async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
-    const params = level === 1 ? [await ecpcTeamUserIds()] : [];
+    const params = [await ecpcTeamUserIds()];
     const shadowBanClause = isShadowBanned
         ? ''
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
@@ -138,6 +140,7 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
             u.id,
             u.email,
             u.profile_visibility,
+            u.show_public_profile,
             u.is_shadow_banned,
             a.name,
             uss.distinct_solved AS solved_count,
@@ -166,9 +169,15 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
         const rawName = decryptName(row.name);
         const displayName = rawName ? formatDisplayName(rawName) : 'Member';
 
+        // Link to the public profile only when it has one and the student left it public.
+        const localPart = (safeDecrypt(row.email) || '').split('@')[0];
+        const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
+        const studentId = isPublic && /^\d{7,10}$/.test(localPart) ? localPart : null;
+
         return {
             userId: row.id,
             username: displayName,
+            studentId,
             solvedCount: parseInt(row.solved_count) || 0,
             totalSubmissions: parseInt(row.total_submissions) || 0,
             acceptedCount: parseInt(row.accepted_count) || 0,
