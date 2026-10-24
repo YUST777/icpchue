@@ -30,7 +30,6 @@ async function run() {
         ACHIEVEMENTS.WELCOME,
         ACHIEVEMENTS.APPROVAL,
         ACHIEVEMENTS.SHEET_1,
-        ACHIEVEMENTS.RANK_500,
         ACHIEVEMENTS.INSTRUCTOR,
     ];
 

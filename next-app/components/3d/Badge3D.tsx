@@ -5,7 +5,7 @@ import { Component, Suspense, useEffect, useRef, useMemo, useState, type ReactNo
 import Image from 'next/image';
 import { Award } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Environment, Lightformer, Float, OrbitControls, Center, Html } from '@react-three/drei';
+import { useGLTF, Environment, Float, OrbitControls, Center, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import Loader from '@/components/common/Loader';
 
@@ -205,14 +205,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                             <Model path={url} scale={scale * 1.45} unlocked={unlocked} spin={spin} />
                         </Center>
                     </Float>
-                    {/* Reflections from in-code light panels: the "city" preset downloaded
-                        an HDR from an external CDN for every badge and failed when it was slow. */}
-                    <Environment resolution={64}>
-                        <Lightformer intensity={2} position={[0, 5, -9]} scale={[10, 10, 1]} />
-                        <Lightformer intensity={1.5} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[50, 2, 1]} />
-                        <Lightformer intensity={1.5} position={[5, 1, -1]} rotation-y={-Math.PI / 2} scale={[50, 2, 1]} />
-                        <Lightformer intensity={1} position={[0, -5, 5]} rotation-x={Math.PI / 2} scale={[20, 20, 1]} />
-                    </Environment>
+                    <Environment files="/hdr/potsdamer_platz_1k.hdr" />
                     <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 4} maxPolarAngle={Math.PI / 1.5} />
                 </Suspense>
             </Canvas>

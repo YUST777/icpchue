@@ -5,9 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Lock } from 'lucide-react';
 import { BadgeStage, BadgeTile } from '@/components/achievements/BadgeStage';
 import { useAchievements } from '@/hooks/useAchievements';
-import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
+import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES } from '@/lib/achievements/catalog';
 
-const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program', 'mentor'];
+const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
 
 interface BadgeCardProps {
     group?: string;
@@ -50,27 +50,25 @@ export default function AchievementsPage() {
         achievements?: { achievement_id: string }[];
     };
 
-    // Check unlock conditions
-    const codeforcesData = profile?.codeforces_data;
-    const codeforcesRating = codeforcesData?.rating ? parseInt(codeforcesData.rating, 10) : null;
-    const is500PtsUnlocked = codeforcesRating !== null && codeforcesRating >= 500;
 
     const { achievements: earned } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
-    const isSheet1Unlocked = profile?.sheet_1_solved === true;
     const isApprovalUnlocked = profile?.is_approval_unlocked === true;
 
     const achievements = [
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Milestones', id: 'approval', modelPath: '/3d/done_approvalcamp.glb', title: 'Level 0', description: 'Complete all sessions of Level 0', unlocked: isApprovalUnlocked, rarity: 'rare' as const },
-        { group: 'Milestones', id: 'sheet-1', modelPath: '/3d/sheet1.glb', title: 'Sheet 1 Solved', description: 'Solve all problems in Sheet 1', unlocked: isSheet1Unlocked, rarity: 'rare' as const },
-        { group: 'Milestones', id: '500pts', modelPath: '/3d/500pts.glb', title: '500+ Rating', description: 'Achieve 500+ rating on Codeforces', unlocked: is500PtsUnlocked, rarity: 'rare' as const },
-        { group: 'Milestones', id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
+        { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        ...LEVEL0_SHEET_BADGES.map(sheet => ({
+            group: 'Level 0 sheets', id: sheet.id, modelPath: `/3d/${sheet.id}.glb`, title: ACHIEVEMENT_META[sheet.id].name, description: ACHIEVEMENT_META[sheet.id].desc,
+            unlocked: earnedIds.has(sheet.id), rarity: ACHIEVEMENT_META[sheet.id].tier,
+        })),
+        { group: 'Board', id: 'mentor', modelPath: '/3d/mentor.glb', spin: true, title: ACHIEVEMENT_META.mentor.name, description: ACHIEVEMENT_META.mentor.desc, unlocked: earnedIds.has('mentor'), rarity: ACHIEVEMENT_META.mentor.tier },
         ...PROGRESS_BADGES.map(id => ({
-            group: id.startsWith('disciplined') || id === 'mentor' ? 'Discipline & mentoring' : 'Streaks',
+            group: id.startsWith('disciplined') ? 'Discipline' : 'Streaks',
             id, modelPath: `/3d/${id}.glb`, spin: true, title: ACHIEVEMENT_META[id].name, description: ACHIEVEMENT_META[id].desc,
             unlocked: earnedIds.has(id), rarity: ACHIEVEMENT_META[id].tier,
         })),
@@ -110,7 +108,7 @@ export default function AchievementsPage() {
 
                 {/* Badges, grouped */}
                 <div className="space-y-8">
-                    {['Milestones', 'Streaks', 'Discipline & mentoring'].map(group => {
+                    {['Milestones', 'Level 0 sheets', 'Streaks', 'Discipline', 'Board'].map(group => {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (

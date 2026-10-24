@@ -66,8 +66,7 @@ export async function POST(request: NextRequest) {
             // Check for achievements
             if (codeforcesData.rating && parseInt(String(codeforcesData.rating)) >= 500) {
                 try {
-                    const { grantAchievement, ACHIEVEMENTS, syncRank1Achievement } = await import('@/lib/services/achievements');
-                    await grantAchievement(userId, ACHIEVEMENTS.RANK_500);
+                    const { syncRank1Achievement } = await import('@/lib/services/achievements');
                     await syncRank1Achievement('refresh');
                 } catch {
                 }

@@ -15,8 +15,6 @@ const IMG = '/images/achievements/';
 export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}WELCOME.webp`, tier: 'common' },
     approval: { name: 'Approval Camp', desc: 'Completed all sessions of the Approval Camp', imageSrc: `${IMG}done_approvalcamp.webp`, tier: 'rare' },
-    'sheet-1': { name: 'Sheet 1 Solved', desc: 'Solved every problem in Sheet 1', imageSrc: `${IMG}sheet1acheavment.webp`, tier: 'rare' },
-    '500pts': { name: '500+ Rating', desc: 'Reached 500+ rating on Codeforces', imageSrc: `${IMG}500pts.webp`, tier: 'rare' },
     instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}instructor.webp`, tier: 'legendary' },
     'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}rank1_march.webp`, tier: 'legendary' },
 
@@ -31,5 +29,25 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     comeback: { name: 'Comeback Kid', desc: 'Came back and solved again after a week away', imageSrc: `${IMG}comeback.webp`, tier: 'common' },
     mentor: { name: 'Mentor', desc: 'Guides trainees at ICPC HUE', imageSrc: `${IMG}mentor.webp`, tier: 'legendary' },
 };
+
+// One badge per Level 0 topic sheet (the three "General" sheets have none).
+export const LEVEL0_SHEET_BADGES = [
+    { id: 'sheet-1', name: 'Data Types & Conditions' },
+    { id: 'sheet-2', name: 'Loops' },
+    { id: 'sheet-3', name: 'Arrays' },
+    { id: 'sheet-4', name: 'Strings' },
+    { id: 'sheet-5', name: 'Functions' },
+    { id: 'sheet-6', name: 'Math & Geometry' },
+    { id: 'sheet-7', name: 'Recursion' },
+] as const;
+
+for (const sheet of LEVEL0_SHEET_BADGES) {
+    ACHIEVEMENT_META[sheet.id] = {
+        name: sheet.name,
+        desc: `Solved every problem in ${sheet.name}`,
+        imageSrc: `${IMG}badges/${sheet.id}.webp`,
+        tier: 'rare',
+    };
+}
 
 export const STREAK_TIERS = [3, 7, 14, 30, 60] as const;

@@ -57,18 +57,10 @@ interface AchievementsWidgetProps {
 }
 
 export default function AchievementsWidget({ profile, user }: AchievementsWidgetProps) {
-    // Check if user has 500+ Codeforces points
     const typedProfile = profile as { codeforces_data?: { rating?: string }; is_approval_unlocked?: boolean; sheet_1_solved?: boolean } | undefined;
-    const codeforcesData = typedProfile?.codeforces_data;
-    const codeforcesRating = codeforcesData?.rating ? parseInt(codeforcesData.rating, 10) : null;
-    const is500PtsUnlocked = codeforcesRating !== null && codeforcesRating >= 500;
-    const hasCodeforcesLinked = profile?.codeforces_profile || codeforcesData;
 
     // Check if user has Instructor or Owner role
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
-
-    // Check if sheet 1 is solved (from profile data)
-    const isSheet1Unlocked = profile?.sheet_1_solved === true;
 
     // Check Approval (from backend flag)
     const isApprovalUnlocked = profile?.is_approval_unlocked === true;
@@ -77,8 +69,6 @@ export default function AchievementsWidget({ profile, user }: AchievementsWidget
     const achievements = [
         { id: 'welcome', imageSrc: '/images/achievements/WELCOME.webp', unlocked: true, rarity: 1 },
         { id: 'approval', imageSrc: '/images/achievements/done_approvalcamp.webp', unlocked: isApprovalUnlocked, rarity: 2 },
-        { id: 'sheet-1', imageSrc: '/images/achievements/sheet1acheavment.webp', unlocked: isSheet1Unlocked, rarity: 2 },
-        { id: '500pts', imageSrc: hasCodeforcesLinked ? '/images/achievements/500pts.webp' : null, unlocked: is500PtsUnlocked, rarity: 2 },
         { id: 'instructor', imageSrc: '/images/achievements/instructor.webp', unlocked: isInstructorUnlocked, rarity: 3 },
         { id: 'rank1-march-2026', imageSrc: '/images/achievements/rank1_march.webp', unlocked: (typedProfile as any)?.achievements?.some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 3 },
     ];
