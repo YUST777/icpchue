@@ -1,6 +1,7 @@
 import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
 
 export interface PublicSheetProblem {
     letter: string;
@@ -66,17 +67,22 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
     if (!/^\d{7,10}$/.test(studentId)) return { status: 'not_found' };
 
     return getCachedData(`public-profile:v2:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
-        // Some older accounts store the address unencrypted and their blind
-        // index was built before the current salt, so match either way.
         const email = `${studentId}@horus.edu.eg`;
-        const userResult = await query(
-            `SELECT id, role, profile_visibility, show_public_profile, created_at, application_id,
-                    profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags
-             FROM users WHERE email_blind_index = $1 OR lower(email) = $2
-             ORDER BY (email_blind_index = $1) DESC NULLS LAST
-             LIMIT 1`,
-            [createBlindIndex(email), email]
-        );
+        const columns = `id, role, profile_visibility, show_public_profile, created_at, application_id,
+                    profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags`;
+        let userResult = await query(`SELECT ${columns} FROM users WHERE email_blind_index = $1 LIMIT 1`, [createBlindIndex(email)]);
+
+        // A few accounts have a blind index that was built from a different
+        // spelling of the address. Fall back to comparing the decrypted email,
+        // globally rate-limited because it reads every account.
+        if (userResult.rows.length === 0 && (await rateLimit('profile-email-scan', 20, 60)).success) {
+            const all = await query('SELECT id, email FROM users');
+            const match = all.rows.find((u: { email: string | null }) => {
+                try { return (decrypt(u.email) || '').trim().toLowerCase() === email; } catch { return false; }
+            });
+            if (match) userResult = await query(`SELECT ${columns} FROM users WHERE id = $1`, [match.id]);
+        }
+
         if (userResult.rows.length === 0) return { status: 'not_found' };
 
         const user = userResult.rows[0];
