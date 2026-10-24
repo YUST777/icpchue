@@ -2,6 +2,7 @@ import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { formatDisplayName } from '@/lib/names';
 import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
 import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
@@ -164,7 +165,7 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
             status: 'ok',
             profile: {
                 studentId,
-                name,
+                name: name ? formatDisplayName(name) : '',
                 role: user.role,
                 faculty: application.faculty || null,
                 studentLevel: yearFromStudentId(studentId) || application.student_level || null,
