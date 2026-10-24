@@ -1,17 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    Clock, 
-    Calendar, 
-    Flame, 
-    MessageSquare, 
-    CheckCircle2, 
-    Edit3, 
-    Sparkles,
-    Check,
-    Lock
-} from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 
 interface DisciplineLog {
     id?: number;
@@ -83,7 +73,7 @@ function TimeInputCell({
         <input
             type="text" inputMode="decimal" value={text} placeholder=""
             onChange={handleChange} onBlur={handleBlur}
-            className="w-14 h-8 bg-black/40 border border-white/10 rounded-xl text-center font-mono font-bold text-xs text-[#E8C15A] focus:border-[#E8C15A] focus:outline-none transition-colors"
+            aria-label="Hours" className="w-14 h-8 bg-white/[0.04] border border-white/[0.08] rounded-lg text-center text-sm tabular-nums text-white placeholder-white/20 focus:border-[#E8C15A]/60 focus:outline-none transition-colors"
         />
     );
 }
@@ -124,16 +114,15 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
     const [summary, setSummary] = useState<{ total_hours: number; active_days: number; mentor_reviews: number; total_entries: number } | null>(null);
     const [loading, setLoading] = useState(true);
-    // Mentors open on the current week instead of eight weeks of rows.
+    // Open on the current week instead of eight weeks of rows.
     const [selectedWeek, setSelectedWeek] = useState<number | 'all'>(() => {
-        if (!isMentorView) return 'all';
         const today = new Date();
         for (let w = 1; w <= TOTAL_WEEKS; w++) {
             const start = getDayDate(w, 1), end = getDayDate(w, 7);
             end.setHours(23, 59, 59, 999);
             if (today >= start && today <= end) return w;
         }
-        return 'all';
+        return today < getDayDate(1, 1) ? 1 : 'all';
     });
     const [activeEditCell, setActiveEditCell] = useState<{ week: number; day: number; mode: 'day' | 'mentor' } | null>(null);
     const [tasksBuffer, setTasksBuffer] = useState('');
@@ -298,220 +287,162 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
     const now = new Date();
 
-    return (
-        <div className="space-y-4">
-            {/* ── Header ─────────────────────────────────── */}
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 md:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-1.5 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20"><Flame size={16} /></span>
-                            <h1 className="text-base md:text-lg font-bold text-white tracking-tight">
-                                {isMentorView ? `${traineeName || 'Trainee'}'s Self Discipline Tracker` : 'Self Discipline & Study Log'}
-                            </h1>
-                        </div>
-                        <p className="text-xs text-white/50 mt-1 max-w-xl">
-                            {isMentorView 
-                                ? 'Review daily practice hours, logged problem topics, and trainee self-reflection. Provide feedback directly on any day.'
-                                : 'Log your daily study hours, problem sets completed, and reflections. Your mentor reviews this schedule to guide your progress.'}
-                        </p>
-                    </div>
+    const consistency = Math.round(((summary?.active_days || 0) / (TOTAL_WEEKS * DAYS_PER_WEEK)) * 100);
+    const stats = [
+        { label: 'Practice', value: `${summary?.total_hours || 0}h` },
+        { label: 'Active days', value: String(summary?.active_days || 0) },
+        { label: 'Mentor notes', value: String(summary?.mentor_reviews || 0) },
+        { label: 'Consistency', value: `${consistency}%` },
+    ];
+    const emptyText = 'text-white/25';
 
-                    {/* Week Filter */}
-                    <div className="flex items-center gap-1.5 flex-wrap bg-[#0B0B0C] p-1.5 rounded-xl border border-white/10 self-start md:self-auto">
-                        <button onClick={() => setSelectedWeek('all')}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${selectedWeek === 'all' ? 'bg-[#E8C15A] text-black font-bold shadow-xs' : 'text-white/40 hover:text-white'}`}>
-                            All Weeks
-                        </button>
-                        {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map(w => (
-                            <button key={w} onClick={() => setSelectedWeek(w)}
-                                className={`px-2 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-bold shadow-xs' : 'text-white/40 hover:text-white'}`}>
-                                W{w}
-                            </button>
-                        ))}
-                    </div>
+    return (
+        <div className="space-y-5">
+            {/* ── Header ─────────────────────────────────── */}
+            <div className="space-y-4">
+                <div>
+                    <h1 className="text-xl font-semibold text-white tracking-tight">
+                        {isMentorView ? `${traineeName || 'Trainee'}'s study log` : 'Study log'}
+                    </h1>
+                    <p className="text-sm text-white/45 mt-1 max-w-xl">
+                        {isMentorView
+                            ? 'Daily hours, what they covered, and where they studied. Leave feedback on any day.'
+                            : 'Log your hours, what you covered, and where you studied. Your mentor reads this and replies.'}
+                    </p>
                 </div>
 
-                {/* KPIs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/[0.06]">
-                    <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-                        <div className="flex items-center justify-between text-white/40 text-[11px] mb-1"><span>Total Practice</span><Clock size={12} className="text-[#E8C15A]" /></div>
-                        <div className="text-lg font-bold font-mono text-[#E8C15A]">{summary?.total_hours || 0} <span className="text-xs font-normal text-white/40">hrs</span></div>
-                    </div>
-                    <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-                        <div className="flex items-center justify-between text-white/40 text-[11px] mb-1"><span>Active Days</span><Calendar size={12} className="text-emerald-400" /></div>
-                        <div className="text-lg font-bold font-mono text-emerald-400">{summary?.active_days || 0} <span className="text-xs font-normal text-white/40">days</span></div>
-                    </div>
-                    <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-                        <div className="flex items-center justify-between text-white/40 text-[11px] mb-1"><span>Mentor Feedback</span><MessageSquare size={12} className="text-sky-400" /></div>
-                        <div className="text-lg font-bold font-mono text-sky-400">{summary?.mentor_reviews || 0} <span className="text-xs font-normal text-white/40">notes</span></div>
-                    </div>
-                    <div className="bg-black/30 border border-white/5 rounded-xl p-3">
-                        <div className="flex items-center justify-between text-white/40 text-[11px] mb-1"><span>Consistency</span><Sparkles size={12} className="text-amber-400" /></div>
-                        <div className="text-lg font-bold font-mono text-white">{Math.round(((summary?.active_days || 0) / (TOTAL_WEEKS * 7)) * 100)}%</div>
-                    </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.02] divide-x divide-y sm:divide-y-0 divide-white/[0.06]">
+                    {stats.map(stat => (
+                        <div key={stat.label} className="px-4 py-3">
+                            <div className="text-lg font-semibold text-white tabular-nums">{stat.value}</div>
+                            <div className="text-xs text-white/40">{stat.label}</div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Week">
+                    {(['all', ...Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1)] as const).map(w => (
+                        <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => setSelectedWeek(w)}
+                            className={`shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-white text-black font-medium' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
+                            {w === 'all' ? 'All' : `Week ${w}`}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             {isMentorView && !loading && (summary?.total_entries || 0) === 0 ? (
-                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-8 text-center text-sm text-white/50">
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-8 text-center text-sm text-white/50">
                     {traineeName || 'This trainee'} has not logged any study days yet.
                 </div>
+            ) : loading ? (
+                <div className="py-16 text-center text-sm text-white/30">Loading…</div>
             ) : (
-            <>
-            {/* ── Table ──────────────────────────────────── */}
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[850px]">
-                        <thead>
-                            <tr className="border-b border-white/10 bg-black/60 text-[11px] uppercase tracking-wider font-mono text-white/60">
-                                <th className="p-3 w-20 text-center font-bold text-[#E8C15A] border-r border-white/10">Week</th>
-                                <th className="p-3 w-28 text-center border-r border-white/10">Day</th>
-                                <th className="p-3 w-28 text-center border-r border-white/10">Hours</th>
-                                <th className="p-3 w-1/3 border-r border-white/10">What You Completed</th>
-                                <th className="p-3 w-1/3 border-r border-white/10">Study References / Sources</th>
-                                <th className="p-3 w-1/4">Mentor Notes & Feedback</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.06] text-xs">
-                            {loading ? (
-                                <tr><td colSpan={6} className="p-12 text-center text-white/30 font-mono text-sm">Loading discipline data...</td></tr>
-                            ) : weeksToRender.map(weekNum => {
-                                const weekHours = Array.from({ length: DAYS_PER_WEEK }, (_, d) => {
-                                    const log = logsMap.get(`${weekNum}_${d + 1}`);
-                                    return (log && !log.is_missed) ? Number(log.total_hours || 0) : 0;
-                                }).reduce((a, b) => a + b, 0);
+                <div className="space-y-6">
+                    {weeksToRender.map(weekNum => {
+                        const weekHours = Array.from({ length: DAYS_PER_WEEK }, (_, d) => {
+                            const log = logsMap.get(`${weekNum}_${d + 1}`);
+                            return (log && !log.is_missed) ? Number(log.total_hours || 0) : 0;
+                        }).reduce((a, b) => a + b, 0);
+                        const range = `${formatDayDate(getDayDate(weekNum, 1))} – ${formatDayDate(getDayDate(weekNum, DAYS_PER_WEEK))}`;
 
-                                return (
-                                    <React.Fragment key={weekNum}>
-                                        {Array.from({ length: DAYS_PER_WEEK }, (_, dayIdx) => {
-                                            const dayNum = dayIdx + 1;
-                                            const key = `${weekNum}_${dayNum}`;
-                                            const log = logsMap.get(key);
-                                            const dayDate = getDayDate(weekNum, dayNum);
-                                            const displayDate = formatDayDate(dayDate);
+                        return (
+                            <section key={weekNum} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                                <header className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.06]">
+                                    <div className="flex items-baseline gap-3">
+                                        <h2 className="text-sm font-semibold text-white">Week {weekNum}</h2>
+                                        <span className="text-xs text-white/40">{range}</span>
+                                    </div>
+                                    <span className="text-xs text-white/50 tabular-nums">{Math.round(weekHours * 10) / 10}h</span>
+                                </header>
 
-                                            const unlockTs = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0).getTime();
-                                            const isUnlocked = isMentorView || Date.now() >= unlockTs;
-                                            const isToday = isSameDay(dayDate, now);
-                                            const isPast = dayDate.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-                                            // Students can edit TODAY and any PAST unlocked day; future days remain locked until midnight
-                                            const canStudentEdit = !isMentorView && isUnlocked;
+                                <div className="hidden md:grid grid-cols-[96px_72px_1fr_1fr_1fr] gap-4 px-4 py-2 text-xs text-white/35 border-b border-white/[0.06]">
+                                    <span>Day</span><span>Hours</span><span>Completed</span><span>References</span><span>Mentor</span>
+                                </div>
 
-                                            return (
-                                                <tr key={key} className={`transition-colors group ${
-                                                    !isUnlocked ? 'opacity-35 bg-black/20' 
-                                                    : isToday ? 'bg-[#E8C15A]/[0.03] hover:bg-[#E8C15A]/[0.06]' 
-                                                    : 'hover:bg-white/[0.02]'
-                                                }`}>
-                                                    {/* Week banner */}
-                                                    {dayIdx === 0 && (
-                                                        <td rowSpan={DAYS_PER_WEEK} className="p-3 bg-black/40 border-r border-white/10 text-center align-middle border-b border-white/10 shadow-inner">
-                                                            <div className="flex flex-col items-center justify-center gap-1.5 py-4">
-                                                                <span className="font-mono text-xs font-black tracking-wider text-[#E8C15A] [writing-mode:vertical-lr] rotate-180">WEEK {weekNum}</span>
-                                                                <span className="text-[10px] font-normal text-white/40 font-mono mt-2">{weekHours}h total</span>
-                                                            </div>
-                                                        </td>
+                                <ul className="divide-y divide-white/[0.06]">
+                                    {Array.from({ length: DAYS_PER_WEEK }, (_, dayIdx) => {
+                                        const dayNum = dayIdx + 1;
+                                        const key = `${weekNum}_${dayNum}`;
+                                        const log = logsMap.get(key);
+                                        const dayDate = getDayDate(weekNum, dayNum);
+                                        const unlockTs = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0).getTime();
+                                        const isUnlocked = isMentorView || Date.now() >= unlockTs;
+                                        const isToday = isSameDay(dayDate, now);
+                                        // Students edit today and any past day; future days unlock at midnight.
+                                        const canStudentEdit = !isMentorView && isUnlocked;
+                                        const sent = log?.submitted_at && (Boolean(log.done_tasks) || Boolean(log.student_comment) || (log.total_hours !== null && Number(log.total_hours) > 0));
+                                        const editable = canStudentEdit ? 'cursor-pointer hover:bg-white/[0.04]' : '';
+
+                                        return (
+                                            <li key={key} className={`grid md:grid-cols-[96px_72px_1fr_1fr_1fr] gap-x-4 gap-y-2 px-4 py-3 items-start ${!isUnlocked ? 'opacity-40' : ''} ${isToday ? 'bg-[#E8C15A]/[0.04]' : ''}`}>
+                                                <div className="flex md:block items-center justify-between gap-2">
+                                                    <div className={`text-sm ${isToday ? 'text-[#E8C15A] font-medium' : 'text-white/80'}`}>
+                                                        Day {dayNum}{isToday && <span className="ml-2 text-[11px] font-normal">Today</span>}
+                                                    </div>
+                                                    <div className="text-xs text-white/35 flex items-center gap-1.5">
+                                                        {formatDayDate(dayDate)}
+                                                        {!isUnlocked && <Lock size={10} aria-label="Locked" />}
+                                                    </div>
+                                                    {sent && (
+                                                        <div className="hidden md:block text-[11px] text-white/30 mt-1" title={new Date(log!.submitted_at!).toLocaleString()}>
+                                                            Sent {formatSubmittedAt(log!.submitted_at)}
+                                                        </div>
                                                     )}
+                                                </div>
 
-                                                    {/* Day cell */}
-                                                    <td className="p-2.5 text-center border-r border-white/[0.06] bg-black/20">
-                                                        <div className="flex flex-col items-center justify-center">
-                                                            <span className={`font-mono text-[11px] flex items-center justify-center gap-1 ${isToday ? 'text-[#E8C15A] font-bold' : 'text-white/70'}`}>
-                                                                Day {dayNum}
-                                                                {!isUnlocked && <Lock size={10} className="text-amber-400/80" />}
-                                                            </span>
-                                                            <span className="text-[10px] font-mono text-white/40 mt-0.5">{displayDate}</span>
-                                                            {log?.submitted_at && (Boolean(log.done_tasks) || Boolean(log.student_comment) || (log.total_hours !== null && Number(log.total_hours) > 0)) && (
-                                                                <span 
-                                                                    className="text-[9px] font-mono text-[#E8C15A]/70 mt-1 px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.04]"
-                                                                    title={`Logged/sent at: ${new Date(log.submitted_at).toLocaleString()}`}
-                                                                >
-                                                                    Sent {formatSubmittedAt(log.submitted_at)}
-                                                                </span>
-                                                            )}
+                                                <div>
+                                                    <span className="md:hidden text-[11px] text-white/35 mr-2">Hours</span>
+                                                    {!isUnlocked ? (
+                                                        <span className={emptyText}>—</span>
+                                                    ) : canStudentEdit ? (
+                                                        <TimeInputCell value={log?.total_hours} onSave={(h) => handleSaveLog(weekNum, dayNum, { total_hours: h, is_missed: false })} />
+                                                    ) : (
+                                                        <span className="text-sm text-white/70 tabular-nums">
+                                                            {log?.total_hours != null && log.total_hours !== '' ? `${log.total_hours}h` : <span className={emptyText}>—</span>}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {([
+                                                    { label: 'Completed', text: log?.done_tasks, add: 'Add what you covered' },
+                                                    { label: 'References', text: log?.student_comment, add: 'Add references' },
+                                                ] as const).map(col => (
+                                                    <div key={col.label} onClick={() => canStudentEdit && openDayModal(weekNum, dayNum)}
+                                                        className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${editable}`}>
+                                                        <span className="md:hidden block text-[11px] text-white/35 mb-0.5">{col.label}</span>
+                                                        <p className="text-sm text-white/80 whitespace-pre-wrap break-words line-clamp-3" dir="auto">
+                                                            {!isUnlocked ? <span className={emptyText}>Locked</span>
+                                                                : col.text || <span className={emptyText}>{canStudentEdit ? col.add : '—'}</span>}
+                                                        </p>
+                                                    </div>
+                                                ))}
+
+                                                <div onClick={() => isMentorView && openMentorModal(weekNum, dayNum)}
+                                                    className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${isMentorView ? 'cursor-pointer hover:bg-white/[0.04]' : ''}`}>
+                                                    <span className="md:hidden block text-[11px] text-white/35 mb-0.5">Mentor</span>
+                                                    {log?.mentor_comment ? (
+                                                        <div>
+                                                            <p className="text-sm text-white/85 whitespace-pre-wrap break-words line-clamp-3" dir="auto">{log.mentor_comment}</p>
+                                                            <p className="text-[11px] text-[#E8C15A]/70 mt-0.5">{log.mentor_name || 'Mentor'}</p>
                                                         </div>
-                                                    </td>
-
-                                                    {/* Hours cell */}
-                                                    <td className="p-2 text-center border-r border-white/[0.06]">
-                                                        {!isUnlocked ? (
-                                                            <div className="flex items-center justify-center text-white/20"><Lock size={12} /></div>
-                                                        ) : canStudentEdit ? (
-                                                            <div className="flex items-center justify-center">
-                                                                <TimeInputCell value={log?.total_hours} onSave={(h) => handleSaveLog(weekNum, dayNum, { total_hours: h, is_missed: false })} />
-                                                            </div>
-                                                        ) : (
-                                                            <span className="font-mono text-xs text-white/60 font-bold">
-                                                                {log?.total_hours != null && log.total_hours !== '' ? `${log.total_hours}h` : <span className="text-white/20">—</span>}
-                                                            </span>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Tasks cell */}
-                                                    <td className="p-2.5 border-r border-white/[0.06]">
-                                                        {!isUnlocked ? (
-                                                            <div className="min-h-[32px] p-1.5 flex items-center text-white/20 text-[11px] font-mono gap-1.5"><Lock size={11} className="text-white/30" /> Locked</div>
-                                                        ) : (
-                                                            <div onClick={() => canStudentEdit && openDayModal(weekNum, dayNum)}
-                                                                className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${canStudentEdit ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''}`}>
-                                                                <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2" dir="auto">
-                                                                    {log?.done_tasks || <span className="text-white/20 italic font-mono text-[11px]">{canStudentEdit ? '+ Add completed topics' : '—'}</span>}
-                                                                </div>
-                                                                {canStudentEdit && <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />}
-                                                            </div>
-                                                        )}
-                                                    </td>
-
-                                                    {/* References cell */}
-                                                    <td className="p-2.5 border-r border-white/[0.06]">
-                                                        {!isUnlocked ? (
-                                                            <div className="min-h-[32px] p-1.5 flex items-center text-white/20 text-[11px] font-mono gap-1.5"><Lock size={11} className="text-white/30" /> Locked</div>
-                                                        ) : (
-                                                            <div onClick={() => canStudentEdit && openDayModal(weekNum, dayNum)}
-                                                                className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${canStudentEdit ? 'hover:bg-white/[0.04] hover:border-white/10 cursor-pointer' : ''}`}>
-                                                                <div className="text-xs text-white/80 whitespace-pre-wrap break-words line-clamp-2" dir="auto">
-                                                                    {log?.student_comment || <span className="text-white/20 italic font-mono text-[11px]">{canStudentEdit ? '+ Add study references' : '—'}</span>}
-                                                                </div>
-                                                                {canStudentEdit && <Edit3 size={11} className="text-white/20 group-hover:text-white/40 shrink-0 mt-0.5" />}
-                                                            </div>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Mentor cell */}
-                                                    <td className="p-2.5">
-                                                        <div onClick={() => isMentorView && openMentorModal(weekNum, dayNum)}
-                                                            className={`min-h-[32px] p-1.5 rounded-lg border border-transparent transition-all flex items-start justify-between gap-2 ${isMentorView ? 'hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 cursor-pointer' : ''}`}>
-                                                            <div className="text-xs text-white/90 whitespace-pre-wrap break-words line-clamp-2" dir="auto">
-                                                                {log?.mentor_comment ? (
-                                                                    <div className="flex items-start gap-1.5">
-                                                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shrink-0">{log.mentor_name || 'Mentor'}</span>
-                                                                        <span>{log.mentor_comment}</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-white/20 italic font-mono text-[11px]">{isMentorView ? '+ Add mentor note' : 'Pending review'}</span>
-                                                                )}
-                                                            </div>
-                                                            {isMentorView && <Edit3 size={11} className="text-[#E8C15A]/40 group-hover:text-[#E8C15A] shrink-0 mt-0.5" />}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                                    ) : (
+                                                        <span className={`text-sm ${emptyText}`}>{isMentorView ? 'Add feedback' : 'Awaiting review'}</span>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </section>
+                        );
+                    })}
                 </div>
-            </div>
-            </>
             )}
 
             {/* ── Day Edit Modal (2 fields: Tasks + References) ── */}
             {activeEditCell && activeEditCell.mode === 'day' && (
                 <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 animate-scale-in" onClick={e => e.stopPropagation()}>
                         {/* Header */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -530,7 +461,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
                         {/* Field 1: What you completed */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-mono font-bold text-white/50 uppercase tracking-wider">What did you complete?</label>
+                            <label className="text-[10px] text-white/50">What did you complete?</label>
                             <textarea
                                 value={tasksBuffer}
                                 onChange={e => handleTasksChange(e.target.value)}
@@ -543,7 +474,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
                         {/* Field 2: References */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-mono font-bold text-white/50 uppercase tracking-wider">References you studied from</label>
+                            <label className="text-[10px] text-white/50">References you studied from</label>
                             <textarea
                                 value={refsBuffer}
                                 onChange={e => handleRefsChange(e.target.value)}
@@ -557,7 +488,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                         {/* Footer */}
                         <div className="flex items-center justify-end pt-1">
                             <button type="button" onClick={closeModal}
-                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-[0_2px_10px_rgba(232,193,90,0.2)] flex items-center gap-1.5 cursor-pointer active:scale-95">
+                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
                                 <Check size={12} /> Done
                             </button>
                         </div>
@@ -568,7 +499,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             {/* ── Mentor Modal (single field) ── */}
             {activeEditCell && activeEditCell.mode === 'mentor' && (
                 <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-md border border-[#E8C15A]/20">W{activeEditCell.week} · Day {activeEditCell.day}</span>
@@ -586,7 +517,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                         />
                         <div className="flex items-center justify-end pt-1">
                             <button type="button" onClick={closeModal}
-                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all shadow-[0_2px_10px_rgba(232,193,90,0.2)] flex items-center gap-1.5 cursor-pointer active:scale-95">
+                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
                                 <Check size={12} /> Done
                             </button>
                         </div>

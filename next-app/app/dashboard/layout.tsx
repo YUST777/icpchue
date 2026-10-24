@@ -10,7 +10,7 @@ import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, Shield, GraduationCap, Flame
+    ChevronRight, ChevronLeft, GraduationCap, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
@@ -251,11 +251,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname === '/dashboard/discipline') return 'Self Discipline';
         if (pathname === '/dashboard/mentor' || pathname.startsWith('/dashboard/mentor/')) return 'Mentor Panel';
         if (pathname === '/dashboard/settings') return 'Settings';
-        if (pathname === '/dashboard/admin') return 'Admin';
         return 'Dashboard';
     };
 
-    const isAdmin = user?.role === 'owner' || user?.role === 'instructor';
     const isMentor = user?.role === 'owner' || user?.role === 'instructor' || user?.role === 'mentor';
 
     const activePage = getActivePage();
@@ -408,15 +406,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                                 className="text-lg font-medium"
                                             />
                                         )}
-                                        {isAdmin && (
-                                            <NavItem
-                                                icon={<Shield size={32} />}
-                                                label="Admin"
-                                                active={activePage === 'Admin'}
-                                                onClick={() => handleNav('/dashboard/admin')}
-                                                className="text-lg font-medium"
-                                            />
-                                        )}
                                     </nav>
                                 </div>
 
@@ -493,9 +482,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} badge="NEW" />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
-                            )}
-                            {isAdmin && (
-                                <NavItem id="onboarding-nav-admin" collapsed={isSidebarCollapsed} icon={<Shield size={20} />} label="Admin" active={activePage === 'Admin'} onClick={() => handleNav('/dashboard/admin')} />
                             )}
                         </nav>
                     </div>
