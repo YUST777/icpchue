@@ -1,7 +1,8 @@
 'use client';
 
 
-import { Suspense, useEffect, useRef, useMemo, useState } from 'react';
+import { Component, Suspense, useEffect, useRef, useMemo, useState, type ReactNode } from 'react';
+import { Award } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Environment, Lightformer, Float, OrbitControls, Center, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -65,6 +66,36 @@ function useNearViewport<T extends Element>() {
     return { ref, seen, visible };
 }
 
+let webglSupport: boolean | null = null;
+
+/** One probe per page load: browsers with hardware acceleration off cannot create a context at all. */
+function hasWebGL(): boolean {
+    if (webglSupport !== null) return webglSupport;
+    try {
+        const canvas = document.createElement('canvas');
+        webglSupport = Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+    } catch {
+        webglSupport = false;
+    }
+    return webglSupport;
+}
+
+function BadgeFallback() {
+    return (
+        <div className="absolute inset-0 flex items-center justify-center text-[#E8C15A]/70">
+            <Award size={40} strokeWidth={1.5} />
+        </div>
+    );
+}
+
+/** If the scene still fails to start, show the static badge instead of erroring the page. */
+class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+    state = { failed: false };
+    static getDerivedStateFromError() { return { failed: true }; }
+    componentDidCatch() { webglSupport = false; }
+    render() { return this.state.failed ? <BadgeFallback /> : this.props.children; }
+}
+
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
 
@@ -72,7 +103,10 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
         <div ref={ref} className={`w-full h-full min-h-[160px] relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
             {!seen ? (
                 <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
+            ) : !hasWebGL() ? (
+                <BadgeFallback />
             ) : (
+            <SceneBoundary>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
@@ -104,6 +138,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                     <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 4} maxPolarAngle={Math.PI / 1.5} />
                 </Suspense>
             </Canvas>
+            </SceneBoundary>
             )}
         </div>
     );
