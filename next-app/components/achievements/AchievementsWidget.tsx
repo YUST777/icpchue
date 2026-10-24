@@ -62,15 +62,11 @@ export default function AchievementsWidget({ profile, user }: AchievementsWidget
     // Check if user has Instructor or Owner role
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
 
-    // Check Approval (from backend flag)
-    const isApprovalUnlocked = profile?.is_approval_unlocked === true;
-
     // Rarity priority: legendary (3) > rare (2) > common (1)
     const achievements = [
-        { id: 'welcome', imageSrc: '/images/achievements/WELCOME.webp', unlocked: true, rarity: 1 },
-        { id: 'approval', imageSrc: '/images/achievements/done_approvalcamp.webp', unlocked: isApprovalUnlocked, rarity: 2 },
-        { id: 'instructor', imageSrc: '/images/achievements/instructor.webp', unlocked: isInstructorUnlocked, rarity: 3 },
-        { id: 'rank1-march-2026', imageSrc: '/images/achievements/rank1_march.webp', unlocked: (typedProfile as any)?.achievements?.some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 3 },
+        { id: 'welcome', imageSrc: '/images/achievements/badges/welcome.webp', unlocked: true, rarity: 1 },
+        { id: 'instructor', imageSrc: '/images/achievements/badges/instructor.webp', unlocked: isInstructorUnlocked, rarity: 3 },
+        { id: 'rank1-march-2026', imageSrc: '/images/achievements/badges/rank1-march-2026.webp', unlocked: (typedProfile as any)?.achievements?.some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 3 },
     ];
 
     // Separate unlocked and locked achievements

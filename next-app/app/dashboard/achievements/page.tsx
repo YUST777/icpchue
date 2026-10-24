@@ -55,11 +55,9 @@ export default function AchievementsPage() {
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
-    const isApprovalUnlocked = profile?.is_approval_unlocked === true;
 
     const achievements = [
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
-        { group: 'Milestones', id: 'approval', modelPath: '/3d/done_approvalcamp.glb', title: 'Level 0', description: 'Complete all sessions of Level 0', unlocked: isApprovalUnlocked, rarity: 'rare' as const },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
         ...LEVEL0_SHEET_BADGES.map(sheet => ({

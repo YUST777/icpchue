@@ -13,9 +13,8 @@ export interface AchievementMeta {
 const IMG = '/images/achievements/';
 
 export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
-    welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}WELCOME.webp`, tier: 'common' },
-    approval: { name: 'Approval Camp', desc: 'Completed all sessions of the Approval Camp', imageSrc: `${IMG}done_approvalcamp.webp`, tier: 'rare' },
-    instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}instructor.webp`, tier: 'legendary' },
+    welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}badges/welcome.webp`, tier: 'common' },
+    instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}badges/instructor.webp`, tier: 'legendary' },
     'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}rank1_march.webp`, tier: 'legendary' },
 
     'hello-world': { name: 'Hello, World', desc: 'Your first accepted solution', imageSrc: `${IMG}hello-world.webp`, tier: 'common' },
@@ -27,7 +26,7 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     'disciplined-7': { name: 'Disciplined', desc: 'Logged your study 7 days in a row', imageSrc: `${IMG}disciplined-7.webp`, tier: 'rare' },
     'disciplined-program': { name: 'Iron Discipline', desc: 'Logged every day of the 8-week program', imageSrc: `${IMG}disciplined-program.webp`, tier: 'legendary' },
     comeback: { name: 'Comeback Kid', desc: 'Came back and solved again after a week away', imageSrc: `${IMG}comeback.webp`, tier: 'common' },
-    mentor: { name: 'Mentor', desc: 'Guides trainees at ICPC HUE', imageSrc: `${IMG}mentor.webp`, tier: 'legendary' },
+    mentor: { name: 'Mentor', desc: 'Guides trainees at ICPC HUE', imageSrc: `${IMG}badges/mentor.webp`, tier: 'legendary' },
 };
 
 // One badge per Level 0 topic sheet (the three "General" sheets have none).
