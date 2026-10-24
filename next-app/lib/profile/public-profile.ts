@@ -66,11 +66,16 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
     if (!/^\d{7,10}$/.test(studentId)) return { status: 'not_found' };
 
     return getCachedData(`public-profile:v2:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
+        // Some older accounts store the address unencrypted and their blind
+        // index was built before the current salt, so match either way.
+        const email = `${studentId}@horus.edu.eg`;
         const userResult = await query(
             `SELECT id, role, profile_visibility, show_public_profile, created_at, application_id,
                     profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags
-             FROM users WHERE email_blind_index = $1`,
-            [createBlindIndex(`${studentId}@horus.edu.eg`)]
+             FROM users WHERE email_blind_index = $1 OR lower(email) = $2
+             ORDER BY (email_blind_index = $1) DESC NULLS LAST
+             LIMIT 1`,
+            [createBlindIndex(email), email]
         );
         if (userResult.rows.length === 0) return { status: 'not_found' };
 
