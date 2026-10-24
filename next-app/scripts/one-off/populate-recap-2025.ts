@@ -2,29 +2,46 @@
  * Populate Recap 2025 Table
  * 
  * This script calculates and inserts recap data for all users into the recap_2025 table.
- * Run with: node --env-file=.env.local scripts/populate-recap-2025.js
+ * Run this script once to create a snapshot of 2025 performance data.
+ * 
+ * Usage: npx ts-node scripts/populate-recap-2025.ts
  */
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { Pool } = require('pg');
-const problemsMetadata = require('../data/problems-metadata.json');
-
-// Database connection
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-});
-
-async function query(text, params) {
-    return pool.query(text, params);
-}
+import { query } from '../../lib/db/db';
+import problemsMetadata from '../../data/problems-metadata.json';
 
 // Create a lookup map for problem metadata
 const problemMetadataMap = new Map(
     problemsMetadata.problems.map(p => [`sheet-1-${p.id}`, p])
 );
 
-async function calculateUserRecap(userId, user) {
+interface RecapData {
+    student_id: string;
+    username: string;
+    avatar_url: string | null;
+    days_active: number;
+    total_solved: number;
+    total_submissions: number;
+    top_problem: string;
+    top_problem_attempts: number;
+    rank_percentile: number;
+    max_streak: number;
+    preferred_language: string;
+    top_tags: { tag: string; count: number }[];
+    difficulty_solved: { easy: number; medium: number; hard: number };
+    achievements: { id: string; title: string; image: string }[];
+}
+
+interface DbUser {
+    id: string;
+    created_at: string;
+    email: string;
+    student_id?: string;
+    name?: string;
+    avatar_url?: string;
+}
+
+async function calculateUserRecap(userId: string, user: DbUser): Promise<RecapData | null> {
     try {
         const displayName = user.name || user.email.split('@')[0];
 
@@ -65,7 +82,7 @@ async function calculateUserRecap(userId, user) {
         `, [userId]);
 
         // Calculate top tags from solved problems
-        const tagCounts = {};
+        const tagCounts: Record<string, number> = {};
         const difficultyCounts = { easy: 0, medium: 0, hard: 0 };
 
         for (const row of solvedProblemsRes.rows) {
@@ -76,7 +93,7 @@ async function calculateUserRecap(userId, user) {
                     tagCounts[tag] = (tagCounts[tag] || 0) + 1;
                 }
                 if (meta.difficulty && meta.difficulty in difficultyCounts) {
-                    difficultyCounts[meta.difficulty]++;
+                    difficultyCounts[meta.difficulty as keyof typeof difficultyCounts]++;
                 }
             }
         }
@@ -111,7 +128,7 @@ async function calculateUserRecap(userId, user) {
             ORDER BY sub_date ASC
         `, [userId]);
 
-        const dates = datesRes.rows.map(r => new Date(r.sub_date).getTime());
+        const dates = datesRes.rows.map((r: { sub_date: string }) => new Date(r.sub_date).getTime());
         let maxStreak = 0;
         let currentStreak = 0;
         let lastTime = 0;
@@ -142,27 +159,8 @@ async function calculateUserRecap(userId, user) {
             achievements.push({ id: 'sheet1', title: 'Sheet 1 Champion', image: '/images/achievements/sheet1acheavment.webp' });
         }
 
-        // Instructor Achievement (based on role)
-        // Need to check how role is stored. Usually u.role
-        // The query needs to select u.role.
-        if (user.role === 'instructor' || user.role === 'owner') {
-            achievements.push({ id: 'instructor', title: 'Instructor', image: '/images/achievements/instructor.webp' });
-        }
-
-        // 500+ Points Achievement (Codeforces Rating)
-        // Need to check a.codeforces_data which is JSON
-        if (user.codeforces_data) {
-            try {
-                const cfData = typeof user.codeforces_data === 'string' ? JSON.parse(user.codeforces_data) : user.codeforces_data;
-                const rating = cfData.rating || cfData.maxRating || 0;
-                if (rating >= 500) {
-                    achievements.push({ id: '500pts', title: '500+ Rating', image: '/images/achievements/500pts.webp' });
-                }
-            } catch { }
-        }
-
         return {
-            student_id: user.student_id,
+            student_id: user.student_id || 'unknown',
             username: displayName,
             avatar_url: user.avatar_url || null,
             days_active: daysActive,
@@ -186,12 +184,9 @@ async function calculateUserRecap(userId, user) {
 async function main() {
     console.log('🚀 Starting Recap 2025 population...\n');
 
-    // Get all users with application data
-    // We need u.role (from users table?) or a.role?
-    // Let's check schema. Usually role is on users.
-    // Also need codeforces_data from applications table?
+    // Get all users with applications
     const usersRes = await query(`
-        SELECT u.id, u.created_at, u.email, u.role, a.name, a.student_id, a.codeforces_data
+        SELECT u.id, u.created_at, u.email, a.name, a.student_id, a.avatar_url
         FROM users u 
         JOIN applications a ON u.application_id = a.id 
         WHERE a.student_id IS NOT NULL
@@ -255,7 +250,7 @@ async function main() {
                 console.log(`  ✅ Saved: ${recap.total_solved} solved, ${recap.max_streak} day streak`);
                 successCount++;
             } catch (err) {
-                console.error(`  ❌ Failed to save:`, err.message);
+                console.error(`  ❌ Failed to save:`, err);
                 errorCount++;
             }
         } else {
@@ -265,12 +260,7 @@ async function main() {
     }
 
     console.log(`\n🎉 Done! ${successCount} success, ${errorCount} errors`);
-    await pool.end();
     process.exit(0);
 }
 
-main().catch(err => {
-    console.error('Fatal error:', err);
-    pool.end();
-    process.exit(1);
-});
+main().catch(console.error);

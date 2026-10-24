@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 // Manually define curriculum to avoid TS compilation issues

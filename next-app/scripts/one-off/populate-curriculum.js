@@ -13,7 +13,7 @@ const { Pool } = require('pg');
 const dotenv = require('dotenv');
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Database connection
 let connectionString = process.env.DATABASE_URL;
@@ -32,7 +32,7 @@ const pool = new Pool({
 });
 
 // Path to curriculum markdown files
-const CURRICULUM_DIR = path.join(__dirname, '../../../scrape/icpchue-curriculum');
+const CURRICULUM_DIR = path.join(__dirname, '../../../../scrape/icpchue-curriculum');
 
 /**
  * Parse a curriculum markdown file

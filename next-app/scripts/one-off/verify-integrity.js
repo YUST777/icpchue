@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Load environment variables from ../.env
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Allow self-signed certs (needed for some Supabase/AWS setups depending on local env)
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

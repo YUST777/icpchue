@@ -2,7 +2,7 @@ const { Client } = require('pg');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const level1Data = {
