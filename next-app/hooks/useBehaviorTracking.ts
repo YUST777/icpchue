@@ -151,11 +151,11 @@ export function useBehaviorTracking({
                 track({ action: 'user_idle', ...ctx(), metadata: { idleMs, timeMs: Date.now() - enterTimeRef.current } });
             }
         };
-        idleTimerRef.current = setInterval(check, 30000);
+        idleTimerRef.current = setInterval(check, 120000);
         return () => { if (idleTimerRef.current) clearInterval(idleTimerRef.current); };
     }, [track, ctx]);
 
-    // 7. Heartbeat — periodic snapshot every 60s (skip when tab hidden)
+    // 7. Heartbeat — periodic snapshot every 5m (skip when tab hidden)
     useEffect(() => {
         heartbeatRef.current = setInterval(() => {
             if (document.hidden) return;
@@ -170,7 +170,7 @@ export function useBehaviorTracking({
                     scrollDepth: maxScrollDepthRef.current,
                 },
             });
-        }, 60000);
+        }, 300000);
         return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
     }, [track, ctx]);
 
