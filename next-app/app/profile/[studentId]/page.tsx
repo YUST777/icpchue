@@ -45,7 +45,7 @@ export default async function PublicProfilePage({ params }: Props) {
     return (
         <div className="ui-compact min-h-screen bg-[#0B0B0C] text-white">
             <RedirectIfSignedIn to={`/dashboard/profile/${studentId}`} />
-            <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6">
+            <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6">
                 <div className="flex items-center justify-between">
                     <Link href="/" className="text-sm font-semibold tracking-tight text-[#E8C15A]">ICPC HUE</Link>
                     <Link href="/apply" className="text-sm text-white/50 hover:text-white transition-colors">Join the training →</Link>
