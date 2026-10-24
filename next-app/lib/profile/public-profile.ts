@@ -2,6 +2,7 @@ import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
 export interface PublicSheetProblem {
     letter: string;
@@ -38,6 +39,7 @@ export interface PublicProfile {
     picture: string | null;
     codeforces: { handle: string; rating?: number; maxRating?: number; rank?: string } | null;
     leetcode: string | null;
+    socials: SocialLinks;
     stats: { solved: number; sheetsStarted: number; sheetsDone: number; currentStreak: number; maxStreak: number; activeDays: number };
     sheets: PublicSheet[];
     achievements: PublicAchievement[];
@@ -63,13 +65,21 @@ const RARITY_ORDER = { legendary: 3, rare: 2, common: 1 } as const;
  * Everything the public profile page, its API and its share image show.
  * Profiles flagged for cheating keep their identity but never list solved work.
  */
+// The first three digits of a Horus student ID are the intake year
+// (824 = 2024 intake). For the 2026/27 year that maps to these levels.
+const INTAKE_LEVEL: Record<string, string> = { '824': 'Level 3', '825': 'Level 2', '826': 'Level 1' };
+function yearFromStudentId(studentId: string): string | null {
+    return INTAKE_LEVEL[studentId.slice(0, 3)] ?? null;
+}
+
 export async function getPublicProfile(studentId: string): Promise<PublicProfileResult> {
     if (!/^\d{7,10}$/.test(studentId)) return { status: 'not_found' };
 
-    return getCachedData(`public-profile:v2:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
+    return getCachedData(`public-profile:v3:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
         const email = `${studentId}@horus.edu.eg`;
         const columns = `id, role, profile_visibility, show_public_profile, created_at, application_id,
-                    profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags`;
+                    profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags,
+                    to_jsonb(users) -> 'social_links' AS social_links`;
         let userResult = await query(`SELECT ${columns} FROM users WHERE email_blind_index = $1 LIMIT 1`, [createBlindIndex(email)]);
 
         // A few accounts have a blind index that was built from a different
@@ -161,11 +171,12 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
                 name,
                 role: user.role,
                 faculty: application.faculty || null,
-                studentLevel: application.student_level || null,
+                studentLevel: yearFromStudentId(studentId) || application.student_level || null,
                 joinedAt: user.created_at ? new Date(user.created_at).toISOString() : null,
                 picture: user.profile_picture || null,
                 codeforces: cfHandle ? { handle: cfHandle, rating: cf?.rating, maxRating: cf?.maxRating, rank: cf?.rank } : null,
                 leetcode,
+                socials: { ...(leetcode && toHandle(leetcode) ? { leetcode: toHandle(leetcode)! } : {}), ...cleanSocials(user.social_links) },
                 stats: {
                     solved: sheets.reduce((n, s) => n + s.solved, 0),
                     sheetsStarted: sheets.length,
