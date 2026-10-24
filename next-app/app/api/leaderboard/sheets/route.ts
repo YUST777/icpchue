@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData('leaderboard:sheets:public:v2', 600, async () => {
+        const data = await getCachedData('leaderboard:sheets:public:v3', 600, async () => {
             return await fetchLeaderboard(false);
         });
 
@@ -88,6 +88,7 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         INNER JOIN user_solve_stats uss ON u.id = uss.user_id
         LEFT JOIN applications a ON u.application_id = a.id
         WHERE uss.distinct_solved > 0
+          AND uss.season_year = (SELECT MAX(season_year) FROM user_solve_stats)
           AND (
             u.is_shadow_banned = TRUE 
             OR u.show_on_sheets_leaderboard = TRUE 
