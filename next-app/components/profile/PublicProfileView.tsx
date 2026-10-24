@@ -2,12 +2,43 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { Check, ChevronDown, Code, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
 import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
 import { SOCIALS, type SocialLinks } from '@/lib/profile/socials';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
+
+const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
+
+const ACHIEVEMENT_MODELS: Record<string, { modelPath: string; scale?: number; spin?: boolean }> = {
+    welcome: { modelPath: '/3d/WELCOME.glb', scale: 2, spin: true },
+    instructor: { modelPath: '/3d/instructor.glb', scale: 2, spin: true },
+    'rank1-march-2026': { modelPath: '/3d/rank1_march.glb', scale: 1.5, spin: true },
+    mentor: { modelPath: '/3d/mentor.glb', scale: 2, spin: true },
+    'hello-world': { modelPath: '/3d/hello-world.glb', scale: 2, spin: true },
+    'streak-3': { modelPath: '/3d/streak-3.glb', scale: 2, spin: true },
+    'streak-7': { modelPath: '/3d/streak-7.glb', scale: 2, spin: true },
+    'streak-14': { modelPath: '/3d/streak-14.glb', scale: 2, spin: true },
+    'streak-30': { modelPath: '/3d/streak-30.glb', scale: 2, spin: true },
+    'streak-60': { modelPath: '/3d/streak-60.glb', scale: 2, spin: true },
+    'disciplined-7': { modelPath: '/3d/disciplined-7.glb', scale: 2, spin: true },
+    'disciplined-program': { modelPath: '/3d/disciplined-program.glb', scale: 2, spin: true },
+    comeback: { modelPath: '/3d/comeback.glb', scale: 2, spin: true },
+    bughunter: { modelPath: '/3d/bughunter.glb', scale: 2, spin: true },
+    'sheet-1': { modelPath: '/3d/sheet-1.glb', scale: 2, spin: true },
+    'sheet-2': { modelPath: '/3d/sheet-2.glb', scale: 2, spin: true },
+    'sheet-3': { modelPath: '/3d/sheet-3.glb', scale: 2, spin: true },
+    'sheet-4': { modelPath: '/3d/sheet-4.glb', scale: 2, spin: true },
+    'sheet-5': { modelPath: '/3d/sheet-5.glb', scale: 2, spin: true },
+    'sheet-6': { modelPath: '/3d/sheet-6.glb', scale: 2, spin: true },
+    'sheet-7': { modelPath: '/3d/sheet-7.glb', scale: 2, spin: true },
+};
+
+function getBadgeModel(id: string) {
+    return ACHIEVEMENT_MODELS[id] || { modelPath: `/3d/${id}.glb`, scale: 2, spin: true };
+}
 
 // Global marketing CSS restyles h1-h3, p and section, so this view sticks to
 // divs/spans and sets every size itself.
@@ -178,21 +209,32 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
             {/* Achievements */}
             {profile.achievements.length > 0 && (
                 <div className={`${CARD} col-span-2 md:col-span-4`}>
-                    <div className="mb-4"><Label icon={<Trophy size={12} />}>Achievements</Label></div>
-                    <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                        {profile.achievements.map(a => (
-                            <li key={a.id} title={a.description} className="rounded-xl border border-white/[0.06] bg-black/20 overflow-hidden">
-                                {ACHIEVEMENT_IMAGES[a.id] && (
-                                    <div className="relative aspect-square">
-                                        <Image src={ACHIEVEMENT_IMAGES[a.id]} alt="" fill sizes="160px" className="object-cover" />
+                    <div className="flex items-center justify-between mb-4">
+                        <Label icon={<Trophy size={12} />}>Achievements</Label>
+                        <span className="text-[11px] font-mono text-white/40">{profile.achievements.length} Unlocked · 3D Interactive</span>
+                    </div>
+                    <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {profile.achievements.map(a => {
+                            const badgeModel = getBadgeModel(a.id);
+                            return (
+                                <li key={a.id} title={a.description} className="rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-all group">
+                                    <div className="relative aspect-square w-full min-h-[140px]">
+                                        <Badge3D
+                                            modelPath={badgeModel.modelPath}
+                                            scale={badgeModel.scale}
+                                            spin={badgeModel.spin}
+                                            unlocked={true}
+                                            compact
+                                            fallbackSrc={ACHIEVEMENT_IMAGES[a.id]}
+                                        />
                                     </div>
-                                )}
-                                <div className="px-2.5 py-2">
-                                    <div className="text-xs font-medium text-white truncate">{a.name}</div>
-                                    <div className={`text-[10px] font-mono uppercase tracking-wider mt-0.5 ${RARITY_TEXT[a.rarity]}`}>{a.rarity}</div>
-                                </div>
-                            </li>
-                        ))}
+                                    <div className="px-2.5 py-2 mt-auto border-t border-white/[0.06] bg-white/[0.02]">
+                                        <div className="text-xs font-medium text-white truncate" title={a.name}>{a.name}</div>
+                                        <div className={`text-[10px] font-mono uppercase tracking-wider mt-0.5 ${RARITY_TEXT[a.rarity]}`}>{a.rarity}</div>
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             )}
