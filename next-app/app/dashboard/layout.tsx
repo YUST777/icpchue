@@ -180,12 +180,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         fetchNotifications();
 
-        // Poll every 30s, but only when tab is visible
+        // Poll every 3m, but only when tab is visible (saves serverless invocations)
         let interval: ReturnType<typeof setInterval> | null = null;
 
         const startPolling = () => {
             if (interval) return;
-            interval = setInterval(fetchNotifications, 30000);
+            interval = setInterval(fetchNotifications, 180000);
         };
         const stopPolling = () => {
             if (interval) { clearInterval(interval); interval = null; }
