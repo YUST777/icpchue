@@ -19,7 +19,7 @@ interface ModelProps {
     spin?: boolean;
 }
 
-function Model({ path, scale = 1, spin = false }: ModelProps) {
+export function Model({ path, scale = 1, spin = false }: ModelProps) {
     const { scene } = useGLTF(path, DRACO_PATH);
     // Clone scene to avoid mutating the shared cache
     const clone = useMemo(() => scene.clone(), [scene]);
@@ -81,7 +81,7 @@ let webglOk = false;
  * The probe context is released straight away so it does not eat into the
  * browser's small per-page limit.
  */
-function hasWebGL(): boolean {
+export function hasWebGL(): boolean {
     if (webglOk) return true;
     try {
         const canvas = document.createElement('canvas');
@@ -98,7 +98,7 @@ function hasWebGL(): boolean {
 const modelUrls = new Map<string, Promise<string>>();
 
 /** Downloads a model while reporting 0-100 so the tile can show real progress. */
-function loadModel(path: string, onProgress: (pct: number | null) => void): Promise<string> {
+export function loadModel(path: string, onProgress: (pct: number | null) => void): Promise<string> {
     let pending = modelUrls.get(path);
     if (!pending) {
         pending = (async () => {
