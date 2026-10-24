@@ -6,7 +6,6 @@ export const ACHIEVEMENTS = {
     WELCOME: 'welcome',
     APPROVAL: 'approval',
     SHEET_1: 'sheet-1',
-    RANK_500: '500pts',
     INSTRUCTOR: 'instructor',
     RANK1_MARCH_2026: 'rank1-march-2026'
 };
@@ -83,7 +82,20 @@ export async function checkProgressAchievements(userId: number, role?: string) {
         ),
     ]);
 
+    // A Level 0 topic sheet (A-G) is done when every problem in it is solved.
+    const sheets = await query(
+        `SELECT s.sheet_number
+         FROM curriculum_sheets s
+         JOIN curriculum_levels l ON l.id = s.level_id AND l.level_number = 0
+         WHERE s.sheet_number BETWEEN 1 AND 7
+           AND s.total_problems > 0
+           AND (SELECT COUNT(DISTINCT up.problem_id) FROM user_progress up
+                 WHERE up.user_id = $1 AND up.status = 'SOLVED' AND up.sheet_id = s.id::text) >= s.total_problems`,
+        [userId]
+    );
+
     const earned: string[] = [];
+    for (const row of sheets.rows) earned.push(`sheet-${row.sheet_number}`);
     if (solved.rows[0]?.ok) earned.push('hello-world');
     const best = Number(streak.rows[0]?.best || 0);
     for (const n of STREAK_TIERS) if (best >= n) earned.push(`streak-${n}`);
