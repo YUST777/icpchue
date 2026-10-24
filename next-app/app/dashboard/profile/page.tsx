@@ -54,14 +54,16 @@ export default function ProfilePage() {
         const fetchRank = async () => {
             try {
                 // Cache rank for 5 minutes
-                const lbData = await fetchWithCache<any>('/api/leaderboard/sheets', {
-                    credentials: 'include'
-                }, 300);
-
-                if (lbData.leaderboard && Array.isArray(lbData.leaderboard)) {
+                // A student is ranked on their own level's board: Level 0 or Level 1.
+                for (const level of [0, 1]) {
+                    const lbData = await fetchWithCache<any>(`/api/leaderboard/sheets?level=${level}`, {
+                        credentials: 'include'
+                    }, 300);
+                    if (!Array.isArray(lbData.leaderboard)) continue;
                     const myEntryIndex = lbData.leaderboard.findIndex((u: { userId: number }) => u.userId === user?.id);
                     if (myEntryIndex !== -1) {
                         setSheetsRank(myEntryIndex + 1);
+                        break;
                     }
                 }
             } catch (err) {

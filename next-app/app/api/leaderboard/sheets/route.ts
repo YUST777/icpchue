@@ -30,6 +30,7 @@ function decryptName(name: string | null): string | null {
 
 export async function GET(req: NextRequest) {
     try {
+        const level: Level = req.nextUrl.searchParams.get('level') === '1' ? 1 : 0;
         let currentUser: { id: number } | null = null;
         let isShadowBanned = false;
 
@@ -48,12 +49,12 @@ export async function GET(req: NextRequest) {
 
         // Cache public view for 10 minutes
         if (isShadowBanned) {
-            const data = await fetchLeaderboard(true);
+            const data = await fetchLeaderboard(true, level);
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData('leaderboard:sheets:public:v3', 600, async () => {
-            return await fetchLeaderboard(false);
+        const data = await getCachedData(`leaderboard:sheets:public:v4:level${level}`, 600, async () => {
+            return await fetchLeaderboard(false, level);
         });
 
         return NextResponse.json(data);
@@ -68,7 +69,33 @@ export async function GET(req: NextRequest) {
     }
 }
 
-async function fetchLeaderboard(isShadowBanned: boolean) {
+type Level = 0 | 1;
+
+/**
+ * Level 0: everyone who applied for the coming season's Level 0 (and has an
+ * account), together with the mentors and owners training alongside them.
+ * Level 1: last season's trainees (the current season's enrollments), without staff.
+ */
+function cohortClause(level: Level): string {
+    if (level === 0) {
+        return `AND (
+            u.role IN ('mentor', 'instructor', 'owner')
+            OR EXISTS (
+                SELECT 1 FROM level0_training_registrations r
+                WHERE r.application_id = u.application_id
+                  AND r.season_year = (SELECT MAX(season_year) FROM level0_training_registrations)
+            )
+        )`;
+    }
+    return `AND u.role NOT IN ('mentor', 'instructor', 'owner')
+        AND EXISTS (
+            SELECT 1 FROM season_enrollments e
+            WHERE e.user_id = u.id
+              AND e.season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)
+        )`;
+}
+
+async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
     const shadowBanClause = isShadowBanned
         ? ''
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
@@ -88,7 +115,8 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         INNER JOIN user_solve_stats uss ON u.id = uss.user_id
         LEFT JOIN applications a ON u.application_id = a.id
         WHERE uss.distinct_solved > 0
-          AND uss.season_year = (SELECT MAX(season_year) FROM user_solve_stats)
+          AND uss.season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)
+          ${cohortClause(level)}
           AND (
             u.is_shadow_banned = TRUE 
             OR u.show_on_sheets_leaderboard = TRUE 
