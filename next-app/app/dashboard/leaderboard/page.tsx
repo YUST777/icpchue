@@ -42,6 +42,7 @@ interface CFUser {
 interface SheetUser {
     userId: number;
     username: string;
+    studentId?: string | null;
     solvedCount: number;
     totalSubmissions: number;
     acceptedCount: number;
@@ -230,7 +231,11 @@ export default function LeaderboardPage() {
                                                     )}
                                                 </div>
                                                 <div className="col-span-2 sm:col-span-4 min-w-0">
-                                                    <span className="text-sm font-medium text-[#F2F2F2] truncate block">{user.username}</span>
+                                                    {user.studentId ? (
+                                                        <Link href={`/dashboard/profile/${user.studentId}`} className="text-sm font-medium text-[#F2F2F2] hover:text-[#E8C15A] truncate block transition-colors">{user.username}</Link>
+                                                    ) : (
+                                                        <span className="text-sm font-medium text-[#F2F2F2] truncate block">{user.username}</span>
+                                                    )}
                                                 </div>
                                                 <div className="col-span-3">
                                                     <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold ${getSolvedBadge(user.solvedCount)}`}>
