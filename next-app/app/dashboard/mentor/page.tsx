@@ -16,6 +16,9 @@ interface TraineeSummary {
     stuck_trainees: number;
     flagged_trainees: number;
     inactive_trainees: number;
+    whatsapp_joined?: number;
+    whatsapp_opened?: number;
+    whatsapp_never_opened?: number;
     level_distribution: {
         level_0: number;
         level_1: number;
@@ -59,6 +62,12 @@ interface TraineeItem {
     is_stuck: boolean;
     is_inactive: boolean;
     status_badge: 'ACTIVE' | 'STUCK' | 'FLAGGED' | 'BANNED' | 'INACTIVE';
+    mentor_group?: string | null;
+    mentor_name?: string | null;
+    whatsapp_status?: 'joined' | 'opened' | 'never_opened';
+    whatsapp_open_count?: number;
+    whatsapp_join_clicks?: number;
+    whatsapp_last_opened_at?: string | null;
     /** Code-integrity verdict: same code as other students, AI trap, copy-then-paste. */
     integrity?: 'likely' | 'suspicious' | null;
 }
@@ -70,6 +79,7 @@ export default function MentorTraineesDirectoryPage() {
     const [search, setSearch] = useState('');
     const [levelFilter, setLevelFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'inactive' | 'active' | 'stuck'>('all');
+    const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'joined' | 'opened' | 'never_opened'>('all');
     const [timeRange, setTimeRange] = useState('all');
     const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'oldest_active' | 'streak_desc' | 'name_asc'>('solves_desc');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -96,6 +106,7 @@ export default function MentorTraineesDirectoryPage() {
             if (search) params.set('search', search);
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (statusFilter !== 'all') params.set('status', statusFilter);
+            if (whatsappFilter !== 'all') params.set('whatsapp', whatsappFilter);
             if (timeRange !== 'all') params.set('timeRange', timeRange);
             if (sortBy) params.set('sortBy', sortBy);
             if (mentorFilter) params.set('mentor', mentorFilter);
@@ -134,12 +145,12 @@ export default function MentorTraineesDirectoryPage() {
         }, 200);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter, page]);
+    }, [search, levelFilter, statusFilter, whatsappFilter, timeRange, sortBy, mentorFilter, page]);
 
     // Any filter change starts again from the first page.
     useEffect(() => {
         setPage(1);
-    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter]);
+    }, [search, levelFilter, statusFilter, whatsappFilter, timeRange, sortBy, mentorFilter]);
 
     const formatLastActive = (isoStr?: string | null) => {
         if (!isoStr) return 'Never';
@@ -261,6 +272,71 @@ export default function MentorTraineesDirectoryPage() {
                 </div>
             )}
 
+            {/* 2.5. WhatsApp Onboarding Activity Bar */}
+            {summary && (
+                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md backdrop-blur-xl">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                            <CheckCircle2 size={16} />
+                        </div>
+                        <div>
+                            <span className="text-xs font-bold text-white block">WhatsApp Onboarding Activity</span>
+                            <span className="text-[11px] text-white/50 block">Track who opened /group and tapped Join on WhatsApp</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={() => setWhatsappFilter(whatsappFilter === 'joined' ? 'all' : 'joined')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                whatsappFilter === 'joined'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15'
+                            }`}
+                        >
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <span>Joined: {summary.whatsapp_joined ?? 0}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setWhatsappFilter(whatsappFilter === 'opened' ? 'all' : 'opened')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                whatsappFilter === 'opened'
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
+                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/15'
+                            }`}
+                        >
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            <span>Opened link: {summary.whatsapp_opened ?? 0}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setWhatsappFilter(whatsappFilter === 'never_opened' ? 'all' : 'never_opened')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                whatsappFilter === 'never_opened'
+                                    ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-xs'
+                                    : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/15'
+                            }`}
+                        >
+                            <span className="w-2 h-2 rounded-full bg-red-400" />
+                            <span>Never opened: {summary.whatsapp_never_opened ?? 0}</span>
+                        </button>
+
+                        {whatsappFilter !== 'all' && (
+                            <button
+                                type="button"
+                                onClick={() => setWhatsappFilter('all')}
+                                className="text-[11px] text-white/50 hover:text-white px-2 py-1 transition-colors underline cursor-pointer"
+                            >
+                                Reset
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* 3. Search & Filters Bar */}
             <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md backdrop-blur-xl">
                 {/* Search */}
@@ -289,6 +365,21 @@ export default function MentorTraineesDirectoryPage() {
                             <option value="Level 1">Level 1 (Newcomers)</option>
                             <option value="Level 2">Level 2 (Intermediate)</option>
                             <option value="Level 3">Level 3 (Advanced)</option>
+                        </select>
+                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                    </div>
+
+                    {/* WhatsApp Filter */}
+                    <div className="relative">
+                        <select
+                            value={whatsappFilter}
+                            onChange={(e) => setWhatsappFilter(e.target.value as any)}
+                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
+                        >
+                            <option value="all">WhatsApp: All</option>
+                            <option value="joined">WhatsApp: Joined</option>
+                            <option value="opened">WhatsApp: Opened /group Only</option>
+                            <option value="never_opened">WhatsApp: Never Opened</option>
                         </select>
                         <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                     </div>
@@ -387,9 +478,29 @@ export default function MentorTraineesDirectoryPage() {
                             <div>
                                 {/* Top Badges */}
                                 <div className="flex items-center justify-between gap-2 mb-3">
-                                    <span className="text-[11px] font-semibold text-[#E8C15A] px-2.5 py-0.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                                        {yearLabel(t.academic_level)}{t.training_level != null ? ` · Training Lv ${t.training_level}` : ''}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[11px] font-semibold text-[#E8C15A] px-2.5 py-0.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                                            {yearLabel(t.academic_level)}{t.training_level != null ? ` · Lv ${t.training_level}` : ''}
+                                        </span>
+                                        {t.mentor_group && (
+                                            <span className="text-[10px] font-medium text-white/60 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
+                                                {t.mentor_group}
+                                            </span>
+                                        )}
+                                        {t.whatsapp_status === 'joined' ? (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Joined WhatsApp">
+                                                <CheckCircle2 size={10} className="text-emerald-400" /> WhatsApp
+                                            </span>
+                                        ) : t.whatsapp_status === 'opened' ? (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20" title={`Opened /group ${t.whatsapp_open_count}x`}>
+                                                <Clock size={10} className="text-amber-400" /> Opened link
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center text-[10px] font-medium text-red-400/80 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20" title="Never opened /group">
+                                                No /group
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {t.integrity ? (
                                         <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
@@ -464,6 +575,7 @@ export default function MentorTraineesDirectoryPage() {
                                 <tr className="border-b border-white/[0.08] bg-white/[0.02] text-white/40 text-[10px] font-semibold uppercase tracking-wider">
                                     <th className="py-3 px-4">Trainee</th>
                                     <th className="py-3 px-4">Level</th>
+                                    <th className="py-3 px-4">WhatsApp Group</th>
                                     <th className="py-3 px-4">Codeforces</th>
                                     <th className="py-3 px-4 text-center">Solved</th>
                                     <th className="py-3 px-4 text-center">Streak</th>
@@ -488,6 +600,24 @@ export default function MentorTraineesDirectoryPage() {
                                             <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px]">
                                                 {yearLabel(t.academic_level)}{t.training_level != null ? ` · Training Lv ${t.training_level}` : ''}
                                             </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-medium text-white/80">{t.mentor_group || '-'}</span>
+                                                {t.whatsapp_status === 'joined' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 w-fit">
+                                                        <CheckCircle2 size={9} /> Joined
+                                                    </span>
+                                                ) : t.whatsapp_status === 'opened' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 w-fit">
+                                                        <Clock size={9} /> Opened ({t.whatsapp_open_count}x)
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[9px] text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded-full border border-red-500/20 w-fit">
+                                                        Not opened
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-3 px-4 font-mono text-white/60">
                                             {t.codeforces_handle ? (
