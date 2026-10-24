@@ -3,7 +3,7 @@
 import { Component, Suspense, createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import Image from 'next/image';
 import { Canvas } from '@react-three/fiber';
-import { Environment, Float, OrbitControls, Center, PerspectiveCamera, View } from '@react-three/drei';
+import { Environment, Float, OrbitControls, Center, View } from '@react-three/drei';
 import { Model, hasWebGL, loadModel } from '@/components/3d/Badge3D';
 
 /**
@@ -36,6 +36,7 @@ export function BadgeStage({ children, className }: { children: ReactNode; class
                     <CanvasBoundary>
                         <Canvas
                             eventSource={ref as RefObject<HTMLElement>}
+                            camera={{ position: [0, 0, 5], fov: 45 }}
                             dpr={[1, 1.5]}
                             style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 5 }}
                         >
@@ -90,7 +91,6 @@ export function BadgeTile({ modelPath, imageSrc, spin = false, live = true }: {
             )}
             {stage && url && (
                 <View className="absolute inset-0">
-                    <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={45} />
                     <ambientLight intensity={1.5} />
                     <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
                     <pointLight position={[-10, -10, -10]} intensity={1} />
