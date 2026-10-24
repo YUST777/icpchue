@@ -1,9 +1,9 @@
 {
-  "name": "hue-simple-calculator",
+  "name": "simple-calculator",
   "title": "Simple Calculator",
   "timeLimit": 1000,
   "memoryLimit": 256,
-  "checker": "std::wcmp.cpp",
+  "checker": "checker.cpp",
   "samples": [
     1
   ]

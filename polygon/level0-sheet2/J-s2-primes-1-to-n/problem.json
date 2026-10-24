@@ -1,0 +1,10 @@
+{
+  "name": "s2-primes-1-to-n",
+  "title": "Primes from 1 to N",
+  "timeLimit": 3000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

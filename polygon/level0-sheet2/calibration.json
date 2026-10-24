@@ -1,0 +1,49 @@
+{
+ "A-s2-one-to-n": [],
+ "B-s2-even-numbers": [],
+ "C-s2-even-odd-positive-negative": [],
+ "D-s2-fixed-password": [],
+ "E-s2-max": [],
+ "F-s2-multiplication-table": [],
+ "G-s2-factorial": [],
+ "H-s2-one-prime": [],
+ "I-s2-palindrome": [],
+ "J-s2-primes-1-to-n": [],
+ "K-s2-divisors": [
+  {
+   "id": "1601",
+   "orig": "WA",
+   "ours": "AC",
+   "test": null
+  }
+ ],
+ "L-s2-gcd": [],
+ "M-s2-lucky-numbers": [],
+ "N-s2-numbers-histogram": [],
+ "O-s2-pyramid": [],
+ "P-s2-shape1": [],
+ "Q-s2-digits": [
+  {
+   "id": "12430",
+   "orig": "WA",
+   "ours": "AC",
+   "test": null
+  }
+ ],
+ "R-s2-sequence-and-sum": [],
+ "S-s2-sum-of-odd-numbers": [],
+ "T-s2-shape2": [],
+ "U-s2-some-sums": [],
+ "V-s2-pum": [],
+ "W-s2-shape3": [
+  {
+   "id": "1665",
+   "orig": "WA",
+   "ours": "AC",
+   "test": null
+  }
+ ],
+ "X-s2-convert-to-decimal-2": [],
+ "Y-s2-easy-fibonacci": [],
+ "Z-s2-three-numbers": []
+}

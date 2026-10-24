@@ -1,0 +1,6 @@
+{
+  "legend": "You are given $N$ integers. Print the largest of them.",
+  "input": "The first line contains $N$ ($1 \\le N \\le 10^3$). The second line contains $N$ integers $X_i$ ($0 \\le X_i \\le 10^9$).",
+  "output": "Print the maximum.",
+  "notes": ""
+}

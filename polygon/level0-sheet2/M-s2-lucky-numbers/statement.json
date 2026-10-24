@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two integers $A$ and $B$. A lucky number is a positive integer whose decimal digits are all $4$ or $7$ (for example $4$, $7$, $47$, $744$; but not $5$, $17$ or $174$). Print all lucky numbers between $A$ and $B$ (inclusive).",
+  "input": "One line with two integers $A$ and $B$ ($1 \\le A \\le B \\le 10^5$).",
+  "output": "Print the lucky numbers in increasing order separated by spaces, or $-1$ if there is none.",
+  "notes": ""
+}

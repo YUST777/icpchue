@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a person's age $N$ in days. Write it as years, months and days, assuming every year has 365 days and every month has 30 days.",
+  "input": "One line with an integer $N$ ($0 \\le N \\le 10^6$).",
+  "output": "Print three lines: \"$Y$ years\", \"$M$ months\" and \"$D$ days\".",
+  "notes": ""
+}

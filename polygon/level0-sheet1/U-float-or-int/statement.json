@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a number $N$ written with three digits after the decimal point. If its fractional part is zero, print \"int\" and its integer part. Otherwise print \"float\", its integer part and its fractional part.",
+  "input": "One line with a real number $N$ with exactly three digits after the decimal point ($1 \\le N \\le 10^3$).",
+  "output": "Print \"int $I$\" if $N$ is a whole number, otherwise \"float $I$ $F$\", where $I$ is the integer part and $F$ the fractional part.",
+  "notes": "See the examples for the exact format."
+}

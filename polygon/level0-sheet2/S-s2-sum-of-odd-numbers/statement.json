@@ -1,0 +1,6 @@
+{
+  "legend": "For each pair of integers $X$ and $Y$, print the sum of all odd numbers strictly between them ($X$ and $Y$ themselves are not included).",
+  "input": "The first line contains $T$ ($1 \\le T \\le 10$), the number of test cases. Each of the next $T$ lines contains two integers $X$ and $Y$ ($0 \\le X, Y \\le 10^4$).",
+  "output": "For each test case print the sum on its own line.",
+  "notes": "$X$ can be larger than $Y$."
+}

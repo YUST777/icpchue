@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print all its positive divisors in increasing order. A divisor of $N$ divides it with no remainder.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 10^4$).",
+  "output": "Print the divisors of $N$, one per line, in increasing order.",
+  "notes": ""
+}

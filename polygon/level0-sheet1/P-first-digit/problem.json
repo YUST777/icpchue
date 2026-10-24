@@ -1,0 +1,11 @@
+{
+  "name": "first-digit",
+  "title": "First digit !",
+  "timeLimit": 1000,
+  "memoryLimit": 64,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

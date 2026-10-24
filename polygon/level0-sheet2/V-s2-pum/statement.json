@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print $N$ lines of the PUM game: count up from $1$, and every fourth number is replaced by the word \"PUM\", which also ends the line.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 20$).",
+  "output": "Print $N$ lines, as in the examples.",
+  "notes": ""
+}

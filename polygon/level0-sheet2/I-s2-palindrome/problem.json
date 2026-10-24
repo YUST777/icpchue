@@ -1,0 +1,11 @@
+{
+  "name": "s2-palindrome",
+  "title": "Palindrome",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

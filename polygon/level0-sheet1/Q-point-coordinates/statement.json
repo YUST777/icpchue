@@ -1,0 +1,6 @@
+{
+  "legend": "You are given the coordinates $X$ and $Y$ of a point in the plane. Say where it lies:\\begin{itemize}\\item \"Q1\", \"Q2\", \"Q3\" or \"Q4\" for the quadrant it is in;\\item \"Origem\" if it is the origin;\\item \"Eixo X\" if it lies on the X axis (but is not the origin);\\item \"Eixo Y\" if it lies on the Y axis (but is not the origin).\\end{itemize}",
+  "input": "One line with two real numbers $X$ and $Y$, each with one digit after the decimal point ($-1000 \\le X, Y \\le 1000$).",
+  "output": "Print the answer.",
+  "notes": ""
+}

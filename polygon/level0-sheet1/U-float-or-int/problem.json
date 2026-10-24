@@ -1,0 +1,11 @@
+{
+  "name": "float-or-int",
+  "title": "Float or int",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

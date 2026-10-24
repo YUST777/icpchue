@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two numbers $A$ and $B$. Print \"Multiples\" if one of them is a multiple of the other (that is, $A$ divides $B$ or $B$ divides $A$), and \"No Multiples\" otherwise.",
+  "input": "One line with two integers $A$ and $B$ ($1 \\le A, B \\le 10^6$).",
+  "output": "Print \"Multiples\" or \"No Multiples\".",
+  "notes": "9 is divisible by 3, so the first answer is \"Multiples\". 24 is divisible by 6, so the second is \"Multiples\" too. Neither of 12 and 5 divides the other."
+}

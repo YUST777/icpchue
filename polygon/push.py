@@ -115,9 +115,13 @@ def push_problem(folder: Path, ids: dict):
     call('problem.saveStatement', problemId=pid, lang='english', encoding='UTF-8', name=meta['title'],
          legend=st['legend'], input=st['input'], output=st['output'], notes=st.get('notes', ''))
 
-    call('problem.saveFile', problemId=pid, type='source', name='validator.cpp',
-         file=(folder / 'validator.cpp').read_text(), sourceType='cpp.g++17')
-    call('problem.setValidator', problemId=pid, validator='validator.cpp')
+    if (folder / 'validator.cpp').exists():
+        call('problem.saveFile', problemId=pid, type='source', name='validator.cpp',
+             file=(folder / 'validator.cpp').read_text(), sourceType='cpp.g++17')
+        call('problem.setValidator', problemId=pid, validator='validator.cpp')
+    if (folder / 'checker.cpp').exists():
+        call('problem.saveFile', problemId=pid, type='source', name='checker.cpp',
+             file=(folder / 'checker.cpp').read_text(), sourceType='cpp.g++17')
     call('problem.setChecker', problemId=pid, checker=meta['checker'])
 
     call('problem.saveSolution', problemId=pid, name='solution.cpp', file=(folder / 'solution.cpp').read_text(),
@@ -125,6 +129,12 @@ def push_problem(folder: Path, ids: dict):
     for wrong in sorted(folder.glob('wrong-*.cpp')):
         call('problem.saveSolution', problemId=pid, name=wrong.name, file=wrong.read_text(),
              sourceType='cpp.g++17', tag='WA')
+
+    # Drop wrong solutions that no longer exist locally, or a renamed one stays tagged WA and breaks the build.
+    keep = {'solution.cpp', *(w.name for w in folder.glob('wrong-*.cpp'))}
+    for sol in call('problem.solutions', problemId=pid):
+        if sol['name'].startswith('wrong-') and sol['name'] not in keep:
+            call('problem.deleteSolution', problemId=pid, name=sol['name'])
 
     tests = sorted((folder / 'tests').glob('*.txt'))
     for i, t in enumerate(tests, 1):

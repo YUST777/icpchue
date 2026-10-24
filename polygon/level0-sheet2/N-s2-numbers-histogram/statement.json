@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a symbol $S$ and $N$ numbers. For each number $X_i$, print a line with $S$ repeated $X_i$ times.",
+  "input": "The first line contains the symbol $S$, one of \\texttt{+}, \\texttt{-}, \\texttt{*}, \\texttt{/}. The second line contains $N$ ($1 \\le N \\le 50$). The third line contains $N$ integers $X_i$ ($1 \\le X_i \\le 100$).",
+  "output": "Print $N$ lines as described.",
+  "notes": "Do not print spaces after the symbols."
+}

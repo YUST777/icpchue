@@ -1,0 +1,10 @@
+{
+  "name": "s2-shape2",
+  "title": "Shape2",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1
+  ]
+}

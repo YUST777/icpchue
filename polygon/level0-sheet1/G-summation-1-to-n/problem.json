@@ -1,0 +1,11 @@
+{
+  "name": "summation-1-to-n",
+  "title": "Summation from 1 to N",
+  "timeLimit": 250,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

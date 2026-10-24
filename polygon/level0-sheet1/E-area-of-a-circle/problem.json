@@ -1,0 +1,10 @@
+{
+  "name": "area-of-a-circle",
+  "title": "Area of a Circle",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::rcmp6.cpp",
+  "samples": [
+    1
+  ]
+}

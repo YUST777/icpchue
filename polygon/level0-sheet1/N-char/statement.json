@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a letter $X$. If it is lowercase, print it in uppercase; if it is uppercase, print it in lowercase. In ASCII the difference between 'a' and 'A' is 32.",
+  "input": "One line with a single English letter $X$.",
+  "output": "Print the letter with its case changed.",
+  "notes": ""
+}

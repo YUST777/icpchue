@@ -1,0 +1,6 @@
+{
+  "legend": "Given the radius $R$ of a circle, compute its area $\\pi \\cdot R^2$. Use $\\pi = 3.141592653$.",
+  "input": "One line with a real number $R$ ($1 \\le R \\le 100$).",
+  "output": "Print the area with exactly 9 digits after the decimal point.",
+  "notes": "Use \\texttt{double}, and print with \\texttt{fixed} and \\texttt{setprecision(9)} from \\texttt{<iomanip>}."
+}

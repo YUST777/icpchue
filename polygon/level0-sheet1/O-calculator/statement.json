@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an expression of the form $A$+$B$, $A$-$B$, $A$*$B$ or $A$/$B$ written without spaces. Print its value. For division, print only the integer part of the result.",
+  "input": "One line with the expression: an integer $A$, a sign $S$ (one of +, -, *, /) and an integer $B$, with no spaces between them ($1 \\le A, B \\le 10^4$).",
+  "output": "Print the value of the expression.",
+  "notes": ""
+}

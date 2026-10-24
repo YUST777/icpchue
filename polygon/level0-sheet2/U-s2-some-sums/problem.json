@@ -1,0 +1,12 @@
+{
+  "name": "s2-some-sums",
+  "title": "Some Sums",
+  "timeLimit": 2000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2,
+    3
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "For each given integer $N$, print its digits from right to left.",
+  "input": "The first line contains $T$ ($1 \\le T \\le 10$), the number of test cases. Each of the next $T$ lines contains an integer $N$ ($0 \\le N \\le 10^9$).",
+  "output": "For each test case print one line with the digits of $N$ from right to left, separated by spaces.",
+  "notes": ""
+}

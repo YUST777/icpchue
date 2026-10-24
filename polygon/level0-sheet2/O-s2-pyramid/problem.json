@@ -1,0 +1,10 @@
+{
+  "name": "s2-pyramid",
+  "title": "Pyramid",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1
+  ]
+}

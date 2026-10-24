@@ -1,0 +1,10 @@
+{
+  "name": "s2-convert-to-decimal-2",
+  "title": "Convert To Decimal 2",
+  "timeLimit": 1000,
+  "memoryLimit": 64,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

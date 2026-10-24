@@ -1,0 +1,11 @@
+{
+  "name": "point-coordinates",
+  "title": "Coordinates of a Point",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

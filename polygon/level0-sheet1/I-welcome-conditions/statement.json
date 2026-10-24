@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two numbers $A$ and $B$. Print \"Yes\" if $A$ is greater than or equal to $B$, and \"No\" otherwise.",
+  "input": "One line with two integers $A$ and $B$ ($0 \\le A, B \\le 100$).",
+  "output": "Print \"Yes\" or \"No\".",
+  "notes": ""
+}

@@ -1,0 +1,12 @@
+{
+  "name": "welcome-conditions",
+  "title": "Welcome for you with Conditions",
+  "timeLimit": 1000,
+  "memoryLimit": 64,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2,
+    3
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a four-digit number $X$. Print \"EVEN\" if its first (leftmost) digit is even, otherwise print \"ODD\". For example, the first digit of 4569 is 4.",
+  "input": "One line with an integer $X$ ($999 < X \\le 9999$).",
+  "output": "Print \"EVEN\" or \"ODD\".",
+  "notes": ""
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two intervals $[l_1, r_1]$ and $[l_2, r_2]$. Print the end points of their intersection.",
+  "input": "One line with four integers $l_1$, $r_1$, $l_2$, $r_2$ ($1 \\le l_1, r_1, l_2, r_2 \\le 10^9$, $l_1 \\le r_1$, $l_2 \\le r_2$).",
+  "output": "If the intervals intersect, print the left and right end of the intersection separated by a space. Otherwise print -1.",
+  "notes": ""
+}

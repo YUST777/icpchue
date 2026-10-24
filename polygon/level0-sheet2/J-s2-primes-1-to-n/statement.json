@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print every prime number between $1$ and $N$ (inclusive).",
+  "input": "One line with an integer $N$ ($2 \\le N \\le 10^3$).",
+  "output": "Print the primes in increasing order, separated by spaces.",
+  "notes": "$1$ is not prime."
+}

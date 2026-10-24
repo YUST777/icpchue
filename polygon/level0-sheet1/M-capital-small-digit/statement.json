@@ -1,0 +1,6 @@
+{
+  "legend": "You are given one character $X$: a digit, an uppercase letter or a lowercase letter. Say whether it is a digit or a letter, and for a letter whether it is uppercase or lowercase. In ASCII, the digits '0'..'9' are 48..57, uppercase 'A'..'Z' are 65..90 and lowercase 'a'..'z' are 97..122.",
+  "input": "One line with a single character $X$ (a digit or an English letter).",
+  "output": "If $X$ is a digit, print \"IS DIGIT\". Otherwise print \"ALPHA\" on the first line, and on the second line \"IS CAPITAL\" for an uppercase letter or \"IS SMALL\" for a lowercase letter.",
+  "notes": ""
+}

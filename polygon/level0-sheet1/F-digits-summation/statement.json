@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two numbers $N$ and $M$. Print the sum of their last digits.",
+  "input": "One line with two integers $N$ and $M$ ($0 \\le N, M \\le 10^{18}$).",
+  "output": "Print the sum of the last digit of $N$ and the last digit of $M$.",
+  "notes": "In the example the last digits are 3 and 2, so the answer is $3 + 2 = 5$."
+}

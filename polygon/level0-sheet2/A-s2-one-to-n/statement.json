@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print all integers from $1$ to $N$, each on its own line.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 10^3$).",
+  "output": "Print $N$ lines: $1, 2, \\ldots, N$.",
+  "notes": ""
+}

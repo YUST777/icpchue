@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a number $N$. Print the sum of all integers from $1$ to $N$ inclusive: $\\sum_{i=1}^{N} i$.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 10^9$).",
+  "output": "Print the sum $1 + 2 + \\ldots + N$.",
+  "notes": "For $N = 3$ the sum is $1 + 2 + 3 = 6$; for $N = 10$ it is 55. A loop up to $10^9$ is too slow for the time limit."
+}
