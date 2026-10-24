@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a single name $S$. Greet it: print the word \"Hello\", a comma, a space and then the name.",
+  "input": "One line with the name $S$ ($1 \\le |S| \\le 100$). The name consists of English letters only.",
+  "output": "Print \"Hello, \" (without the quotes) followed by $S$.",
+  "notes": ""
+}

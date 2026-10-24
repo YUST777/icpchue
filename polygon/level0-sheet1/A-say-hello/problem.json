@@ -1,0 +1,10 @@
+{
+  "name": "hue-say-hello",
+  "title": "Say Hello With C++",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

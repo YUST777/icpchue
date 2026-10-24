@@ -1,0 +1,10 @@
+{
+  "name": "hue-basic-data-types",
+  "title": "Basic Data Types",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}
