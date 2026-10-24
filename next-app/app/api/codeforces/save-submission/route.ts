@@ -247,11 +247,8 @@ export async function POST(req: NextRequest) {
 
                         const { total, solved } = progressCheck.rows[0];
                         if (total > 0 && solved >= total) {
-                            // Sheet 1 Achievement is for Level 0 (Newcomers) or Level 1 first sheet
-                            if ((level_number === 0 || level_number === 1) && sheet_number === 1) {
-                                const { updateUserStatus } = await import('@/lib/services/achievements');
-                                await updateUserStatus(user.id, 'sheet_1_solved', true);
-                            }
+                            const { grantSheetBadge } = await import('@/lib/services/achievements');
+                            await grantSheetBadge(user.id, level_number, sheet_number);
                         }
                     } catch (e) {
                         console.error('Achievement check failed:', e);

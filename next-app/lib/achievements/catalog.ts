@@ -15,17 +15,17 @@ const IMG = '/images/achievements/';
 export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}badges/welcome.webp`, tier: 'common' },
     instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}badges/instructor.webp`, tier: 'legendary' },
-    'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}rank1_march.webp`, tier: 'legendary' },
+    'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}badges/rank1-march-2026.webp`, tier: 'legendary' },
 
-    'hello-world': { name: 'Hello, World', desc: 'Your first accepted solution', imageSrc: `${IMG}hello-world.webp`, tier: 'common' },
-    'streak-3': { name: 'On Fire · 3', desc: 'Solved problems 3 days in a row', imageSrc: `${IMG}streak-3.webp`, tier: 'common' },
-    'streak-7': { name: 'On Fire · 7', desc: 'Solved problems 7 days in a row', imageSrc: `${IMG}streak-7.webp`, tier: 'common' },
-    'streak-14': { name: 'On Fire · 14', desc: 'Solved problems 14 days in a row', imageSrc: `${IMG}streak-14.webp`, tier: 'rare' },
-    'streak-30': { name: 'On Fire · 30', desc: 'Solved problems 30 days in a row', imageSrc: `${IMG}streak-30.webp`, tier: 'rare' },
-    'streak-60': { name: 'On Fire · 60', desc: 'Solved problems 60 days in a row', imageSrc: `${IMG}streak-60.webp`, tier: 'legendary' },
-    'disciplined-7': { name: 'Disciplined', desc: 'Logged your study 7 days in a row', imageSrc: `${IMG}disciplined-7.webp`, tier: 'rare' },
-    'disciplined-program': { name: 'Iron Discipline', desc: 'Logged every day of the 8-week program', imageSrc: `${IMG}disciplined-program.webp`, tier: 'legendary' },
-    comeback: { name: 'Comeback Kid', desc: 'Came back and solved again after a week away', imageSrc: `${IMG}comeback.webp`, tier: 'common' },
+    'hello-world': { name: 'Hello, World', desc: 'Your first accepted solution', imageSrc: `${IMG}badges/hello-world.webp`, tier: 'common' },
+    'streak-3': { name: 'On Fire · 3', desc: 'Solved problems 3 days in a row', imageSrc: `${IMG}badges/streak-3.webp`, tier: 'common' },
+    'streak-7': { name: 'On Fire · 7', desc: 'Solved problems 7 days in a row', imageSrc: `${IMG}badges/streak-7.webp`, tier: 'common' },
+    'streak-14': { name: 'On Fire · 14', desc: 'Solved problems 14 days in a row', imageSrc: `${IMG}badges/streak-14.webp`, tier: 'rare' },
+    'streak-30': { name: 'On Fire · 30', desc: 'Solved problems 30 days in a row', imageSrc: `${IMG}badges/streak-30.webp`, tier: 'rare' },
+    'streak-60': { name: 'On Fire · 60', desc: 'Solved problems 60 days in a row', imageSrc: `${IMG}badges/streak-60.webp`, tier: 'legendary' },
+    'disciplined-7': { name: 'Disciplined', desc: 'Logged your study 7 days in a row', imageSrc: `${IMG}badges/disciplined-7.webp`, tier: 'rare' },
+    'disciplined-program': { name: 'Iron Discipline', desc: 'Logged every day of the 8-week program', imageSrc: `${IMG}badges/disciplined-program.webp`, tier: 'legendary' },
+    comeback: { name: 'Comeback Kid', desc: 'Came back and solved again after a week away', imageSrc: `${IMG}badges/comeback.webp`, tier: 'common' },
     mentor: { name: 'Mentor', desc: 'Guides trainees at ICPC HUE', imageSrc: `${IMG}badges/mentor.webp`, tier: 'legendary' },
 };
 

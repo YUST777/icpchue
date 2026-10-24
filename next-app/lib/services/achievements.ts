@@ -125,6 +125,15 @@ export async function updateUserStatus(userId: number | string, field: 'sheet_1_
 }
 
 /**
+ * Grants the Level 0 topic-sheet badge (sheets A-G are badges 1-7) when a sheet
+ * has just been fully solved. The General sheets and other levels have none.
+ */
+export async function grantSheetBadge(userId: number | string, levelNumber: number, sheetNumber: number) {
+    if (levelNumber !== 0 || sheetNumber < 1 || sheetNumber > 7) return false;
+    return grantAchievement(userId, `sheet-${sheetNumber}`);
+}
+
+/**
  * Creates a notification for a user.
  */
 export async function createNotification(userId: number | string, title: string, message: string, type: 'achievement' | 'leaderboard' | 'system' = 'system') {

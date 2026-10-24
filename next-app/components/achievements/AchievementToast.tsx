@@ -26,8 +26,13 @@ export default function AchievementToast() {
     const pathname = usePathname();
     const { isAuthenticated, loading } = useAuth();
     const onAuthPage = pathname ? AUTH_PAGES.includes(pathname) : false;
-    const { unseenAchievement, markAsSeen } = useAchievements(isAuthenticated && !loading && !onAuthPage);
+    const { unseenAchievement, markAsSeen, refetch } = useAchievements(isAuthenticated && !loading && !onAuthPage);
     const [leaving, setLeaving] = useState(false);
+
+    // Badges are earned while solving, so look for new ones after every page change.
+    useEffect(() => {
+        if (isAuthenticated && !loading && !onAuthPage) refetch();
+    }, [pathname, isAuthenticated, loading, onAuthPage, refetch]);
 
     const current = unseenAchievement;
     const meta = current ? ACHIEVEMENT_META[current.achievement_id] : undefined;

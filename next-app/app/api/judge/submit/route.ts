@@ -361,11 +361,8 @@ export async function POST(req: NextRequest) {
                         const levelInfo = await query('SELECT level_number FROM curriculum_levels WHERE id = $1', [sheet.level_id]);
                         if (levelInfo.rows.length > 0) {
                             const levelNum = levelInfo.rows[0].level_number;
-                            // Sheet 1 Achievement is for Level 0 (Newcomers) or Level 1 first sheet
-                            if ((levelNum === 0 || levelNum === 1) && sheet.sheet_number === 1) {
-                                const { updateUserStatus } = await import('@/lib/services/achievements');
-                                await updateUserStatus(user.id, 'sheet_1_solved', true);
-                            }
+                            const { grantSheetBadge } = await import('@/lib/services/achievements');
+                            await grantSheetBadge(user.id, levelNum, sheet.sheet_number);
                         }
                     }
                 }
