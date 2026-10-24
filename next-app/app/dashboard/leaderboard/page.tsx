@@ -105,7 +105,7 @@ export default function LeaderboardPage() {
         <>
 
 
-            <div className="space-y-6 animate-fade-in">
+            <div className="ui-compact space-y-6 animate-fade-in">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
