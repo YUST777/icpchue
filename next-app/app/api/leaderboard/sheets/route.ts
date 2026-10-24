@@ -3,7 +3,6 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
-import { repairEmailBlindIndex } from '@/lib/security/blind-index-repair';
 import { formatDisplayName } from '@/lib/names';
 
 /**
@@ -54,7 +53,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData(`leaderboard:sheets:public:v7:level${level}`, 600, async () => {
+        const data = await getCachedData(`leaderboard:sheets:public:v8:level${level}`, 600, async () => {
             return await fetchLeaderboard(false, level);
         });
 
@@ -98,33 +97,28 @@ function cohortClause(level: Level): string {
 
 /** Account ids of everyone listed on a registered ECPC team (student ID or ICPC HUE email). */
 async function ecpcTeamUserIds(): Promise<number[]> {
-    const teams = await query(
-        `SELECT member1_student_id, member2_student_id, member3_student_id,
-                member1_icpc_email, member2_icpc_email, member3_icpc_email
-         FROM team_registrations
-         WHERE season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)`
-    );
-    const emails = new Set<string>();
-    for (const row of teams.rows) {
-        for (const n of [1, 2, 3]) {
-            const studentId = (safeDecrypt(row[`member${n}_student_id`]) || '').replace(/\D/g, '');
-            if (studentId) emails.add(`${studentId}@horus.edu.eg`);
-            const icpcEmail = (safeDecrypt(row[`member${n}_icpc_email`]) || '').trim().toLowerCase();
-            if (icpcEmail) emails.add(icpcEmail);
+    return getCachedData('ecpc:team:user_ids:v2', 600, async () => {
+        const teams = await query(
+            `SELECT member1_student_id, member2_student_id, member3_student_id,
+                    member1_icpc_email, member2_icpc_email, member3_icpc_email
+             FROM team_registrations
+             WHERE season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)`
+        );
+        const emails = new Set<string>();
+        for (const row of teams.rows) {
+            for (const n of [1, 2, 3]) {
+                const studentId = (safeDecrypt(row[`member${n}_student_id`]) || '').replace(/\D/g, '');
+                if (studentId) emails.add(`${studentId}@horus.edu.eg`);
+                const icpcEmail = (safeDecrypt(row[`member${n}_icpc_email`]) || '').trim().toLowerCase();
+                if (icpcEmail) emails.add(icpcEmail);
+            }
         }
-    }
-    if (emails.size === 0) return [];
+        if (emails.size === 0) return [];
 
-    const blindIndexes = [...emails].map(e => createBlindIndex(e)).filter((h): h is string => Boolean(h));
-    const matched = await query('SELECT id FROM users WHERE email_blind_index = ANY($1::text[])', [blindIndexes]);
-    const ids = new Set<number>(matched.rows.map((r: { id: string }) => Number(r.id)));
-
-    // A few accounts have a blind index built from another spelling of the address.
-    const all = await query('SELECT id, email FROM users');
-    for (const u of all.rows as { id: string; email: string }[]) {
-        if (emails.has((safeDecrypt(u.email) || '').trim().toLowerCase())) ids.add(Number(u.id));
-    }
-    return [...ids];
+        const blindIndexes = [...emails].map(e => createBlindIndex(e)).filter((h): h is string => Boolean(h));
+        const matched = await query('SELECT id FROM users WHERE email_blind_index = ANY($1::text[])', [blindIndexes]);
+        return matched.rows.map((r: { id: string }) => Number(r.id));
+    });
 }
 
 function safeDecrypt(value: string | null): string | null {
@@ -138,16 +132,15 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
         ? ''
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
 
-    // Optimized: Added LIMIT 200 and better sorting
     const queryStr = `
         SELECT 
             u.id,
             u.email,
-            u.email_blind_index,
             u.profile_visibility,
             u.show_public_profile,
             u.is_shadow_banned,
             a.name,
+            a.student_id,
             uss.distinct_solved AS solved_count,
             uss.total_accepted AS accepted_count,
             uss.total_submissions
@@ -169,29 +162,32 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
 
     const result = await query(queryStr, params);
 
-    const leaderboard = await Promise.all(result.rows.filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id))).map(async (row: any) => {
-        // Try to decrypt the name if it's encrypted, then shorten it
-        const rawName = decryptName(row.name);
-        const displayName = rawName ? formatDisplayName(rawName) : 'Member';
+    const leaderboard = result.rows
+        .filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id)))
+        .map((row: any) => {
+            const rawName = decryptName(row.name);
+            const displayName = rawName ? formatDisplayName(rawName) : 'Member';
 
-        // Link to the public profile only when it has one and the student left it public.
-        const localPart = (safeDecrypt(row.email) || '').split('@')[0];
-        const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
-        const studentId = isPublic && /^\d{7,10}$/.test(localPart) ? localPart : null;
-        // Keep profile links fast: make sure this account can be found by its email's blind index.
-        if (/^\d{7,10}$/.test(localPart) && row.email_blind_index !== createBlindIndex(`${localPart}@horus.edu.eg`)) {
-            await repairEmailBlindIndex(row.id, `${localPart}@horus.edu.eg`);
-        }
+            const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
+            let studentId: string | null = null;
+            if (isPublic) {
+                if (row.student_id && /^\d{7,10}$/.test(String(row.student_id))) {
+                    studentId = String(row.student_id);
+                } else {
+                    const localPart = (safeDecrypt(row.email) || '').split('@')[0];
+                    if (/^\d{7,10}$/.test(localPart)) studentId = localPart;
+                }
+            }
 
-        return {
-            userId: row.id,
-            username: displayName,
-            studentId,
-            solvedCount: parseInt(row.solved_count) || 0,
-            totalSubmissions: parseInt(row.total_submissions) || 0,
-            acceptedCount: parseInt(row.accepted_count) || 0,
-        };
-    }));
+            return {
+                userId: row.id,
+                username: displayName,
+                studentId,
+                solvedCount: parseInt(row.solved_count) || 0,
+                totalSubmissions: parseInt(row.total_submissions) || 0,
+                acceptedCount: parseInt(row.accepted_count) || 0,
+            };
+        });
 
     return {
         success: true,
