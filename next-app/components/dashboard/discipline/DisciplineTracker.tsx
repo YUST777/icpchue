@@ -287,11 +287,16 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
     const now = new Date();
 
-    const consistency = Math.round(((summary?.active_days || 0) / (TOTAL_WEEKS * DAYS_PER_WEEK)) * 100);
+    // Consistency counts only days that have opened so far, not the whole program.
+    const elapsedDays = Math.min(TOTAL_WEEKS * DAYS_PER_WEEK,
+        Math.max(0, Math.floor((now.getTime() - PROGRAM_START_DATE.getTime()) / 86400000) + 1));
+    const activeDays = summary?.active_days || 0;
+    const consistency = elapsedDays ? Math.round((activeDays / elapsedDays) * 100) : 0;
+    const currentWeek = elapsedDays ? Math.ceil(elapsedDays / DAYS_PER_WEEK) : 0;
     const stats = [
-        { label: 'Practice', value: `${summary?.total_hours || 0}h` },
-        { label: 'Active days', value: String(summary?.active_days || 0) },
-        { label: 'Mentor notes', value: String(summary?.mentor_reviews || 0) },
+        { label: 'Hours logged', value: `${summary?.total_hours || 0}h` },
+        { label: 'Days logged', value: `${activeDays}/${elapsedDays}` },
+        { label: 'Mentor replies', value: String(summary?.mentor_reviews || 0) },
         { label: 'Consistency', value: `${consistency}%` },
     ];
     const emptyText = 'text-white/25';
@@ -323,8 +328,11 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 <div className="flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/10 bg-[#0B0B0C] w-fit max-w-full" role="tablist" aria-label="Week">
                     {(['all', ...Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1)] as const).map(w => (
                         <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => setSelectedWeek(w)}
-                            className={`shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
+                            className={`relative shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-semibold' : w !== 'all' && w > currentWeek ? 'text-white/25 hover:text-white/60 hover:bg-white/[0.06]' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
                             {w === 'all' ? 'All' : `Week ${w}`}
+                            {w === currentWeek && selectedWeek !== w && (
+                                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#E8C15A]" aria-label="This week" />
+                            )}
                         </button>
                     ))}
                 </div>
@@ -371,6 +379,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                         // Students edit today and any past day; future days unlock at midnight.
                                         const canStudentEdit = !isMentorView && isUnlocked;
                                         const sent = log?.submitted_at && (Boolean(log.done_tasks) || Boolean(log.student_comment) || (log.total_hours !== null && Number(log.total_hours) > 0));
+                                        const hasNotes = Boolean(log?.done_tasks?.trim() || log?.student_comment?.trim());
                                         const editable = canStudentEdit ? 'cursor-pointer hover:bg-white/[0.04]' : '';
 
                                         return (
@@ -390,11 +399,9 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                     )}
                                                 </div>
 
-                                                <div>
+                                                <div className={!isUnlocked ? 'hidden md:block' : ''}>
                                                     <span className="md:hidden text-[11px] text-white/35 mr-2">Hours</span>
-                                                    {!isUnlocked ? (
-                                                        <span className={emptyText}>—</span>
-                                                    ) : canStudentEdit ? (
+                                                    {!isUnlocked ? null : canStudentEdit ? (
                                                         <TimeInputCell value={log?.total_hours} onSave={(h) => handleSaveLog(weekNum, dayNum, { total_hours: h, is_missed: false })} />
                                                     ) : (
                                                         <span className="text-sm text-white/70 tabular-nums">
@@ -403,32 +410,49 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                     )}
                                                 </div>
 
-                                                {([
-                                                    { label: 'Completed', text: log?.done_tasks, add: 'Add what you covered' },
-                                                    { label: 'References', text: log?.student_comment, add: 'Add references' },
-                                                ] as const).map(col => (
-                                                    <div key={col.label} onClick={() => canStudentEdit && openDayModal(weekNum, dayNum)}
-                                                        className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${editable}`}>
-                                                        <span className="md:hidden block text-[11px] text-white/35 mb-0.5">{col.label}</span>
-                                                        <p className="text-sm text-white/80 whitespace-pre-wrap break-words line-clamp-3" dir="auto">
-                                                            {!isUnlocked ? <span className={emptyText}>Locked</span>
-                                                                : col.text || <span className={emptyText}>{canStudentEdit ? col.add : '—'}</span>}
-                                                        </p>
-                                                    </div>
-                                                ))}
-
-                                                <div onClick={() => isMentorView && openMentorModal(weekNum, dayNum)}
-                                                    className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${isMentorView ? 'cursor-pointer hover:bg-white/[0.04]' : ''}`}>
-                                                    <span className="md:hidden block text-[11px] text-white/35 mb-0.5">Mentor</span>
-                                                    {log?.mentor_comment ? (
-                                                        <div>
-                                                            <p className="text-sm text-white/85 whitespace-pre-wrap break-words line-clamp-3" dir="auto">{log.mentor_comment}</p>
-                                                            <p className="text-[11px] text-[#E8C15A]/70 mt-0.5">{log.mentor_name || 'Mentor'}</p>
-                                                        </div>
+                                                {!isUnlocked ? (
+                                                    <p className={`md:col-span-3 text-sm py-1 ${emptyText}`}>Not open yet</p>
+                                                ) : !hasNotes ? (
+                                                    // One prompt for an empty day instead of a placeholder in every column.
+                                                    canStudentEdit ? (
+                                                        <button type="button" onClick={() => openDayModal(weekNum, dayNum)}
+                                                            className="md:col-span-2 -mx-2 px-2 py-1 min-h-[28px] rounded-lg text-left text-sm text-white/30 hover:text-white/70 hover:bg-white/[0.04] transition-colors cursor-pointer">
+                                                            + Write what you covered
+                                                        </button>
                                                     ) : (
-                                                        <span className={`text-sm ${emptyText}`}>{isMentorView ? 'Add feedback' : 'Awaiting review'}</span>
-                                                    )}
-                                                </div>
+                                                        <p className={`md:col-span-2 text-sm py-1 ${emptyText}`}>Nothing written</p>
+                                                    )
+                                                ) : (
+                                                    ([
+                                                        { label: 'Completed', text: log?.done_tasks },
+                                                        { label: 'References', text: log?.student_comment },
+                                                    ] as const).map(col => (
+                                                        <div key={col.label} onClick={() => canStudentEdit && openDayModal(weekNum, dayNum)}
+                                                            className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${editable}`}>
+                                                            <span className="md:hidden block text-[11px] text-white/35 mb-0.5">{col.label}</span>
+                                                            <p className="text-sm text-white/80 whitespace-pre-wrap break-words line-clamp-3" dir="auto">
+                                                                {col.text || <span className={emptyText}>—</span>}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                )}
+
+                                                {isUnlocked && (
+                                                    <div onClick={() => isMentorView && openMentorModal(weekNum, dayNum)}
+                                                        className={`rounded-lg -mx-2 px-2 py-1 min-h-[28px] transition-colors ${isMentorView ? 'cursor-pointer hover:bg-white/[0.04]' : ''}`}>
+                                                        {log?.mentor_comment ? (
+                                                            <div>
+                                                                <span className="md:hidden block text-[11px] text-white/35 mb-0.5">Mentor</span>
+                                                                <p className="text-sm text-white/85 whitespace-pre-wrap break-words line-clamp-3" dir="auto">{log.mentor_comment}</p>
+                                                                <p className="text-[11px] text-[#E8C15A]/70 mt-0.5">{log.mentor_name || 'Mentor'}</p>
+                                                            </div>
+                                                        ) : isMentorView ? (
+                                                            <span className="text-sm text-white/30">+ Add feedback</span>
+                                                        ) : sent ? (
+                                                            <span className={`text-sm ${emptyText}`}>Awaiting review</span>
+                                                        ) : null}
+                                                    </div>
+                                                )}
                                             </li>
                                         );
                                     })}
@@ -461,27 +485,27 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
                         {/* Field 1: What you completed */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-white/50">What did you complete?</label>
+                            <label className="text-xs text-white/55">What did you complete?</label>
                             <textarea
                                 value={tasksBuffer}
                                 onChange={e => handleTasksChange(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
                                 autoFocus rows={3} dir="auto"
                                 placeholder="e.g. 2 problems + syntax sheet, watched binary search session, solved 3 problems..."
-                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
+                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
                             />
                         </div>
 
                         {/* Field 2: References */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] text-white/50">References you studied from</label>
+                            <label className="text-xs text-white/55">References you studied from</label>
                             <textarea
                                 value={refsBuffer}
                                 onChange={e => handleRefsChange(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
                                 rows={3} dir="auto"
                                 placeholder="e.g. CP handbook ch.5, Errichto YT vid, USACO guide, Codeforces editorial #1923..."
-                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
+                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
                             />
                         </div>
 
@@ -513,7 +537,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                             onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
                             autoFocus rows={5} dir="auto"
                             placeholder="Write mentor feedback, praise, or study recommendations..."
-                            className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-xs text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
+                            className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
                         />
                         <div className="flex items-center justify-end pt-1">
                             <button type="button" onClick={closeModal}
