@@ -40,6 +40,7 @@ interface Badge3DProps {
     unlocked?: boolean;
     scale?: number;
     spin?: boolean;
+    compact?: boolean;
 }
 
 /**
@@ -96,11 +97,11 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
     render() { return this.state.failed ? <BadgeFallback /> : this.props.children; }
 }
 
-export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false }: Badge3DProps) {
+export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
 
     return (
-        <div ref={ref} className={`w-full h-full min-h-[160px] relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
+        <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
             {!seen ? (
                 <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
             ) : !hasWebGL() ? (
