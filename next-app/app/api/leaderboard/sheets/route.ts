@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData(`leaderboard:sheets:public:v6:level${level}`, 600, async () => {
+        const data = await getCachedData(`leaderboard:sheets:public:v7:level${level}`, 600, async () => {
             return await fetchLeaderboard(false, level);
         });
 
@@ -70,6 +70,9 @@ export async function GET(req: NextRequest) {
 }
 
 type Level = 0 | 1;
+
+// Students who are past Level 1 (Level 2 training) and so rank on neither board.
+const LEVEL_2_USER_IDS = new Set<number>([156]); // Ahmed Ashraf Elbayoumi
 
 /**
  * Level 0: everyone who applied for the coming season's Level 0 (and has an
@@ -164,7 +167,7 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
 
     const result = await query(queryStr, params);
 
-    const leaderboard = result.rows.map((row: any) => {
+    const leaderboard = result.rows.filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id))).map((row: any) => {
         // Try to decrypt the name if it's encrypted, then shorten it
         const rawName = decryptName(row.name);
         const displayName = rawName ? formatDisplayName(rawName) : 'Member';
