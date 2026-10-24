@@ -19,7 +19,7 @@ export default function SettingsPage() {
     const [loadingPrivacy, setLoadingPrivacy] = useState(true);
     const [savingPrivacy, setSavingPrivacy] = useState<string | null>(null);
 
-    const studentId = user?.email?.split('@')[0] || 'unknown';
+    const studentId = user?.email?.includes('@') ? user.email.split('@')[0] : 'unknown';
     const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/profile/${studentId}` : '';
 
     // Load current privacy settings on mount

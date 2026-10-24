@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
 import { decrypt, createBlindIndex } from '@/lib/security/encryption';
+import { repairEmailBlindIndex } from '@/lib/security/blind-index-repair';
 import { formatDisplayName } from '@/lib/names';
 
 /**
@@ -142,6 +143,7 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
         SELECT 
             u.id,
             u.email,
+            u.email_blind_index,
             u.profile_visibility,
             u.show_public_profile,
             u.is_shadow_banned,
@@ -167,7 +169,7 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
 
     const result = await query(queryStr, params);
 
-    const leaderboard = result.rows.filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id))).map((row: any) => {
+    const leaderboard = await Promise.all(result.rows.filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id))).map(async (row: any) => {
         // Try to decrypt the name if it's encrypted, then shorten it
         const rawName = decryptName(row.name);
         const displayName = rawName ? formatDisplayName(rawName) : 'Member';
@@ -176,6 +178,10 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
         const localPart = (safeDecrypt(row.email) || '').split('@')[0];
         const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
         const studentId = isPublic && /^\d{7,10}$/.test(localPart) ? localPart : null;
+        // Keep profile links fast: make sure this account can be found by its email's blind index.
+        if (/^\d{7,10}$/.test(localPart) && row.email_blind_index !== createBlindIndex(`${localPart}@horus.edu.eg`)) {
+            await repairEmailBlindIndex(row.id, `${localPart}@horus.edu.eg`);
+        }
 
         return {
             userId: row.id,
@@ -185,7 +191,7 @@ async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
             totalSubmissions: parseInt(row.total_submissions) || 0,
             acceptedCount: parseInt(row.accepted_count) || 0,
         };
-    });
+    }));
 
     return {
         success: true,

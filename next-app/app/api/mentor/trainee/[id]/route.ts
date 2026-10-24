@@ -145,15 +145,38 @@ export async function GET(
             if (appRes.rows.length > 0) appRow = appRes.rows[0];
         }
 
-        // 2. Profile Details
+        // 2. Profile Details & WhatsApp Onboarding
+        let cleanPhone = decrypt(appRow?.telephone) || '';
+        if (/^[0-9a-fA-F]{30,}$/.test(cleanPhone)) {
+            cleanPhone = '';
+        }
+
+        const studentId = appRow?.student_id || `STU-${userId || applicationId}`;
+
+        // Look up WhatsApp mentor group status for this trainee
+        const groupRes = await query(
+            `SELECT g.name AS group_name, g.mentor_name, g.invite_link,
+                    m.open_count, m.join_clicks, m.first_opened_at, m.last_opened_at, m.first_join_click_at
+               FROM mentor_group_members m
+               JOIN mentor_groups g ON g.id = m.group_id
+              WHERE m.season = 2027 AND m.student_id = $1
+              LIMIT 1`,
+            [studentId]
+        );
+        const groupRow = groupRes.rows[0];
+        const openCount = Number(groupRow?.open_count) || 0;
+        const joinClicks = Number(groupRow?.join_clicks) || 0;
+        const whatsappStatus: 'joined' | 'opened' | 'never_opened' =
+            joinClicks > 0 ? 'joined' : (openCount > 0 ? 'opened' : 'never_opened');
+
         const profile = {
             id: userId || applicationId,
             user_id: userId,
             application_id: applicationId,
             name: decrypt(appRow?.name) || userRow?.codeforces_handle || `Student #${userId || applicationId}`,
-            student_id: appRow?.student_id || `STU-${userId || applicationId}`,
+            student_id: studentId,
             email: decrypt(appRow?.email) || decrypt(userRow?.email) || userRow?.email || '',
-            phone: decrypt(appRow?.telephone) || '',
+            phone: cleanPhone,
             telegram: appRow?.telegram_username || userRow?.telegram_username || '',
             faculty: appRow?.faculty || '',
             academic_level: appRow?.student_level || '',
@@ -168,6 +191,14 @@ export async function GET(
             cheating_flags: userRow?.cheating_flags || 0,
             is_shadow_banned: userRow?.is_shadow_banned || false,
             season_year: appRow?.season_year || null,
+            whatsapp_group: groupRow?.group_name || null,
+            whatsapp_mentor_name: groupRow?.mentor_name || null,
+            whatsapp_status: whatsappStatus,
+            whatsapp_open_count: openCount,
+            whatsapp_join_clicks: joinClicks,
+            whatsapp_first_opened_at: groupRow?.first_opened_at ? new Date(groupRow.first_opened_at).toISOString() : null,
+            whatsapp_last_opened_at: groupRow?.last_opened_at ? new Date(groupRow.last_opened_at).toISOString() : null,
+            whatsapp_first_join_click_at: groupRow?.first_join_click_at ? new Date(groupRow.first_join_click_at).toISOString() : null,
         };
 
         // 3. Parallel Fetching with Verified Schema

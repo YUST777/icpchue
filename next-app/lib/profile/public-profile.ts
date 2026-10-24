@@ -74,21 +74,21 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
 
     return getCachedData(`public-profile:v5:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
         const email = `${studentId}@horus.edu.eg`;
-        const columns = `id, role, profile_visibility, show_public_profile, created_at, application_id,
-                    profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags,
-                    to_jsonb(users) -> 'social_links' AS social_links`;
-        let userResult = await query(`SELECT ${columns} FROM users WHERE email_blind_index = $1 LIMIT 1`, [createBlindIndex(email)]);
-
-        // A few accounts have a blind index that was built from a different
-        // spelling of the address. Fall back to comparing the decrypted email,
-        // globally rate-limited because it reads every account.
-        if (userResult.rows.length === 0 && (await rateLimit('profile-email-scan', 20, 60)).success) {
-            const all = await query('SELECT id, email FROM users');
-            const match = all.rows.find((u: { email: string | null }) => {
-                try { return (decrypt(u.email) || '').trim().toLowerCase() === email; } catch { return false; }
-            });
-            if (match) userResult = await query(`SELECT ${columns} FROM users WHERE id = $1`, [match.id]);
-        }
+        const bi = createBlindIndex(email);
+        const columns = `u.id, u.role, u.profile_visibility, u.show_public_profile, u.created_at, u.application_id,
+                    u.profile_picture, u.codeforces_data, u.codeforces_handle, u.is_shadow_banned, u.cheating_flags,
+                    to_jsonb(u) -> 'social_links' AS social_links`;
+        let userResult = await query(
+            `SELECT ${columns}
+             FROM users u
+             LEFT JOIN auth.users au ON au.id = u.supabase_uid
+             LEFT JOIN applications a ON a.id = u.application_id
+             WHERE u.email_blind_index = $1
+                OR lower(au.email) = lower($2)
+                OR a.student_id = $3
+             LIMIT 1`,
+            [bi, email, studentId]
+        );
 
         if (userResult.rows.length === 0) return { status: 'not_found' };
 

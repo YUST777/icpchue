@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
         }
 
         const user = userResult.rows[0];
-        const decryptedEmail = decrypt(user.email) || user.email;
+        let decryptedEmail = decrypt(user.email);
+        if (!decryptedEmail || !decryptedEmail.includes('@')) {
+            decryptedEmail = authUser.email || user.email;
+        }
 
         // Fetch Application/Profile details
         let profile: any = null;
