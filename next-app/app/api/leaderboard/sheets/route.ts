@@ -3,25 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
 import { decrypt } from '@/lib/security/encryption';
-
-// Extract first and last name
-function getShortName(fullName: string | null): string {
-    if (!fullName) return 'Anonymous';
-    const cleaned = fullName.split('/')[0].trim();
-    const parts = cleaned.trim().split(/\s+/);
-    if (parts.length <= 2) return cleaned.trim();
-    const firstName = parts[0];
-    const lastPart = parts[parts.length - 1];
-    const secondToLast = parts.length > 2 ? parts[parts.length - 2] : null;
-    const compoundPrefixes = /^(al|el|abd|abu|ben|ibn)[-]?$/i;
-    if (secondToLast && compoundPrefixes.test(secondToLast)) {
-        return `${firstName} ${secondToLast} ${lastPart}`;
-    }
-    if (/^(al|el|abd|abu)-/i.test(lastPart)) {
-        return `${firstName} ${lastPart}`;
-    }
-    return `${firstName} ${lastPart}`;
-}
+import { formatDisplayName } from '@/lib/names';
 
 /**
  * Detect if a string looks like encrypted data (any of the 3 formats):
@@ -70,7 +52,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData('leaderboard:sheets:public', 600, async () => {
+        const data = await getCachedData('leaderboard:sheets:public:v2', 600, async () => {
             return await fetchLeaderboard(false);
         });
 
@@ -121,9 +103,7 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
     const leaderboard = result.rows.map((row: any) => {
         // Try to decrypt the name if it's encrypted, then shorten it
         const rawName = decryptName(row.name);
-        const displayName = rawName 
-            ? getShortName(rawName) 
-            : row.email?.split('@')[0] || 'Anonymous';
+        const displayName = rawName ? formatDisplayName(rawName) : 'Member';
 
         return {
             userId: row.id,
