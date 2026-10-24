@@ -67,47 +67,116 @@ function useNearViewport<T extends Element>() {
     return { ref, seen, visible };
 }
 
-let webglSupport: boolean | null = null;
+let webglOk = false;
 
-/** One probe per page load: browsers with hardware acceleration off cannot create a context at all. */
+/**
+ * Success is cached; failure is not, so a context that was only briefly
+ * unavailable (too many canvases, GPU process restarting) can recover on retry.
+ * The probe context is released straight away so it does not eat into the
+ * browser's small per-page limit.
+ */
 function hasWebGL(): boolean {
-    if (webglSupport !== null) return webglSupport;
+    if (webglOk) return true;
     try {
         const canvas = document.createElement('canvas');
-        webglSupport = Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+        const gl = (canvas.getContext('webgl2') || canvas.getContext('webgl')) as WebGLRenderingContext | null;
+        if (!gl) return false;
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        webglOk = true;
     } catch {
-        webglSupport = false;
+        return false;
     }
-    return webglSupport;
+    return webglOk;
 }
 
-function BadgeFallback() {
+const modelUrls = new Map<string, Promise<string>>();
+
+/** Downloads a model while reporting 0-100 so the tile can show real progress. */
+function loadModel(path: string, onProgress: (pct: number | null) => void): Promise<string> {
+    let pending = modelUrls.get(path);
+    if (!pending) {
+        pending = (async () => {
+            const res = await fetch(path);
+            if (!res.ok || !res.body) throw new Error(`Failed to load ${path}`);
+            const total = Number(res.headers.get('content-length')) || 0;
+            const reader = res.body.getReader();
+            const chunks: Uint8Array[] = [];
+            let received = 0;
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                received += value.length;
+                // A compressed response reports its encoded size, so never claim 100% early.
+                onProgress(total ? Math.min(99, Math.round((received / total) * 100)) : null);
+            }
+            return URL.createObjectURL(new Blob(chunks as BlobPart[], { type: 'model/gltf-binary' }));
+        })();
+        pending.catch(() => modelUrls.delete(path));
+        modelUrls.set(path, pending);
+    }
+    return pending;
+}
+
+function BadgeFallback({ onRetry }: { onRetry?: () => void }) {
     return (
-        <div className="absolute inset-0 flex items-center justify-center text-[#E8C15A]/70">
+        <button type="button" onClick={onRetry} title="3D preview unavailable. Click to retry."
+            className="absolute inset-0 flex items-center justify-center text-[#E8C15A]/70 cursor-pointer">
             <Award size={40} strokeWidth={1.5} />
+        </button>
+    );
+}
+
+function LoadingBadge({ pct }: { pct: number | null }) {
+    return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" role="progressbar" aria-valuenow={pct ?? undefined} aria-valuemin={0} aria-valuemax={100}>
+            <span className="text-sm font-medium text-[#E8C15A] tabular-nums">{pct === null ? '…' : `${pct}%`}</span>
+            <span className="h-1 w-16 rounded-full bg-white/10 overflow-hidden">
+                <span className="block h-full bg-[#E8C15A] transition-[width] duration-200" style={{ width: `${pct ?? 15}%` }} />
+            </span>
         </div>
     );
 }
 
 /** If the scene still fails to start, show the static badge instead of erroring the page. */
-class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void }, { failed: boolean }> {
     state = { failed: false };
     static getDerivedStateFromError() { return { failed: true }; }
-    componentDidCatch() { webglSupport = false; }
-    render() { return this.state.failed ? <BadgeFallback /> : this.props.children; }
+    render() {
+        return this.state.failed
+            ? <BadgeFallback onRetry={() => { this.setState({ failed: false }); this.props.onRetry(); }} />
+            : this.props.children;
+    }
 }
 
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
+    const [attempt, setAttempt] = useState(0);
+    const [pct, setPct] = useState<number | null>(0);
+    const [url, setUrl] = useState<string | null>(null);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        if (!seen) return;
+        let cancelled = false;
+        loadModel(modelPath, p => { if (!cancelled) setPct(p); })
+            .then(u => { if (!cancelled) setUrl(u); })
+            .catch(() => { if (!cancelled) setFailed(true); });
+        return () => { cancelled = true; };
+    }, [seen, modelPath, attempt]);
+
+    const retry = () => { setFailed(false); setPct(0); setAttempt(n => n + 1); };
 
     return (
         <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
             {!seen ? (
                 <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
-            ) : !hasWebGL() ? (
-                <BadgeFallback />
+            ) : failed || !hasWebGL() ? (
+                <BadgeFallback onRetry={retry} />
+            ) : !url ? (
+                <LoadingBadge pct={pct} />
             ) : (
-            <SceneBoundary>
+            <SceneBoundary onRetry={retry}>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
@@ -125,7 +194,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                         floatingRange={[-0.1, 0.1]}
                     >
                         <Center>
-                            <Model path={modelPath} scale={scale * 1.45} unlocked={unlocked} spin={spin} />
+                            <Model path={url} scale={scale * 1.45} unlocked={unlocked} spin={spin} />
                         </Center>
                     </Float>
                     {/* Reflections from in-code light panels: the "city" preset downloaded
