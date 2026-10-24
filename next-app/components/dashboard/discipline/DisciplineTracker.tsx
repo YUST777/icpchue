@@ -355,13 +355,13 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
                         return (
                             <section key={weekNum} className="rounded-2xl border border-white/[0.08] bg-[#121214] overflow-hidden">
-                                <header className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.08] bg-black/20">
+                                <div className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.08] bg-black/20">
                                     <div className="flex items-baseline gap-3">
                                         <h2 className="text-sm font-bold text-[#E8C15A]">Week {weekNum}</h2>
                                         <span className="text-xs text-white/40">{range}</span>
                                     </div>
                                     <span className="text-xs text-white/50 tabular-nums">{Math.round(weekHours * 10) / 10}h</span>
-                                </header>
+                                </div>
 
                                 <div className="hidden md:grid grid-cols-[96px_72px_1fr_1fr_1fr] gap-4 px-4 py-2 text-xs text-white/35 border-b border-white/[0.06]">
                                     <span>Day</span><span>Hours</span><span>Completed</span><span>References</span><span>Mentor</span>
