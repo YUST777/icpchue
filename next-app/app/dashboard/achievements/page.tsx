@@ -28,7 +28,7 @@ const RARITY_TEXT = { common: 'text-white/40', rare: 'text-sky-400', legendary: 
 
 const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
 
-function BadgeCard({ id, modelPath, scale = 1.5, spin, title, description, unlocked, rarity }: BadgeCardProps) {
+function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity }: BadgeCardProps) {
     return (
         <li title={description}
             className={`rounded-xl border p-3 flex flex-col items-center text-center ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
@@ -67,7 +67,7 @@ export default function AchievementsPage() {
     const achievements = [
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
-        { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
         ...LEVEL0_SHEET_BADGES.map(sheet => ({
             group: 'Level 0 sheets', id: sheet.id, modelPath: `/3d/${sheet.id}.glb`, scale: 2, title: ACHIEVEMENT_META[sheet.id].name, description: ACHIEVEMENT_META[sheet.id].desc,
             unlocked: earnedIds.has(sheet.id), rarity: ACHIEVEMENT_META[sheet.id].tier,
@@ -75,7 +75,7 @@ export default function AchievementsPage() {
         { group: 'Board', id: 'mentor', modelPath: '/3d/mentor.glb', scale: 2, title: ACHIEVEMENT_META.mentor.name, description: ACHIEVEMENT_META.mentor.desc, unlocked: earnedIds.has('mentor'), rarity: ACHIEVEMENT_META.mentor.tier },
         ...PROGRESS_BADGES.map(id => ({
             group: id.startsWith('disciplined') ? 'Discipline' : 'Streaks',
-            id, modelPath: `/3d/${id}.glb`, spin: true, title: ACHIEVEMENT_META[id].name, description: ACHIEVEMENT_META[id].desc,
+            id, modelPath: `/3d/${id}.glb`, title: ACHIEVEMENT_META[id].name, description: ACHIEVEMENT_META[id].desc,
             unlocked: earnedIds.has(id), rarity: ACHIEVEMENT_META[id].tier,
         })),
     ];
