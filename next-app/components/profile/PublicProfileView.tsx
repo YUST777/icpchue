@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Check, ChevronDown, Code, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
+import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
 import { SOCIALS, type SocialLinks } from '@/lib/profile/socials';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
@@ -11,14 +12,7 @@ import { getDisplayName } from '@/lib/utils';
 // Global marketing CSS restyles h1-h3, p and section, so this view sticks to
 // divs/spans and sets every size itself.
 
-const ACHIEVEMENT_IMAGES: Record<string, string> = {
-    welcome: '/images/achievements/WELCOME.webp',
-    approval: '/images/achievements/done_approvalcamp.webp',
-    'sheet-1': '/images/achievements/sheet1acheavment.webp',
-    '500pts': '/images/achievements/500pts.webp',
-    instructor: '/images/achievements/instructor.webp',
-    'rank1-march-2026': '/images/achievements/rank1_march.webp',
-};
+const ACHIEVEMENT_IMAGES: Record<string, string> = Object.fromEntries(Object.entries(ACHIEVEMENT_META).map(([id, m]) => [id, m.imageSrc]));
 
 const RARITY_TEXT = { legendary: 'text-[#E8C15A]', rare: 'text-sky-400', common: 'text-white/40' } as const;
 const ROLE_LABEL: Record<string, string> = { owner: 'Founder', instructor: 'Instructor', mentor: 'Mentor' };

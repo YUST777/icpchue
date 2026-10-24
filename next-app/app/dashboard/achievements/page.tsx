@@ -5,11 +5,16 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Lock } from 'lucide-react';
+import { useAchievements } from '@/hooks/useAchievements';
+import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
+
+const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program', 'mentor'];
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
 interface BadgeCardProps {
     modelPath?: string;
+    spin?: boolean;
     imageSrc?: string;
     title: string;
     description: string;
@@ -17,7 +22,7 @@ interface BadgeCardProps {
     rarity: 'common' | 'rare' | 'legendary';
 }
 
-function BadgeCard({ modelPath, imageSrc, title, description, unlocked, rarity }: BadgeCardProps) {
+function BadgeCard({ modelPath, spin, imageSrc, title, description, unlocked, rarity }: BadgeCardProps) {
     const rarityStyles = {
         common: 'border-yellow-500/30 bg-yellow-500/10',
         rare: 'border-blue-500/30 bg-blue-500/10',
@@ -35,7 +40,7 @@ function BadgeCard({ modelPath, imageSrc, title, description, unlocked, rarity }
             <div className="relative w-full h-48 md:h-56 mb-8 rounded-2xl overflow-visible">
                 {modelPath ? (
                     <div className="w-full h-full">
-                        <Badge3D modelPath={modelPath} unlocked={unlocked} scale={2} />
+                        <Badge3D modelPath={modelPath} unlocked={unlocked} scale={2} spin={spin} />
                     </div>
                 ) : imageSrc ? (
                     <div className="relative w-24 h-24 mx-auto mt-4">
@@ -81,6 +86,9 @@ export default function AchievementsPage() {
     const codeforcesRating = codeforcesData?.rating ? parseInt(codeforcesData.rating, 10) : null;
     const is500PtsUnlocked = codeforcesRating !== null && codeforcesRating >= 500;
 
+    const { achievements: earned } = useAchievements(Boolean(user));
+    const earnedIds = new Set(earned.map(a => a.achievement_id));
+
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
     const isSheet1Unlocked = profile?.sheet_1_solved === true;
     const isApprovalUnlocked = profile?.is_approval_unlocked === true;
@@ -92,6 +100,10 @@ export default function AchievementsPage() {
         { id: '500pts', modelPath: '/3d/500pts.glb', title: '500+ Rating', description: 'Achieve 500+ rating on Codeforces', unlocked: is500PtsUnlocked, rarity: 'rare' as const },
         { id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', imageSrc: '/images/achievements/rank1_march.webp', title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        ...PROGRESS_BADGES.map(id => ({
+            id, modelPath: `/3d/${id}.glb`, spin: true, title: ACHIEVEMENT_META[id].name, description: ACHIEVEMENT_META[id].desc,
+            unlocked: earnedIds.has(id), rarity: ACHIEVEMENT_META[id].tier,
+        })),
     ];
 
     const unlockedCount = achievements.filter(a => a.unlocked).length;

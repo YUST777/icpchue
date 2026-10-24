@@ -8,9 +8,7 @@ import { fetchWithCache } from '@/lib/cache/api-cache';
 
 import AchievementsWidget from '@/components/achievements/AchievementsWidget';
 import CurrentSheetWidget from '@/components/dashboard/CurrentSheetWidget';
-import { AchievementRevealModal } from '@/components/achievements/AchievementRevealModal';
 import { UserProfile } from '@/lib/types';
-import { useAchievements } from '@/hooks/useAchievements';
 
 // Extracted Components
 import { ProfileEditModal } from '@/components/dashboard/profile/ProfileEditModal';
@@ -41,7 +39,6 @@ export default function ProfilePage() {
     const [sheetsRank, setSheetsRank] = useState<number | null>(null);
 
     // Achievements hook for popup reveals
-    const { unseenAchievement, markAsSeen } = useAchievements(isAuthenticated);
 
     const openEditModal = (field: string, currentValue: string) => {
         if (field === 'codeforces') {
@@ -221,14 +218,6 @@ export default function ProfilePage() {
 
     return (
         <>
-            {unseenAchievement && (
-                <AchievementRevealModal
-                    achievement={unseenAchievement}
-                    onClose={() => markAsSeen(unseenAchievement.id)}
-                    onClaim={markAsSeen}
-                />
-            )}
-
             <div className="space-y-6 animate-fade-in">
                 {/* Mobile User Info Accordion */}
                 <div className="md:hidden bg-[#121212] rounded-xl border border-white/5 overflow-hidden">

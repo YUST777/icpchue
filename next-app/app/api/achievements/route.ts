@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
+import { checkProgressAchievements } from '@/lib/services/achievements';
 
 export async function GET(req: NextRequest) {
     const authResult = await verifyAuth(req);
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        // Award newly earned progress badges, at most every 2 minutes per user.
+        await getCachedData(`user:${authResult.id}:achievement-check`, 120, async () => ({
+            granted: await checkProgressAchievements(authResult.id, authResult.role),
+        }));
+
         const cacheKey = `user:${authResult.id}:achievements`;
         const data = await getCachedData(cacheKey, 300, async () => {
             const result = await query(
