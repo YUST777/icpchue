@@ -8,6 +8,9 @@ import { useGLTF, Environment, Lightformer, Float, OrbitControls, Center, Html }
 import * as THREE from 'three';
 import Loader from '@/components/common/Loader';
 
+// Draco decoder served from our own origin instead of Google's CDN.
+export const DRACO_PATH = '/draco/';
+
 interface ModelProps {
     path: string;
     scale?: number;
@@ -16,7 +19,7 @@ interface ModelProps {
 }
 
 function Model({ path, scale = 1, spin = false }: ModelProps) {
-    const { scene } = useGLTF(path);
+    const { scene } = useGLTF(path, DRACO_PATH);
     // Clone scene to avoid mutating the shared cache
     const clone = useMemo(() => scene.clone(), [scene]);
     const ref = useRef<THREE.Group>(null);
@@ -169,7 +172,9 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
 
     return (
         <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
-            {!seen ? (
+            {/* Unmount the canvas once it scrolls away: Chrome keeps only ~16 WebGL
+                contexts per page, and the achievements page has more badges than that. */}
+            {!seen || !visible ? (
                 <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
             ) : failed || !hasWebGL() ? (
                 <BadgeFallback onRetry={retry} />

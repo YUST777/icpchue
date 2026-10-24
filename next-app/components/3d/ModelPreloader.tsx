@@ -3,6 +3,7 @@
 import { useGLTF } from '@react-three/drei';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { DRACO_PATH } from './Badge3D';
 
 const MODELS = [
     '/3d/WELCOME.glb',
@@ -25,7 +26,7 @@ export default function ModelPreloader() {
         if (!needsModels) return;
 
         MODELS.forEach(path => {
-            useGLTF.preload(path);
+            useGLTF.preload(path, DRACO_PATH);
         });
     }, [pathname]);
 
