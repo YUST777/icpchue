@@ -113,7 +113,7 @@ export default function LeaderboardPage() {
                             Leaderboard
                         </h2>
                         <p className="text-[#A0A0A0] mt-1 ml-10">
-                            Level 0 is this season's newcomers and mentors; Level 1 is last season's trainees
+                            Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams
                         </p>
                     </div>
                 </div>
