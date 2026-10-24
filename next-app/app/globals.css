@@ -1031,7 +1031,7 @@ select {
   }
 
   /* Better button spacing */
-  button {
+  button:not(.ui-compact *) {
     padding: 0.875rem 1.75rem;
   }
 }
@@ -1405,4 +1405,28 @@ iframe[title*="reCAPTCHA"],
   padding: revert-layer;
   min-height: revert-layer;
   min-width: revert-layer;
+}
+
+
+/* App screens (dashboard tools) size their own controls. The site-wide rules
+   above (44px tap targets, section padding, focus outlines) are for the
+   marketing pages and would blow up small buttons and inputs here. */
+.ui-compact :is(button, a, input, select, textarea, [role="button"], [onclick]) {
+  min-height: 0;
+  min-width: 0;
+}
+
+.ui-compact section {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ui-compact :is(input, select, textarea):focus,
+.ui-compact :is(input, select, textarea):focus-visible {
+  outline: none;
+}
+
+.ui-compact :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid rgb(232 193 90 / 0.6);
+  outline-offset: 2px;
 }

@@ -110,8 +110,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 // ── Main Component ─────────────────────────────────────────
-// The global focus-visible outline would stack on the border change, so it is switched off here.
-const FIELD_CLASS = 'w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-3 text-sm leading-relaxed text-white placeholder-white/25 resize-none transition-colors focus:border-[#E8C15A]/60 focus:outline-none focus-visible:outline-none!';
+const FIELD_CLASS = 'w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-3 text-sm leading-relaxed text-white placeholder-white/25 resize-none transition-colors focus:border-[#E8C15A]/60 focus:outline-none';
 
 function ModalShell({ title, subtitle, onClose, children }: {
     title: string;
@@ -339,7 +338,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     const sentAt = activeEditCell ? formatSubmittedAt(logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at) : '';
 
     return (
-        <div className="space-y-5">
+        <div className="ui-compact space-y-5">
             {/* ── Header ─────────────────────────────────── */}
             <div className="space-y-4">
                 <div>
