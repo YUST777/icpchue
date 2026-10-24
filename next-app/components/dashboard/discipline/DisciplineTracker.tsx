@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, X } from 'lucide-react';
 
 interface DisciplineLog {
     id?: number;
@@ -110,6 +110,42 @@ function isSameDay(a: Date, b: Date) {
 }
 
 // ── Main Component ─────────────────────────────────────────
+// The global focus-visible outline would stack on the border change, so it is switched off here.
+const FIELD_CLASS = 'w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-3 text-sm leading-relaxed text-white placeholder-white/25 resize-none transition-colors focus:border-[#E8C15A]/60 focus:outline-none focus-visible:outline-none!';
+
+function ModalShell({ title, subtitle, onClose, children }: {
+    title: string;
+    subtitle: string;
+    onClose: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+            <div role="dialog" aria-modal="true" aria-label={title}
+                className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#121214] p-5 sm:p-6 space-y-5"
+                onClick={e => e.stopPropagation()}>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 className="text-base font-semibold text-white">{title}</h2>
+                        <p className="text-xs text-white/40 mt-0.5">{subtitle}</p>
+                    </div>
+                    <button type="button" onClick={onClose} aria-label="Close"
+                        className="-m-1.5 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer">
+                        <X size={16} />
+                    </button>
+                </div>
+                {children}
+                <div className="flex justify-end">
+                    <button type="button" onClick={onClose}
+                        className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black text-sm font-semibold transition-colors cursor-pointer">
+                        <Check size={14} /> Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function DisciplineTracker({ targetUserId, isMentorView = false, traineeName }: DisciplineTrackerProps) {
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
     const [summary, setSummary] = useState<{ total_hours: number; active_days: number; mentor_reviews: number; total_entries: number } | null>(null);
@@ -300,6 +336,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         { label: 'Consistency', value: `${consistency}%` },
     ];
     const emptyText = 'text-white/25';
+    const sentAt = activeEditCell ? formatSubmittedAt(logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at) : '';
 
     return (
         <div className="space-y-5">
@@ -463,90 +500,55 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 </div>
             )}
 
-            {/* ── Day Edit Modal (2 fields: Tasks + References) ── */}
+            {/* ── Day edit modal ── */}
             {activeEditCell && activeEditCell.mode === 'day' && (
-                <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-md border border-[#E8C15A]/20">
-                                    W{activeEditCell.week} · Day {activeEditCell.day}
-                                </span>
-                                <span className="text-xs font-medium text-white/90">Daily Log</span>
-                                {logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at && (
-                                    <span className="text-[10px] font-mono text-white/40">
-                                        · Sent: {formatSubmittedAt(logsMap.get(`${activeEditCell.week}_${activeEditCell.day}`)?.submitted_at)}
-                                    </span>
-                                )}
-                            </div>
-                            <button type="button" onClick={closeModal} className="w-6 h-6 rounded-lg text-white/30 hover:text-white hover:bg-white/5 flex items-center justify-center text-xs transition-colors cursor-pointer">✕</button>
-                        </div>
-
-                        {/* Field 1: What you completed */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs text-white/55">What did you complete?</label>
-                            <textarea
-                                value={tasksBuffer}
-                                onChange={e => handleTasksChange(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
-                                autoFocus rows={3} dir="auto"
-                                placeholder="e.g. 2 problems + syntax sheet, watched binary search session, solved 3 problems..."
-                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
-                            />
-                        </div>
-
-                        {/* Field 2: References */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs text-white/55">References you studied from</label>
-                            <textarea
-                                value={refsBuffer}
-                                onChange={e => handleRefsChange(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
-                                rows={3} dir="auto"
-                                placeholder="e.g. CP handbook ch.5, Errichto YT vid, USACO guide, Codeforces editorial #1923..."
-                                className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
-                            />
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-end pt-1">
-                            <button type="button" onClick={closeModal}
-                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-                                <Check size={12} /> Done
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ModalShell
+                    title="Daily log"
+                    subtitle={`Week ${activeEditCell.week} · Day ${activeEditCell.day}${sentAt ? ` · Sent ${sentAt}` : ''}`}
+                    onClose={closeModal}
+                >
+                    <label className="block space-y-1.5">
+                        <span className="text-sm text-white/70">What did you complete?</span>
+                        <textarea
+                            value={tasksBuffer}
+                            onChange={e => handleTasksChange(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
+                            autoFocus rows={4} dir="auto"
+                            placeholder="Problems solved, sheets finished, sessions watched"
+                            className={FIELD_CLASS}
+                        />
+                    </label>
+                    <label className="block space-y-1.5">
+                        <span className="text-sm text-white/70">Where did you study from?</span>
+                        <textarea
+                            value={refsBuffer}
+                            onChange={e => handleRefsChange(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
+                            rows={3} dir="auto"
+                            placeholder="Handbook chapter, video, editorial link"
+                            className={FIELD_CLASS}
+                        />
+                    </label>
+                </ModalShell>
             )}
 
-            {/* ── Mentor Modal (single field) ── */}
+            {/* ── Mentor feedback modal ── */}
             {activeEditCell && activeEditCell.mode === 'mentor' && (
-                <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <div className="bg-[#111113] border border-white/[0.08] rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-md border border-[#E8C15A]/20">W{activeEditCell.week} · Day {activeEditCell.day}</span>
-                                <span className="text-xs font-medium text-white/90">Mentor Feedback</span>
-                            </div>
-                            <button type="button" onClick={closeModal} className="w-6 h-6 rounded-lg text-white/30 hover:text-white hover:bg-white/5 flex items-center justify-center text-xs transition-colors cursor-pointer">✕</button>
-                        </div>
-                        <textarea
-                            value={mentorBuffer}
-                            onChange={e => handleMentorChange(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
-                            autoFocus rows={5} dir="auto"
-                            placeholder="Write mentor feedback, praise, or study recommendations..."
-                            className="w-full bg-black/40 border border-white/[0.08] focus:border-[#E8C15A]/40 focus:bg-black/60 rounded-xl p-3 text-sm text-white/90 placeholder-white/20 focus:outline-none transition-all resize-none font-sans leading-relaxed"
-                        />
-                        <div className="flex items-center justify-end pt-1">
-                            <button type="button" onClick={closeModal}
-                                className="px-4 py-1.5 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-                                <Check size={12} /> Done
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ModalShell
+                    title="Mentor feedback"
+                    subtitle={`Week ${activeEditCell.week} · Day ${activeEditCell.day}`}
+                    onClose={closeModal}
+                >
+                    <textarea
+                        value={mentorBuffer}
+                        onChange={e => handleMentorChange(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
+                        autoFocus rows={6} dir="auto"
+                        aria-label="Mentor feedback"
+                        placeholder="Feedback, praise, or what to study next"
+                        className={FIELD_CLASS}
+                    />
+                </ModalShell>
             )}
         </div>
     );
