@@ -171,8 +171,8 @@ class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void
     }
 }
 
-/** Chrome allows ~16 WebGL contexts per page and some drivers crash the GPU process past that, so stay well under. */
-const MAX_LIVE_SCENES = 8;
+/** Chrome allows ~16 WebGL contexts per page. Allow up to 16 live 3D badges on screen simultaneously. */
+const MAX_LIVE_SCENES = 16;
 const liveScenes = new Set<symbol>();
 
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
