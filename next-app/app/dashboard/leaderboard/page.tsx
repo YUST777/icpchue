@@ -51,7 +51,7 @@ import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export default function LeaderboardPage() {
     useAuth(); // Keep auth context active
-    const [activeTab, setActiveTab] = useState<'codeforces' | 'sheets'>('sheets');
+    const [activeTab, setActiveTab] = useState<'level0' | 'level1' | 'codeforces'>('level0');
     const [cfLeaderboard, setCfLeaderboard] = useState<CFUser[]>([]);
     const [sheetsLeaderboard, setSheetsLeaderboard] = useState<SheetUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -67,9 +67,9 @@ export default function LeaderboardPage() {
                     // Cache leaderboard for 5 minutes
                     const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard'), {}, 300);
                     setCfLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
-                } else if (activeTab === 'sheets') {
+                } else {
                     // Cache sheets leaderboard for 5 minutes
-                    const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard/sheets'), { credentials: 'include' }, 300);
+                    const data = await fetchWithCache<any>(addCacheBust(`/api/leaderboard/sheets?level=${activeTab === 'level1' ? 1 : 0}`), { credentials: 'include' }, 300);
                     setSheetsLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
                 }
             } catch (err) {
@@ -113,7 +113,7 @@ export default function LeaderboardPage() {
                             Leaderboard
                         </h2>
                         <p className="text-[#A0A0A0] mt-1 ml-10">
-                            Compare your progress with the community
+                            Level 0 is this season's newcomers and mentors; Level 1 is last season's trainees
                         </p>
                     </div>
                 </div>
@@ -121,21 +121,24 @@ export default function LeaderboardPage() {
                 {/* Tabs */}
                 <div className="border-b border-white/10">
                     <div className="flex gap-6">
-                        <button
-                            onClick={() => setActiveTab('sheets')}
-                            className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'sheets'
-                                ? 'text-[#E8C15A]'
-                                : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Code size={16} />
-                                Training Sheets
-                            </div>
-                            {activeTab === 'sheets' && (
-                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
-                            )}
-                        </button>
+                        {([['level0', 'Level 0'], ['level1', 'Level 1']] as const).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`pb-4 text-sm font-medium transition-all relative ${activeTab === key
+                                    ? 'text-[#E8C15A]'
+                                    : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Code size={16} />
+                                    {label}
+                                </div>
+                                {activeTab === key && (
+                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
+                                )}
+                            </button>
+                        ))}
                         <button
                             onClick={() => setActiveTab('codeforces')}
                             className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'codeforces'
@@ -156,7 +159,7 @@ export default function LeaderboardPage() {
 
                 {/* Leaderboard Table */}
                 <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">
-                    {activeTab === 'sheets' ? (
+                    {activeTab !== 'codeforces' ? (
                         <>
                             {/* Sheets Header - Mobile Responsive */}
                             <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
