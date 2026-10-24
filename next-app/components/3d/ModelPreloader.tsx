@@ -7,7 +7,6 @@ import { DRACO_PATH } from './Badge3D';
 
 const MODELS = [
     '/3d/WELCOME.glb',
-    '/3d/done_approvalcamp.glb',
     '/3d/instructor.glb'
 ];
 

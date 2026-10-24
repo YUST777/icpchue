@@ -72,7 +72,7 @@ function yearFromStudentId(studentId: string): string | null {
 export async function getPublicProfile(studentId: string): Promise<PublicProfileResult> {
     if (!/^\d{7,10}$/.test(studentId)) return { status: 'not_found' };
 
-    return getCachedData(`public-profile:v4:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
+    return getCachedData(`public-profile:v5:${studentId}`, 60, async (): Promise<PublicProfileResult> => {
         const email = `${studentId}@horus.edu.eg`;
         const columns = `id, role, profile_visibility, show_public_profile, created_at, application_id,
                     profile_picture, codeforces_data, codeforces_handle, is_shadow_banned, cheating_flags,
