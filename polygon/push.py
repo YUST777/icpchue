@@ -52,8 +52,29 @@ def load_credentials():
 KEY, SECRET = load_credentials()
 
 
+_last_call = 0.0
+
+
 def call(method, **params):
-    """Signed POST to the Polygon API; returns `result` or exits with the error."""
+    """Signed POST to the Polygon API (paced, retried on 429); returns `result`."""
+    global _last_call
+    for attempt in range(6):
+        wait = 1.0 - (time.time() - _last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call = time.time()
+        try:
+            return _call_once(method, **params)
+        except RateLimited:
+            time.sleep(5 * (attempt + 1))
+    sys.exit(f'{method} failed: still rate limited after retries')
+
+
+class RateLimited(Exception):
+    pass
+
+
+def _call_once(method, **params):
     params = {k: ('true' if v is True else 'false' if v is False else str(v)) for k, v in params.items()}
     params['apiKey'] = KEY
     params['time'] = str(int(time.time()))
@@ -65,7 +86,13 @@ def call(method, **params):
         with urllib.request.urlopen(req, timeout=120) as r:
             body = json.loads(r.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
-        body = json.loads(e.read().decode('utf-8') or '{}')
+        raw = e.read().decode('utf-8', 'replace')
+        if e.code == 429:
+            raise RateLimited()
+        try:
+            body = json.loads(raw or '{}')
+        except json.JSONDecodeError:
+            sys.exit(f'{method} failed: HTTP {e.code}: {raw[:300]}')
     if body.get('status') != 'OK':
         sys.exit(f'{method} failed: {body.get("comment")}')
     return body.get('result')
