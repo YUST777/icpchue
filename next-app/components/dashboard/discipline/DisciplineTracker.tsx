@@ -311,19 +311,19 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.02] divide-x divide-y sm:divide-y-0 divide-white/[0.06]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 rounded-2xl border border-white/[0.08] bg-[#121214] divide-x divide-y sm:divide-y-0 divide-white/[0.06]">
                     {stats.map(stat => (
                         <div key={stat.label} className="px-4 py-3">
-                            <div className="text-lg font-semibold text-white tabular-nums">{stat.value}</div>
+                            <div className="text-lg font-semibold text-[#E8C15A] tabular-nums">{stat.value}</div>
                             <div className="text-xs text-white/40">{stat.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Week">
+                <div className="flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/10 bg-[#0B0B0C] w-fit max-w-full" role="tablist" aria-label="Week">
                     {(['all', ...Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1)] as const).map(w => (
                         <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => setSelectedWeek(w)}
-                            className={`shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-white text-black font-medium' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
+                            className={`shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
                             {w === 'all' ? 'All' : `Week ${w}`}
                         </button>
                     ))}
@@ -331,7 +331,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
             </div>
 
             {isMentorView && !loading && (summary?.total_entries || 0) === 0 ? (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-8 text-center text-sm text-white/50">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#121214] p-8 text-center text-sm text-white/50">
                     {traineeName || 'This trainee'} has not logged any study days yet.
                 </div>
             ) : loading ? (
@@ -346,10 +346,10 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                         const range = `${formatDayDate(getDayDate(weekNum, 1))} – ${formatDayDate(getDayDate(weekNum, DAYS_PER_WEEK))}`;
 
                         return (
-                            <section key={weekNum} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-                                <header className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.06]">
+                            <section key={weekNum} className="rounded-2xl border border-white/[0.08] bg-[#121214] overflow-hidden">
+                                <header className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.08] bg-black/20">
                                     <div className="flex items-baseline gap-3">
-                                        <h2 className="text-sm font-semibold text-white">Week {weekNum}</h2>
+                                        <h2 className="text-sm font-bold text-[#E8C15A]">Week {weekNum}</h2>
                                         <span className="text-xs text-white/40">{range}</span>
                                     </div>
                                     <span className="text-xs text-white/50 tabular-nums">{Math.round(weekHours * 10) / 10}h</span>
