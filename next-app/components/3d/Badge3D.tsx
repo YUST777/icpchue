@@ -155,12 +155,28 @@ class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void
     }
 }
 
+/** Chrome allows ~16 WebGL contexts per page and some drivers crash the GPU process past that, so stay well under. */
+const MAX_LIVE_SCENES = 8;
+const liveScenes = new Set<symbol>();
+
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
     const [attempt, setAttempt] = useState(0);
     const [pct, setPct] = useState<number | null>(0);
     const [url, setUrl] = useState<string | null>(null);
     const [failed, setFailed] = useState(false);
+    const [granted, setGranted] = useState(false);
+    const slot = useRef(Symbol('badge-scene'));
+
+    // Claim a scene slot while this badge is on screen with its model loaded.
+    useEffect(() => {
+        const mine = slot.current;
+        if (visible && url && liveScenes.size < MAX_LIVE_SCENES) {
+            liveScenes.add(mine);
+            setGranted(true);
+        }
+        return () => { liveScenes.delete(mine); setGranted(false); };
+    }, [visible, url]);
 
     useEffect(() => {
         if (!seen) return;
@@ -183,6 +199,8 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : !url ? (
                 <LoadingBadge pct={pct} />
+            ) : !granted ? (
+                <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : (
             <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
