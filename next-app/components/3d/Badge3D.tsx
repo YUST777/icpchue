@@ -133,13 +133,29 @@ function BadgeFallback({ onRetry, src }: { onRetry?: () => void; src?: string })
     );
 }
 
-function LoadingBadge({ pct }: { pct: number | null }) {
+// Pointy-top hexagon outline in a 100x100 box, the same shape as the badges.
+const HEX_POINTS = '50,6 88,28 88,72 50,94 12,72 12,28';
+const HEX_LENGTH = 6 * 44;
+
+/**
+ * Loading state: the badge picture ghosted behind a hexagon that draws itself
+ * as the model downloads, with the percentage in the middle. Without a known
+ * size the outline just keeps turning.
+ */
+function LoadingBadge({ pct, src }: { pct: number | null; src?: string }) {
+    const done = pct === null ? 0.25 : Math.max(0.04, pct / 100);
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" role="progressbar" aria-valuenow={pct ?? undefined} aria-valuemin={0} aria-valuemax={100}>
-            <span className="text-sm font-medium text-[#E8C15A] tabular-nums">{pct === null ? '…' : `${pct}%`}</span>
-            <span className="h-1 w-16 rounded-full bg-white/10 overflow-hidden">
-                <span className="block h-full bg-[#E8C15A] transition-[width] duration-200" style={{ width: `${pct ?? 15}%` }} />
-            </span>
+        <div className="absolute inset-0 flex items-center justify-center" role="progressbar"
+            aria-valuenow={pct ?? undefined} aria-valuemin={0} aria-valuemax={100}>
+            {src && <Image src={src} alt="" fill sizes="240px" className="object-contain p-5 opacity-25 blur-[1px] animate-[badgePulse_1.6s_ease-in-out_infinite]" />}
+            <svg viewBox="0 0 100 100" className={`relative h-[62%] max-h-36 aspect-square ${pct === null ? 'animate-[badgeSpin_2.4s_linear_infinite]' : ''}`}>
+                <polygon points={HEX_POINTS} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" strokeLinejoin="round" />
+                <polygon points={HEX_POINTS} fill="none" stroke="#E8C15A" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
+                    strokeDasharray={HEX_LENGTH} strokeDashoffset={HEX_LENGTH * (1 - done)}
+                    style={{ transition: 'stroke-dashoffset 300ms ease-out', filter: 'drop-shadow(0 0 3px rgba(232,193,90,0.6))' }} />
+            </svg>
+            <span className="absolute text-xs font-semibold text-[#E8C15A] tabular-nums">{pct === null ? '' : `${pct}%`}</span>
+            <style>{`@keyframes badgePulse{0%,100%{opacity:.18}50%{opacity:.34}}@keyframes badgeSpin{to{transform:rotate(360deg)}}@keyframes badgeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}`}</style>
         </div>
     );
 }
@@ -190,19 +206,20 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
     const retry = () => { setFailed(false); setPct(0); setAttempt(n => n + 1); };
 
     return (
-        <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative ${!unlocked ? 'blur-sm grayscale opacity-60' : ''}`}>
+        <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative`}>
             {/* Unmount the canvas once it scrolls away: Chrome keeps only ~16 WebGL
                 contexts per page, and the achievements page has more badges than that. */}
             {!seen || !visible ? (
-                <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
+                <LoadingBadge pct={pct} src={fallbackSrc} />
             ) : failed || !hasWebGL() ? (
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : !url ? (
-                <LoadingBadge pct={pct} />
+                <LoadingBadge pct={pct} src={fallbackSrc} />
             ) : !granted ? (
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : (
             <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
+            <div className={`absolute inset-0 animate-[badgeIn_0.6s_ease-out] ${!unlocked ? 'grayscale opacity-45' : ''}`}>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
@@ -227,6 +244,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                     <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 4} maxPolarAngle={Math.PI / 1.5} />
                 </Suspense>
             </Canvas>
+            </div>
             </SceneBoundary>
             )}
         </div>
