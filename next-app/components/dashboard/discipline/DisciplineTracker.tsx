@@ -28,8 +28,8 @@ interface DisciplineTrackerProps {
 
 const TOTAL_WEEKS = 8;
 const DAYS_PER_WEEK = 7;
-// Program start date: September 8, 2026 (starts at 8/Sep)
-const PROGRAM_START_DATE = new Date(2026, 8, 8, 0, 0, 0);
+// Program start date: October 24, 2026 (season restart; the 8/Sep run is archived)
+const PROGRAM_START_DATE = new Date(2026, 9, 24, 0, 0, 0);
 
 // ── TimeInputCell ──────────────────────────────────────────
 function TimeInputCell({
