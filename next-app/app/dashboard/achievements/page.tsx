@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Lock } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
@@ -33,13 +32,9 @@ function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocke
         <li title={description}
             className={`rounded-xl border p-3 flex flex-col items-center text-center ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
             <div className="relative w-full h-40 mb-2">
-                {unlocked ? (
-                    <Badge3D modelPath={modelPath} scale={scale} spin={spin} compact fallbackSrc={badgeImage(id)} />
-                ) : (
-                    <>
-                        <Image src={badgeImage(id)} alt="" fill sizes="320px" className="object-contain p-2 grayscale opacity-30" />
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-6 h-6 text-white/50" /></div>
-                    </>
+                <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={badgeImage(id)} />
+                {!unlocked && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-6 h-6 text-white/60 drop-shadow" /></div>
                 )}
             </div>
             <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>{title}</h3>
