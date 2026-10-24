@@ -4,50 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 
-// Real achievement metadata matching AchievementsWidget
-const ACHIEVEMENT_META: Record<string, {
-    name: string;
-    desc: string;
-    imageSrc: string;
-    tier: 'common' | 'rare' | 'legendary';
-}> = {
-    welcome: {
-        name: 'Welcome Badge',
-        desc: 'Awarded for joining ICPC HUE community',
-        imageSrc: '/images/achievements/WELCOME.webp',
-        tier: 'common'
-    },
-    approval: {
-        name: 'Approval Camp',
-        desc: 'Complete all sessions of the Approval Camp',
-        imageSrc: '/images/achievements/done_approvalcamp.webp',
-        tier: 'rare'
-    },
-    'sheet-1': {
-        name: 'Sheet 1 Solved',
-        desc: 'Solve all problems in Sheet 1',
-        imageSrc: '/images/achievements/sheet1acheavment.webp',
-        tier: 'rare'
-    },
-    '500pts': {
-        name: '500+ Rating',
-        desc: 'Achieve 500+ rating on Codeforces',
-        imageSrc: '/images/achievements/500pts.webp',
-        tier: 'rare'
-    },
-    instructor: {
-        name: 'Instructor',
-        desc: 'Become an ICPC HUE instructor',
-        imageSrc: '/images/achievements/instructor.webp',
-        tier: 'legendary'
-    },
-    'rank1-march-2026': {
-        name: 'Rank 1 March 2026',
-        desc: 'Achieve Rank 1 on the leaderboard during March 2026',
-        imageSrc: '/images/achievements/rank1_march.webp',
-        tier: 'legendary'
-    }
-};
+import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
 
 interface AchievementRevealModalProps {
     achievement: {

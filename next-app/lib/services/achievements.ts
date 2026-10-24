@@ -1,5 +1,6 @@
 import { query, withTransaction } from '../db/db';
 import { invalidateCache } from '../cache/cache';
+import { STREAK_TIERS } from '../achievements/catalog';
 
 export const ACHIEVEMENTS = {
     WELCOME: 'welcome',
@@ -44,6 +45,57 @@ export async function grantAchievement(userId: number | string, achievementId: s
         console.error(`[Achievement Error] Failed to grant ${achievementId} to ${userId}:`, error);
         return false;
     }
+}
+
+/**
+ * Awards the progress achievements a user has earned so far: first accepted
+ * solution, solve streaks, coming back after a week away, study-log
+ * discipline and the mentor role. Safe to call often; grants are idempotent.
+ */
+export async function checkProgressAchievements(userId: number, role?: string) {
+    const [solved, streak, comeback, discipline] = await Promise.all([
+        query(
+            `SELECT EXISTS (SELECT 1 FROM user_progress WHERE user_id = $1 AND status = 'SOLVED')
+                 OR EXISTS (SELECT 1 FROM submissions WHERE user_id = $1 AND verdict = 'Accepted') AS ok`,
+            [userId]
+        ),
+        query('SELECT COALESCE(MAX(max_streak), 0) AS best FROM user_streaks WHERE user_id = $1', [userId]),
+        query(
+            `SELECT EXISTS (
+                 SELECT 1 FROM (
+                     SELECT solve_date - LAG(solve_date) OVER (ORDER BY solve_date) AS gap
+                     FROM daily_solves WHERE user_id = $1
+                 ) d WHERE gap >= 7
+             ) AS ok`,
+            [userId]
+        ),
+        // Longest run of consecutive program days with something logged.
+        query(
+            `WITH days AS (
+                 SELECT (week_number - 1) * 7 + day_number AS n
+                 FROM user_discipline_logs
+                 WHERE user_id = $1 AND NOT is_missed
+                   AND (COALESCE(total_hours, 0) > 0 OR COALESCE(done_tasks, '') <> '')
+             )
+             SELECT COALESCE(MAX(len), 0) AS best
+             FROM (SELECT COUNT(*) AS len FROM (SELECT n, n - ROW_NUMBER() OVER (ORDER BY n) AS grp FROM days) g GROUP BY grp) r`,
+            [userId]
+        ),
+    ]);
+
+    const earned: string[] = [];
+    if (solved.rows[0]?.ok) earned.push('hello-world');
+    const best = Number(streak.rows[0]?.best || 0);
+    for (const n of STREAK_TIERS) if (best >= n) earned.push(`streak-${n}`);
+    if (comeback.rows[0]?.ok) earned.push('comeback');
+    const logRun = Number(discipline.rows[0]?.best || 0);
+    if (logRun >= 7) earned.push('disciplined-7');
+    if (logRun >= 56) earned.push('disciplined-program');
+    if (role === 'mentor' || role === 'instructor' || role === 'owner') earned.push('mentor');
+
+    let granted = 0;
+    for (const id of earned) if (await grantAchievement(userId, id)) granted++;
+    return granted;
 }
 
 /**

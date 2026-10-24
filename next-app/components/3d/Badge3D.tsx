@@ -11,19 +11,20 @@ interface ModelProps {
     path: string;
     scale?: number;
     unlocked?: boolean;
+    spin?: boolean;
 }
 
-function Model({ path, scale = 1 }: ModelProps) {
+function Model({ path, scale = 1, spin = false }: ModelProps) {
     const { scene } = useGLTF(path);
     // Clone scene to avoid mutating the shared cache
     const clone = useMemo(() => scene.clone(), [scene]);
     const ref = useRef<THREE.Group>(null);
 
-    useFrame((state) => {
-        if (ref.current) {
-            // Gentle rotation
-            ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-        }
+    useFrame((state, delta) => {
+        if (!ref.current) return;
+        // Badges with a designed back turn all the way round; the rest sway.
+        if (spin) ref.current.rotation.y += delta * 0.7;
+        else ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
     });
 
     return (
@@ -37,6 +38,7 @@ interface Badge3DProps {
     modelPath: string;
     unlocked?: boolean;
     scale?: number;
+    spin?: boolean;
 }
 
 /**
@@ -63,7 +65,7 @@ function useNearViewport<T extends Element>() {
     return { ref, seen, visible };
 }
 
-export default function Badge3D({ modelPath, unlocked = true, scale = 2 }: Badge3DProps) {
+export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
 
     return (
@@ -88,7 +90,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2 }: Badge
                         floatingRange={[-0.1, 0.1]}
                     >
                         <Center>
-                            <Model path={modelPath} scale={scale * 1.45} unlocked={unlocked} />
+                            <Model path={modelPath} scale={scale * 1.45} unlocked={unlocked} spin={spin} />
                         </Center>
                     </Float>
                     {/* Reflections from in-code light panels: the "city" preset downloaded

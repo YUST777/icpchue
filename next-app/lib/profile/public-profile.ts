@@ -2,6 +2,7 @@ import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
+import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
 import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
 export interface PublicSheetProblem {
@@ -50,14 +51,9 @@ export type PublicProfileResult =
     | { status: 'private' }
     | { status: 'not_found' };
 
-const ACHIEVEMENT_INFO: Record<string, Pick<PublicAchievement, 'name' | 'description' | 'rarity'>> = {
-    welcome: { name: 'Welcome', description: 'Joined ICPC HUE', rarity: 'common' },
-    approval: { name: 'Approved', description: 'Completed the approval camp', rarity: 'rare' },
-    'sheet-1': { name: 'Sheet 1 Complete', description: 'Solved every problem in Sheet 1', rarity: 'rare' },
-    '500pts': { name: '500 Points', description: 'Reached 500 points', rarity: 'rare' },
-    instructor: { name: 'Instructor', description: 'Teaches at ICPC HUE', rarity: 'legendary' },
-    'rank1-march-2026': { name: 'Rank 1 · March 2026', description: 'Top of the leaderboard in March 2026', rarity: 'legendary' },
-};
+const ACHIEVEMENT_INFO: Record<string, Pick<PublicAchievement, 'name' | 'description' | 'rarity'>> = Object.fromEntries(
+    Object.entries(ACHIEVEMENT_META).map(([id, m]) => [id, { name: m.name, description: m.desc, rarity: m.tier }])
+);
 
 const RARITY_ORDER = { legendary: 3, rare: 2, common: 1 } as const;
 
