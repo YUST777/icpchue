@@ -28,11 +28,11 @@ function BadgeCard({ modelPath, spin, title, description, unlocked, rarity }: Ba
         <li title={description}
             className={`rounded-xl border p-3 flex flex-col items-center text-center ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
             {/* Locked badges skip the 3D canvas: a page full of WebGL contexts is slow. */}
-            <div className="relative w-full h-20 mb-2 flex items-center justify-center">
+            <div className="relative w-full h-28 mb-2">
                 {unlocked && modelPath ? (
-                    <Badge3D modelPath={modelPath} unlocked scale={1.4} spin={spin} />
+                    <Badge3D modelPath={modelPath} unlocked scale={1.4} spin={spin} compact />
                 ) : (
-                    <Lock className="w-5 h-5 text-white/20" />
+                    <div className="absolute inset-0 flex items-center justify-center"><Lock className="w-5 h-5 text-white/20" /></div>
                 )}
             </div>
             <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>{title}</h3>
