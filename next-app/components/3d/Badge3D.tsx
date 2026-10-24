@@ -2,6 +2,7 @@
 
 
 import { Component, Suspense, useEffect, useRef, useMemo, useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import { Award } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Environment, Lightformer, Float, OrbitControls, Center, Html } from '@react-three/drei';
@@ -44,6 +45,8 @@ interface Badge3DProps {
     scale?: number;
     spin?: boolean;
     compact?: boolean;
+    /** Picture shown instead of the scene when WebGL is unavailable or the model fails. */
+    fallbackSrc?: string;
 }
 
 /**
@@ -121,11 +124,11 @@ function loadModel(path: string, onProgress: (pct: number | null) => void): Prom
     return pending;
 }
 
-function BadgeFallback({ onRetry }: { onRetry?: () => void }) {
+function BadgeFallback({ onRetry, src }: { onRetry?: () => void; src?: string }) {
     return (
         <button type="button" onClick={onRetry} title="3D preview unavailable. Click to retry."
             className="absolute inset-0 flex items-center justify-center text-[#E8C15A]/70 cursor-pointer">
-            <Award size={40} strokeWidth={1.5} />
+            {src ? <Image src={src} alt="" fill sizes="320px" className="object-contain p-2" /> : <Award size={40} strokeWidth={1.5} />}
         </button>
     );
 }
@@ -142,17 +145,17 @@ function LoadingBadge({ pct }: { pct: number | null }) {
 }
 
 /** If the scene still fails to start, show the static badge instead of erroring the page. */
-class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void }, { failed: boolean }> {
+class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void; fallbackSrc?: string }, { failed: boolean }> {
     state = { failed: false };
     static getDerivedStateFromError() { return { failed: true }; }
     render() {
         return this.state.failed
-            ? <BadgeFallback onRetry={() => { this.setState({ failed: false }); this.props.onRetry(); }} />
+            ? <BadgeFallback src={this.props.fallbackSrc} onRetry={() => { this.setState({ failed: false }); this.props.onRetry(); }} />
             : this.props.children;
     }
 }
 
-export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false }: Badge3DProps) {
+export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
     const [attempt, setAttempt] = useState(0);
     const [pct, setPct] = useState<number | null>(0);
@@ -177,11 +180,11 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
             {!seen || !visible ? (
                 <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
             ) : failed || !hasWebGL() ? (
-                <BadgeFallback onRetry={retry} />
+                <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : !url ? (
                 <LoadingBadge pct={pct} />
             ) : (
-            <SceneBoundary onRetry={retry}>
+            <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
