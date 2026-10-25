@@ -210,9 +210,6 @@ export default function ProfilePage() {
         }
     };
 
-    const cfData = profile.codeforces_data || {};
-    const rating = cfData.rating || 'N/A';
-    const rank = cfData.rank || 'Unrated';
     // Profile pictures are disabled site-wide (pfp files don't persist on Vercel
     // serverless and 404). Always use the initials avatar.
     const profilePicture = null;
@@ -265,8 +262,6 @@ export default function ProfilePage() {
                                 fileInputRef={fileInputRef}
                                 handlePfpUpload={handlePfpUpload}
                                 handleDeletePfp={handleDeletePfp}
-                                rating={rating}
-                                rank={rank}
                             />
                             <CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} />
                         </div>
