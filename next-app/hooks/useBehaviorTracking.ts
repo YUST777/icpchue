@@ -70,11 +70,11 @@ export function useBehaviorTracking({
 
     // 2. Window focus/blur
     useEffect(() => {
-        const onBlur = () => track({ action: 'window_blur', ...ctx(), metadata: { timeMs: Date.now() - enterTimeRef.current } });
-        const onFocus = () => { track({ action: 'window_focus', ...ctx(), metadata: { timeMs: Date.now() - enterTimeRef.current } }); lastActivityRef.current = Date.now(); };
-        window.addEventListener('blur', onBlur);
+        // No window_blur / window_focus rows: tab_hidden and tab_visible already record the same
+        // switches. Focus still counts as activity so the idle timer restarts.
+        const onFocus = () => { lastActivityRef.current = Date.now(); };
         window.addEventListener('focus', onFocus);
-        return () => { window.removeEventListener('blur', onBlur); window.removeEventListener('focus', onFocus); };
+        return () => window.removeEventListener('focus', onFocus);
     }, [track, ctx]);
 
     // 3. Paste detection (page fields via 'paste'; the code editor reports
@@ -144,10 +144,12 @@ export function useBehaviorTracking({
 
     // 6. Idle detection (>60s) — skip when tab is hidden
     useEffect(() => {
+        let reportedFor = 0; // last activity time already reported, so one idle stretch is one row
         const check = () => {
             if (document.hidden) return; // Don't report idle when tab is hidden
             const idleMs = Date.now() - lastActivityRef.current;
-            if (idleMs > 60000) {
+            if (idleMs > 60000 && reportedFor !== lastActivityRef.current) {
+                reportedFor = lastActivityRef.current;
                 track({ action: 'user_idle', ...ctx(), metadata: { idleMs, timeMs: Date.now() - enterTimeRef.current } });
             }
         };

@@ -15,7 +15,7 @@ export default function ClientErrorReporter() {
     useEffect(() => {
         const onError = (event: ErrorEvent) => {
             // Ignore cross-origin "Script error." with no detail and extension noise.
-            if (!event.message || event.message === 'Script error.') return;
+            if (!event.message || event.message === 'Script error.' || /ResizeObserver loop/i.test(event.message)) return;
             if (event.filename && !event.filename.startsWith(window.location.origin)) return;
             reportClientError({
                 kind: 'error',

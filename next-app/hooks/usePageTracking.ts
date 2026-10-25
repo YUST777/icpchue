@@ -121,6 +121,8 @@ export function usePageTracking(enabled = true) {
         const sessionId = sessionStorage.getItem('icpchue-session-id') || '';
 
         const handleError = (event: ErrorEvent) => {
+            // A harmless browser notice (97% of all logged errors) and cross-origin noise with no detail.
+            if (!event.message || event.message === 'Script error.' || /ResizeObserver loop/i.test(event.message)) return;
             fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
