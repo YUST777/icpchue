@@ -1,6 +1,6 @@
 import { query, withTransaction } from '../db/db';
 import { invalidateCache } from '../cache/cache';
-import { CF_RANK_BADGES, SOLVED_BADGES } from '../achievements/catalog';
+import { CF_RANK_BADGES, SOLVED_BADGES, getAchievementMeta } from '../achievements/catalog';
 import { ecpcTeamUserIds } from '../leaderboard/cohort';
 import { STREAK_TIERS } from '../achievements/catalog';
 
@@ -39,6 +39,8 @@ export async function grantAchievement(userId: number | string, achievementId: s
             console.log(`[Achievement] User ${userId} earned: ${achievementId}`);
             await invalidateCache(`user:${userId}:achievements`);
             await invalidateCache(`user:${userId}:dashboard_stats`);
+            const meta = getAchievementMeta(achievementId);
+            if (meta) await createNotification(userId, `Achievement unlocked: ${meta.name}`, meta.desc, 'achievement');
         }
 
         return wasGranted;

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAchievements } from '@/hooks/useAchievements';
+import { useAchievements, type Achievement } from '@/hooks/useAchievements';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
 
 const AUTH_PAGES = ['/register', '/login', '/forgot-password', '/reset-password'];
@@ -19,44 +19,52 @@ const TIER_STYLE = {
 } as const;
 
 /**
- * Shows each newly earned achievement as a toast, one after another, on any
- * page after sign-in. A toast marks its achievement as seen when it closes.
+ * Shows every newly earned achievement as a toast, stacked under each other, on
+ * any page after sign-in. A toast marks its achievement as seen when it closes.
  */
 export default function AchievementToast() {
     const pathname = usePathname();
     const { isAuthenticated, loading } = useAuth();
     const onAuthPage = pathname ? AUTH_PAGES.includes(pathname) : false;
-    const { unseenAchievement, markAsSeen, refetch } = useAchievements(isAuthenticated && !loading && !onAuthPage);
-    const [leaving, setLeaving] = useState(false);
+    const { unseenAchievements, markAsSeen, refetch } = useAchievements(isAuthenticated && !loading && !onAuthPage);
 
     // Badges are earned while solving, so look for new ones after every page change.
     useEffect(() => {
         if (isAuthenticated && !loading && !onAuthPage) refetch();
     }, [pathname, isAuthenticated, loading, onAuthPage, refetch]);
 
-    const current = unseenAchievement;
-    const meta = current ? getAchievementMeta(current.achievement_id) : undefined;
+    if (!isAuthenticated || unseenAchievements.length === 0) return null;
+
+    return (
+        <div className="fixed z-[1000000] bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[360px] pointer-events-none flex flex-col gap-2.5 max-h-[80vh] overflow-hidden" role="status" aria-live="polite">
+            {unseenAchievements.slice(0, 4).map(a => (
+                <ToastCard key={a.id} achievement={a} onSeen={markAsSeen} />
+            ))}
+        </div>
+    );
+}
+
+function ToastCard({ achievement: current, onSeen }: { achievement: Achievement; onSeen: (id: number) => void }) {
+    const [leaving, setLeaving] = useState(false);
+    const meta = getAchievementMeta(current.achievement_id);
 
     const dismiss = useCallback(() => {
-        if (!current) return;
         setLeaving(true);
-        setTimeout(() => { markAsSeen(current.id); setLeaving(false); }, 250);
-    }, [current, markAsSeen]);
+        setTimeout(() => onSeen(current.id), 250);
+    }, [current.id, onSeen]);
 
     useEffect(() => {
-        if (!current) return;
         // Unknown ids (art not shipped yet) are skipped instead of shown blank.
-        if (!meta) { markAsSeen(current.id); return; }
+        if (!meta) { onSeen(current.id); return; }
         const t = setTimeout(dismiss, SHOW_MS);
         return () => clearTimeout(t);
-    }, [current, meta, dismiss, markAsSeen]);
+    }, [current.id, meta, dismiss, onSeen]);
 
-    if (!isAuthenticated || !current || !meta) return null;
+    if (!meta) return null;
     const tier = TIER_STYLE[meta.tier];
 
     return (
-        <div className="fixed z-[1000000] bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[360px] pointer-events-none" role="status" aria-live="polite">
-            <div key={current.id}
+            <div
                 className={`pointer-events-auto relative overflow-hidden rounded-2xl border border-white/[0.1] bg-[#121214]/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] ${leaving ? 'achievement-toast-out' : 'achievement-toast-in'}`}>
                 <div className={`absolute -left-10 -top-10 h-40 w-40 rounded-full blur-3xl opacity-60 ${tier.glow}`} aria-hidden />
                 <div className="relative flex items-center gap-4 p-3.5 pr-10">
@@ -78,6 +86,5 @@ export default function AchievementToast() {
                     <div className="h-full bg-[#E8C15A] achievement-toast-timer" style={{ animationDuration: `${SHOW_MS}ms` }} />
                 </div>
             </div>
-        </div>
     );
 }
