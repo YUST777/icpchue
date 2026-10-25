@@ -190,8 +190,15 @@ function deriveMapping(row: any): CurriculumMapping | null {
     };
 }
 
+// The curriculum changes rarely and this query reads every problem (about 650 rows), yet it ran on
+// every sync. Keep the rows in this process for ten minutes.
+let curriculumRows: { at: number; rows: Record<string, unknown>[] } | null = null;
+const CURRICULUM_ROWS_TTL_MS = 10 * 60 * 1000;
+
 export async function loadCurriculumIndex(): Promise<CurriculumIndex> {
-    const result = await query(`
+    const result = (curriculumRows && Date.now() - curriculumRows.at < CURRICULUM_ROWS_TTL_MS)
+        ? { rows: curriculumRows.rows }
+        : await query(`
         SELECT
             s.id AS sheet_id,
             s.contest_id AS sheet_contest_id,
@@ -204,6 +211,9 @@ export async function loadCurriculumIndex(): Promise<CurriculumIndex> {
         JOIN curriculum_problems p ON p.sheet_id = s.id
         WHERE p.problem_letter IS NOT NULL
     `);
+    if (!curriculumRows || Date.now() - curriculumRows.at >= CURRICULUM_ROWS_TTL_MS) {
+        curriculumRows = { at: Date.now(), rows: result.rows as Record<string, unknown>[] };
+    }
 
     const index: CurriculumIndex = {
         exact: new Map(),

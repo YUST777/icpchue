@@ -206,6 +206,7 @@ export default async function RootLayout({
       <head>
         {/* Browser auto-translate rewrites text nodes React owns and crashes the page (removeChild NotFoundError). */}
         <meta name="google" content="notranslate" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />}
         <script
           dangerouslySetInnerHTML={{
             __html: `
