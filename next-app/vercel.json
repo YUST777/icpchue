@@ -1,6 +1,13 @@
 {
   "framework": "nextjs",
   "crons": [
-    { "path": "/api/cron/refresh-codeforces", "schedule": "0 2 * * *" }
+    {
+      "path": "/api/cron/refresh-codeforces",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/grant-achievements",
+      "schedule": "30 2 * * *"
+    }
   ]
 }
