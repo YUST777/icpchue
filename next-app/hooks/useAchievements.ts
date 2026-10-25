@@ -74,8 +74,11 @@ export function useAchievements(isAuthenticated: boolean = false) {
         }, 0);
     }, [fetchAchievements]);
 
+    const unseenAchievements = achievements.filter(a => !a.seen);
+
     return {
         achievements,
+        unseenAchievements,
         loading,
         unseenAchievement,
         markAsSeen,
