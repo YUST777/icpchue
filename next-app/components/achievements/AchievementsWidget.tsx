@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, Lock } from 'lucide-react';
@@ -13,7 +14,10 @@ interface AchievementsWidgetProps {
     user?: { id?: number; email?: string; role?: string };
 }
 
-interface Entry { id: string; name: string; imageSrc: string; unlocked: boolean }
+interface Entry { id: string; name: string; imageSrc: string; unlocked: boolean; weight: number }
+
+const TIER_WEIGHT = { legendary: 3, rare: 2, common: 1 } as const;
+const PREVIEW = 5;
 
 const PODIUM = [
     { id: 'podium-1', name: 'Monthly 1st place' },
@@ -34,18 +38,22 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
             name: meta.name,
             imageSrc: meta.imageSrc,
             unlocked: id === 'welcome' || earnedIds.has(id) || (id === 'instructor' && isStaff),
+            weight: TIER_WEIGHT[meta.tier],
         })),
         ...PODIUM.map(p => ({
             id: p.id,
             name: p.name,
             imageSrc: `/images/achievements/badges/${p.id}.webp`,
             unlocked: earned.some(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(p.id.slice(-2))),
+            weight: p.id === 'podium-1' ? 3 : 2,
         })),
-    ].sort((a, b) => Number(b.unlocked) - Number(a.unlocked));
+    ].sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || b.weight - a.weight);
 
     const count = entries.filter(e => e.unlocked).length;
     const total = entries.length;
     const progress = (count / total) * 100;
+    const [showAll, setShowAll] = useState(false);
+    const visible = showAll ? entries : entries.slice(0, PREVIEW);
 
     return (
         <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
@@ -61,8 +69,8 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
                     <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
                 </div>
 
-                <ul className="grid grid-cols-5 sm:grid-cols-6 gap-2 mb-5 relative z-10">
-                    {entries.map(e => (
+                <ul className="grid grid-cols-5 gap-2 mb-4 relative z-10">
+                    {visible.map(e => (
                         <li key={e.id} title={e.name}>
                             <Link href="/dashboard/achievements"
                                 className={`relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden transition-transform hover:scale-105 ${e.unlocked ? 'border-[#E8C15A]/25 bg-gradient-to-br from-yellow-500/15 to-orange-500/5' : 'border-white/5 bg-[#131313]'}`}>
@@ -72,6 +80,13 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
                         </li>
                     ))}
                 </ul>
+
+                {entries.length > PREVIEW && (
+                    <button type="button" onClick={() => setShowAll(v => !v)}
+                        className="w-full mb-2.5 h-9 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer relative z-10">
+                        {showAll ? 'Show less' : `Show all ${entries.length} badges`}
+                    </button>
+                )}
 
                 <Link href="/dashboard/achievements" className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn block">
                     <div className="relative z-10 px-4 py-3 flex items-center justify-between">

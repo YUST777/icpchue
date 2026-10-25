@@ -56,6 +56,7 @@ export default function AchievementsPage() {
     };
 
 
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const { achievements: earned } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
@@ -113,7 +114,6 @@ export default function AchievementsPage() {
     const progress = (unlockedCount / achievements.length) * 100;
 
     const [animatedProgress, setAnimatedProgress] = useState(0);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     // Dynamic import for Lottie to avoid SSR issues
     useEffect(() => {
