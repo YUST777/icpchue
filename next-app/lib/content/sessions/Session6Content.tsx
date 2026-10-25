@@ -1,4 +1,4 @@
-import { Terminal, Lightbulb, Box, Code, AlertTriangle } from 'lucide-react';
+import { Lightbulb, Box, Code } from 'lucide-react';
 
 export default function Session6Content() {
     return (

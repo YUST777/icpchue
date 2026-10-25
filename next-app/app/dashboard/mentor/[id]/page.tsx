@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-    AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, 
-    XCircle, Clock, Circle, Search, BarChart3, HardDrive, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock, Circle, Search, BarChart3, ArrowLeft } from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
 import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgressBreakdown';

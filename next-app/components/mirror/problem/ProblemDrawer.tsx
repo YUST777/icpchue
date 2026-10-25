@@ -4,17 +4,9 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-    X, Search, Link as LinkIcon, ArrowRight, Loader2,
-    CheckCircle2, Circle, ChevronRight
-} from "lucide-react";
+import { X, Search, Link as LinkIcon, Loader2, CheckCircle2, Circle, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-    parseCodeforcesUrl,
-    getInternalRoute,
-    getDifficultyColor,
-    ParsedCodeforcesUrl,
-} from "@/lib/utils/parseCodeforcesUrl";
+import { parseCodeforcesUrl, getInternalRoute, getDifficultyColor } from "@/lib/utils/parseCodeforcesUrl";
 import { getNavigationBaseUrl } from "@/lib/utils/codeforcesUtils";
 
 /* ─── Types ─── */

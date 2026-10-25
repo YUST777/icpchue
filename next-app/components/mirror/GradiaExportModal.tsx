@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { X, Download, Share2, Copy, Check } from 'lucide-react';
 import { toPng, toBlob } from 'html-to-image';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';

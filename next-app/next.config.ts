@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // We aim to fix all build errors instead of ignoring them
-    typescript: {
-        ignoreBuildErrors: true,
-    },
     serverExternalPackages: ['pg', 'sharp', 'canvas'],
     images: {
         // Keep story images sharp on high-density screens while retaining

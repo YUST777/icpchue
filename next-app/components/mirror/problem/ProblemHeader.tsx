@@ -9,8 +9,7 @@ import {
     MobileViewToggle,
     useNavigationIds,
 } from "../header";
-import { Play, CloudUpload, StickyNote, Loader2, Search } from "lucide-react";
-import { SidebarToggleIcon } from "@/components/ui/icons/SidebarToggleIcon";
+import { Play, CloudUpload, StickyNote, Search } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { CommandPalette } from "../header/CommandPalette";
 import { useUIStore } from "@/hooks/useUIStore";

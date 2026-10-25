@@ -503,11 +503,11 @@ export default function ApplyFlow({ level }: { level: ApplyLevel }) {
     ].map((file) => `/icpchue_2026/sesstion/${file}`);
 
     const winnerPhotos = [
-        '1_framed.JPG',
-        '2_framed.JPG',
-        'TOM08621_framed.JPG',
-        'TOM08623_framed.JPG',
-        'TOM08625_framed.JPG',
+        '1_framed.webp',
+        '2_framed.webp',
+        'TOM08621_framed.webp',
+        'TOM08623_framed.webp',
+        'TOM08625_framed.webp',
     ].map((file) => `/icpchue_2026/winners/${file}`);
 
     useEffect(() => {

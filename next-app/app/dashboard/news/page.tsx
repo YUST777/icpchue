@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, Radio, Calendar, ArrowRight, ThumbsUp, Heart, Flame } from 'lucide-react';
+import { Radio, Calendar, ArrowRight, ThumbsUp, Heart, Flame } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 

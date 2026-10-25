@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
-import AchievementDetail, { type AchievementDetailData } from '@/components/achievements/AchievementDetail';
+import AchievementDetail from '@/components/achievements/AchievementDetail';
 import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, SOLVED_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
 
 const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];

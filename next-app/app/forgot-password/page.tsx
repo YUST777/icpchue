@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Loader2, Hexagon, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, Hexagon, ArrowRight, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.object({

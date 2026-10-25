@@ -65,7 +65,7 @@ Show us what the beasts of programming can do! Let the competition begin! ðŸš€ðŸ
         description: "ICPC HUE reaches a massive milestone with the completion of our 650-problem curriculum and the official introduction of Verdict Helper, a revolutionary browser extension for a unified Codeforces workflow.",
         content: `<p align="center">
   <a href="https://icpchue.com/">
-    <img src="/devlog/v3-banner.jpg" alt="ICPC HUE Banner" width="100%">
+    <img src="/devlog/v3-banner.webp" alt="ICPC HUE Banner" width="100%">
   </a>
 </p>
 
@@ -109,7 +109,7 @@ Stop waiting on loading screens. Start solving. You can add the extension from t
             "Stability & Fixes Phase Begins"
         ],
         media: [
-            { type: 'image', src: '/devlog/v3-banner.jpg', alt: 'ICPC HUE v3.0 Banner' }
+            { type: 'image', src: '/devlog/v3-banner.webp', alt: 'ICPC HUE v3.0 Banner' }
         ]
     },
     {

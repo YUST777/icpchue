@@ -1,7 +1,6 @@
 import { query } from '@/lib/db/db';
 import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
-import { rateLimit } from '@/lib/cache/rate-limit';
 import { formatDisplayName } from '@/lib/names';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { UNCOUNTED_USER_IDS, SERIAL_CTE, factoryNumber } from '@/lib/achievements/factory';

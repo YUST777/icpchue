@@ -9,7 +9,7 @@ import Link from 'next/link';
 // Subfolder components (Verdict structure)
 import { ProblemHeader, ProblemLeftPanel, ProblemDrawer } from '@/components/mirror/problem';
 import { CodeWorkspace } from '@/components/mirror/editor';
-import type { ActiveSheet, SheetProblem } from '@/components/mirror/problem/ProblemDrawer';
+import type { ActiveSheet } from '@/components/mirror/problem/ProblemDrawer';
 import ExtensionGate from '@/components/core/ExtensionGate';
 import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 import MirrorSkeleton from '@/components/mirror/MirrorSkeleton';

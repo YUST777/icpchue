@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { Flame, Target, Trophy, Sparkles, TrendingUp } from 'lucide-react';
+import { Flame, Target, Trophy } from 'lucide-react';
 
 interface StatsFooterProps {
     streak: number;
