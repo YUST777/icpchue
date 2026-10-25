@@ -33,6 +33,16 @@ function localRateLimit(key: string, limit: number, windowSeconds: number): Rate
     };
 }
 
+// Chatty, signed-in, low-risk endpoints (autosave, tracking, polling) count in this process
+// instead of in Postgres. That saves one database round trip on every one of those calls, at
+// the cost of a limit that is per server instance, which is fine for stopping a runaway loop.
+// Login, OTP, registration, password, upload and form endpoints stay on the shared limiter.
+const LOCAL_ONLY_PREFIXES = [
+    'workspace_sync', 'views', 'track', 'nav', 'tests_', 'streak_view', 'privacy_view',
+    'prefs_', 'notes_', 'dashboard_stats', 'code_save', 'code_get', 'cf_user_subs',
+    'cf_submissions_list', 'client-errors',
+];
+
 export interface RateLimitResult {
     success: boolean;
     limit: number;
@@ -47,6 +57,7 @@ export interface RateLimitResult {
  * @param windowSeconds Duration of the window in seconds
  */
 export async function rateLimit(key: string, limit: number, windowSeconds: number): Promise<RateLimitResult> {
+    if (LOCAL_ONLY_PREFIXES.some(prefix => key.startsWith(prefix))) return localRateLimit(key, limit, windowSeconds);
     try {
         const result = await query<{ hit_count: number; reset_at: Date }>(
             'SELECT hit_count, reset_at FROM public.app_rate_limit_hit($1, $2)',

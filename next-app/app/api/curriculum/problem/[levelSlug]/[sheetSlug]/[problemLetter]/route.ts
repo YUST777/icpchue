@@ -61,7 +61,7 @@ export async function GET(
         }
 
         return NextResponse.json({ success: true, problem }, {
-            headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600' }
+            headers: { 'Cache-Control': 'public, max-age=60, s-maxage=600, stale-while-revalidate=3600' }
         });
     } catch (error) {
         return NextResponse.json(
