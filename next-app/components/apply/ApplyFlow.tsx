@@ -116,9 +116,10 @@ export default function ApplyFlow({ level }: { level: ApplyLevel }) {
     const { register: authRegister, isAuthenticated } = useAuth();
     const router = useRouter();
 
+    // Level 1 is also for people who already have an account, so only Level 0 sends signed-in visitors away.
     useEffect(() => {
-        if (isAuthenticated) router.replace('/dashboard');
-    }, [isAuthenticated, router]);
+        if (isAuthenticated && level === 'level0') router.replace('/dashboard');
+    }, [isAuthenticated, level, router]);
 
     useEffect(() => {
         if (resendCooldown <= 0) return;
@@ -871,7 +872,7 @@ export default function ApplyFlow({ level }: { level: ApplyLevel }) {
                                             </div>
                                             <div className="handoff-route-body">
                                                 <div>
-                                                    <h2>Create your ICPC HUE account</h2>
+                                                    <h2>{isAuthenticated ? 'Open your dashboard' : 'Create your ICPC HUE account'}</h2>
                                                     <p>Practice from 650+ problems, watch 22+ hours of sessions, and keep your progress in one place.</p>
                                                 </div>
                                             </div>
@@ -880,10 +881,17 @@ export default function ApplyFlow({ level }: { level: ApplyLevel }) {
                                                 <span><strong>22+</strong> session hours</span>
                                                 <span><strong>Progress</strong> saved</span>
                                             </div>
-                                            <button type="submit" className="handoff-primary-button group">
-                                                Create account
-                                                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                                            </button>
+                                            {isAuthenticated ? (
+                                                <Link href="/dashboard" className="handoff-primary-button group">
+                                                    Go to dashboard
+                                                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                                                </Link>
+                                            ) : (
+                                                <button type="submit" className="handoff-primary-button group">
+                                                    Create account
+                                                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                                                </button>
+                                            )}
                                         </div>
 
                                         {whatsappUrl && (
