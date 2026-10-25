@@ -25,7 +25,7 @@ export async function GET() {
             levels
         }, {
             headers: {
-                'Cache-Control': 'public, max-age=300, stale-while-revalidate=600'
+                'Cache-Control': 'public, max-age=60, s-maxage=600, stale-while-revalidate=3600'
             }
         });
     } catch (error) {
