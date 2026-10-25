@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { Check, ChevronDown, Code, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
+import { Check, ChevronDown, Code, Info, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { SOCIALS, type SocialLinks } from '@/lib/profile/socials';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
+import AchievementDetail, { type AchievementDetailData } from '@/components/achievements/AchievementDetail';
 
 const ACHIEVEMENT_MODELS: Record<string, { modelPath: string; scale?: number; spin?: boolean }> = {
     'ecpc-2026': { modelPath: '/3d/ecpc-2026.glb', scale: 1.3, spin: true },
@@ -60,6 +61,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
     const { user } = useAuth();
     const isOwner = user?.email?.split('@')[0] === profile.studentId;
     const [copied, setCopied] = useState(false);
+    const [openBadge, setOpenBadge] = useState<AchievementDetailData | null>(null);
     const [socials, setSocials] = useState<SocialLinks>(profile.socials || {});
 
     const copyLink = async () => {
@@ -219,7 +221,12 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                         {profile.achievements.map(a => {
                             const badgeModel = getBadgeModel(a.id);
                             return (
-                                <li key={a.id} title={a.description} className="rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-all group">
+                                <li key={a.id} title={a.description} className="relative rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-all group">
+                                    <button type="button" aria-label={`About ${a.name}`}
+                                        onClick={() => setOpenBadge({ id: a.id, modelPath: badgeModel.modelPath, title: a.name, unlocked: true, rarity: a.rarity, earnedAt: [a.earnedAt], serial: a.serial, factory: a.factory, scale: badgeModel.scale })}
+                                        className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 transition-all cursor-pointer">
+                                        <Info size={13} />
+                                    </button>
                                     <div className="relative aspect-square w-full min-h-[140px]">
                                         <Badge3D
                                             modelPath={badgeModel.modelPath}
@@ -240,6 +247,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                     </ul>
                 </div>
             )}
+            {openBadge && <AchievementDetail badge={openBadge} onClose={() => setOpenBadge(null)} />}
         </div>
     );
 }
