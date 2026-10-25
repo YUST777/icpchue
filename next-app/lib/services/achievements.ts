@@ -117,7 +117,22 @@ export async function checkProgressAchievements(userId: number, role?: string) {
         query(`SELECT codeforces_data FROM users WHERE id = $1`, [userId]),
     ]);
 
+    // 80% of the Level 0 topic sheets (A-G; the General sheets do not count).
+    const skills = await query(
+        `SELECT
+             (SELECT COALESCE(SUM(s.total_problems), 0) FROM curriculum_sheets s
+                JOIN curriculum_levels l ON l.id = s.level_id AND l.level_number = 0
+               WHERE s.sheet_number BETWEEN 1 AND 7) AS total,
+             (SELECT COUNT(DISTINCT up.sheet_id || ':' || up.problem_id) FROM user_progress up
+                JOIN curriculum_sheets s2 ON s2.id::text = up.sheet_id
+                JOIN curriculum_levels l2 ON l2.id = s2.level_id AND l2.level_number = 0
+               WHERE up.user_id = $1 AND up.status = 'SOLVED' AND s2.sheet_number BETWEEN 1 AND 7) AS solved`,
+        [userId]
+    );
+
     const earned: string[] = [];
+    const skillTotal = Number(skills.rows[0]?.total || 0);
+    if (skillTotal > 0 && Number(skills.rows[0]?.solved || 0) >= Math.ceil(skillTotal * 0.8)) earned.push('level0-skills');
     if (seasons.rows[0]?.s2026) earned.push('year-2026');
     if (seasons.rows[0]?.s2027) earned.push('year-2027');
     const cfData = cf.rows[0]?.codeforces_data as { rating?: number | string; maxRating?: number | string } | null;
