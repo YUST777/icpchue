@@ -11,7 +11,7 @@ export function LeaderboardWidget({ sheetsRank }: LeaderboardWidgetProps) {
             {/* Background Decor */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#E8C15A]/5 rounded-full blur-[50px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-[#E8C15A]/10 transition-colors duration-500"></div>
 
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4 relative z-10">
+            <div className="flex items-center justify-between gap-3 mb-3 relative z-10">
                 <div className="flex gap-3">
                     <div className="p-2 md:p-3 bg-[#E8C15A]/10 rounded-lg text-[#E8C15A] shrink-0"><Trophy size={20} /></div>
                     <div>
@@ -19,7 +19,7 @@ export function LeaderboardWidget({ sheetsRank }: LeaderboardWidgetProps) {
                         <p className="text-xs text-[#A0A0A0]">Sheets Leaderboard</p>
                     </div>
                 </div>
-                <Link href="/dashboard/leaderboard" className="text-[#E8C15A] hover:text-[#dcb651] text-xs font-bold transition-colors flex items-center gap-1">
+                <Link href="/dashboard/leaderboard" className="-my-3 py-3 pl-3 shrink-0 text-[#E8C15A] hover:text-[#dcb651] text-xs font-bold transition-colors flex items-center gap-1">
                     View Full <ChevronRight size={12} />
                 </Link>
             </div>

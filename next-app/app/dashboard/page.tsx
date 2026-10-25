@@ -8,7 +8,6 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { HeroSection } from '@/components/dashboard/HeroSection';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { ActivityCalendar } from '@/components/dashboard/ActivityCalendar';
-import { StatsFooter } from '@/components/dashboard/StatsFooter';
 import DashboardOnboardingTour from '@/components/onboarding/DashboardOnboardingTour';
 
 export default function DashboardHome() {
@@ -21,7 +20,6 @@ export default function DashboardHome() {
     // User info
     const displayName = getDisplayName(profile?.name) || user?.email?.split('@')[0] || 'Member';
     const firstName = displayName.split(' ')[0];
-    const rank = profile?.codeforces_data?.rank || 'Unrated';
 
     // Dynamic progress from current sheet
     const sheet = stats.currentSheet;
@@ -55,16 +53,8 @@ export default function DashboardHome() {
                 todayStr={todayStr}
             />
 
-            {/* Stats Footer & Help */}
+            {/* Help */}
             <div className="flex flex-col gap-4">
-                <StatsFooter
-                    streak={stats.streak}
-                    totalSolved={stats.totalSolved}
-                    rank={rank}
-                    loading={loading}
-                    studentId={profile?.student_id}
-                />
-
                 <div className="flex justify-center pb-4">
                     <button
                         onClick={() => setForceShowTour(true)}

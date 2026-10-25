@@ -27,7 +27,7 @@ function SessionsContent() {
     return (
         <div className="font-sans text-white space-y-8 animate-fade-in pb-12">
             {/* Hero Section */}
-            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
+            <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
                 <div className="flex items-center gap-4 mb-4">
                     <div className="p-3 rounded-xl bg-[#E8C15A]/10">
                         <Play className="text-[#E8C15A]" size={28} />
