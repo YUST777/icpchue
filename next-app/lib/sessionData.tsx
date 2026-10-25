@@ -7,6 +7,7 @@ import Session6Content from './content/sessions/Session6Content';
 import Session7Content from './content/sessions/Session7Content';
 import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Programming1Content';
 import Level0Session1Content from './content/sessions/season2027/Level0Session1Content';
+import Level0Session2Content from './content/sessions/season2027/Level0Session2Content';
 
 // --- Data Definitions ---
 
@@ -64,6 +65,20 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session01.webp',
                 videoId: 'hqJqxZxsqTM',
                 content: <Level0Session1Content />
+            },
+            {
+                id: 102,
+                campSlug: 'level0-2027',
+                number: '2',
+                displayNumber: '02',
+                slug: 'conditions-and-loops',
+                tag: 'Control Flow',
+                title: 'Conditions & Loops in C++',
+                desc: 'Reading competitive programming problems, if/else conditions, ternary operator, switch-case, and all loop constructs (for, while, do-while), break/continue, and live problem solving.',
+                description: 'Master conditional logic and repetition in C++. We cover problem statement reading, if/else and ternary conditions, switch statements, for/while/do-while loops, loop control flow, and step-by-step problem solving on Codeforces.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session02.webp',
+                videoId: 'fHp72ASCTp0',
+                content: <Level0Session2Content />
             },
         ],
     },

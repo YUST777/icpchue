@@ -145,15 +145,38 @@ export async function GET(
             if (appRes.rows.length > 0) appRow = appRes.rows[0];
         }
 
-        // 2. Profile Details
+        // 2. Profile Details & WhatsApp Onboarding
+        let cleanPhone = decrypt(appRow?.telephone) || '';
+        if (/^[0-9a-fA-F]{30,}$/.test(cleanPhone)) {
+            cleanPhone = '';
+        }
+
+        const studentId = appRow?.student_id || `STU-${userId || applicationId}`;
+
+        // Look up WhatsApp mentor group status for this trainee
+        const groupRes = await query(
+            `SELECT g.name AS group_name, g.mentor_name, g.invite_link,
+                    m.open_count, m.join_clicks, m.first_opened_at, m.last_opened_at, m.first_join_click_at
+               FROM mentor_group_members m
+               JOIN mentor_groups g ON g.id = m.group_id
+              WHERE m.season = 2027 AND m.student_id = $1
+              LIMIT 1`,
+            [studentId]
+        );
+        const groupRow = groupRes.rows[0];
+        const openCount = Number(groupRow?.open_count) || 0;
+        const joinClicks = Number(groupRow?.join_clicks) || 0;
+        const whatsappStatus: 'joined' | 'opened' | 'never_opened' =
+            joinClicks > 0 ? 'joined' : (openCount > 0 ? 'opened' : 'never_opened');
+
         const profile = {
             id: userId || applicationId,
             user_id: userId,
             application_id: applicationId,
             name: decrypt(appRow?.name) || userRow?.codeforces_handle || `Student #${userId || applicationId}`,
-            student_id: appRow?.student_id || `STU-${userId || applicationId}`,
+            student_id: studentId,
             email: decrypt(appRow?.email) || decrypt(userRow?.email) || userRow?.email || '',
-            phone: decrypt(appRow?.telephone) || '',
+            phone: cleanPhone,
             telegram: appRow?.telegram_username || userRow?.telegram_username || '',
             faculty: appRow?.faculty || '',
             academic_level: appRow?.student_level || '',
@@ -168,6 +191,14 @@ export async function GET(
             cheating_flags: userRow?.cheating_flags || 0,
             is_shadow_banned: userRow?.is_shadow_banned || false,
             season_year: appRow?.season_year || null,
+            whatsapp_group: groupRow?.group_name || null,
+            whatsapp_mentor_name: groupRow?.mentor_name || null,
+            whatsapp_status: whatsappStatus,
+            whatsapp_open_count: openCount,
+            whatsapp_join_clicks: joinClicks,
+            whatsapp_first_opened_at: groupRow?.first_opened_at ? new Date(groupRow.first_opened_at).toISOString() : null,
+            whatsapp_last_opened_at: groupRow?.last_opened_at ? new Date(groupRow.last_opened_at).toISOString() : null,
+            whatsapp_first_join_click_at: groupRow?.first_join_click_at ? new Date(groupRow.first_join_click_at).toISOString() : null,
         };
 
         // 3. Parallel Fetching with Verified Schema
@@ -196,7 +227,9 @@ export async function GET(
                     (SELECT MAX(submitted_at) FROM submissions WHERE user_id = $1 AND verdict IN ('Accepted', 'OK')) AS last_solve_at,
                     (SELECT COUNT(*) FROM submissions WHERE user_id = $1 AND submitted_at > now() - interval '7 days') AS subs_7d
             `, [userId]) : Promise.resolve({ rows: [] }),
-            userId ? query('SELECT * FROM user_streaks WHERE user_id = $1 LIMIT 1', [userId]) : Promise.resolve({ rows: [] }),
+            userId ? query(`SELECT MAX(CASE WHEN last_solve_date >= (now() AT TIME ZONE 'Africa/Cairo')::date - 1 THEN current_streak ELSE 0 END) AS current_streak,
+                                  MAX(max_streak) AS max_streak, MAX(last_solve_date) AS last_solve_date
+                             FROM user_streaks WHERE user_id = $1`, [userId]) : Promise.resolve({ rows: [] }),
             Promise.resolve({ rows: [] }),
             query('SELECT COUNT(*) as count FROM curriculum_problems'),
             query(`
@@ -232,7 +265,7 @@ export async function GET(
                         id, contest_id, problem_index, sheet_id, verdict, details,
                         language, time_ms, memory_kb, submitted_at, 
                         time_to_solve_seconds, paste_events, tab_switches, 
-                        cf_submission_id, source_code,
+                        cf_submission_id, source_code, url_type, group_id,
                         ROW_NUMBER() OVER (
                             PARTITION BY user_id, contest_id, problem_index 
                             ORDER BY submitted_at ASC NULLS LAST, cf_submission_id ASC NULLS LAST, id ASC
@@ -524,32 +557,17 @@ export async function GET(
                 attempts: parseInt(sub.real_attempt || '1', 10),
                 submitted_at: sub.submitted_at,
                 cf_submission_id: sub.cf_submission_id,
+                url_type: sub.url_type || 'contest',
+                group_id: sub.group_id || null,
                 source_code: sub.source_code || '',
             };
         });
 
-        // 6. Flagged Problems Forensics
-        const flaggedSubs = recentSubmissions.filter((s: any) => {
-            const rawSub = subsRes.rows.find((r: any) => r.id === s.id);
-            return rawSub?.paste_events > 5 || (rawSub?.time_to_solve_seconds && rawSub?.time_to_solve_seconds < 15 && rawSub?.verdict?.toLowerCase().includes('accepted'));
-        });
-
-        const flaggedProblems = flaggedSubs.map((sub: any) => {
-            const rawSub = subsRes.rows.find((r: any) => r.id === sub.id);
-            return {
-                submission_id: sub.id,
-                contest_id: sub.contest_id,
-                problem_index: sub.problem_index,
-                problem_title: sub.problem_title || `${sub.contest_id} ${sub.problem_index}`,
-                verdict: sub.verdict,
-                reason: rawSub?.paste_events > 5 ? `Excessive Paste Events (${rawSub.paste_events} pastes)` : 'Abnormally Fast Solve Time (< 15s)',
-                submitted_at: sub.submitted_at,
-                time_to_solve_seconds: rawSub?.time_to_solve_seconds,
-                paste_events: rawSub?.paste_events || 0,
-                cf_submission_id: sub.cf_submission_id,
-                source_code: sub.source_code,
-            };
-        });
+        // 6. The old automatic flags (Accepted within 15s of opening, 5+ pastes)
+        // fired on normal behaviour such as re-submitting a solution written
+        // elsewhere. Cheating evidence now comes from lib/integrity (code shared
+        // with other students, the AI trap, copy-then-paste).
+        const flaggedProblems: any[] = [];
 
         // 7. Heatmap
         const heatmapData = heatmapRes.rows.map((row: any) => ({
@@ -776,8 +794,7 @@ export async function GET(
             time_sessions: timeSessions,
             session_watch: sessionWatch,
             behavioral_analysis: {
-                cheating_flags: flaggedProblems.length || profile.cheating_flags || 0,
-                risk_score: flaggedProblems.length > 3 ? 'HIGH' : flaggedProblems.length > 0 ? 'MEDIUM' : 'LOW',
+                cheating_flags: profile.cheating_flags || 0,
             },
         };
 

@@ -52,8 +52,11 @@ export async function GET(request: NextRequest) {
 
                 // Query 2: Read pre-computed streak from user_streaks
                 query(`
-                    SELECT current_streak, max_streak, last_solve_date
+                    SELECT current_streak,
+                           (SELECT MAX(max_streak) FROM user_streaks WHERE user_id = $1) AS max_streak,
+                           last_solve_date
                     FROM user_streaks WHERE user_id = $1
+                    ORDER BY last_solve_date DESC NULLS LAST LIMIT 1
                 `, [user.id]),
 
                 // Query 3: Current active sheet (Optimized: use sheet_id in user_progress for counting)

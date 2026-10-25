@@ -1,69 +1,60 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Lock } from 'lucide-react';
+import { Trophy, Lock, Info } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
+import { useAchievements } from '@/hooks/useAchievements';
+import AchievementDetail, { type AchievementDetailData } from '@/components/achievements/AchievementDetail';
+import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, SOLVED_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
+
+const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
 
 interface BadgeCardProps {
-    modelPath?: string;
-    imageSrc?: string;
+    group?: string;
+    id: string;
+    modelPath: string;
+    scale?: number;
+    spin?: boolean;
     title: string;
     description: string;
     unlocked: boolean;
     rarity: 'common' | 'rare' | 'legendary';
+    earnedAt?: string[];
 }
 
-function BadgeCard({ modelPath, imageSrc, title, description, unlocked, rarity }: BadgeCardProps) {
-    const rarityStyles = {
-        common: 'border-yellow-500/30 bg-yellow-500/10',
-        rare: 'border-blue-500/30 bg-blue-500/10',
-        legendary: 'border-purple-500/30 bg-purple-500/10',
-    };
+const RARITY_TEXT = { common: 'text-white/40', rare: 'text-sky-400', legendary: 'text-[#E8C15A]' } as const;
 
+const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
+
+function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, onOpen }: BadgeCardProps & { onOpen: () => void }) {
     return (
-        <div className={`relative rounded-3xl border ${unlocked ? rarityStyles[rarity] : 'border-white/5 bg-[#0a0a0a]'} p-6 flex flex-col items-center text-center transition-all ${unlocked ? 'hover:scale-105' : 'opacity-80'}`}>
-            {/* Glow effect for unlocked */}
-            {unlocked && (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,_rgba(234,179,8,0.15),_transparent_70%)] rounded-3xl pointer-events-none"></div>
-            )}
+        <li
+            title={description}
+            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-colors ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}
+        >
+            <button
+                type="button"
+                onClick={onOpen}
+                title="How to get this achievement"
+                aria-label={`How to get ${title}`}
+                className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 hover:bg-white/[0.1] transition-all cursor-pointer"
+            >
+                <Info size={14} />
+            </button>
 
-            {/* Badge Model or Image */}
-            <div className="relative w-full h-48 md:h-56 mb-8 rounded-2xl overflow-visible">
-                {modelPath ? (
-                    <div className="w-full h-full">
-                        <Badge3D modelPath={modelPath} unlocked={unlocked} scale={2} />
-                    </div>
-                ) : imageSrc ? (
-                    <div className="relative w-24 h-24 mx-auto mt-4">
-                        <Image
-                            src={imageSrc}
-                            alt={title}
-                            fill
-                            className={`object-cover rounded-2xl ${!unlocked ? 'blur-md grayscale' : ''}`}
-                        />
-                    </div>
-                ) : null}
-
+            <div className="relative w-full h-40 mb-2">
+                <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)} />
                 {!unlocked && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <Lock className="w-8 h-8 text-white/50" strokeWidth={2} />
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-6 h-6 text-white/60 drop-shadow" /></div>
                 )}
             </div>
-
-            {/* Title and Description */}
-            <h3 className={`text-lg font-bold mb-2 ${unlocked ? 'text-white' : 'text-[#666]'}`}>{title}</h3>
-            <p className={`text-xs ${unlocked ? 'text-[#A0A0A0]' : 'text-[#444]'}`}>{description}</p>
-
-            {/* Status Badge */}
-            <span className={`mt-3 px-3 py-1 rounded-full text-[10px] font-bold ${unlocked ? 'bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20' : 'bg-[#1a1a1a] text-[#666] border border-white/5'}`}>
-                {unlocked ? 'UNLOCKED' : 'LOCKED'}
-            </span>
-        </div>
+            <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>{title}</h3>
+            <p className={`text-[11px] mt-1 leading-snug line-clamp-2 ${unlocked ? 'text-white/45' : 'text-white/25'}`}>{description}</p>
+            <span className={`mt-2 text-[10px] capitalize ${unlocked ? RARITY_TEXT[rarity] : 'text-white/20'}`}>{rarity}</span>
+        </li>
     );
 }
 
@@ -76,23 +67,67 @@ export default function AchievementsPage() {
         achievements?: { achievement_id: string }[];
     };
 
-    // Check unlock conditions
-    const codeforcesData = profile?.codeforces_data;
-    const codeforcesRating = codeforcesData?.rating ? parseInt(codeforcesData.rating, 10) : null;
-    const is500PtsUnlocked = codeforcesRating !== null && codeforcesRating >= 500;
+
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { achievements: earned } = useAchievements(Boolean(user));
+    const earnedIds = new Set(earned.map(a => a.achievement_id));
 
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
-    const isSheet1Unlocked = profile?.sheet_1_solved === true;
-    const isApprovalUnlocked = profile?.is_approval_unlocked === true;
+
+    // Monthly podium: three tiles that show what can be won; each opens once the student has placed that high.
+    const PODIUM_TILES = [
+        { place: 1, title: 'Monthly 1st place', rarity: 'legendary' as const },
+        { place: 2, title: 'Monthly 2nd place', rarity: 'rare' as const },
+        { place: 3, title: 'Monthly 3rd place', rarity: 'rare' as const },
+    ];
+    const podiumBadges = PODIUM_TILES.map(tile => {
+        const wins = earned.filter(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(`-${tile.place}`)).map(a => getAchievementMeta(a.achievement_id)!.name.split(' · ')[0]);
+        return {
+            group: 'Monthly podium', id: `podium-${tile.place}`, modelPath: `/3d/podium-${tile.place}.glb`, title: tile.title,
+            description: wins.length ? `Earned in ${wins.join(', ')}` : `Finish ${['1st', '2nd', '3rd'][tile.place - 1]} in a month on the Level 0 leaderboard`,
+            unlocked: wins.length > 0, rarity: tile.rarity,
+            earnedAt: earned.filter(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(`-${tile.place}`)).map(a => a.earned_at),
+        };
+    });
 
     const achievements = [
-        { id: 'welcome', modelPath: '/3d/WELCOME.glb', title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
-        { id: 'approval', modelPath: '/3d/done_approvalcamp.glb', title: 'Level 0', description: 'Complete all sessions of Level 0', unlocked: isApprovalUnlocked, rarity: 'rare' as const },
-        { id: 'sheet-1', modelPath: '/3d/sheet1.glb', title: 'Sheet 1 Solved', description: 'Solve all problems in Sheet 1', unlocked: isSheet1Unlocked, rarity: 'rare' as const },
-        { id: '500pts', modelPath: '/3d/500pts.glb', title: '500+ Rating', description: 'Achieve 500+ rating on Codeforces', unlocked: is500PtsUnlocked, rarity: 'rare' as const },
-        { id: 'instructor', modelPath: '/3d/instructor.glb', title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
-        { id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', imageSrc: '/images/achievements/rank1_march.webp', title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        { group: 'Milestones', id: 'level0-skills', modelPath: '/3d/level0-skills.glb', title: ACHIEVEMENT_META['level0-skills'].name, description: ACHIEVEMENT_META['level0-skills'].desc, unlocked: earnedIds.has('level0-skills'), rarity: ACHIEVEMENT_META['level0-skills'].tier },
+        { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
+        { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
+        { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        ...podiumBadges,
+        { group: 'Milestones', id: 'ecpc-2026', modelPath: '/3d/ecpc-2026.glb', scale: 1.3, title: ACHIEVEMENT_META['ecpc-2026'].name, description: ACHIEVEMENT_META['ecpc-2026'].desc, unlocked: earnedIds.has('ecpc-2026'), rarity: ACHIEVEMENT_META['ecpc-2026'].tier },
+        ...SEASON_BADGES.map(season => ({
+            group: 'Seasons', id: season.id, modelPath: `/3d/${season.id}.glb`, title: ACHIEVEMENT_META[season.id].name, description: ACHIEVEMENT_META[season.id].desc,
+            unlocked: earnedIds.has(season.id), rarity: ACHIEVEMENT_META[season.id].tier,
+        })),
+        ...SOLVED_BADGES.map(b => ({
+            group: 'Problems solved', id: b.id, modelPath: `/3d/${b.id}.glb`, title: ACHIEVEMENT_META[b.id].name, description: ACHIEVEMENT_META[b.id].desc,
+            unlocked: earnedIds.has(b.id), rarity: ACHIEVEMENT_META[b.id].tier,
+        })),
+        ...CF_RANK_BADGES.map(rank => ({
+            group: 'Codeforces', id: rank.id, modelPath: `/3d/${rank.id}.glb`, title: ACHIEVEMENT_META[rank.id].name, description: ACHIEVEMENT_META[rank.id].desc,
+            unlocked: earnedIds.has(rank.id), rarity: ACHIEVEMENT_META[rank.id].tier,
+        })),
+        ...LEVEL0_SHEET_BADGES.map(sheet => ({
+            group: 'Level 0 sheets', id: sheet.id, modelPath: `/3d/${sheet.id}.glb`, scale: 2, title: ACHIEVEMENT_META[sheet.id].name, description: ACHIEVEMENT_META[sheet.id].desc,
+            unlocked: earnedIds.has(sheet.id), rarity: ACHIEVEMENT_META[sheet.id].tier,
+        })),
+        { group: 'Board', id: 'dev', modelPath: '/3d/dev.glb', title: ACHIEVEMENT_META.dev.name, description: ACHIEVEMENT_META.dev.desc, unlocked: earnedIds.has('dev'), rarity: ACHIEVEMENT_META.dev.tier },
+        { group: 'Board', id: 'mentor', modelPath: '/3d/mentor.glb', scale: 2, title: ACHIEVEMENT_META.mentor.name, description: ACHIEVEMENT_META.mentor.desc, unlocked: earnedIds.has('mentor'), rarity: ACHIEVEMENT_META.mentor.tier },
+        ...PROGRESS_BADGES.map(id => ({
+            group: id.startsWith('disciplined') ? 'Discipline' : 'Streaks',
+            id, modelPath: `/3d/${id}.glb`, title: ACHIEVEMENT_META[id].name, description: ACHIEVEMENT_META[id].desc,
+            unlocked: earnedIds.has(id), rarity: ACHIEVEMENT_META[id].tier,
+        })),
     ];
+
+    // Attach the time each regular badge was earned.
+    const earnedTimes = new Map(earned.map(a => [a.achievement_id, a.earned_at]));
+    for (const a of achievements as BadgeCardProps[]) {
+        if (!a.earnedAt && earnedTimes.has(a.id)) a.earnedAt = [earnedTimes.get(a.id)!];
+    }
+    const selected = achievements.find(a => a.id === selectedId) as BadgeCardProps | undefined;
 
     const unlockedCount = achievements.filter(a => a.unlocked).length;
     const progress = (unlockedCount / achievements.length) * 100;
@@ -108,13 +143,13 @@ export default function AchievementsPage() {
     return (
         <>
 
-            <div className="animate-fade-in">
+            <div className="ui-compact animate-fade-in">
                 {/* Header with Progress */}
                 <div className="flex items-center gap-4 mb-6">
                     <Trophy className="w-6 h-6 text-[#E8C15A]" />
                     <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                            <h1 className="text-xl md:text-2xl font-bold text-[#E8C15A] tracking-wide">MY ACHIEVEMENTS <span className="text-[10px] opacity-30">v1.6.1</span></h1>
+                            <h1 className="text-xl md:text-2xl font-bold text-[#E8C15A] tracking-wide">MY ACHIEVEMENTS</h1>
                             <span className="text-sm text-[#A0A0A0]">{unlockedCount} / {achievements.length} Unlocked</span>
                         </div>
                         <div className="w-full h-2.5 bg-[#1a1a1a] rounded-full overflow-hidden border border-white/5">
@@ -126,13 +161,28 @@ export default function AchievementsPage() {
                     </div>
                 </div>
 
-                {/* Badges Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {achievements.map((achievement) => (
-                        <BadgeCard key={achievement.id} {...achievement} />
-                    ))}
+                {/* Badges, grouped */}
+                <div className="space-y-8">
+                    {['Milestones', 'Problems solved', 'Monthly podium', 'Seasons', 'Level 0 sheets', 'Codeforces', 'Streaks', 'Discipline', 'Board'].map(group => {
+                        const items = achievements.filter(a => a.group === group);
+                        if (items.length === 0) return null;
+                        return (
+                            <section key={group}>
+                                <div className="flex items-baseline justify-between mb-3">
+                                    <h2 className="text-sm font-semibold text-white">{group}</h2>
+                                    <span className="text-xs text-white/40 tabular-nums">{items.filter(a => a.unlocked).length}/{items.length}</span>
+                                </div>
+                                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                                    {items.map(achievement => (
+                                        <BadgeCard key={achievement.id} {...achievement} onOpen={() => setSelectedId(achievement.id)} />
+                                    ))}
+                                </ul>
+                            </section>
+                        );
+                    })}
                 </div>
             </div>
+            {selected && <AchievementDetail badge={{ id: selected.id, modelPath: selected.modelPath, title: selected.title, unlocked: selected.unlocked, rarity: selected.rarity, earnedAt: selected.earnedAt, scale: selected.scale }} onClose={() => setSelectedId(null)} />}
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }`}</style>
         </>
     );

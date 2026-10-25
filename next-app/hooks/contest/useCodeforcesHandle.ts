@@ -63,7 +63,7 @@ export function useCodeforcesHandle(): UseCodeforcesHandleReturn {
             // Listen for extension response
             const messageHandler = (event: MessageEvent) => {
                 if (event.source !== window) return;
-                if (event.data?.type === 'VERDICT_HANDLE_RESPONSE') {
+                if (event.data?.type === 'VERDICT_HANDLE_RESPONSE' || event.data?.type === 'VERDICT_CF_AUTO_DETECTED') {
                     if (!resolved) {
                         resolved = true;
                         clearTimeout(timeout);
@@ -113,8 +113,15 @@ export function useCodeforcesHandle(): UseCodeforcesHandleReturn {
 
             if (cfHandle) {
                 setHandleState(cfHandle);
-                // Save to localStorage for future use
                 saveToLocalStorage(cfHandle);
+
+                // Auto-sync handle to backend so user shows on leaderboard and ranking
+                fetch('/api/codeforces/sync-handle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ handle: cfHandle }),
+                    credentials: 'include'
+                }).catch(() => {});
             } else {
                 setHandleState(null);
             }

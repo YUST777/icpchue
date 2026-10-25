@@ -10,6 +10,8 @@ import {
     normalizeVerdict,
 } from '@/lib/services/codeforces-backfill';
 
+class HandleNotFoundError extends Error {}
+
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
                 clearTimeout(timeout);
             }
 
+            if (cfRes.status === 400) throw new HandleNotFoundError();
             if (!cfRes.ok) throw new Error(`Codeforces API HTTP ${cfRes.status}`);
             const data = await cfRes.json();
             if (data?.status !== 'OK' || !Array.isArray(data.result)) {
@@ -156,6 +159,10 @@ export async function POST(req: NextRequest) {
             });
         } catch (error) {
             await query('UPDATE users SET auto_backfill_lease_until = NULL WHERE id = $1', [user.id]);
+            if (error instanceof HandleNotFoundError) {
+                console.warn(`[AutoBackfill] handle not found on Codeforces for user ${user.id}`);
+                return NextResponse.json({ error: 'Your linked Codeforces handle was not found. Re-link it from your profile.', retryable: false }, { status: 422 });
+            }
             console.error('[AutoBackfill] public sync failed:', error);
             return NextResponse.json({ error: 'Codeforces is temporarily unavailable', retryable: true }, { status: 502 });
         }

@@ -4,8 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Routes that require authentication — redirect to /login if no valid session
 export const PROTECTED_PREFIXES = ['/dashboard', '/group', '/mentorwhatsapp'];
 
-// Routes that authenticated users should NOT see — redirect to /dashboard
-export const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password', '/reset-password'];
+// Routes that authenticated users should NOT see — redirect to /dashboard.
+// Keep /reset-password public: a user may still have an old Supabase session
+// when opening a recovery link, and the recovery token itself authorizes the
+// password change. Redirecting that page discards the one-time token.
+export const AUTH_ONLY_PAGES = ['/login', '/register', '/apply', '/forgot-password'];
 
 /**
  * Only pages that redirect on auth state need the Supabase round trip.

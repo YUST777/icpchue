@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
         const search = (url.searchParams.get('search') || '').trim();
         const level = (url.searchParams.get('level') || 'all').trim();
         const statusFilter = (url.searchParams.get('status') || 'all').trim(); // all | active | stuck | flagged | banned | inactive
+        const whatsappFilter = (url.searchParams.get('whatsapp') || 'all').trim(); // all | joined | opened | never_opened
         const timeRange = (url.searchParams.get('timeRange') || 'all').trim(); // all | 24h | 3d | 7d | 30d | inactive_7d | inactive_14d | inactive_30d
         const sortBy = (url.searchParams.get('sortBy') || 'solves_desc').trim();
         const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
@@ -97,8 +98,14 @@ export async function GET(req: NextRequest) {
                     ls.last_submission_at,
                     COALESCE(us.current_streak, 0) as current_streak,
                     COALESCE(us.max_streak, 0) as max_streak,
-                    us.last_solve_date
+                    us.last_solve_date,
+                    mg.name as mentor_group_name,
+                    mg.mentor_name,
+                    mgm.open_count as group_open_count,
+                    mgm.join_clicks as group_join_clicks,
+                    mgm.last_opened_at as group_last_opened_at
                 FROM users u
+                LEFT JOIN auth.users au ON au.id = u.supabase_uid
                 -- Exactly one application per user: the linked one, otherwise the
                 -- newest application with the same email. The old OR-join
                 -- duplicated returning students (e.g. 2026 + Level 0 2027).
@@ -112,7 +119,20 @@ export async function GET(req: NextRequest) {
                 ) a ON true
                 LEFT JOIN user_solve_counts usc ON u.id = usc.user_id
                 LEFT JOIN latest_submissions ls ON u.id = ls.user_id
-                LEFT JOIN user_streaks us ON u.id = us.user_id
+                -- One row per user (user_streaks has a row per season); a streak only
+                -- counts while the last solve was today or yesterday (Cairo).
+                LEFT JOIN (
+                    SELECT user_id,
+                           MAX(CASE WHEN last_solve_date >= (now() AT TIME ZONE 'Africa/Cairo')::date - 1 THEN current_streak ELSE 0 END) AS current_streak,
+                           MAX(max_streak) AS max_streak,
+                           MAX(last_solve_date) AS last_solve_date
+                      FROM user_streaks GROUP BY user_id
+                ) us ON u.id = us.user_id
+                LEFT JOIN mentor_group_members mgm ON mgm.season = 2027 AND (
+                    mgm.student_id = a.student_id OR
+                    mgm.student_id = substring(lower(au.email) from '^([0-9]+)@')
+                )
+                LEFT JOIN mentor_groups mg ON mg.id = mgm.group_id
                 WHERE u.role NOT IN ('mentor', 'instructor', 'owner') OR u.role IS NULL
                 ORDER BY u.id DESC
             `);
@@ -120,7 +140,7 @@ export async function GET(req: NextRequest) {
             const totalCurriculumProblems = Number(curriculumCount.rows[0]?.c) || 0;
             const now = Date.now();
 
-            allTrainees = result.rows.map((row) => {
+            allTrainees = result.rows.map((row: any) => {
                 const decryptedName = decrypt(row.encrypted_name) || row.codeforces_handle || `Student #${row.user_id || row.application_id}`;
                 // student_id and faculty are stored as plaintext; only email,
                 // phone and national ID are encrypted.
@@ -144,6 +164,11 @@ export async function GET(req: NextRequest) {
                 const flagsCount = parseInt(row.cheating_flags, 10) || 0;
                 const isBanned = Boolean(row.is_shadow_banned);
 
+                const openCount = parseInt(row.group_open_count, 10) || 0;
+                const joinClicks = parseInt(row.group_join_clicks, 10) || 0;
+                const whatsappStatus: 'joined' | 'opened' | 'never_opened' =
+                    joinClicks > 0 ? 'joined' : (openCount > 0 ? 'opened' : 'never_opened');
+
                 return {
                     id: row.user_id || row.application_id,
                     user_id: row.user_id,
@@ -155,7 +180,7 @@ export async function GET(req: NextRequest) {
                     // rebuild, and the directory never shows emails anyway.
                     email_bis: [row.app_email_bi, row.user_email_bi].filter(Boolean),
                     // Normalized once per cache build; stripped from the response.
-                    search_text: normalizeSearchText(`${decryptedName} ${studentId} ${row.codeforces_handle || ''}`),
+                    search_text: normalizeSearchText(`${decryptedName} ${studentId} ${row.codeforces_handle || ''} ${row.mentor_group_name || ''}`),
                     faculty: row.encrypted_faculty || '',
                     telegram: row.telegram_username || row.app_telegram || '',
                     codeforces_handle: row.codeforces_handle || '',
@@ -175,6 +200,12 @@ export async function GET(req: NextRequest) {
                     is_shadow_banned: isBanned,
                     is_stuck: isStuck,
                     is_inactive: isInactive,
+                    mentor_group: row.mentor_group_name || null,
+                    mentor_name: row.mentor_name || null,
+                    whatsapp_status: whatsappStatus,
+                    whatsapp_open_count: openCount,
+                    whatsapp_join_clicks: joinClicks,
+                    whatsapp_last_opened_at: row.group_last_opened_at ? new Date(row.group_last_opened_at).toISOString() : null,
                     status_badge: isBanned ? 'BANNED' : (flagsCount > 0 ? 'FLAGGED' : (isStuck ? 'STUCK' : (isInactive ? 'INACTIVE' : 'ACTIVE'))),
                 };
             });
@@ -255,6 +286,10 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        if (whatsappFilter && whatsappFilter !== 'all') {
+            filtered = filtered.filter((t) => t.whatsapp_status === whatsappFilter);
+        }
+
         if (timeRange && timeRange !== 'all') {
             filtered = filtered.filter((t) => {
                 if (timeRange === '24h' || timeRange === 'today') return t.hours_since_active <= 24;
@@ -302,6 +337,9 @@ export async function GET(req: NextRequest) {
             stuck_trainees: allTrainees.filter(t => t.is_stuck).length,
             flagged_trainees: allTrainees.filter(isFlagged).length,
             inactive_trainees: allTrainees.filter(t => t.is_inactive).length,
+            whatsapp_joined: allTrainees.filter(t => t.whatsapp_status === 'joined').length,
+            whatsapp_opened: allTrainees.filter(t => t.whatsapp_status === 'opened').length,
+            whatsapp_never_opened: allTrainees.filter(t => t.whatsapp_status === 'never_opened').length,
             level_distribution: Object.fromEntries(['0', '1', '2', '3'].map((n) => [
                 `level_${n}`,
                 allTrainees.filter((t) => t.training_level === n ||

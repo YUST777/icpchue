@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
+import { sameCfHandle } from '@/lib/codeforces';
 import { query } from '@/lib/db/db';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
             [user.id]
         );
         const userHandle = String(userResult.rows[0]?.codeforces_handle || '').trim();
-        if (!userHandle || !cfHandle || String(cfHandle).trim().toLowerCase() !== userHandle.toLowerCase()) {
+        if (!userHandle || !cfHandle || !sameCfHandle(cfHandle, userHandle)) {
             return NextResponse.json({ error: 'Link your Codeforces account before syncing submissions' }, { status: 403 });
         }
 
@@ -247,11 +248,8 @@ export async function POST(req: NextRequest) {
 
                         const { total, solved } = progressCheck.rows[0];
                         if (total > 0 && solved >= total) {
-                            // Sheet 1 Achievement is for Level 0 (Newcomers) or Level 1 first sheet
-                            if ((level_number === 0 || level_number === 1) && sheet_number === 1) {
-                                const { updateUserStatus } = await import('@/lib/services/achievements');
-                                await updateUserStatus(user.id, 'sheet_1_solved', true);
-                            }
+                            const { grantSheetBadge } = await import('@/lib/services/achievements');
+                            await grantSheetBadge(user.id, level_number, sheet_number);
                         }
                     } catch (e) {
                         console.error('Achievement check failed:', e);

@@ -26,6 +26,12 @@ const TOTP_SECRET = process.env.TOTP_SECRET;
 // cryptr instance — handles AES-256-GCM with PBKDF2 key derivation
 const cryptr = ENCRYPTION_KEY ? new Cryptr(ENCRYPTION_KEY) : null;
 
+// Fallback keys in case any existing rows were encrypted during key transitions
+const FALLBACK_KEYS = [
+    '0d42189dff584ba68ef6343513a9baef87a07fc2f55bb5935043d789bd0dc4d8',
+].filter((k) => k !== ENCRYPTION_KEY);
+const fallbackCryptrs = FALLBACK_KEYS.map((k) => new Cryptr(k));
+
 // ─── Encrypt (via cryptr) ───────────────────────────────────────────
 
 export const encrypt = (text: string | null | undefined): string | null => {
@@ -61,12 +67,26 @@ export const decrypt = (ciphertext: string | null | undefined): string | null =>
     }
 
     // Current format: cryptr (hex string)
-    if (!cryptr) return ciphertext;
-    try {
-        return cryptr.decrypt(ciphertext);
-    } catch {
-        return ciphertext;
+    if (cryptr) {
+        try {
+            return cryptr.decrypt(ciphertext);
+        } catch {
+            for (const fc of fallbackCryptrs) {
+                try {
+                    return fc.decrypt(ciphertext);
+                } catch {
+                    // continue
+                }
+            }
+        }
     }
+
+    // Decryption failed. Never return raw hex ciphertext to the UI!
+    if (HEX_CIPHERTEXT_REGEX.test(ciphertext)) {
+        return null;
+    }
+
+    return ciphertext;
 };
 
 // ─── Legacy: CryptoJS AES-CBC decrypt (read-only, for old DB data) ──

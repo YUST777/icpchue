@@ -1,4 +1,5 @@
 import pg from 'pg';
+import type { QueryResultRow, QueryResult, PoolClient } from 'pg';
 const { Pool } = pg;
 
 // Persist the pool across hot serverless invocations. On Vercel each warm
