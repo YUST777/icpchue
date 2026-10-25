@@ -1,6 +1,7 @@
 import { query, withTransaction } from '../db/db';
 import { invalidateCache } from '../cache/cache';
 import { CF_RANK_BADGES } from '../achievements/catalog';
+import { ecpcTeamUserIds } from '../leaderboard/cohort';
 import { STREAK_TIERS } from '../achievements/catalog';
 
 export const ACHIEVEMENTS = {
@@ -133,6 +134,7 @@ export async function checkProgressAchievements(userId: number, role?: string) {
     const earned: string[] = [];
     const skillTotal = Number(skills.rows[0]?.total || 0);
     if (skillTotal > 0 && Number(skills.rows[0]?.solved || 0) >= Math.ceil(skillTotal * 0.8)) earned.push('level0-skills');
+    if ((await ecpcTeamUserIds()).includes(Number(userId))) earned.push('ecpc-2026');
     if (seasons.rows[0]?.s2026) earned.push('year-2026');
     if (seasons.rows[0]?.s2027) earned.push('year-2027');
     const cfData = cf.rows[0]?.codeforces_data as { rating?: number | string; maxRating?: number | string } | null;

@@ -13,6 +13,7 @@ import { getDisplayName } from '@/lib/utils';
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
 const ACHIEVEMENT_MODELS: Record<string, { modelPath: string; scale?: number; spin?: boolean }> = {
+    'ecpc-2026': { modelPath: '/3d/ecpc-2026.glb', scale: 1.3, spin: true },
     welcome: { modelPath: '/3d/WELCOME.glb', scale: 2, spin: true },
     instructor: { modelPath: '/3d/instructor.glb', scale: 2, spin: true },
     'rank1-march-2026': { modelPath: '/3d/rank1_march.glb', scale: 1.5, spin: true },
