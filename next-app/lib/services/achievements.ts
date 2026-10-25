@@ -1,5 +1,6 @@
 import { query, withTransaction } from '../db/db';
 import { invalidateCache } from '../cache/cache';
+import { CF_RANK_BADGES } from '../achievements/catalog';
 import { STREAK_TIERS } from '../achievements/catalog';
 
 export const ACHIEVEMENTS = {
@@ -44,6 +45,16 @@ export async function grantAchievement(userId: number | string, achievementId: s
         console.error(`[Achievement Error] Failed to grant ${achievementId} to ${userId}:`, error);
         return false;
     }
+}
+
+/** Codeforces rank badges for a best rating: every rank up to it, as a collection. */
+export async function grantCodeforcesRankBadges(userId: number | string, bestRating: number) {
+    if (!(bestRating > 0)) return 0;
+    let granted = 0;
+    for (const rank of CF_RANK_BADGES) {
+        if (bestRating >= rank.min && await grantAchievement(userId, rank.id)) granted++;
+    }
+    return granted;
 }
 
 /**
@@ -94,7 +105,24 @@ export async function checkProgressAchievements(userId: number, role?: string) {
         [userId]
     );
 
+    // Season badges and Codeforces ranks.
+    const [seasons, cf] = await Promise.all([
+        query(
+            `SELECT
+                 EXISTS (SELECT 1 FROM season_enrollments WHERE user_id = $1 AND season_year = 2026) AS s2026,
+                 EXISTS (SELECT 1 FROM users u JOIN level0_training_registrations r ON r.application_id = u.application_id
+                          WHERE u.id = $1 AND r.season_year = 2027) AS s2027`,
+            [userId]
+        ),
+        query(`SELECT codeforces_data FROM users WHERE id = $1`, [userId]),
+    ]);
+
     const earned: string[] = [];
+    if (seasons.rows[0]?.s2026) earned.push('year-2026');
+    if (seasons.rows[0]?.s2027) earned.push('year-2027');
+    const cfData = cf.rows[0]?.codeforces_data as { rating?: number | string; maxRating?: number | string } | null;
+    const bestRating = Math.max(Number(cfData?.rating) || 0, Number(cfData?.maxRating) || 0);
+    for (const rank of CF_RANK_BADGES) if (bestRating >= rank.min) earned.push(rank.id);
     for (const row of sheets.rows) earned.push(`sheet-${row.sheet_number}`);
     if (solved.rows[0]?.ok) earned.push('hello-world');
     const best = Number(streak.rows[0]?.best || 0);

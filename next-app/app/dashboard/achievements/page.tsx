@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
-import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES } from '@/lib/achievements/catalog';
+import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES } from '@/lib/achievements/catalog';
 
 const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
 
@@ -63,6 +63,14 @@ export default function AchievementsPage() {
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        ...SEASON_BADGES.map(season => ({
+            group: 'Seasons', id: season.id, modelPath: `/3d/${season.id}.glb`, title: ACHIEVEMENT_META[season.id].name, description: ACHIEVEMENT_META[season.id].desc,
+            unlocked: earnedIds.has(season.id), rarity: ACHIEVEMENT_META[season.id].tier,
+        })),
+        ...CF_RANK_BADGES.map(rank => ({
+            group: 'Codeforces', id: rank.id, modelPath: `/3d/${rank.id}.glb`, title: ACHIEVEMENT_META[rank.id].name, description: ACHIEVEMENT_META[rank.id].desc,
+            unlocked: earnedIds.has(rank.id), rarity: ACHIEVEMENT_META[rank.id].tier,
+        })),
         ...LEVEL0_SHEET_BADGES.map(sheet => ({
             group: 'Level 0 sheets', id: sheet.id, modelPath: `/3d/${sheet.id}.glb`, scale: 2, title: ACHIEVEMENT_META[sheet.id].name, description: ACHIEVEMENT_META[sheet.id].desc,
             unlocked: earnedIds.has(sheet.id), rarity: ACHIEVEMENT_META[sheet.id].tier,
@@ -109,7 +117,7 @@ export default function AchievementsPage() {
 
                 {/* Badges, grouped */}
                 <div className="space-y-8">
-                    {['Milestones', 'Level 0 sheets', 'Streaks', 'Discipline', 'Board'].map(group => {
+                    {['Milestones', 'Seasons', 'Level 0 sheets', 'Codeforces', 'Streaks', 'Discipline', 'Board'].map(group => {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (
