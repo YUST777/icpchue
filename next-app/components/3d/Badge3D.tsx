@@ -172,7 +172,7 @@ class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void
 }
 
 /** Chrome allows ~16 WebGL contexts per page. Allow up to 16 live 3D badges on screen simultaneously. */
-const MAX_LIVE_SCENES = 12;
+const MAX_LIVE_SCENES = 14;
 
 interface SceneEntry { visible: boolean; lastSeen: number; evict: () => void }
 const liveScenes = new Map<symbol, SceneEntry>();
@@ -204,9 +204,21 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
     const [url, setUrl] = useState<string | null>(null);
     const [failed, setFailed] = useState(false);
     const [granted, setGranted] = useState(false);
+    const [snapshot, setSnapshot] = useState<string | null>(null);
+    const [sceneReady, setSceneReady] = useState(false);
+    const glCanvas = useRef<HTMLCanvasElement | null>(null);
     const [introDone, setIntroDone] = useState(false);
     const id = useRef(Symbol('badge-scene'));
-    const entry = useRef<SceneEntry>({ visible: false, lastSeen: 0, evict: () => setGranted(false) });
+    const entry = useRef<SceneEntry>({
+        visible: false,
+        lastSeen: 0,
+        // When this scene is released, keep a picture of its last frame so scrolling back shows no flash.
+        evict: () => {
+            try { if (glCanvas.current) setSnapshot(glCanvas.current.toDataURL('image/png')); } catch { /* keep the stock picture */ }
+            setSceneReady(false);
+            setGranted(false);
+        },
+    });
 
     // Claim a scene slot when the badge is on screen with its model loaded; keep it afterwards.
     useEffect(() => {
@@ -247,11 +259,22 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
             ) : !url ? (
                 <LoadingBadge pct={pct} src={fallbackSrc} />
             ) : !granted ? (
-                <BadgeFallback onRetry={retry} src={fallbackSrc} />
+                <BadgeFallback onRetry={retry} src={snapshot ?? fallbackSrc} />
             ) : (
             <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
             <div className={`absolute inset-0 ${introDone ? '' : 'animate-[badgeIn_0.6s_ease-out]'} ${!unlocked ? 'grayscale opacity-45' : ''}`}>
-            <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
+            {snapshot && !sceneReady && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={snapshot} alt="" className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain" />
+            )}
+            <Canvas
+                // A tight depth range keeps the layered panels from z-fighting on GPUs with a 16-bit depth buffer.
+                camera={{ position: [0, 0, 5], fov: 45, near: 2.5, far: 9 }}
+                dpr={[1, 1.5]}
+                gl={{ preserveDrawingBuffer: true }}
+                onCreated={({ gl }) => { glCanvas.current = gl.domElement; setTimeout(() => setSceneReady(true), 250); }}
+                frameloop={visible ? 'always' : 'never'}
+            >
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
                 <pointLight position={[-10, -10, -10]} intensity={1} />
