@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
+import { sameCfHandle } from '@/lib/codeforces';
 import { query } from '@/lib/db/db';
 import { invalidateCache, invalidateCachePrefix } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
@@ -61,9 +62,10 @@ export async function POST(req: NextRequest) {
         const userHandle: string | null = userResult.rows[0]?.codeforces_handle || null;
 
         const submittedHandle = String(body?.cfHandle || '').trim();
-        const finalHandle = submittedHandle || userHandle;
+        const handlesMatch = !!userHandle && sameCfHandle(submittedHandle, userHandle);
+        const finalHandle = handlesMatch ? userHandle! : (submittedHandle || userHandle);
 
-        if (userHandle && submittedHandle && submittedHandle.toLowerCase() !== userHandle.toLowerCase()) {
+        if (userHandle && submittedHandle && !handlesMatch) {
             console.warn(`[backfill] handle mismatch: user ${user.id} is linked to ${userHandle}, Codeforces session is ${submittedHandle}`);
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
@@ -76,8 +78,7 @@ export async function POST(req: NextRequest) {
         // this account, allow the browser result to award SOLVED as well as
         // reconstructing attempts. Public API syncs use the separate
         // auto-backfill route and never set this flag.
-        const linkedBrowserHandle = Boolean(userHandle) &&
-            finalHandle.toLowerCase() === String(userHandle || '').toLowerCase();
+        const linkedBrowserHandle = Boolean(userHandle) && (!submittedHandle || handlesMatch);
 
         const batches: BackfillBatch[] = requestedBatches.map((batch: any) => {
             const urlType = batch?.urlType === 'group' || batch?.urlType === 'gym'

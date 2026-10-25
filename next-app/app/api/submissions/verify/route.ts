@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/auth';
+import { sameCfHandle } from '@/lib/codeforces';
 import { query } from '@/lib/db/db';
 import { invalidateCache } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields: contestId, problemIndex, cfHandle' }, { status: 400 });
         }
 
-        const trimmedHandle = String(cfHandle).trim();
+        let trimmedHandle = String(cfHandle).trim();
         if (!/^[A-Za-z0-9_.-]{1,24}$/.test(trimmedHandle)) {
             return NextResponse.json({ error: 'Handle cannot be empty' }, { status: 400 });
         }
@@ -80,9 +81,10 @@ export async function POST(req: NextRequest) {
         // proves ownership from the user's live Codeforces session below.
         const ownerResult = await query('SELECT codeforces_handle FROM users WHERE id = $1', [user.id]);
         let linkedHandle = String(ownerResult.rows[0]?.codeforces_handle || '').trim();
-        if (linkedHandle && linkedHandle.toLowerCase() !== trimmedHandle.toLowerCase()) {
+        if (linkedHandle && !sameCfHandle(linkedHandle, trimmedHandle)) {
             return NextResponse.json({ error: 'CF handle mismatch' }, { status: 403 });
         }
+        if (linkedHandle) trimmedHandle = linkedHandle;
         // The extension's submission id is self-reported, so it is accepted
         // only for problems the curriculum itself places in a private group or
         // gym (which the public API cannot see) — not because the client says
