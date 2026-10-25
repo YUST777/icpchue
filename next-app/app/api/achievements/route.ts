@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Award newly earned progress badges, at most every 30 seconds per user.
-        await getCachedData(`user:${authResult.id}:achievement-check`, 30, async () => ({
+        // Award newly earned progress badges, at most every minute per user.
+        await getCachedData(`user:${authResult.id}:achievement-check`, 60, async () => ({
             granted: await checkProgressAchievements(authResult.id, authResult.role),
         }));
 

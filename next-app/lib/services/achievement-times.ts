@@ -47,7 +47,7 @@ export async function earnedTimes(userId: number): Promise<Map<string, Date>> {
                         JOIN curriculum_levels l2 ON l2.id = s2.level_id AND l2.level_number = 0
                         WHERE up.user_id = $1 AND up.status = 'SOLVED' AND up.solved_at IS NOT NULL AND s2.sheet_number BETWEEN 1 AND 7
                         GROUP BY up.sheet_id, up.problem_id) y) AS times`, [userId]),
-        query('SELECT DISTINCT solve_date FROM daily_solves WHERE user_id = $1 ORDER BY solve_date', [userId]),
+        query('SELECT DISTINCT solve_date::text AS solve_date FROM daily_solves WHERE user_id = $1 ORDER BY 1', [userId]),
         query(
             `SELECT (week_number - 1) * 7 + day_number AS n, COALESCE(submitted_at, created_at, log_date::timestamptz) AS t
              FROM user_discipline_logs
@@ -74,7 +74,7 @@ export async function earnedTimes(userId: number): Promise<Map<string, Date>> {
         if (skillTimes.length >= need) set('level0-skills', new Date(skillTimes[need - 1]));
     }
 
-    const dates: Date[] = days.rows.map((r: { solve_date: Date | string }) => new Date(`${new Date(r.solve_date).toISOString().slice(0, 10)}T00:00:00Z`));
+    const dates: Date[] = days.rows.map((r: { solve_date: string }) => new Date(`${String(r.solve_date).slice(0, 10)}T00:00:00Z`));
     for (const n of STREAK_TIERS) set(`streak-${n}`, (() => { const d = streakReached(dates, n); return d ? noon(d) : null; })());
     for (let i = 1; i < dates.length; i++) {
         if ((dates[i].getTime() - dates[i - 1].getTime()) / DAY >= 7) { set('comeback', noon(dates[i])); break; }

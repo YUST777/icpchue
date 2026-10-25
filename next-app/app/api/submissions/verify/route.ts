@@ -124,94 +124,13 @@ export async function POST(req: NextRequest) {
             linkedHandle = trimmedHandle;
         }
         let match = null;
-        // Track whether the CF Bridge (the only thing that can read PRIVATE
-        // groups on serverless) was actually reachable + returned a usable
-        // answer. Used to give an honest error instead of "No AC found" when
-        // the bridge is mis-deployed.
-        let bridgeReachable = false;
-        let bridgeError: string | null = null;
 
-        // 1. If cookies are provided by the Chrome extension, query the user's
-        //    submissions via the CF Bridge. The bridge uses curl_cffi (Chrome TLS
-        //    impersonation) + the user's own session cookies to read the PRIVATE
-        //    group/contest status page — which a plain serverless fetch cannot do
-        //    (Cloudflare managed-challenge) and which the official API cannot see.
+        // 1. If cookies are provided by the Chrome extension, look the submission up
+        //    on Codeforces with the user's own session.
         if (cookies) {
-            console.log(`[Verify Route] Querying user submissions via CF Bridge (Contest: ${targetContestId}, Problem: ${problemIndex}, urlType: ${urlType})...`);
-
-            const BRIDGE_URL = process.env.CF_BRIDGE_URL || process.env.SCRAPLING_BRIDGE_URL || 'http://cf-bridge:8787';
-            const bridgeBody = JSON.stringify({
-                contestId: String(targetContestId),
-                problemIndex: normalizedProblemIndex,
-                cookies,
-                urlType: urlType || 'contest',
-                groupId: groupId || null
-            });
-
-            let bridgeRes;
-            try {
-                const bridgeSecret = process.env.CF_BRIDGE_SHARED_SECRET;
-                bridgeRes = await fetch(`${BRIDGE_URL}/submissions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(bridgeSecret ? { Authorization: bridgeSecret } : {}),
-                    },
-                    body: bridgeBody
-                });
-            } catch (err: any) {
-                console.warn(`[Verify Route] Failed to connect to CF Bridge at ${BRIDGE_URL} (${err.message}). Trying local fallback (127.0.0.1:8787)...`);
-                try {
-                    bridgeRes = await fetch(`http://127.0.0.1:8787/submissions`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(process.env.CF_BRIDGE_SHARED_SECRET ? { Authorization: process.env.CF_BRIDGE_SHARED_SECRET } : {}),
-                        },
-                        body: bridgeBody
-                    });
-                } catch (localErr: any) {
-                    console.error('[Verify Route] Local CF Bridge fallback failed:', localErr.message);
-                }
-            }
-
-            if (bridgeRes && bridgeRes.ok) {
-                const bridgeData = await bridgeRes.json();
-                if (bridgeData.success && Array.isArray(bridgeData.submissions)) {
-                    bridgeReachable = true;
-                    // Find the matched Accepted submission. The bridge already
-                    // filters by problemIndex when provided, but we re-check
-                    // problemIndex + handle defensively.
-                    const rawMatch = bridgeData.submissions.find((sub: any) => {
-                        const isAccepted = sub.verdict?.toUpperCase() === 'ACCEPTED' || sub.verdict === 'OK';
-                        const isUserMatch = sub.author?.toLowerCase() === trimmedHandle.toLowerCase();
-                        const isProblemMatch = !sub.problemIndex ||
-                            sub.problemIndex.toUpperCase() === normalizedProblemIndex;
-                        return isAccepted && isUserMatch && isProblemMatch;
-                    });
-
-                    if (rawMatch) {
-                        console.log(`[Verify Route] Match found via CF Bridge! Submission: ${rawMatch.id}`);
-                        match = {
-                            id: Number(rawMatch.id),
-                            contestId: targetContestId,
-                            timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
-                            memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
-                            passedTestCount: 15,
-                            programmingLanguage: rawMatch.language || language || 'C++'
-                        };
-                    }
-                } else if (!bridgeData.success) {
-                    bridgeError = bridgeData.error || 'BRIDGE_ERROR';
-                    console.warn(`[Verify Route] CF Bridge returned error: ${bridgeData.error}`);
-                }
-            } else {
-                bridgeError = 'BRIDGE_UNREACHABLE';
-            }
-
             // Try contest.status as fallback
             if (!match && linkedHandle) {
-                console.log(`[Verify Route] Match not found via Scrapling Bridge. Falling back to contest.status (Contest: ${targetContestId})...`);
+                console.log(`[Verify Route] Checking contest.status (Contest: ${targetContestId})...`);
                 const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
                 try {
                     const cfRes = await fetch(cfUrl, {
@@ -381,18 +300,15 @@ export async function POST(req: NextRequest) {
         }
 
         if (!match) {
-            // Distinguish "bridge couldn't run" from "genuinely no AC". For a
-            // PRIVATE group/gym, the public CF API cannot see submissions at all,
-            // so a failed/unreachable bridge means we literally could not check —
-            // don't mislead the user into thinking their AC doesn't exist.
+            // A private group or gym cannot be read through the public API, so an
+            // empty result there means "could not check", not "no accepted solution".
             const isPrivate = (urlType === 'group' || urlType === 'gym');
-            if (cookies && isPrivate && !bridgeReachable) {
-                console.error(`[Verify Route] CF Bridge unavailable (${bridgeError || 'unknown'}) for private ${urlType}; cannot verify.`);
+            if (cookies && isPrivate) {
                 return NextResponse.json({
                     success: false,
-                    error: 'Could not reach the Codeforces verification service. This is a server configuration issue (CF_BRIDGE_URL), not your submission. Please try again shortly or contact an admin.',
-                    code: bridgeError || 'BRIDGE_UNAVAILABLE'
-                }, { status: 503 });
+                    error: 'Private groups and gyms are checked by the extension. Open the problem on Codeforces and press Check & Sync.',
+                    code: 'USE_EXTENSION_SYNC'
+                }, { status: 422 });
             }
 
             if (!linkedHandle) {

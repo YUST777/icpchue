@@ -190,6 +190,8 @@ function frame(now: number) {
         const need = Math.max(w, h);
         if (need > s.size) { s.size = need; s.renderer.setSize(need, need, false); }
         if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+        // After a lost context the shared renderer is rebuilt with a fresh environment map.
+        if (s.env && t.scene.environment !== s.env) t.scene.environment = s.env;
         t.update(now / 1000, dt);
         t.camera.aspect = w / h;
         t.camera.updateProjectionMatrix();
@@ -211,7 +213,11 @@ function start() {
 }
 
 export function acquireTile(o: Options): Tile {
-    getShared();
+    if (!getShared()) {
+        // No usable WebGL: let the badge show its picture instead of an empty canvas.
+        queueMicrotask(o.onError);
+        return { setVisible() {}, dispose() {} };
+    }
     const impl = new TileImpl(o);
     tiles.add(impl);
     return impl;
