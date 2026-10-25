@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two numbers $X$ and $Y$. Print their sum, their product and their difference.",
+  "input": "One line with two integers $X$ and $Y$ separated by a space ($1 \\le X, Y \\le 10^5$).",
+  "output": "Print three lines, in this order:\n\\begin{itemize}\n\\item \"$X$ + $Y$ = the sum\"\n\\item \"$X$ * $Y$ = the product\"\n\\item \"$X$ - $Y$ = the difference\"\n\\end{itemize}\nwithout the quotes, with a single space around every sign.",
+  "notes": "Watch the spaces in the output, and think about how large the product can get."
+}

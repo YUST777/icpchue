@@ -1,0 +1,6 @@
+{
+  "legend": "You are given three numbers $A$, $B$, $C$. Print them in ascending order, then an empty line, then the three numbers again in the order they were given.",
+  "input": "One line with three integers $A$, $B$, $C$ ($-10^6 \\le A, B, C \\le 10^6$).",
+  "output": "Print the three numbers in ascending order, one per line, then an empty line, then the original three numbers, one per line.",
+  "notes": ""
+}

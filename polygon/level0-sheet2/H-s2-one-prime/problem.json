@@ -1,0 +1,11 @@
+{
+  "name": "s2-one-prime",
+  "title": "One Prime",
+  "timeLimit": 3000,
+  "memoryLimit": 64,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

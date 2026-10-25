@@ -1,0 +1,6 @@
+{
+  "legend": "You are given four numbers $A$, $B$, $C$ and $D$. Print the last two digits of their product $A \\cdot B \\cdot C \\cdot D$.",
+  "input": "One line with four integers $A$, $B$, $C$, $D$ ($2 \\le A, B, C, D \\le 10^9$).",
+  "output": "Print the last two digits of the product, always as two digits (for example 05).",
+  "notes": "$5 \\cdot 7 \\cdot 2 \\cdot 4 = 280$, so the first answer is 80. $3 \\cdot 9 \\cdot 9 \\cdot 9 = 2187$, so the second is 87."
+}

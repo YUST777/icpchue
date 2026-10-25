@@ -1,0 +1,10 @@
+{
+  "name": "s2-one-to-n",
+  "title": "1 to N",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

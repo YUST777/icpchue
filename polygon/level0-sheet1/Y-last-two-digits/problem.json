@@ -1,0 +1,11 @@
+{
+  "name": "last-two-digits",
+  "title": "The last 2 digits",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

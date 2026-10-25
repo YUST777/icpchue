@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two positive integers $A$ and $B$. Print the floor, the ceiling and the rounded value of $A / B$.\\begin{itemize}\\item The floor of $X$ is the greatest integer not greater than $X$.\\item The ceiling of $X$ is the smallest integer not less than $X$.\\item Rounding gives the closest integer to $X$; a value exactly halfway (like 2.5) rounds up.\\end{itemize}",
+  "input": "One line with two integers $A$ and $B$ ($1 \\le A, B \\le 10^3$).",
+  "output": "Print three lines, in this order: \"floor $A$ / $B$ = $F$\", \"ceil $A$ / $B$ = $C$\" and \"round $A$ / $B$ = $R$\", where $F$, $C$ and $R$ are the floor, ceiling and rounded value of $A / B$.",
+  "notes": ""
+}

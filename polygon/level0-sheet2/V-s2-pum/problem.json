@@ -1,0 +1,11 @@
+{
+  "name": "s2-pum",
+  "title": "PUM",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

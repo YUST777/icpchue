@@ -1,0 +1,6 @@
+{
+  "legend": "You are given $K$ and $S$. Count the triples of integers $(X, Y, Z)$ with $0 \\le X, Y, Z \\le K$ and $X + Y + Z = S$.",
+  "input": "One line with two integers $K$ and $S$ ($0 \\le K \\le 3000$, $0 \\le S \\le 3K$).",
+  "output": "Print the number of triples.",
+  "notes": "For $K = 2$, $S = 1$ the triples are $(0, 0, 1)$, $(0, 1, 0)$ and $(1, 0, 0)$."
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print a centred pyramid of stars with $N$ rows: row $i$ has $N - i$ spaces followed by $2i - 1$ stars.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 99$).",
+  "output": "Print the pyramid, as in the example.",
+  "notes": "Do not print spaces after the last \\texttt{*} of a line."
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given lines with two integers $N$ and $M$. For each line, print the integers from $\\min(N, M)$ to $\\max(N, M)$, then \"sum =\" and their sum. Stop as soon as a line has a number less than or equal to zero; print nothing for that line.",
+  "input": "Several lines, each with two integers $N$ and $M$ ($-100 \\le N, M \\le 100$). The last line contains a number less than or equal to zero.",
+  "output": "For every line before the stopping line, print the numbers separated by single spaces, then \" sum =\" immediately followed by the sum, as in the examples.",
+  "notes": "$M$ can be smaller than $N$."
+}

@@ -1,19 +1,24 @@
 'use client';
 
+import { yearLabel } from '@/lib/utils/levels';
+
 import React from 'react';
 import Link from 'next/link';
 import { 
     Phone, Send, ShieldAlert, CheckCircle2, 
-    ArrowLeft, ExternalLink
+    ArrowLeft, ExternalLink, AlertTriangle
 } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
 interface TraineeProfileCardProps {
+    /** Code-integrity verdict (Cheating Flags tab); null = clean or not checked yet. */
+    integrity?: 'likely' | 'suspicious' | null;
     profile: {
         id: number;
         name: string;
         student_id: string;
         academic_level: string;
+        training_level?: string | null;
         faculty: string;
         phone?: string;
         email?: string;
@@ -23,6 +28,11 @@ interface TraineeProfileCardProps {
         last_login_at?: string | null;
         cheating_flags?: number;
         is_shadow_banned?: boolean;
+        whatsapp_group?: string | null;
+        whatsapp_mentor_name?: string | null;
+        whatsapp_status?: 'joined' | 'opened' | 'never_opened';
+        whatsapp_open_count?: number;
+        whatsapp_join_clicks?: number;
     };
     metrics?: {
         problems_solved?: number;
@@ -40,7 +50,7 @@ interface TraineeProfileCardProps {
     };
 }
 
-export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCardProps) {
+export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: TraineeProfileCardProps) {
     const formatDate = (isoString?: string | null) => {
         if (!isoString) return 'Never';
         const d = new Date(isoString);
@@ -116,9 +126,31 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
                             {profile.student_id}
                         </span>
                         <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2.5 py-0.5 rounded-full border border-[#E8C15A]/25">
-                            {profile.academic_level}
+                            {yearLabel(profile.academic_level)}{profile.training_level != null ? ` · Training Lv ${profile.training_level}` : ''}
                         </span>
-                        {isFlagged ? (
+                        {profile.whatsapp_group && (
+                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+                                {profile.whatsapp_group}{profile.whatsapp_mentor_name ? ` · ${profile.whatsapp_mentor_name}` : ''}
+                            </span>
+                        )}
+                        {profile.whatsapp_status === 'joined' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/25" title={`Tapped Join WhatsApp (${profile.whatsapp_join_clicks || 1} clicks)`}>
+                                <CheckCircle2 size={10} className="text-emerald-400" /> WhatsApp Joined
+                            </span>
+                        ) : profile.whatsapp_status === 'opened' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25" title={`Opened /group ${profile.whatsapp_open_count || 1} times, not joined yet`}>
+                                <AlertTriangle size={10} className="text-amber-400" /> Opened /group ({profile.whatsapp_open_count}x)
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400/80 bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/20" title="Never visited /group">
+                                Never Opened /group
+                            </span>
+                        )}
+                        {integrity ? (
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/25' : 'text-amber-400 bg-amber-500/10 border-amber-500/25'}`}>
+                                <ShieldAlert size={10} /> {integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
+                            </span>
+                        ) : isFlagged ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded-full">
                                 <ShieldAlert size={10} /> {profile.cheating_flags ? `${profile.cheating_flags} Flags` : 'Shadow Banned'}
                             </span>
@@ -144,7 +176,7 @@ export function TraineeProfileCard({ profile, metrics = {} }: TraineeProfileCard
                                 <ExternalLink size={9} className="text-white/30" />
                             </a>
                         )}
-                        {profile.phone && (
+                        {profile.phone && !/^[0-9a-fA-F]{30,}$/.test(profile.phone) && (
                             <span className="inline-flex items-center gap-1">
                                 <Phone size={10} className="text-[#E8C15A]" /> {profile.phone}
                             </span>

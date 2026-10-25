@@ -1,0 +1,11 @@
+{
+  "name": "s2-lucky-numbers",
+  "title": "Lucky Numbers",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

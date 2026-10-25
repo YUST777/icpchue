@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print an upside-down right triangle of stars with $N$ rows: the first row has $N$ stars and each next row has one star fewer.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 99$).",
+  "output": "Print the triangle, as in the example.",
+  "notes": "Do not print spaces after the last \\texttt{*} of a line."
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given $N$, $A$ and $B$. Print the sum of all integers from $1$ to $N$ whose digit sum is between $A$ and $B$ (inclusive).",
+  "input": "One line with three integers $N$, $A$, $B$ ($1 \\le N \\le 10^4$, $1 \\le A \\le B \\le 36$).",
+  "output": "Print the sum.",
+  "notes": "Up to $20$, the numbers with digit sum between $2$ and $5$ are $2, 3, 4, 5, 11, 12, 13, 14, 20$; their sum is $84$."
+}

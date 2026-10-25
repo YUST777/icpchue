@@ -1,0 +1,11 @@
+{
+  "name": "s2-three-numbers",
+  "title": "Three Numbers",
+  "timeLimit": 3000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

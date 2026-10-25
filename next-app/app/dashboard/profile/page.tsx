@@ -8,13 +8,10 @@ import { fetchWithCache } from '@/lib/cache/api-cache';
 
 import AchievementsWidget from '@/components/achievements/AchievementsWidget';
 import CurrentSheetWidget from '@/components/dashboard/CurrentSheetWidget';
-import { AchievementRevealModal } from '@/components/achievements/AchievementRevealModal';
 import { UserProfile } from '@/lib/types';
-import { useAchievements } from '@/hooks/useAchievements';
 
 // Extracted Components
 import { ProfileEditModal } from '@/components/dashboard/profile/ProfileEditModal';
-import { SocialLinks } from '@/components/dashboard/profile/SocialLinks';
 import { LeaderboardWidget } from '@/components/dashboard/profile/LeaderboardWidget';
 import { IdentityCard } from '@/components/dashboard/profile/IdentityCard';
 
@@ -41,7 +38,6 @@ export default function ProfilePage() {
     const [sheetsRank, setSheetsRank] = useState<number | null>(null);
 
     // Achievements hook for popup reveals
-    const { unseenAchievement, markAsSeen } = useAchievements(isAuthenticated);
 
     const openEditModal = (field: string, currentValue: string) => {
         if (field === 'codeforces') {
@@ -57,14 +53,16 @@ export default function ProfilePage() {
         const fetchRank = async () => {
             try {
                 // Cache rank for 5 minutes
-                const lbData = await fetchWithCache<any>('/api/leaderboard/sheets', {
-                    credentials: 'include'
-                }, 300);
-
-                if (lbData.leaderboard && Array.isArray(lbData.leaderboard)) {
+                // A student is ranked on their own level's board: Level 0 or Level 1.
+                for (const level of [0, 1]) {
+                    const lbData = await fetchWithCache<any>(`/api/leaderboard/sheets?level=${level}`, {
+                        credentials: 'include'
+                    }, 300);
+                    if (!Array.isArray(lbData.leaderboard)) continue;
                     const myEntryIndex = lbData.leaderboard.findIndex((u: { userId: number }) => u.userId === user?.id);
                     if (myEntryIndex !== -1) {
                         setSheetsRank(myEntryIndex + 1);
+                        break;
                     }
                 }
             } catch (err) {
@@ -212,23 +210,12 @@ export default function ProfilePage() {
         }
     };
 
-    const cfData = profile.codeforces_data || {};
-    const rating = cfData.rating || 'N/A';
-    const rank = cfData.rank || 'Unrated';
     // Profile pictures are disabled site-wide (pfp files don't persist on Vercel
     // serverless and 404). Always use the initials avatar.
     const profilePicture = null;
 
     return (
         <>
-            {unseenAchievement && (
-                <AchievementRevealModal
-                    achievement={unseenAchievement}
-                    onClose={() => markAsSeen(unseenAchievement.id)}
-                    onClaim={markAsSeen}
-                />
-            )}
-
             <div className="space-y-6 animate-fade-in">
                 {/* Mobile User Info Accordion */}
                 <div className="md:hidden bg-[#121212] rounded-xl border border-white/5 overflow-hidden">
@@ -264,34 +251,23 @@ export default function ProfilePage() {
 
                 <div className="flex flex-col gap-6">
                     {/* Top Row: Identity + Status */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <IdentityCard
-                            user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
-                            profile={profile}
-                            profilePicture={profilePicture}
-                            uploadingPfp={uploadingPfp}
-                            pfpError={pfpError}
-                            fileInputRef={fileInputRef}
-                            handlePfpUpload={handlePfpUpload}
-                            handleDeletePfp={handleDeletePfp}
-                            rating={rating}
-                            rank={rank}
-                        />
-
-                        <div className="space-y-6 flex flex-col">
-                            <LeaderboardWidget sheetsRank={sheetsRank} />
-                            <SocialLinks
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        <div className="flex flex-col gap-6">
+                            <IdentityCard
+                                user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
                                 profile={profile}
-                                onEdit={openEditModal}
-                                onDelete={handleDelete}
+                                profilePicture={profilePicture}
+                                uploadingPfp={uploadingPfp}
+                                pfpError={pfpError}
+                                fileInputRef={fileInputRef}
+                                handlePfpUpload={handlePfpUpload}
+                                handleDeletePfp={handleDeletePfp}
                             />
-                        </div>
-
-                        <div className="w-full">
                             <CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} />
                         </div>
 
-                        <div className="w-full">
+                        <div className="flex flex-col gap-6">
+                            <LeaderboardWidget sheetsRank={sheetsRank} />
                             <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>

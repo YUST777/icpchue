@@ -36,16 +36,32 @@ export function useProblemTimer({ contestId, problemIndex, sheetId }: {
 
         const markInput = () => { lastInputAt = Date.now(); };
 
+        // Only one tab per problem counts as active: the others count as away,
+        // so two open tabs (or two windows) never double the time.
+        const tabId = newVisitId();
+        let activeTab = tabId;
+        const channel = typeof BroadcastChannel !== 'undefined'
+            ? new BroadcastChannel(`icpchue-timer:${contestId}:${problemIndex}`)
+            : null;
+        const claim = () => { activeTab = tabId; channel?.postMessage({ claim: tabId }); };
+        if (channel) channel.onmessage = (e) => { if (e.data?.claim) activeTab = e.data.claim; };
+        claim();
+
         // Attribute the time since the previous tick to the current state. Using
-        // wall-clock deltas keeps counts right when hidden tabs throttle timers.
+        // wall-clock deltas keeps counts right when hidden tabs throttle timers;
+        // a long gap (frozen tab, sleep) is away time, never active.
         const tick = () => {
             const now = Date.now();
-            const ms = Math.min(now - lastTickAt, FLUSH_MS * 2);
+            const ms = now - lastTickAt;
             lastTickAt = now;
             if (ms <= 0) return;
-            if (document.hidden) totals.away += ms;
-            else if (now - lastInputAt <= IDLE_AFTER_MS) totals.active += ms;
-            else totals.idle += ms;
+            const gapAway = Math.max(0, ms - FLUSH_MS * 2);
+            const counted = ms - gapAway;
+            totals.away += gapAway;
+            // Visible but another window in front (e.g. a chat beside the page) is away too.
+            if (document.hidden || !document.hasFocus() || activeTab !== tabId) totals.away += counted;
+            else if (now - lastInputAt <= IDLE_AFTER_MS) totals.active += counted;
+            else totals.idle += counted;
         };
 
         const flush = (useBeacon: boolean) => {
@@ -72,13 +88,17 @@ export function useProblemTimer({ contestId, problemIndex, sheetId }: {
 
         const onVisibility = () => {
             if (document.hidden) flush(true);
-            else { tick(); markInput(); }
+            else { tick(); markInput(); claim(); }
         };
+        const onFocus = () => { tick(); markInput(); claim(); };
+        const onBlur = () => tick();
         const onPageHide = () => flush(true);
 
         const inputEvents = ['keydown', 'mousedown', 'mousemove', 'wheel', 'touchstart', 'scroll'] as const;
         inputEvents.forEach((e) => window.addEventListener(e, markInput, { passive: true, capture: true }));
         document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('focus', onFocus);
+        window.addEventListener('blur', onBlur);
         window.addEventListener('pagehide', onPageHide);
         const tickTimer = setInterval(tick, TICK_MS);
         const flushTimer = setInterval(() => flush(false), FLUSH_MS);
@@ -88,7 +108,10 @@ export function useProblemTimer({ contestId, problemIndex, sheetId }: {
             clearInterval(flushTimer);
             inputEvents.forEach((e) => window.removeEventListener(e, markInput, { capture: true }));
             document.removeEventListener('visibilitychange', onVisibility);
+            window.removeEventListener('focus', onFocus);
+            window.removeEventListener('blur', onBlur);
             window.removeEventListener('pagehide', onPageHide);
+            channel?.close();
             // Leaving for another problem inside the app.
             flush(true);
         };

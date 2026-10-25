@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $X$. Decide whether it is prime: a prime is greater than $1$ and divisible only by $1$ and itself.",
+  "input": "One line with an integer $X$ ($2 \\le X \\le 10^5$).",
+  "output": "Print \"YES\" if $X$ is prime, otherwise \"NO\".",
+  "notes": "$7$ is prime: none of $2, \\ldots, 6$ divides it. $15$ is not: it is divisible by $3$ and $5$."
+}

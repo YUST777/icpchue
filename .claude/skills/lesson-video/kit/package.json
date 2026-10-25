@@ -1,0 +1,11 @@
+{
+  "name": "cards",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.196 preview",
+    "check": "npx --yes hyperframes@0.8.196 check",
+    "render": "npx --yes hyperframes@0.8.196 render",
+    "publish": "npx --yes hyperframes@0.8.196 publish"
+  }
+}

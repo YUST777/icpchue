@@ -1,0 +1,6 @@
+{
+  "legend": "You are given four numbers $A$, $B$, $C$ and $D$. Print \"YES\" if $A^B > C^D$, otherwise print \"NO\".",
+  "input": "One line with four integers $A$, $B$, $C$, $D$ ($1 \\le A, C \\le 10^7$, $1 \\le B, D \\le 10^{12}$).",
+  "output": "Print \"YES\" or \"NO\".",
+  "notes": "$3^2 = 9 < 5^4 = 625$, so the first answer is NO. $5^2 = 25 > 4^2 = 16$, so the second is YES. In the third example both sides equal 25, so the answer is NO. The numbers can be far too large to compute directly."
+}

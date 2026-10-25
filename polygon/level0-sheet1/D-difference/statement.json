@@ -1,0 +1,6 @@
+{
+  "legend": "You are given four integers $A$, $B$, $C$ and $D$. Compute $X = (A \\cdot B) - (C \\cdot D)$.",
+  "input": "One line with four integers $A$, $B$, $C$, $D$ ($-10^5 \\le A, B, C, D \\le 10^5$).",
+  "output": "Print \"Difference = \" (without the quotes) followed by $X$.",
+  "notes": "The products can be much larger than an \\texttt{int} can hold."
+}

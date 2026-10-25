@@ -1,0 +1,12 @@
+{
+  "name": "age-in-days",
+  "title": "Age in Days",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2,
+    3
+  ]
+}

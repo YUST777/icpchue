@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print a diamond of $2N$ rows: the pyramid from Shape2 with $N$ rows, followed by the same pyramid upside down.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 99$).",
+  "output": "Print the diamond, as in the example.",
+  "notes": "Do not print spaces after the last \\texttt{*} of a line."
+}

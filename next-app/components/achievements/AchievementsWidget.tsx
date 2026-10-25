@@ -1,175 +1,111 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, Lock } from 'lucide-react';
-
-interface AchievementIconProps {
-    imageSrc?: string;
-    icon?: React.ReactNode;
-    active: boolean;
-    tier: 'gold' | 'blue' | 'purple' | 'locked';
-}
-
-function AchievementIcon({ imageSrc, icon, active, tier }: AchievementIconProps) {
-    const tiers: Record<string, string> = {
-        gold: "from-yellow-500/20 to-orange-500/10 text-yellow-400 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]",
-        blue: "from-blue-500/20 to-cyan-500/10 text-blue-400 border-blue-500/30",
-        purple: "from-purple-500/20 to-pink-500/10 text-purple-400 border-purple-500/30",
-        locked: "bg-[#131313] text-gray-700 border-white/5",
-    };
-    const activeBase = "bg-gradient-to-br border";
-
-    return (
-        <div className={`aspect-square rounded-2xl flex items-center justify-center relative group cursor-pointer transition-transform active:scale-95 hover:scale-105 overflow-hidden ${active ? `${activeBase} ${tiers[tier]}` : tiers.locked}`}>
-            {imageSrc ? (
-                <>
-                    <Image
-                        src={imageSrc}
-                        alt="Achievement"
-                        fill
-                        sizes="25vw"
-                        className={`object-cover ${!active ? 'blur-md grayscale opacity-50' : ''}`}
-                        unoptimized
-                    />
-                    {!active && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
-                            <Lock className="w-8 h-8 text-white/70" strokeWidth={2} />
-                        </div>
-                    )}
-                </>
-            ) : (
-                icon && <div className="w-5 h-5">{icon}</div>
-            )}
-            {active && <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />}
-        </div>
-    );
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { useAchievements } from '@/hooks/useAchievements';
+import { ACHIEVEMENT_META, isPodiumId } from '@/lib/achievements/catalog';
 
 interface AchievementsWidgetProps {
-    profile?: {
-        codeforces_data?: { rating?: string };
-        codeforces_profile?: unknown;
-        sheet_1_solved?: boolean;
-        is_approval_unlocked?: boolean;
-    } | Record<string, unknown>;
+    // Kept for the existing call site; the badge list now comes from the earned achievements.
+    profile?: Record<string, unknown>;
     user?: { id?: number; email?: string; role?: string };
 }
 
-export default function AchievementsWidget({ profile, user }: AchievementsWidgetProps) {
-    // Check if user has 500+ Codeforces points
-    const typedProfile = profile as { codeforces_data?: { rating?: string }; is_approval_unlocked?: boolean; sheet_1_solved?: boolean } | undefined;
-    const codeforcesData = typedProfile?.codeforces_data;
-    const codeforcesRating = codeforcesData?.rating ? parseInt(codeforcesData.rating, 10) : null;
-    const is500PtsUnlocked = codeforcesRating !== null && codeforcesRating >= 500;
-    const hasCodeforcesLinked = profile?.codeforces_profile || codeforcesData;
+interface Entry { id: string; name: string; imageSrc: string; unlocked: boolean; weight: number }
 
-    // Check if user has Instructor or Owner role
-    const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
+const TIER_WEIGHT = { legendary: 3, rare: 2, common: 1 } as const;
+const PREVIEW = 5;
 
-    // Check if sheet 1 is solved (from profile data)
-    const isSheet1Unlocked = profile?.sheet_1_solved === true;
+const PODIUM = [
+    { id: 'podium-1', name: 'Monthly 1st place' },
+    { id: 'podium-2', name: 'Monthly 2nd place' },
+    { id: 'podium-3', name: 'Monthly 3rd place' },
+];
 
-    // Check Approval (from backend flag)
-    const isApprovalUnlocked = profile?.is_approval_unlocked === true;
+/** Every badge on one card: the ones you have in colour first, the rest dimmed. */
+export default function AchievementsWidget(_props: AchievementsWidgetProps) {
+    const { user } = useAuth();
+    const { achievements: earned } = useAchievements(Boolean(user));
+    const earnedIds = new Set(earned.map(a => a.achievement_id));
+    const isStaff = user?.role === 'instructor' || user?.role === 'owner';
 
-    // Rarity priority: legendary (3) > rare (2) > common (1)
-    const achievements = [
-        { id: 'welcome', imageSrc: '/images/achievements/WELCOME.webp', unlocked: true, rarity: 1 },
-        { id: 'approval', imageSrc: '/images/achievements/done_approvalcamp.webp', unlocked: isApprovalUnlocked, rarity: 2 },
-        { id: 'sheet-1', imageSrc: '/images/achievements/sheet1acheavment.webp', unlocked: isSheet1Unlocked, rarity: 2 },
-        { id: '500pts', imageSrc: hasCodeforcesLinked ? '/images/achievements/500pts.webp' : null, unlocked: is500PtsUnlocked, rarity: 2 },
-        { id: 'instructor', imageSrc: '/images/achievements/instructor.webp', unlocked: isInstructorUnlocked, rarity: 3 },
-        { id: 'rank1-march-2026', imageSrc: '/images/achievements/rank1_march.webp', unlocked: (typedProfile as any)?.achievements?.some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 3 },
-    ];
+    const entries: Entry[] = [
+        ...Object.entries(ACHIEVEMENT_META).map(([id, meta]) => ({
+            id,
+            name: meta.name,
+            imageSrc: meta.imageSrc,
+            unlocked: id === 'welcome' || earnedIds.has(id) || (id === 'instructor' && isStaff),
+            weight: TIER_WEIGHT[meta.tier],
+        })),
+        ...PODIUM.map(p => ({
+            id: p.id,
+            name: p.name,
+            imageSrc: `/images/achievements/badges/${p.id}.webp`,
+            unlocked: earned.some(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(p.id.slice(-2))),
+            weight: p.id === 'podium-1' ? 3 : 2,
+        })),
+    ].sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || b.weight - a.weight);
 
-    // Separate unlocked and locked achievements
-    const unlockedAchievements = achievements
-        .filter(a => a.unlocked)
-        .sort((a, b) => b.rarity - a.rarity);
-
-    const lockedAchievements = achievements
-        .filter(a => !a.unlocked)
-        .sort((a, b) => b.rarity - a.rarity);
-
-    // Build display array: unlocked first (up to 3), then always show 1 locked in slot 4
-    let displayAchievements: typeof achievements = [];
-
-    if (unlockedAchievements.length >= 4) {
-        displayAchievements = unlockedAchievements.slice(0, 4);
-    } else {
-        const unlockedToShow = unlockedAchievements.slice(0, 3);
-        const lockedToShow = lockedAchievements.slice(0, 4 - unlockedToShow.length);
-        displayAchievements = [...unlockedToShow, ...lockedToShow];
-    }
-
-    const count = unlockedAchievements.length;
-    const total = achievements.length;
+    const count = entries.filter(e => e.unlocked).length;
+    const total = entries.length;
     const progress = (count / total) * 100;
+    const [showAll, setShowAll] = useState(false);
+
+    const rest = entries.slice(PREVIEW);
+
+    const tile = (e: Entry, size: string) => (
+        <li key={e.id} title={e.name} className={size}>
+            <Link href="/dashboard/achievements"
+                className={`relative block aspect-square rounded-xl border overflow-hidden transition-transform hover:scale-105 ${e.unlocked ? 'border-[#E8C15A]/25 bg-gradient-to-br from-yellow-500/15 to-orange-500/5' : 'border-white/5 bg-[#131313]'}`}>
+                <Image src={e.imageSrc} alt={e.name} fill sizes="80px" className={`object-contain p-1.5 ${e.unlocked ? '' : 'grayscale opacity-30'}`} />
+                {!e.unlocked && <Lock className="absolute inset-0 m-auto w-3.5 h-3.5 text-white/60" />}
+            </Link>
+        </li>
+    );
 
     return (
-        <div className="space-y-4">
-            {/* Card */}
-            <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
-                <div className="bg-[#0f0f0f] rounded-[23px] p-5 relative overflow-hidden h-full">
-                    {/* Decorative Glow */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+        <div className="@container relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
+            <div className="bg-[#0f0f0f] rounded-[23px] p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-                    {/* Progress Text */}
-                    <div className="flex justify-between items-end mb-5 relative z-10">
-                        <div>
-
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
-                                <span className="text-gray-500 text-sm font-medium pt-2">/ {total} Unlocked</span>
-                            </div>
+                {/* One row when the card is wide (count | best badges | actions); stacked when it sits in a half-width column. */}
+                <div className="relative z-10 flex flex-col @2xl:flex-row @2xl:items-center gap-5 @2xl:gap-8">
+                    <div className="@2xl:w-64 shrink-0">
+                        <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
+                            <span className="text-gray-500 text-sm font-medium">/ {total} Unlocked</span>
+                        </div>
+                        <div className="relative w-full h-2.5 bg-[#1a1a1a] rounded-full overflow-hidden border border-white/5">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
                         </div>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="relative w-full h-2.5 bg-[#1a1a1a] rounded-full mb-6 overflow-hidden border border-white/5">
-                        <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
-                            style={{ width: `${progress}%` }}
-                        ></div>
-                    </div>
+                    <ul className="grid grid-cols-5 @2xl:flex gap-2 @2xl:gap-3 @2xl:flex-1 @2xl:justify-center">
+                        {entries.slice(0, PREVIEW).map(e => tile(e, '@2xl:w-16'))}
+                    </ul>
 
-                    {/* Icons Grid - Unlocked first, then locked */}
-                    <div className="grid grid-cols-4 gap-3 mb-6 relative z-10">
-                        {displayAchievements.map((ach) => (
-                            ach.imageSrc ? (
-                                <AchievementIcon
-                                    key={ach.id}
-                                    imageSrc={ach.imageSrc}
-                                    active={ach.unlocked}
-                                    tier={ach.unlocked ? "gold" : "locked"}
-                                />
-                            ) : (
-                                <AchievementIcon
-                                    key={ach.id}
-                                    icon={<Lock />}
-                                    active={false}
-                                    tier="locked"
-                                />
-                            )
-                        ))}
+                    <div className="flex flex-col @md:flex-row @2xl:flex-col gap-2 @2xl:w-56 shrink-0">
+                        {rest.length > 0 && (
+                            <button type="button" onClick={() => setShowAll(v => !v)}
+                                className="h-10 px-4 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer @md:flex-1 @2xl:flex-none">
+                                {showAll ? 'Show less' : `Show all ${entries.length} badges`}
+                            </button>
+                        )}
+                        <Link href="/dashboard/achievements" className="h-10 px-4 rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn flex items-center justify-between @md:flex-1 @2xl:flex-none">
+                            <span className="text-xs font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
+                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
+                        </Link>
                     </div>
-
-                    {/* Action Button */}
-                    <Link
-                        href="/dashboard/achievements"
-                        className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn block"
-                    >
-                        <div className="relative z-10 px-4 py-3 flex items-center justify-between">
-                            <div className="flex flex-col items-start gap-0.5">
-                                <span className="text-sm font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center border border-white/5 group-hover/btn:border-yellow-500/30 group-hover/btn:bg-yellow-500/10 transition-all">
-                                <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
-                            </div>
-                        </div>
-                    </Link>
                 </div>
+
+                {showAll && (
+                    <ul className="relative z-10 grid grid-cols-6 @md:grid-cols-10 @2xl:grid-cols-14 gap-2 mt-5 pt-5 border-t border-white/5">
+                        {rest.map(e => tile(e, ''))}
+                    </ul>
+                )}
             </div>
         </div>
     );

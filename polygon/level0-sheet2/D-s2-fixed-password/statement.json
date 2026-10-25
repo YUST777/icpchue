@@ -1,0 +1,6 @@
+{
+  "legend": "A system accepts only the password $1999$. You are given the passwords typed, one per line. For each one, print \"Wrong\" if it is not the correct password. As soon as the correct password is typed, print \"Correct\" and stop: ignore everything after it.",
+  "input": "Several lines, each with an integer $X$ ($10^3 \\le X \\le 10^4 - 1$). The password $1999$ appears at least once.",
+  "output": "For every password up to and including the first correct one, print \"Wrong\" or \"Correct\" on its own line.",
+  "notes": ""
+}

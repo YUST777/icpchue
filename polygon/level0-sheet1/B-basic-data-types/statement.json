@@ -1,0 +1,6 @@
+{
+  "legend": "C++ has several basic data types. The most common ones are:\n\\begin{itemize}\n\\item \\texttt{int} \u2014 a 32-bit integer;\n\\item \\texttt{long long} \u2014 a 64-bit integer;\n\\item \\texttt{char} \u2014 a single character;\n\\item \\texttt{float} \u2014 a 32-bit real number;\n\\item \\texttt{double} \u2014 a 64-bit real number.\n\\end{itemize}\nA variable is read with \\texttt{cin >> name;} and printed with \\texttt{cout << name;}. Read one value of each type and print them back.",
+  "input": "One line with five values separated by single spaces: an \\texttt{int}, a \\texttt{long long}, a \\texttt{char}, a \\texttt{float} and a \\texttt{double}, in this order.",
+  "output": "Print the five values, each on its own line, in the order they were given. Print them with \\texttt{cout} without changing its default formatting, and do not print extra spaces.",
+  "notes": "Printing a \\texttt{double} with \\texttt{cout} shows at most 6 significant digits by default, so 14049.30493 is printed as 14049.3."
+}

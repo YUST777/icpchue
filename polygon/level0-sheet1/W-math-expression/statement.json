@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an equation \"$A$ $S$ $B$ = $C$\" where $S$ is +, - or *. Print \"Yes\" if the equation is correct; otherwise print the correct value of $A$ $S$ $B$.",
+  "input": "One line with $A$, $S$, $B$, the sign \"=\" and $C$, separated by spaces ($0 \\le A, B \\le 100$, $-10^5 \\le C \\le 10^5$).",
+  "output": "Print \"Yes\", or the correct value of $A$ $S$ $B$.",
+  "notes": ""
+}

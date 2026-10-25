@@ -63,11 +63,16 @@ export async function POST(request: NextRequest) {
                 [JSON.stringify(codeforcesData), userId]
             );
 
+            // Codeforces rank badges
+            try {
+                const { grantCodeforcesRankBadges } = await import('@/lib/services/achievements');
+                await grantCodeforcesRankBadges(userId, Math.max(Number(codeforcesData.rating) || 0, Number(codeforcesData.maxRating) || 0));
+            } catch { /* badges are retried on the next achievements check */ }
+
             // Check for achievements
             if (codeforcesData.rating && parseInt(String(codeforcesData.rating)) >= 500) {
                 try {
-                    const { grantAchievement, ACHIEVEMENTS, syncRank1Achievement } = await import('@/lib/services/achievements');
-                    await grantAchievement(userId, ACHIEVEMENTS.RANK_500);
+                    const { syncRank1Achievement } = await import('@/lib/services/achievements');
                     await syncRank1Achievement('refresh');
                 } catch {
                 }

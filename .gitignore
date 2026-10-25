@@ -97,3 +97,13 @@ icpchue_videos/
 *.mp4
 *.webm
 *.crdownload
+
+supabase/.temp/
+
+# Local-only: personal data, large media, other tools' config
+pdf_gen/
+desgins/
+icpchue-whatsapp/
+.agents/
+.cursor/
+skills-lock.json

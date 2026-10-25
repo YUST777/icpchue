@@ -1,0 +1,6 @@
+{
+  "legend": "You are given three numbers $A$, $B$ and $C$. Print the smallest and the largest of them.",
+  "input": "One line with three integers $A$, $B$, $C$ ($-10^5 \\le A, B, C \\le 10^5$).",
+  "output": "Print the minimum, a single space, then the maximum.",
+  "notes": ""
+}

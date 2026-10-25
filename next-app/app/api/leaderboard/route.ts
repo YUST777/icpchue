@@ -1,25 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { query } from '@/lib/db/db';
 import { getCachedData } from '@/lib/cache/cache';
-
-// Extract first and last name, handling compound family names (Al-, Abd-, El-, etc.)
-function getShortName(fullName: string | null): string {
-    if (!fullName) return 'Anonymous';
-    const cleaned = fullName.split('/')[0].trim();
-    const parts = cleaned.trim().split(/\s+/);
-    if (parts.length <= 2) return cleaned.trim();
-    const firstName = parts[0];
-    const lastPart = parts[parts.length - 1];
-    const secondToLast = parts.length > 2 ? parts[parts.length - 2] : null;
-    const compoundPrefixes = /^(al|el|abd|abu|ben|ibn)[-]?$/i;
-    if (secondToLast && compoundPrefixes.test(secondToLast)) {
-        return `${firstName} ${secondToLast} ${lastPart}`;
-    }
-    if (/^(al|el|abd|abu)-/i.test(lastPart)) {
-        return `${firstName} ${lastPart}`;
-    }
-    return `${firstName} ${lastPart}`;
-}
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { refreshCodeforcesRatings } from '@/lib/services/cf-batch-refresh';
+import { decrypt } from '@/lib/security/encryption';
+import { formatDisplayName } from '@/lib/names';
 
 function extractUsername(profileUrl: string, platform: string): string | null {
     if (!profileUrl) return null;
@@ -38,15 +23,28 @@ function extractUsername(profileUrl: string, platform: string): string | null {
     }
 }
 
+function safeDecrypt(value: string | null): string | null {
+    if (!value) return null;
+    try { return decrypt(value); } catch { return value; }
+}
+
 export async function GET() {
     try {
+        // Ratings only change when students are rated, so a refresh every 6 hours keeps the board current.
+        // The first visit after that window starts it in the background; the next load shows fresh data.
+        if ((await rateLimit('cf-batch-refresh', 1, 6 * 3600)).success) {
+            after(async () => {
+                try { await refreshCodeforcesRatings(5); }
+                catch (error) { console.error('[CF refresh] failed:', error instanceof Error ? error.message : error); }
+            });
+        }
 
         const headers = {
             'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
             'Vary': 'Accept-Encoding'
         };
 
-        const leaderboard = await getCachedData('leaderboard:codeforces', 300, async () => {
+        const leaderboard = await getCachedData('leaderboard:codeforces:v2', 300, async () => {
             // Deduplicate handles in the database, then return only the top 500.
             // Keep this as one request: the previous implementation executed an
             // identical, unused query before the result that was actually returned.
@@ -91,7 +89,7 @@ export async function GET() {
             return result.rows.map((row: any) => {
                 const data = row.codeforces_data || {};
                 return {
-                    name: getShortName(row.name),
+                    name: formatDisplayName(safeDecrypt(row.name)),
                     handle: row.handle || extractUsername(row.codeforces_profile || '', 'codeforces') || '?',
                     rating: row.rating,
                     rank: data.rank || 'unrated',

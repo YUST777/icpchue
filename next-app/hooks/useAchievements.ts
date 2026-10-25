@@ -25,7 +25,7 @@ export function useAchievements(isAuthenticated: boolean = false) {
         try {
             const data = await fetchWithCache<any>(addCacheBust('/api/achievements'), {
                 credentials: 'include'
-            }, 300);
+            }, 60);
 
             const fetchedAchievements = data.achievements || [];
             setAchievements(fetchedAchievements);
@@ -74,8 +74,11 @@ export function useAchievements(isAuthenticated: boolean = false) {
         }, 0);
     }, [fetchAchievements]);
 
+    const unseenAchievements = achievements.filter(a => !a.seen);
+
     return {
         achievements,
+        unseenAchievements,
         loading,
         unseenAchievement,
         markAsSeen,

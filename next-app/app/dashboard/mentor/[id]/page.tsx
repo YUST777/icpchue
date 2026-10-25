@@ -4,15 +4,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
     AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, 
-    XCircle, Clock, Circle, Search, BarChart3, HardDrive 
-} from 'lucide-react';
+    XCircle, Clock, Circle, Search, BarChart3, HardDrive, ArrowLeft } from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
 import { TraineeTabNav, TabId } from '@/components/dashboard/mentor/TraineeTabNav';
 import { SheetProgressBreakdown } from '@/components/dashboard/mentor/SheetProgressBreakdown';
 import { ActivityHeatmap90Days } from '@/components/dashboard/mentor/ActivityHeatmap90Days';
 import { RecentSubmissionsTable } from '@/components/dashboard/mentor/RecentSubmissionsTable';
 import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorkspaceInspector';
-import { FlaggedProblemsView } from '@/components/dashboard/mentor/FlaggedProblemsView';
 import { CodeMatchesPanel, type StudentIntegrity } from '@/components/dashboard/mentor/integrity/CodeMatchesPanel';
 import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
@@ -147,6 +145,28 @@ export default function TraineeDossierPage() {
             return t >= cutoff;
         });
     }, [data?.code_catalog, timeHorizon]);
+
+    // The trainee's main level: where they solved the most, else their
+    // training level. Overview and Progress Matrix open on it.
+    const mainLevel = useMemo<string | null>(() => {
+        const sheets: any[] = data?.sheet_progress || [];
+        const solvedByLevel = new Map<string, number>();
+        for (const sh of sheets) {
+            const lvl = String(sh.level_number ?? '');
+            if (lvl) solvedByLevel.set(lvl, (solvedByLevel.get(lvl) || 0) + (Number(sh.solved) || 0));
+        }
+        let best: string | null = null;
+        for (const [lvl, n] of solvedByLevel) if (n > 0 && (best === null || n > (solvedByLevel.get(best) || 0))) best = lvl;
+        const training = data?.profile?.training_level;
+        return best ?? (training != null ? String(training) : (sheets[0]?.level_number != null ? String(sheets[0].level_number) : null));
+    }, [data?.sheet_progress, data?.profile?.training_level]);
+    const levelPicked = React.useRef(false);
+    useEffect(() => {
+        if (!levelPicked.current && mainLevel != null) {
+            levelPicked.current = true;
+            setSelectedLevelId(mainLevel);
+        }
+    }, [mainLevel]);
 
     const filteredSheets = useMemo(() => {
         if (!data?.sheet_progress) return [];
@@ -311,8 +331,16 @@ export default function TraineeDossierPage() {
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
+            <button
+                onClick={() => (window.history.length > 1 ? router.back() : router.push('/dashboard/mentor'))}
+                className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-1"
+            >
+                <ArrowLeft size={14} /> All trainees
+            </button>
+
             <TraineeProfileCard 
-                profile={profile} 
+                profile={profile}
+                integrity={integrity && integrity.verdict !== 'clean' ? integrity.verdict : null} 
                 metrics={metrics || {}} 
             />
 
@@ -321,7 +349,7 @@ export default function TraineeDossierPage() {
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={setActiveTab} 
-                    flagsCount={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
+                    flagsCount={integrity ? integrity.matches.length + integrity.traps.length : 0}
                 />
 
                 {/* Global Time Filter Pills */}
@@ -361,7 +389,7 @@ export default function TraineeDossierPage() {
                     {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                         <div className="lg:col-span-6">
-                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => String(s.level_id || 1) === '1') || []} />
+                            <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => mainLevel == null || String(s.level_number ?? '') === mainLevel) || []} />
                         </div>
                         <div className="lg:col-span-6">
                             <RecentSubmissionsTable 
@@ -555,12 +583,6 @@ export default function TraineeDossierPage() {
                         me={{ userId: profile.user_id, name: profile.name, studentId: profile.student_id || '', group: null }}
                         data={integrity}
                         loading={integrityLoading}
-                    />
-                    <FlaggedProblemsView 
-                        flaggedProblems={flagged_problems || []} 
-                        totalFlags={(behavioral_analysis?.cheating_flags || 0) + (integrity?.matches.length || 0)}
-                        isShadowBanned={profile.is_shadow_banned || false}
-                        cfHandle={profile.codeforces_handle}
                     />
                 </div>
             )}

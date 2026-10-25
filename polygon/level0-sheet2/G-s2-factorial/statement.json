@@ -1,0 +1,6 @@
+{
+  "legend": "For each given integer $N$, print $N!$, the product $1 \\cdot 2 \\cdot \\ldots \\cdot N$. By definition $0! = 1$.",
+  "input": "The first line contains $T$ ($1 \\le T \\le 15$), the number of test cases. Each of the next $T$ lines contains an integer $N$ ($0 \\le N \\le 20$).",
+  "output": "For each test case print $N!$ on its own line.",
+  "notes": "$20!$ does not fit in a 32-bit \\texttt{int}."
+}

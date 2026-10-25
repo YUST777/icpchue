@@ -1,0 +1,10 @@
+{
+  "name": "s2-fixed-password",
+  "title": "Fixed Password",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

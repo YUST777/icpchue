@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a number $X$. Find which of the intervals $[0,25]$, $(25,50]$, $(50,75]$, $(75,100]$ contains it. A square bracket includes the end point, a round bracket excludes it.",
+  "input": "One line with a real number $X$ ($-1000 \\le X \\le 1000$).",
+  "output": "Print \"Interval \" followed by the interval exactly as written above (for example \"Interval (25,50]\"), or \"Out of Intervals\" if $X$ is in none of them.",
+  "notes": ""
+}

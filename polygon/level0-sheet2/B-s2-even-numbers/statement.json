@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print every even number between $1$ and $N$ (inclusive), each on its own line.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 10^3$).",
+  "output": "Print the even numbers in increasing order, one per line. If there is none, print $-1$.",
+  "notes": ""
+}

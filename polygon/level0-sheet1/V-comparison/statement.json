@@ -1,0 +1,6 @@
+{
+  "legend": "You are given a comparison \"$A$ $S$ $B$\" where $S$ is one of \\texttt{<}, \\texttt{>} or \\texttt{=}. Print \"Right\" if it is true and \"Wrong\" otherwise.",
+  "input": "One line with an integer $A$, the sign $S$ and an integer $B$, separated by spaces ($-100 \\le A, B \\le 100$).",
+  "output": "Print \"Right\" or \"Wrong\".",
+  "notes": ""
+}

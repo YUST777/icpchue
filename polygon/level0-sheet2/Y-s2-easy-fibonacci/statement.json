@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print the first $N$ numbers of the Fibonacci sequence, defined by $fib(1) = 0$, $fib(2) = 1$ and $fib(n) = fib(n-1) + fib(n-2)$.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 45$).",
+  "output": "Print $fib(1), \\ldots, fib(N)$ separated by spaces.",
+  "notes": ""
+}

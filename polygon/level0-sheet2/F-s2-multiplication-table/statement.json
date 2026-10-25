@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print its multiplication table from $1$ to $12$.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 50$).",
+  "output": "Print $12$ lines. Line $i$ is \"$N$ * $i$ = $R$\", where $R = N \\cdot i$.",
+  "notes": ""
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "You are given two integers $A$ and $B$. Print their greatest common divisor: the largest positive integer that divides both.",
+  "input": "One line with two integers $A$ and $B$ ($1 \\le A, B \\le 10^3$).",
+  "output": "Print $\\gcd(A, B)$.",
+  "notes": "The divisors of $54$ are $1, 2, 3, 6, 9, 18, 27, 54$ and those of $24$ are $1, 2, 3, 4, 6, 8, 12, 24$, so $\\gcd(54, 24) = 6$."
+}

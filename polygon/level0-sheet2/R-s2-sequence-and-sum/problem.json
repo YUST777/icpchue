@@ -1,0 +1,11 @@
+{
+  "name": "s2-sequence-and-sum",
+  "title": "Sequence of Numbers and Sum",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

@@ -1,6 +1,5 @@
 import { Shield } from "lucide-react";
 import { UserProfile } from "@/lib/types";
-import { StatsGrid } from "./StatsGrid";
 import { getDisplayName } from "@/lib/utils";
 
 interface IdentityCardProps {
@@ -14,15 +13,11 @@ interface IdentityCardProps {
     fileInputRef?: React.RefObject<HTMLInputElement | null>;
     handlePfpUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleDeletePfp?: () => void;
-    rating: number | string;
-    rank: string;
 }
 
 export function IdentityCard({
     user,
     profile,
-    rating,
-    rank
 }: IdentityCardProps) {
     return (
         <div className="bg-[#121212] rounded-2xl border border-white/5 relative overflow-hidden h-full flex flex-col group hover:border-white/10 transition-colors w-full">
@@ -54,7 +49,6 @@ export function IdentityCard({
                     <p className="text-xs text-[#666] font-mono">@{profile.student_id || user?.email?.split('@')[0]}</p>
                 </div>
 
-                <StatsGrid rating={rating} rank={rank} />
             </div>
         </div>
     );

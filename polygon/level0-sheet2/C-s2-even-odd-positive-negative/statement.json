@@ -1,0 +1,6 @@
+{
+  "legend": "You are given $N$ integers. Count how many of them are even, how many are odd, how many are positive and how many are negative.",
+  "input": "The first line contains $N$ ($1 \\le N \\le 10^3$). The second line contains $N$ integers $X_i$ ($-10^5 \\le X_i \\le 10^5$).",
+  "output": "Print four lines:\n\\begin{itemize}\n\\item \"Even: $E$\"\n\\item \"Odd: $O$\"\n\\item \"Positive: $P$\"\n\\item \"Negative: $Q$\"\n\\end{itemize}\nwhere $E$, $O$, $P$, $Q$ are the four counts.",
+  "notes": "Zero is even, but it is neither positive nor negative."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "s2-factorial",
+  "title": "Factorial",
+  "timeLimit": 2000,
+  "memoryLimit": 64,
+  "checker": "std::wcmp.cpp",
+  "samples": [
+    1
+  ]
+}

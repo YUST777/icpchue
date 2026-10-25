@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
+import MonthlyPodium from '@/components/leaderboard/MonthlyPodium';
 
 // Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react').then(mod => mod.Lottie), { ssr: false });
@@ -42,6 +43,7 @@ interface CFUser {
 interface SheetUser {
     userId: number;
     username: string;
+    studentId?: string | null;
     solvedCount: number;
     totalSubmissions: number;
     acceptedCount: number;
@@ -65,7 +67,7 @@ const normalizeCfHandle = (value?: string | null) => {
 
 export default function LeaderboardPage() {
     const { user, profile } = useAuth();
-    const [activeTab, setActiveTab] = useState<'codeforces' | 'sheets'>('sheets');
+    const [activeTab, setActiveTab] = useState<'level0' | 'level1' | 'codeforces'>('level0');
     const [cfLeaderboard, setCfLeaderboard] = useState<CFUser[]>([]);
     const [sheetsLeaderboard, setSheetsLeaderboard] = useState<SheetUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -81,9 +83,9 @@ export default function LeaderboardPage() {
                     // Cache leaderboard for 5 minutes
                     const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard'), {}, 300);
                     setCfLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
-                } else if (activeTab === 'sheets') {
+                } else {
                     // Cache sheets leaderboard for 5 minutes
-                    const data = await fetchWithCache<any>(addCacheBust('/api/leaderboard/sheets'), { credentials: 'include' }, 300);
+                    const data = await fetchWithCache<any>(addCacheBust(`/api/leaderboard/sheets?level=${activeTab === 'level1' ? 1 : 0}`), { credentials: 'include' }, 300);
                     setSheetsLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
                 }
             } catch (err) {
@@ -128,7 +130,7 @@ export default function LeaderboardPage() {
         <>
 
 
-            <div className="space-y-6 animate-fade-in">
+            <div className="ui-compact space-y-6 animate-fade-in">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -137,7 +139,7 @@ export default function LeaderboardPage() {
                             Leaderboard
                         </h2>
                         <p className="text-[#A0A0A0] mt-1 ml-10">
-                            Compare your progress with the community
+                            Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams
                         </p>
                     </div>
                 </div>
@@ -145,21 +147,24 @@ export default function LeaderboardPage() {
                 {/* Tabs */}
                 <div className="border-b border-white/10">
                     <div className="flex gap-6">
-                        <button
-                            onClick={() => setActiveTab('sheets')}
-                            className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'sheets'
-                                ? 'text-[#E8C15A]'
-                                : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Code size={16} />
-                                Training Sheets
-                            </div>
-                            {activeTab === 'sheets' && (
-                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
-                            )}
-                        </button>
+                        {([['level0', 'Level 0'], ['level1', 'Level 1']] as const).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`pb-4 text-sm font-medium transition-all relative ${activeTab === key
+                                    ? 'text-[#E8C15A]'
+                                    : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Code size={16} />
+                                    {label}
+                                </div>
+                                {activeTab === key && (
+                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
+                                )}
+                            </button>
+                        ))}
                         <button
                             onClick={() => setActiveTab('codeforces')}
                             className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'codeforces'
@@ -178,9 +183,11 @@ export default function LeaderboardPage() {
                     </div>
                 </div>
 
+                {activeTab === 'level0' && <MonthlyPodium />}
+
                 {/* Leaderboard Table */}
                 <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">
-                    {activeTab === 'sheets' ? (
+                    {activeTab !== 'codeforces' ? (
                         <>
                             {/* Sheets Header - Mobile Responsive */}
                             <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
@@ -258,7 +265,11 @@ export default function LeaderboardPage() {
                                                     )}
                                                 </div>
                                                 <div className="col-span-2 sm:col-span-4 min-w-0 flex items-center gap-2">
-                                                    <span className={`text-sm font-medium truncate ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}>{user.username}</span>
+                                                    {user.studentId ? (
+                                                        <Link href={`/dashboard/profile/${user.studentId}`} className={`text-sm font-medium hover:text-[#E8C15A] truncate block transition-colors ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}>{user.username}</Link>
+                                                    ) : (
+                                                        <span className={`text-sm font-medium truncate block ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}>{user.username}</span>
+                                                    )}
                                                     {isMe && <YouBadge />}
                                                 </div>
                                                 <div className="col-span-3">

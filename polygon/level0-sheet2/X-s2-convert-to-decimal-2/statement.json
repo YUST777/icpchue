@@ -1,0 +1,6 @@
+{
+  "legend": "For each given integer $N$: write $N$ in binary, count its ones $K$, and print the number whose binary form is $K$ ones (that is, $2^K - 1$).",
+  "input": "The first line contains $T$ ($1 \\le T \\le 10$), the number of test cases. Each of the next $T$ lines contains an integer $N$ ($1 \\le N \\le 2^{31} - 1$).",
+  "output": "For each test case print the answer on its own line.",
+  "notes": "$10$ is $1010$ in binary. It has $2$ ones, and $11$ in binary is $3$."
+}

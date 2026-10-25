@@ -2,52 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
-import { decrypt } from '@/lib/security/encryption';
-
-// Extract first and last name
-function getShortName(fullName: string | null): string {
-    if (!fullName) return 'Anonymous';
-    const cleaned = fullName.split('/')[0].trim();
-    const parts = cleaned.trim().split(/\s+/);
-    if (parts.length <= 2) return cleaned.trim();
-    const firstName = parts[0];
-    const lastPart = parts[parts.length - 1];
-    const secondToLast = parts.length > 2 ? parts[parts.length - 2] : null;
-    const compoundPrefixes = /^(al|el|abd|abu|ben|ibn)[-]?$/i;
-    if (secondToLast && compoundPrefixes.test(secondToLast)) {
-        return `${firstName} ${secondToLast} ${lastPart}`;
-    }
-    if (/^(al|el|abd|abu)-/i.test(lastPart)) {
-        return `${firstName} ${lastPart}`;
-    }
-    return `${firstName} ${lastPart}`;
-}
-
-/**
- * Detect if a string looks like encrypted data (any of the 3 formats):
- * - Legacy CryptoJS: starts with "U2FsdGVk"
- * - Legacy GCM: starts with "aes256gcm:"
- * - Cryptr (hex): long hex-only string (64+ chars)
- */
-function isEncrypted(value: string): boolean {
-    if (value.startsWith('U2FsdGVk')) return true;
-    if (value.startsWith('aes256gcm:')) return true;
-    // Cryptr outputs hex strings, typically 64+ chars with only hex characters
-    if (value.length >= 64 && /^[0-9a-f]+$/i.test(value)) return true;
-    return false;
-}
-
-/**
- * Try to decrypt a name, falling back to null if decryption fails.
- */
-function decryptName(name: string | null): string | null {
-    if (!name) return null;
-    if (!isEncrypted(name)) return name;
-    return decrypt(name);
-}
+import { formatDisplayName } from '@/lib/names';
+import { type Level, LEVEL_2_USER_IDS, cohortClause, decryptName, ecpcTeamUserIds, safeDecrypt } from '@/lib/leaderboard/cohort';
 
 export async function GET(req: NextRequest) {
     try {
+        const level: Level = req.nextUrl.searchParams.get('level') === '1' ? 1 : 0;
         let currentUser: { id: number } | null = null;
         let isShadowBanned = false;
 
@@ -66,12 +26,12 @@ export async function GET(req: NextRequest) {
 
         // Cache public view for 10 minutes
         if (isShadowBanned) {
-            const data = await fetchLeaderboard(true);
+            const data = await fetchLeaderboard(true, level);
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData('leaderboard:sheets:public', 600, async () => {
-            return await fetchLeaderboard(false);
+        const data = await getCachedData(`leaderboard:sheets:public:v8:level${level}`, 600, async () => {
+            return await fetchLeaderboard(false, level);
         });
 
         return NextResponse.json(data);
@@ -86,19 +46,21 @@ export async function GET(req: NextRequest) {
     }
 }
 
-async function fetchLeaderboard(isShadowBanned: boolean) {
+async function fetchLeaderboard(isShadowBanned: boolean, level: Level) {
+    const params = [await ecpcTeamUserIds()];
     const shadowBanClause = isShadowBanned
         ? ''
         : 'AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)';
 
-    // Optimized: Added LIMIT 200 and better sorting
     const queryStr = `
         SELECT 
             u.id,
             u.email,
             u.profile_visibility,
+            u.show_public_profile,
             u.is_shadow_banned,
             a.name,
+            a.student_id,
             uss.distinct_solved AS solved_count,
             uss.total_accepted AS accepted_count,
             uss.total_submissions
@@ -106,6 +68,8 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         INNER JOIN user_solve_stats uss ON u.id = uss.user_id
         LEFT JOIN applications a ON u.application_id = a.id
         WHERE uss.distinct_solved > 0
+          AND uss.season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)
+          ${cohortClause(level)}
           AND (
             u.is_shadow_banned = TRUE 
             OR u.show_on_sheets_leaderboard = TRUE 
@@ -116,23 +80,34 @@ async function fetchLeaderboard(isShadowBanned: boolean) {
         LIMIT 200
     `;
 
-    const result = await query(queryStr);
+    const result = await query(queryStr, params);
 
-    const leaderboard = result.rows.map((row: any) => {
-        // Try to decrypt the name if it's encrypted, then shorten it
-        const rawName = decryptName(row.name);
-        const displayName = rawName 
-            ? getShortName(rawName) 
-            : row.email?.split('@')[0] || 'Anonymous';
+    const leaderboard = result.rows
+        .filter((row: { id: string | number }) => !LEVEL_2_USER_IDS.has(Number(row.id)))
+        .map((row: any) => {
+            const rawName = decryptName(row.name);
+            const displayName = rawName ? formatDisplayName(rawName) : 'Member';
 
-        return {
-            userId: row.id,
-            username: displayName,
-            solvedCount: parseInt(row.solved_count) || 0,
-            totalSubmissions: parseInt(row.total_submissions) || 0,
-            acceptedCount: parseInt(row.accepted_count) || 0,
-        };
-    });
+            const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
+            let studentId: string | null = null;
+            if (isPublic) {
+                if (row.student_id && /^\d{7,10}$/.test(String(row.student_id))) {
+                    studentId = String(row.student_id);
+                } else {
+                    const localPart = (safeDecrypt(row.email) || '').split('@')[0];
+                    if (/^\d{7,10}$/.test(localPart)) studentId = localPart;
+                }
+            }
+
+            return {
+                userId: row.id,
+                username: displayName,
+                studentId,
+                solvedCount: parseInt(row.solved_count) || 0,
+                totalSubmissions: parseInt(row.total_submissions) || 0,
+                acceptedCount: parseInt(row.accepted_count) || 0,
+            };
+        });
 
     return {
         success: true,

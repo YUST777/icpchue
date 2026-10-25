@@ -1,0 +1,11 @@
+{
+  "name": "two-intervals",
+  "title": "Two intervals",
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "checker": "checker.cpp",
+  "samples": [
+    1,
+    2
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "legend": "Each person has a first name and a second name. Two people are brothers if they have the same second name. Given two people, decide whether they are brothers.",
+  "input": "The first line contains two words $F_1$ and $S_1$, the first and second name of the first person. The second line contains $F_2$ and $S_2$ for the second person. Every name consists of 1 to 20 lowercase English letters.",
+  "output": "Print \"ARE Brothers\" if they are brothers, otherwise print \"NOT\".",
+  "notes": ""
+}

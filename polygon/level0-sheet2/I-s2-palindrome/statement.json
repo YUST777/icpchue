@@ -1,0 +1,6 @@
+{
+  "legend": "You are given an integer $N$. Print $N$ with its digits reversed (without leading zeros), then say whether $N$ is a palindrome: a number that reads the same from both ends, like $12321$ or $101$.",
+  "input": "One line with an integer $N$ ($1 \\le N \\le 10^7$).",
+  "output": "On the first line print $N$ reversed, with no leading zeros. On the second line print \"YES\" if $N$ is a palindrome, otherwise \"NO\".",
+  "notes": "$160$ reversed is $061$, printed as $61$."
+}
