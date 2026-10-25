@@ -59,11 +59,19 @@ export default function AchievementsPage() {
 
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
 
-    // Monthly podium badges exist per month, so only the ones this student earned are listed.
-    const podiumBadges = earned.filter(a => isPodiumId(a.achievement_id)).sort((a, b) => b.achievement_id.localeCompare(a.achievement_id)).map(a => {
-        const meta = getAchievementMeta(a.achievement_id)!;
-        const place = a.achievement_id.slice(-1);
-        return { group: 'Monthly podium', id: a.achievement_id, modelPath: `/3d/podium-${place}.glb`, title: meta.name, description: meta.desc, unlocked: true, rarity: meta.tier };
+    // Monthly podium: three tiles that show what can be won; each opens once the student has placed that high.
+    const PODIUM_TILES = [
+        { place: 1, title: 'Monthly 1st place', rarity: 'legendary' as const },
+        { place: 2, title: 'Monthly 2nd place', rarity: 'rare' as const },
+        { place: 3, title: 'Monthly 3rd place', rarity: 'rare' as const },
+    ];
+    const podiumBadges = PODIUM_TILES.map(tile => {
+        const wins = earned.filter(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(`-${tile.place}`)).map(a => getAchievementMeta(a.achievement_id)!.name.split(' · ')[0]);
+        return {
+            group: 'Monthly podium', id: `podium-${tile.place}`, modelPath: `/3d/podium-${tile.place}.glb`, title: tile.title,
+            description: wins.length ? `Earned in ${wins.join(', ')}` : `Finish ${['1st', '2nd', '3rd'][tile.place - 1]} in a month on the Level 0 leaderboard`,
+            unlocked: wins.length > 0, rarity: tile.rarity,
+        };
     });
 
     const achievements = [

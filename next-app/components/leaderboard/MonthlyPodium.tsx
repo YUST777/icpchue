@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Trophy } from 'lucide-react';
+import { Award, Trophy } from 'lucide-react';
+import PodiumRewards from '@/components/leaderboard/PodiumRewards';
 import { fetchWithCache } from '@/lib/cache/api-cache';
 import type { MonthlyPodium as Month, PodiumEntry } from '@/lib/leaderboard/monthly';
 
@@ -33,6 +34,7 @@ function Place({ entry }: { entry: PodiumEntry | undefined; }) {
 export default function MonthlyPodium() {
     const [months, setMonths] = useState<Month[]>([]);
     const [selected, setSelected] = useState<string | null>(null);
+    const [rewardsOpen, setRewardsOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -57,13 +59,17 @@ export default function MonthlyPodium() {
                     <Trophy size={15} className="text-[#E8C15A]" /> Monthly top 3
                     {!current.complete && <span className="text-[11px] font-normal text-white/40">· so far</span>}
                 </div>
-                <div className="flex gap-1.5 overflow-x-auto max-w-full">
-                    {months.map(m => (
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
+                    {months.length > 1 && months.map(m => (
                         <button key={m.month} type="button" onClick={() => setSelected(m.month)}
-                            className={`shrink-0 px-2.5 h-7 rounded-lg text-xs transition-colors cursor-pointer ${m.month === selected ? 'bg-[#E8C15A] text-black font-semibold' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
+                            className={`shrink-0 px-2.5 h-7 rounded-lg text-xs transition-colors cursor-pointer ${m.month === selected ? 'bg-white/[0.1] text-white font-medium' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
                             {m.label}
                         </button>
                     ))}
+                    <button type="button" onClick={() => setRewardsOpen(true)}
+                        className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#E8C15A] text-black text-xs font-semibold hover:bg-[#d4ad45] transition-colors cursor-pointer">
+                        <Award size={13} /> Win badges
+                    </button>
                 </div>
             </div>
             <div className="flex items-end gap-3 max-w-md mx-auto">
@@ -71,6 +77,7 @@ export default function MonthlyPodium() {
                 <Place entry={byRank(1)} />
                 <Place entry={byRank(3)} />
             </div>
+            {rewardsOpen && <PodiumRewards onClose={() => setRewardsOpen(false)} />}
         </div>
     );
 }
