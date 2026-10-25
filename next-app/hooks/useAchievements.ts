@@ -10,6 +10,8 @@ export interface Achievement {
     achievement_id: string;
     earned_at: string;
     seen: boolean;
+    /** Mint number: 1 for the first member to earn this badge. */
+    serial?: number;
 }
 
 export function useAchievements(isAuthenticated: boolean = false) {
@@ -18,15 +20,15 @@ export function useAchievements(isAuthenticated: boolean = false) {
     const [unseenAchievement, setUnseenAchievement] = useState<Achievement | null>(null);
     const markSeenInFlight = useRef<Set<number>>(new Set());
 
-    const fetchAchievements = useCallback(async () => {
+    const fetchAchievements = useCallback(async (fresh = false) => {
         if (!isAuthenticated) {
             setLoading(false);
             return;
         }
         try {
-            const data = await fetchWithCache<any>(addCacheBust('/api/achievements'), {
-                credentials: 'include'
-            }, 60);
+            const data = fresh
+                ? await fetch(addCacheBust('/api/achievements'), { credentials: 'include', cache: 'no-store' }).then(r => r.json())
+                : await fetchWithCache<any>(addCacheBust('/api/achievements'), { credentials: 'include' }, 60);
 
             const fetchedAchievements = data.achievements || [];
             setAchievements(fetchedAchievements);
@@ -68,6 +70,13 @@ export function useAchievements(isAuthenticated: boolean = false) {
         }
     }, [fetchAchievements]);
 
+    // Another part of the page found a new badge: every list on screen updates at once.
+    useEffect(() => {
+        const onChanged = () => { void fetchAchievements(true); };
+        window.addEventListener('achievements:changed', onChanged);
+        return () => window.removeEventListener('achievements:changed', onChanged);
+    }, [fetchAchievements]);
+
     useEffect(() => {
         // Use setTimeout to avoid synchronous setState in effect
         setTimeout(() => {
@@ -77,6 +86,8 @@ export function useAchievements(isAuthenticated: boolean = false) {
         }, 0);
     }, [fetchAchievements, isAuthenticated]);
 
+    const refetch = useCallback(() => fetchAchievements(), [fetchAchievements]);
+
     const unseenAchievements = achievements.filter(a => !a.seen);
 
     return {
@@ -85,6 +96,6 @@ export function useAchievements(isAuthenticated: boolean = false) {
         loading,
         unseenAchievement,
         markAsSeen,
-        refetch: fetchAchievements
+        refetch,
     };
 }

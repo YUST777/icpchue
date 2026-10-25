@@ -16,7 +16,7 @@ export const ACHIEVEMENTS = {
  * Grants an achievement to a user if they don't already have it.
  * Also handles updating the 'seen' status logic if needed.
  */
-export async function grantAchievement(userId: number | string, achievementId: string) {
+export async function grantAchievement(userId: number | string, achievementId: string, notify = true) {
     try {
         // 1. Insert into user_achievements if user is not flagged
         const result = await query(
@@ -40,7 +40,7 @@ export async function grantAchievement(userId: number | string, achievementId: s
             await invalidateCache(`user:${userId}:achievements`);
             await invalidateCache(`user:${userId}:dashboard_stats`);
             const meta = getAchievementMeta(achievementId);
-            if (meta) await createNotification(userId, `Achievement unlocked: ${meta.name}`, meta.desc, 'achievement');
+            if (meta && notify) await createNotification(userId, `Achievement unlocked: ${meta.name}`, meta.desc, 'achievement');
         }
 
         return wasGranted;
@@ -160,7 +160,13 @@ export async function checkProgressAchievements(userId: number, role?: string) {
     if (role === 'mentor' || role === 'instructor' || role === 'owner') earned.push('mentor');
 
     let granted = 0;
-    for (const id of earned) if (await grantAchievement(userId, id)) granted++;
+    const newlyGranted: string[] = [];
+    for (const id of earned) if (await grantAchievement(userId, id, false)) newlyGranted.push(id);
+    granted = newlyGranted.length;
+    // One bell entry per batch, not one per badge.
+    const names = newlyGranted.map(id => getAchievementMeta(id)?.name).filter((n): n is string => Boolean(n));
+    if (names.length === 1) await createNotification(userId, `Achievement unlocked: ${names[0]}`, getAchievementMeta(newlyGranted[0])!.desc, 'achievement');
+    else if (names.length > 1) await createNotification(userId, `${names.length} new achievements`, names.slice(0, 4).join(', ') + (names.length > 4 ? ` and ${names.length - 4} more` : ''), 'achievement');
     return granted;
 }
 

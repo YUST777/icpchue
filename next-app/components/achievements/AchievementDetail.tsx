@@ -29,6 +29,8 @@ export interface AchievementDetailData {
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
     /** ISO times it was earned; a monthly podium can have several. */
     earnedAt?: string[];
+    /** Mint number of this badge for this member. */
+    serial?: number;
     scale?: number;
 }
 
@@ -87,6 +89,11 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                         {!badge.unlocked && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-7 h-7 text-white/60" /></div>}
                     </div>
                     <div className={`mt-2 text-xs capitalize ${RARITY_TEXT[rarity]}`}>{rarity}</div>
+                    {badge.unlocked && badge.serial != null && (
+                        <div className="mt-2 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-white/60">
+                            № {String(badge.serial).padStart(4, '0')}{holders ? <span className="text-white/30"> / {String(holders).padStart(4, '0')}</span> : null}
+                        </div>
+                    )}
                 </div>
 
                 {/* Right page: the details */}
