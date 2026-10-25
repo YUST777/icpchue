@@ -107,3 +107,6 @@ icpchue-whatsapp/
 .agents/
 .cursor/
 skills-lock.json
+
+# Private data dumps (student activity etc.), never commit
+secrets/

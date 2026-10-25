@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        const data = await getCachedData(`leaderboard:sheets:public:v8:level${level}`, 600, async () => {
+        const data = await getCachedData(`leaderboard:sheets:public:v9:level${level}`, 600, async () => {
             return await fetchLeaderboard(false, level);
         });
 

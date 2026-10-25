@@ -98,6 +98,7 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
 | `/api/cron/grant-achievements` | GET | cron secret | Daily job: gives every member the badges they earned, even if they never opened the site. | 0 |
+| `/api/cron/prune-tracking` | GET | cron secret | Daily job: deletes old tracking rows (activity 90 d, errors 30 d, sessions 90 d, logins 180 d) in batches. | 0 |
 | `/api/cron/refresh-codeforces` | GET | cron secret | Daily job: refreshes Codeforces ratings in batches. | 0 |
 
 ## curriculum

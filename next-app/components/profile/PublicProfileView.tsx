@@ -28,7 +28,6 @@ const ACHIEVEMENT_MODELS: Record<string, { modelPath: string; scale?: number; sp
     'disciplined-7': { modelPath: '/3d/disciplined-7.glb', scale: 2, spin: true },
     'disciplined-program': { modelPath: '/3d/disciplined-program.glb', scale: 2, spin: true },
     comeback: { modelPath: '/3d/comeback.glb', scale: 2, spin: true },
-    bughunter: { modelPath: '/3d/bughunter.glb', scale: 2, spin: true },
     'sheet-1': { modelPath: '/3d/sheet-1.glb', scale: 2, spin: true },
     'sheet-2': { modelPath: '/3d/sheet-2.glb', scale: 2, spin: true },
     'sheet-3': { modelPath: '/3d/sheet-3.glb', scale: 2, spin: true },
