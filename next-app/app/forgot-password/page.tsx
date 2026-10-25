@@ -113,9 +113,10 @@ export default function ForgotPassword() {
                             <div>
                                 <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Email or ID</label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={email}
                                     onChange={handleEmailChange}
+                                    inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                                     placeholder="Enter your email or Horus ID"
                                     className={`w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all ${
                                         errors.email ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20'
@@ -123,7 +124,7 @@ export default function ForgotPassword() {
                                     required
                                     dir="ltr"
                                 />
-                                {errors.email && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
+                                {errors.email && <p role="alert" className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
                             </div>
 
                             <button
@@ -140,20 +141,20 @@ export default function ForgotPassword() {
                     <div className="mt-8 space-y-4 text-center">
                         <p className="text-white/30 text-xs font-medium">
                             Remember your password?{' '}
-                            <Link href="/login" className="text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/10 hover:decoration-[#E8C15A]/40">
+                            <Link href="/login" className="inline-block py-2 text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/10 hover:decoration-[#E8C15A]/40">
                                 Sign in
                             </Link>
                         </p>
                         <p className="text-white/30 text-xs font-medium">
                             Don&apos;t have an account?{' '}
-                            <Link href="/register" className="text-[#E8C15A] hover:text-[#D59928] transition-colors font-bold underline underline-offset-4 decoration-[#E8C15A]/40">
+                            <Link href="/register" className="inline-block py-2 text-[#E8C15A] hover:text-[#D59928] transition-colors font-bold underline underline-offset-4 decoration-[#E8C15A]/40">
                                 Create one
                             </Link>
                         </p>
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
-                        <Link href="/" className="text-[10px] uppercase font-bold tracking-widest text-white/10 hover:text-white/30 transition-colors">
+                        <Link href="/" className="inline-block py-3 text-xs uppercase font-bold tracking-widest text-white/50 hover:text-white/80 transition-colors">
                             &larr; Back to Home
                         </Link>
                     </div>

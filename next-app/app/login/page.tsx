@@ -223,15 +223,16 @@ export default function Login() {
                         <div>
                             <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Email or ID</label>
                             <input
-                                type="email"
+                                type="text"
                                 value={email}
                                 onChange={handleEmailChange}
                                 onBlur={() => validateField('email', email)}
+                                inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                                 placeholder="Enter your email or Horus ID"
                                 className={`w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all ${errors.email ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20'
                                     }`}
                             />
-                            {errors.email && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
+                            {errors.email && <p role="alert" className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
                         </div>
 
                         <div>
@@ -243,7 +244,7 @@ export default function Login() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showPassword ? 'text' : 'password'}
+                                    type={showPassword ? 'text' : 'password'} autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => {
                                         setPassword(e.target.value);
@@ -262,7 +263,7 @@ export default function Login() {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
-                            {errors.password && <p className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.password}</p>}
+                            {errors.password && <p role="alert" className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.password}</p>}
                         </div>
 
                         <button
@@ -279,7 +280,7 @@ export default function Login() {
                     <div className="mt-8 space-y-4 text-center">
                         <p className="text-white/30 text-xs font-medium">
                             Don&apos;t have an account?{' '}
-                            <Link href="/register" className="text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/10 hover:decoration-[#E8C15A]/40">
+                            <Link href="/register" className="inline-block py-2 text-white hover:text-[#E8C15A] transition-colors font-bold underline underline-offset-4 decoration-white/10 hover:decoration-[#E8C15A]/40">
                                 Create one
                             </Link>
                         </p>
@@ -299,7 +300,7 @@ export default function Login() {
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
-                        <Link href="/" className="text-[10px] uppercase font-bold tracking-widest text-white/10 hover:text-white/30 transition-colors">
+                        <Link href="/" className="inline-block py-3 text-xs uppercase font-bold tracking-widest text-white/50 hover:text-white/80 transition-colors">
                             &larr; Back to Home
                         </Link>
                     </div>

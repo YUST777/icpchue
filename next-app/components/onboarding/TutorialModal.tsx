@@ -58,7 +58,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                             </div>
                             <button
                                 onClick={handleClose}
-                                className="text-white/40 hover:text-white transition-colors p-1"
+                                className="-m-2 p-3 text-white/40 hover:text-white transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -82,7 +82,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                         <div className="p-6 bg-[#0a0a0a] flex justify-end">
                             <button
                                 onClick={handleClose}
-                                className="px-6 py-2.5 bg-[#d59928] hover:bg-[#c08820] text-black font-medium rounded-xl transition-all flex items-center gap-2"
+                                className="px-6 py-3 bg-[#d59928] hover:bg-[#c08820] text-black font-medium rounded-xl transition-all flex items-center gap-2"
                             >
                                 I understand
                                 <CheckCircle size={18} />

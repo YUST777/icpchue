@@ -182,7 +182,7 @@ function ResetPasswordInner() {
                                 <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">New Password</label>
                                 <div className="relative">
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
+                                        type={showPassword ? 'text' : 'password'} autoComplete="new-password"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); if (status === 'error') setStatus('idle'); }}
                                         placeholder="Min 9 characters, 1 uppercase"
@@ -212,7 +212,7 @@ function ResetPasswordInner() {
                                 <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Confirm Password</label>
                                 <div className="relative">
                                     <input
-                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password"
                                         value={confirmPassword}
                                         onChange={(e) => { setConfirmPassword(e.target.value); if (status === 'error') setStatus('idle'); }}
                                         placeholder="Re-enter your password"

@@ -405,20 +405,21 @@ export default function Register() {
                                 <div>
                                     <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Email or Horus ID</label>
                                     <input
-                                        type="email"
+                                        type="text"
                                         value={email}
                                         onChange={handleEmailChange}
+                                        inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                                         placeholder="Enter your email or Horus ID"
                                         className={cn(inputBase, errors.email ? inputError : inputNormal)}
                                         dir="ltr"
                                     />
-                                    {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.email}</p>}
+                                    {errors.email && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.email}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Password</label>
                                     <div className="relative">
                                         <input
-                                            type={showPassword ? 'text' : 'password'}
+                                            type={showPassword ? 'text' : 'password'} autoComplete="new-password"
                                             value={password}
                                             onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })); }}
                                             placeholder="Min 9 characters, 1 uppercase"
@@ -429,7 +430,7 @@ export default function Register() {
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-                                    {errors.password && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.password}</p>}
+                                    {errors.password && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.password}</p>}
                                     {password && (
                                         <div className="mt-1.5">
                                             <div className="flex items-center justify-between text-[9px] mb-0.5 ml-1">
@@ -446,7 +447,7 @@ export default function Register() {
                                     <label className="block text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1 ml-1">Confirm Password</label>
                                     <div className="relative">
                                         <input
-                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password"
                                             value={confirmPassword}
                                             onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
                                             placeholder="Re-enter your password"
@@ -457,7 +458,7 @@ export default function Register() {
                                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-                                    {errors.confirmPassword && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.confirmPassword}</p>}
+                                    {errors.confirmPassword && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.confirmPassword}</p>}
                                 </div>
                             </div>
                         )}
@@ -481,7 +482,7 @@ export default function Register() {
                                         dir="ltr"
                                         autoComplete="one-time-code"
                                     />
-                                    {errors.otp && <p className="text-red-400 text-[9px] mt-1 ml-1">{errors.otp}</p>}
+                                    {errors.otp && <p role="alert" className="text-red-400 text-[9px] mt-1 ml-1">{errors.otp}</p>}
                                     <div className="flex items-center justify-between mt-2 ml-1">
                                         <p className="text-white/20 text-[10px]">Check your inbox &amp; spam</p>
                                         <button
@@ -508,10 +509,11 @@ export default function Register() {
                                             name="name"
                                             value={formData.name}
                                             onChange={handleFormChange}
+                                            autoComplete="name"
                                             placeholder="John Doe"
                                             className={cn(inputBase, errors.name ? inputError : inputNormal)}
                                         />
-                                        {errors.name && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.name}</p>}
+                                        {errors.name && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.name}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
@@ -521,10 +523,11 @@ export default function Register() {
                                             name="telephone"
                                             value={formData.telephone}
                                             onChange={handleFormChange}
+                                            inputMode="tel" autoComplete="tel"
                                             placeholder="+20xxxxxxxxx"
                                             className={cn(inputBase, errors.telephone ? inputError : inputNormal)}
                                         />
-                                        {errors.telephone && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.telephone}</p>}
+                                        {errors.telephone && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.telephone}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
@@ -534,11 +537,12 @@ export default function Register() {
                                             name="id"
                                             value={formData.id}
                                             onChange={handleFormChange}
+                                            inputMode="numeric" autoComplete="off"
                                             placeholder="82xxxxxx"
                                             maxLength={12}
                                             className={cn(inputBase, errors.id ? inputError : inputNormal)}
                                         />
-                                        {errors.id && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.id}</p>}
+                                        {errors.id && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.id}</p>}
                                     </div>
 
                                     <div className="col-span-2">
@@ -548,11 +552,12 @@ export default function Register() {
                                             name="nationalId"
                                             value={formData.nationalId}
                                             onChange={handleFormChange}
+                                            inputMode="numeric" autoComplete="off"
                                             placeholder="14-digit Egyptian National ID"
                                             maxLength={14}
                                             className={cn(inputBase, errors.nationalId ? inputError : inputNormal)}
                                         />
-                                        {errors.nationalId && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.nationalId}</p>}
+                                        {errors.nationalId && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.nationalId}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
@@ -568,7 +573,7 @@ export default function Register() {
                                                 <option key={opt.value} value={opt.value} className="bg-black">{opt.label.split(' / ')[0]}</option>
                                             ))}
                                         </select>
-                                        {errors.faculty && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.faculty}</p>}
+                                        {errors.faculty && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.faculty}</p>}
                                     </div>
 
                                     <div className="col-span-2 sm:col-span-1">
@@ -584,7 +589,7 @@ export default function Register() {
                                                 <option key={opt.value} value={opt.value} className="bg-black">{opt.label.split(' / ')[0]}</option>
                                             ))}
                                         </select>
-                                        {errors.studentLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.studentLevel}</p>}
+                                        {errors.studentLevel && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.studentLevel}</p>}
                                     </div>
                                 </div>
 
@@ -606,7 +611,7 @@ export default function Register() {
                                             No
                                         </label>
                                     </div>
-                                    {errors.hasLaptop && <p className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.hasLaptop}</p>}
+                                    {errors.hasLaptop && <p role="alert" className="text-red-400 text-[9px] mt-0.5 ml-1">{errors.hasLaptop}</p>}
                                 </div>
                             </div>
                         )}
