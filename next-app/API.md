@@ -100,7 +100,7 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
 | `/api/cron/grant-achievements` | GET | cron secret | Daily job: gives every member the badges they earned, even if they never opened the site. | 0 |
-| `/api/cron/prune-tracking` | GET | cron secret | Daily job: deletes old tracking rows (activity 90 d, errors 30 d, sessions 90 d, logins 180 d) in batches. | 0 |
+| `/api/cron/prune-tracking` | GET | cron secret | Daily job: deletes old tracking rows (activity 90 d, errors 30 d, sessions 90 d, logins 180 d) in batches, and clears IP addresses and browser strings from registration and submission rows older than 90 d. | 0 |
 | `/api/cron/refresh-codeforces` | GET | cron secret | Daily job: refreshes Codeforces ratings in batches. | 0 |
 
 ## curriculum
@@ -148,8 +148,8 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/leaderboard` | GET | public | Codeforces rating leaderboard (refreshed every 6 h). | 3 |
-| `/api/leaderboard/monthly` | GET | public | Monthly top-3 podium and its winners. | 1 |
+| `/api/leaderboard` | GET | signed in | Codeforces rating leaderboard (refreshed every 6 h). | 3 |
+| `/api/leaderboard/monthly` | GET | signed in | Monthly top-3 podium and its winners. | 1 |
 | `/api/leaderboard/sheets` | GET | signed in | Level 0 / Level 1 sheets leaderboard. | 2 |
 
 ## mentor

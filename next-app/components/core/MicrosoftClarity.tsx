@@ -9,9 +9,10 @@ type ClarityFn = (...args: unknown[]) => void;
 
 /**
  * Microsoft Clarity: click and scroll heatmaps and session recordings of the logged-in dashboard
- * (free, and it runs on Microsoft's servers). The code editor is NOT masked, so a recording shows
- * what a student typed, pasted and ran while solving, which is how a mentor tells honest solving
- * from copying. Clarity still masks form fields such as passwords by default.
+ * (free, and it runs on Microsoft's servers). The project is set to mask text, so the code editor
+ * and the test panel opt out with data-clarity-unmask: a recording then shows what a student typed,
+ * pasted and ran while solving, which is how a mentor tells honest solving from copying. Everything
+ * else stays masked, and password fields are always masked.
  *
  * Each recording is labelled with the student's internal account id (never name or email) and, on
  * a problem page, the sheet and problem, so recordings can be filtered in the Clarity dashboard.

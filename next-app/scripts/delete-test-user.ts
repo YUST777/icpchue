@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Delete all data for 8241043@horus.edu.eg to allow re-testing the full flow:
+ * Delete all data for one test account (bun scripts/delete-test-user.ts <student id>)
+ * to allow re-testing the full flow:
  * Apply → OTP → Register. Removes user, auth, application, and rate-limit rows.
  */
 
@@ -8,8 +9,12 @@ import { query } from '../lib/db/db';
 import { createBlindIndex } from '../lib/security/encryption';
 import { createAdminClient } from '../lib/supabase/admin';
 
-const EMAIL = '8241043@horus.edu.eg'.trim().toLowerCase();
-const STUDENT_ID = '8241043';
+const STUDENT_ID = (process.argv[2] || '').replace(/\D/g, '');
+if (!/^\d{5,12}$/.test(STUDENT_ID)) {
+    console.error('Usage: bun scripts/delete-test-user.ts <student id>');
+    process.exit(1);
+}
+const EMAIL = `${STUDENT_ID}@horus.edu.eg`;
 
 async function run() {
     const blindIndex = createBlindIndex(EMAIL);

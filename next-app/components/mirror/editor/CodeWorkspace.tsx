@@ -332,6 +332,7 @@ export default function CodeWorkspace({
         <div
             ref={editorContainerRef}
             id="onboarding-code-workspace"
+            data-clarity-unmask="true"
             className={`flex-1 flex flex-col bg-[#1e1e1e] min-w-0 min-h-0 ${mobileView === 'problem' ? 'hidden md:flex' : 'flex'}`}
             style={{
                 cursor: isResizingVertical ? 'row-resize' : 'auto',
@@ -417,6 +418,7 @@ export default function CodeWorkspace({
             {/* ============ TEST PANEL (ALWAYS RENDERED) ============ */}
             <div
                 id="onboarding-test-panel"
+                data-clarity-unmask="true"
                 className="shrink-0 flex flex-col bg-[#1a1a1a]"
                 style={{
                     height: isCollapsed 

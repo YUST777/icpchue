@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isCronAuthorized } from '@/lib/security/cron-auth';
 import { query } from '@/lib/db/db';
 
 export const maxDuration = 60;
@@ -13,17 +14,26 @@ const RETENTION: Array<{ table: string; column: string; days: number }> = [
 ];
 const BATCH = 20_000;
 
+// Registration and submission rows keep their data, but the network address and browser string
+// that came with them are dropped after 90 days.
+const SCRUB: Array<{ table: string; column: string; fields: string[] }> = [
+    { table: 'applications', column: 'created_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'level0_training_registrations', column: 'submitted_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'level1_training_registrations', column: 'submitted_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'student_card_uploads', column: 'created_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'team_registrations', column: 'created_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'submissions', column: 'submitted_at', fields: ['ip_address'] },
+];
+
 /**
- * Daily Vercel cron (see vercel.json). Deletes old tracking rows in batches so a
+ * Daily Vercel cron (see vercel.json). Deletes old tracking rows in batches, and clears old IP
+ * addresses and browser strings from registration tables. so a
  * large backlog never holds a long lock; a run that hits its time budget carries on
  * the next day. Needs CRON_SECRET, like the other cron routes.
  */
 export async function GET(req: NextRequest) {
-    const secret = process.env.CRON_SECRET;
-    if (!secret) return NextResponse.json({ error: 'CRON_SECRET is not set' }, { status: 503 });
-    if (req.headers.get('authorization') !== `Bearer ${secret}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!process.env.CRON_SECRET) return NextResponse.json({ error: 'CRON_SECRET is not set' }, { status: 503 });
+    if (!isCronAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const started = Date.now();
     const deleted: Record<string, number> = {};
@@ -42,5 +52,13 @@ export async function GET(req: NextRequest) {
         }
         if (timedOut) break;
     }
-    return NextResponse.json({ success: true, deleted, timedOut });
+    const scrubbed: Record<string, number> = {};
+    for (const { table, column, fields } of SCRUB) {
+        if (Date.now() - started > 50_000) { timedOut = true; break; }
+        const set = fields.map(f => `${f} = NULL`).join(', ');
+        const any = fields.map(f => `${f} IS NOT NULL`).join(' OR ');
+        const res = await query(`UPDATE ${table} SET ${set} WHERE ${column} < NOW() - INTERVAL '90 days' AND (${any})`);
+        scrubbed[table] = res.rowCount || 0;
+    }
+    return NextResponse.json({ success: true, deleted, scrubbed, timedOut });
 }
