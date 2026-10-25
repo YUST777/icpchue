@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { query } from '@/lib/db/db';
 import { getCachedData } from '@/lib/cache/cache';
+import { rateLimit } from '@/lib/cache/rate-limit';
+import { refreshCodeforcesRatings } from '@/lib/services/cf-batch-refresh';
 import { decrypt } from '@/lib/security/encryption';
 import { formatDisplayName } from '@/lib/names';
 
@@ -28,6 +30,14 @@ function safeDecrypt(value: string | null): string | null {
 
 export async function GET() {
     try {
+        // Ratings only change when students are rated, so a refresh every 6 hours keeps the board current.
+        // The first visit after that window starts it in the background; the next load shows fresh data.
+        if ((await rateLimit('cf-batch-refresh', 1, 6 * 3600)).success) {
+            after(async () => {
+                try { await refreshCodeforcesRatings(5); }
+                catch (error) { console.error('[CF refresh] failed:', error instanceof Error ? error.message : error); }
+            });
+        }
 
         const headers = {
             'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
