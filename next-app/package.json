@@ -65,7 +65,7 @@
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "knip": "^6.43.0",
     "tailwindcss": "^4.3.3",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "overrides": {
     "minimatch": ">=3.1.3",

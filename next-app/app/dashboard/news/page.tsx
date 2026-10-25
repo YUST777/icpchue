@@ -28,26 +28,6 @@ const newsItems = [
         link: '/dashboard/sessions/programming1/1'
     },
     {
-        id: 'recap-2025',
-        type: 'Recap',
-        title: 'Your 2025 Wrapped is Here!',
-        date: 'Dec 29, 2025',
-        body: 'The year is over, but the stats remain! Check out your personal coding journey, total problems solved, and achievements unlocked in 2025.',
-        image: '/News/2025recap.webp',
-        featured: true,
-        link: '/dashboard' // Placeholder, will be dynamic
-    },
-    {
-        id: 'dec-report',
-        type: 'Community',
-        title: 'December 2025 Report',
-        date: 'Dec 28, 2025',
-        body: 'See how our community grew in our first month! 300+ students, 160+ live attendees, and 5+ hours of content delivered.',
-        image: '/News/decreport.webp',
-        featured: true,
-        link: '/2025/dec'
-    },
-    {
         id: 'sheet-1-launch',
         type: 'Training',
         title: 'Sheet 1 Has Arrived!',
@@ -82,19 +62,7 @@ function getTypeColor(type: string) {
 export default function NewsPage() {
     const { profile, user } = useAuth();
 
-    // Get student ID (prefer profile, fallback to email user)
-    const studentId = profile?.student_id || user?.email?.split('@')[0];
-
-    // Create dynamic news items
-    const dynamicNewsItems = newsItems.map(item => {
-        if (item.id === 'recap-2025') {
-            return {
-                ...item,
-                link: studentId ? `/2025/${studentId}` : '/login'
-            };
-        }
-        return item;
-    });
+    const dynamicNewsItems = newsItems;
 
     const featuredNewsItems = dynamicNewsItems.filter(n => n.featured);
     const otherNews = dynamicNewsItems.filter(n => !n.featured);

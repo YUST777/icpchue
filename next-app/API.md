@@ -8,6 +8,8 @@ Every route under `next-app/app/api`, what it does, who can call it, and whether
 
 ## Removed on 2026-10-25
 
+Retired with the 2025 recap pages: `/api/recap/[id]`.
+
 These had no callers and were deleted: `/api/admin/applications`, `/api/admin/cleanup`, `/api/admin/export/top-active`, `/api/admin/overview`, `/api/admin/rankings`, `/api/admin/sheet-progress`, `/api/admin/submissions`, `/api/admin/top-students`, `/api/admin/users`, `/api/analyze-complexity`, `/api/card`, `/api/codeforces/report-solve`, `/api/get-ip`, `/api/judge/submit`, `/api/mirror/fetch`, `/api/recap/[id]/share`, `/api/sheets/my-submissions`, `/api/sheets/submission/[id]`, `/api/sheets/submit`, `/api/stats/distribution`, `/api/submit-application`, `/api/track/flush`.
 
 Also removed (they depended on the deleted bridge): `/api/codeforces/submit`, `/api/codeforces/submit-result`, `/api/codeforces/submission`.
@@ -194,7 +196,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/recap/[id]` | GET | public | 2025 recap data for a student. | 2 |
 
 ## sheets
 

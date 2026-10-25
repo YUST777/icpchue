@@ -52,23 +52,6 @@ export function StatsFooter({ streak, totalSolved, rank, loading, studentId }: S
                 </div>
             </div>
 
-            {/* Quick Links - Hidden as per user request */}
-            {/* 
-            <div className="flex items-center justify-center gap-6 text-sm text-white/40 pt-2 pb-1">
-                <Link
-                    href={`/2025/${studentId || 'user'}`}
-                    className="flex items-center gap-1.5 hover:text-[#E8C15A] transition-colors"
-                >
-                    <Sparkles size={14} /> 2025 Recap
-                </Link>
-                <Link
-                    href="/2025/dec"
-                    className="flex items-center gap-1.5 hover:text-white transition-colors"
-                >
-                    <TrendingUp size={14} /> Community
-                </Link>
-            </div>
-            */}
         </div>
     );
 }
