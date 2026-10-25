@@ -78,12 +78,13 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                     <p className="text-sm text-white/80 leading-relaxed">{howTo.how}</p>
                 </div>
 
-                {howTo.href && (
-                    <Link href={howTo.href} onClick={onClose}
-                        className="mt-5 inline-flex w-full items-center justify-center gap-2 h-10 rounded-xl bg-[#E8C15A] text-black text-sm font-semibold hover:bg-[#d4ad45] transition-colors">
-                        {howTo.cta ?? 'Go'} <ArrowRight size={15} />
-                    </Link>
-                )}
+                {howTo.href && (() => {
+                    const cls = 'mt-5 inline-flex w-full items-center justify-center gap-2 h-10 rounded-xl bg-[#E8C15A] text-black text-sm font-semibold hover:bg-[#d4ad45] transition-colors';
+                    const label = <>{howTo.cta ?? 'Go'} <ArrowRight size={15} /></>;
+                    return howTo.href.startsWith('http')
+                        ? <a href={howTo.href} target="_blank" rel="noopener noreferrer" className={cls}>{label}</a>
+                        : <Link href={howTo.href} onClick={onClose} className={cls}>{label}</Link>;
+                })()}
                 <style>{`@keyframes drawerUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
             </div>
         </div>,
