@@ -3,7 +3,6 @@ import dynamic from 'next/dynamic';
 import { CFProblemData, Submission } from '../shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
 import ProblemTabs from './ProblemTabs';
-import HandleInputSection from '../HandleInputSection';
 import ProblemNotes from './ProblemNotes';
 
 // Lazy-load tab components but preload them immediately so they're ready when user clicks

@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookOpen, FileCode2, Info, X, ChevronRight, Calendar, Loader2 } from 'lucide-react';
+import { FileCode2, Info, X, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { curriculum } from '@/lib/content/curriculum';
 import { fetchWithCache } from '@/lib/cache/api-cache';
 
 export default function SheetsPage() {

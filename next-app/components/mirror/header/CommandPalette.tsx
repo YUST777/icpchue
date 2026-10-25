@@ -2,16 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    Search, 
-    Zap, 
-    FileText, 
-    Settings, 
-    Play, 
-    CloudUpload, 
-    ChevronRight,
-    Command
-} from "lucide-react";
+import { Search, Zap, Settings, Play, CloudUpload, ChevronRight, Command } from "lucide-react";
 import { useUIStore } from "@/hooks/useUIStore";
 import { useRouter } from "next/navigation";
 import { SheetProblem } from "../problem/ProblemDrawer";

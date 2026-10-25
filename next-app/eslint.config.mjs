@@ -36,6 +36,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "eslint.config.mjs",
     "scripts/**",
+    "public/**", // vendored files such as the Draco decoder
     "mirror/**",
     "server.js",
   ]),

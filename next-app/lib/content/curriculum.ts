@@ -1,4 +1,3 @@
-import { CFProblemData } from '@/components/mirror/types';
 
 // Level 0 Sheets - Newcomers Training (A-J)
 export interface Problem {

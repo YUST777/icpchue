@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { FileCode2, ChevronRight, Loader2, Info, X } from 'lucide-react';
+import { FileCode2, ChevronRight, Info, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithCache } from '@/lib/cache/api-cache';

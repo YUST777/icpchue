@@ -1,6 +1,5 @@
 import Cryptr from 'cryptr';
 import crypto from 'crypto';
-import speakeasy from 'speakeasy';
 
 /**
  * Application-level field encryption using `cryptr` (AES-256-GCM + PBKDF2).
@@ -20,8 +19,6 @@ const BLIND_INDEX_SALT = process.env.BLIND_INDEX_SALT || ENCRYPTION_KEY;
 if (!BLIND_INDEX_SALT) {
     console.warn('⚠️ WARNING: BLIND_INDEX_SALT not set. Blind index lookups will fail.');
 }
-
-const TOTP_SECRET = process.env.TOTP_SECRET;
 
 // cryptr instance — handles AES-256-GCM with PBKDF2 key derivation
 const cryptr = ENCRYPTION_KEY ? new Cryptr(ENCRYPTION_KEY) : null;
@@ -152,6 +149,4 @@ export const createBlindIndex = (value: string | null | undefined): string | nul
     const normalized = value.toString().toLowerCase().trim();
     return crypto.createHmac('sha256', BLIND_INDEX_SALT).update(normalized).digest('hex');
 };
-
-// ─── TOTP verification (via speakeasy — established lib) ────────────
 

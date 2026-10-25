@@ -3,11 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { yearLabel } from '@/lib/utils/levels';
-import { 
-    Search, Users, AlertTriangle, ShieldAlert, CheckCircle2, 
-    Clock, ArrowRight, LayoutGrid, Table, Flame, ExternalLink,
-    ChevronDown, Send, BookOpen
-} from 'lucide-react';
+import { Search, Users, ShieldAlert, CheckCircle2, Clock, ArrowRight, LayoutGrid, Table, Flame, ChevronDown } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
 interface TraineeSummary {

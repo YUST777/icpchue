@@ -1,11 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-    Bold, Italic, List, ListOrdered, Quote, Code, 
-    Link as LinkIcon, Image as ImageIcon, Eye, 
-    Type, Edit3, Loader2, Save, Check
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bold, Italic, List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon, Eye, Type, Edit3, Loader2, Check } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 interface ProblemNotesProps {

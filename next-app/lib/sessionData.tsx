@@ -169,7 +169,7 @@ export const camps: Camp[] = [
                 title: 'Arrays and Ad-Hocs',
                 desc: 'Introduction to 1D/2D arrays and strategies for solving ad-hoc problems.',
                 description: 'Learn how to store multiple values using arrays in C++ and develop logical thinking to tackle ad-hoc problems effectively.',
-                thumbnail: '/images/lessons/levels_camp/level0/arrays-adhocs.png',
+                thumbnail: '/images/lessons/levels_camp/level0/arrays-adhocs.webp',
                 videoId: 'SnTv1TB0m5c',
                 content: <Session6Content />
             },

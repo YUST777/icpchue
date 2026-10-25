@@ -3,11 +3,7 @@
 import { yearLabel } from '@/lib/utils/levels';
 
 import React from 'react';
-import Link from 'next/link';
-import { 
-    Phone, Send, ShieldAlert, CheckCircle2, 
-    ArrowLeft, ExternalLink, AlertTriangle
-} from 'lucide-react';
+import { Phone, Send, ShieldAlert, CheckCircle2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
 interface TraineeProfileCardProps {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
+import { ExternalLink, Trophy, Code } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
 import MonthlyPodium from '@/components/leaderboard/MonthlyPodium';

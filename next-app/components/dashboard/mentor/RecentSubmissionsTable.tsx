@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    FileCode2, Clock, CheckCircle2, XCircle, AlertTriangle, 
-    X, Copy, Check, ExternalLink, Cpu, HardDrive, Terminal
-} from 'lucide-react';
+import { FileCode2, Clock, CheckCircle2, XCircle, AlertTriangle, X, Copy, Check, ExternalLink, Terminal } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 
 interface SubmissionItem {

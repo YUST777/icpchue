@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, ChevronRight, FileCode2, Trophy, Clock, CheckCircle2, Lock } from 'lucide-react';
+import { ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { TracingBeam } from "@/components/ui/tracing-beam";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 interface RoadmapWeek {
     id: string;

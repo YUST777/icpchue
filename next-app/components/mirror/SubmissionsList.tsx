@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, History, Globe, Clock, MemoryStick, RefreshCw, ChevronRight, CheckCircle2, XCircle, AlertCircle, Timer, Pencil, X } from 'lucide-react';
+import { History, RefreshCw, ChevronRight, CheckCircle2, XCircle, AlertCircle, Timer, Pencil, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Submission } from './types';
