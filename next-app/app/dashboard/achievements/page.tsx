@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
+import AchievementDetail, { type AchievementDetailData } from '@/components/achievements/AchievementDetail';
 import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
 
 const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
@@ -21,16 +22,17 @@ interface BadgeCardProps {
     description: string;
     unlocked: boolean;
     rarity: 'common' | 'rare' | 'legendary';
+    earnedAt?: string[];
 }
 
 const RARITY_TEXT = { common: 'text-white/40', rare: 'text-sky-400', legendary: 'text-[#E8C15A]' } as const;
 
 const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
 
-function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity }: BadgeCardProps) {
+function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, onOpen }: BadgeCardProps & { onOpen: () => void }) {
     return (
-        <li title={description}
-            className={`rounded-xl border p-3 flex flex-col items-center text-center ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
+        <li title={description} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+            className={`rounded-xl border p-3 flex flex-col items-center text-center cursor-pointer transition-colors hover:border-[#E8C15A]/40 ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
             <div className="relative w-full h-40 mb-2">
                 <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)} />
                 {!unlocked && (
@@ -71,6 +73,7 @@ export default function AchievementsPage() {
             group: 'Monthly podium', id: `podium-${tile.place}`, modelPath: `/3d/podium-${tile.place}.glb`, title: tile.title,
             description: wins.length ? `Earned in ${wins.join(', ')}` : `Finish ${['1st', '2nd', '3rd'][tile.place - 1]} in a month on the Level 0 leaderboard`,
             unlocked: wins.length > 0, rarity: tile.rarity,
+            earnedAt: earned.filter(a => isPodiumId(a.achievement_id) && a.achievement_id.endsWith(`-${tile.place}`)).map(a => a.earned_at),
         };
     });
 
@@ -99,10 +102,18 @@ export default function AchievementsPage() {
         })),
     ];
 
+    // Attach the time each regular badge was earned.
+    const earnedTimes = new Map(earned.map(a => [a.achievement_id, a.earned_at]));
+    for (const a of achievements as BadgeCardProps[]) {
+        if (!a.earnedAt && earnedTimes.has(a.id)) a.earnedAt = [earnedTimes.get(a.id)!];
+    }
+    const selected = achievements.find(a => a.id === selectedId) as BadgeCardProps | undefined;
+
     const unlockedCount = achievements.filter(a => a.unlocked).length;
     const progress = (unlockedCount / achievements.length) * 100;
 
     const [animatedProgress, setAnimatedProgress] = useState(0);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     // Dynamic import for Lottie to avoid SSR issues
     useEffect(() => {
@@ -144,7 +155,7 @@ export default function AchievementsPage() {
                                 </div>
                                 <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                     {items.map(achievement => (
-                                        <BadgeCard key={achievement.id} {...achievement} />
+                                        <BadgeCard key={achievement.id} {...achievement} onOpen={() => setSelectedId(achievement.id)} />
                                     ))}
                                 </ul>
                             </section>
@@ -152,6 +163,7 @@ export default function AchievementsPage() {
                     })}
                 </div>
             </div>
+            {selected && <AchievementDetail badge={{ id: selected.id, modelPath: selected.modelPath, title: selected.title, unlocked: selected.unlocked, rarity: selected.rarity, earnedAt: selected.earnedAt, scale: selected.scale }} onClose={() => setSelectedId(null)} />}
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }`}</style>
         </>
     );
