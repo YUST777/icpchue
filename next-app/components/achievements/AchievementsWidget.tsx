@@ -67,13 +67,13 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
     );
 
     return (
-        <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
+        <div className="@container relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
             <div className="bg-[#0f0f0f] rounded-[23px] p-5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-                {/* One row on desktop: count and progress | the best badges | actions. Stacked on phones. */}
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
-                    <div className="lg:w-64 shrink-0">
+                {/* One row when the card is wide (count | best badges | actions); stacked when it sits in a half-width column. */}
+                <div className="relative z-10 flex flex-col @2xl:flex-row @2xl:items-center gap-5 @2xl:gap-8">
+                    <div className="@2xl:w-64 shrink-0">
                         <div className="flex items-baseline gap-2 mb-3">
                             <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
                             <span className="text-gray-500 text-sm font-medium">/ {total} Unlocked</span>
@@ -83,18 +83,18 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
                         </div>
                     </div>
 
-                    <ul className="grid grid-cols-5 lg:flex gap-2 lg:gap-3 lg:flex-1 lg:justify-center">
-                        {entries.slice(0, PREVIEW).map(e => tile(e, 'lg:w-16'))}
+                    <ul className="grid grid-cols-5 @2xl:flex gap-2 @2xl:gap-3 @2xl:flex-1 @2xl:justify-center">
+                        {entries.slice(0, PREVIEW).map(e => tile(e, '@2xl:w-16'))}
                     </ul>
 
-                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:w-56 shrink-0">
+                    <div className="flex flex-col @md:flex-row @2xl:flex-col gap-2 @2xl:w-56 shrink-0">
                         {rest.length > 0 && (
                             <button type="button" onClick={() => setShowAll(v => !v)}
-                                className="h-10 px-4 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer sm:flex-1 lg:flex-none">
+                                className="h-10 px-4 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer @md:flex-1 @2xl:flex-none">
                                 {showAll ? 'Show less' : `Show all ${entries.length} badges`}
                             </button>
                         )}
-                        <Link href="/dashboard/achievements" className="h-10 px-4 rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn flex items-center justify-between sm:flex-1 lg:flex-none">
+                        <Link href="/dashboard/achievements" className="h-10 px-4 rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn flex items-center justify-between @md:flex-1 @2xl:flex-none">
                             <span className="text-xs font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
                             <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
                         </Link>
@@ -102,7 +102,7 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
                 </div>
 
                 {showAll && (
-                    <ul className="relative z-10 grid grid-cols-6 sm:grid-cols-10 lg:grid-cols-14 gap-2 mt-5 pt-5 border-t border-white/5">
+                    <ul className="relative z-10 grid grid-cols-6 @md:grid-cols-10 @2xl:grid-cols-14 gap-2 mt-5 pt-5 border-t border-white/5">
                         {rest.map(e => tile(e, ''))}
                     </ul>
                 )}

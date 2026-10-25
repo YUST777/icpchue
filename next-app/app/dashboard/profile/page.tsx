@@ -12,7 +12,6 @@ import { UserProfile } from '@/lib/types';
 
 // Extracted Components
 import { ProfileEditModal } from '@/components/dashboard/profile/ProfileEditModal';
-import { SocialLinks } from '@/components/dashboard/profile/SocialLinks';
 import { LeaderboardWidget } from '@/components/dashboard/profile/LeaderboardWidget';
 import { IdentityCard } from '@/components/dashboard/profile/IdentityCard';
 
@@ -255,34 +254,25 @@ export default function ProfilePage() {
 
                 <div className="flex flex-col gap-6">
                     {/* Top Row: Identity + Status */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <IdentityCard
-                            user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
-                            profile={profile}
-                            profilePicture={profilePicture}
-                            uploadingPfp={uploadingPfp}
-                            pfpError={pfpError}
-                            fileInputRef={fileInputRef}
-                            handlePfpUpload={handlePfpUpload}
-                            handleDeletePfp={handleDeletePfp}
-                            rating={rating}
-                            rank={rank}
-                        />
-
-                        <div className="space-y-6 flex flex-col">
-                            <LeaderboardWidget sheetsRank={sheetsRank} />
-                            <SocialLinks
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        <div className="flex flex-col gap-6">
+                            <IdentityCard
+                                user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
                                 profile={profile}
-                                onEdit={openEditModal}
-                                onDelete={handleDelete}
+                                profilePicture={profilePicture}
+                                uploadingPfp={uploadingPfp}
+                                pfpError={pfpError}
+                                fileInputRef={fileInputRef}
+                                handlePfpUpload={handlePfpUpload}
+                                handleDeletePfp={handleDeletePfp}
+                                rating={rating}
+                                rank={rank}
                             />
-                        </div>
-
-                        <div className="w-full">
                             <CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} />
                         </div>
 
-                        <div className="w-full lg:col-span-2">
+                        <div className="flex flex-col gap-6">
+                            <LeaderboardWidget sheetsRank={sheetsRank} />
                             <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>
