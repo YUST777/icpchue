@@ -14,6 +14,8 @@ interface Badge3DProps {
     scale?: number;
     spin?: boolean;
     compact?: boolean;
+    /** Turn freely in every direction under a finger. Only for places where the page does not scroll, such as the badge card. */
+    free?: boolean;
     /** Picture shown instead of the scene when WebGL is unavailable or the model fails. */
     fallbackSrc?: string;
 }
@@ -136,7 +138,7 @@ function LoadingBadge({ pct, src }: { pct: number | null; src?: string }) {
 }
 
 
-export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
+export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, free = false, fallbackSrc }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
     const [attempt, setAttempt] = useState(0);
     const [pct, setPct] = useState<number | null>(0);
@@ -159,10 +161,10 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!url || !canvas) return;
-        const t = acquireTile({ canvas, url, scale, spin, onReady: () => setReady(true), onError: () => setFailed(true) });
+        const t = acquireTile({ canvas, url, scale, spin, free, onReady: () => setReady(true), onError: () => setFailed(true) });
         tile.current = t;
         return () => { t.dispose(); tile.current = null; setReady(false); };
-    }, [url, scale, spin]);
+    }, [url, scale, spin, free]);
 
     useEffect(() => { tile.current?.setVisible(visible); }, [visible, ready]);
 
@@ -179,7 +181,7 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                     {!ready && (url ? <BadgeFallback src={fallbackSrc} /> : <LoadingBadge pct={pct} src={fallbackSrc} />)}
                     {url && (
                         <canvas ref={canvasRef}
-                            className={`absolute inset-0 h-full w-full touch-pan-y cursor-grab active:cursor-grabbing transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'} ${!unlocked ? 'grayscale !opacity-45' : ''}`} />
+                            className={`absolute inset-0 h-full w-full ${free ? 'touch-none' : 'touch-pan-y'} cursor-grab active:cursor-grabbing transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'} ${!unlocked ? 'grayscale !opacity-45' : ''}`} />
                     )}
                 </>
             )}

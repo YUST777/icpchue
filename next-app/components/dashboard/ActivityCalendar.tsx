@@ -16,13 +16,13 @@ export function ActivityCalendar({ weeks, totalSubmissions, todayStr }: Activity
     const submissionsInView = weeks.reduce((total, week) => total + week.reduce((weekTotal, day) => weekTotal + day.count, 0), 0);
 
     return (
-        <div className="bg-[#0d0d0d] rounded-2xl border border-white/5 p-5 w-full max-w-full">
+        <div className="bg-[#0d0d0d] rounded-2xl border border-white/5 p-4 md:p-5 w-full max-w-full">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2 sm:gap-0 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 md:mb-4 gap-2 sm:gap-0 relative z-10">
                 <span className="text-sm font-medium text-white">
                     {submissionsInView} submissions in the last 3 months
                 </span>
-                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-white/40">
                     <span>Less</span>
                     {[0.1, 0.3, 0.5, 0.7, 1].map((o, i) => (
                         <div

@@ -71,9 +71,21 @@ export default function SheetsPage() {
 
     return (
         <>
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-6 md:space-y-8 animate-fade-in">
+                {/* Phones get a one-line header; the big intro block is for larger screens */}
+                <div className="md:hidden flex items-center justify-between gap-3">
+                    <h1 className="text-xl font-bold text-[#F2F2F2]">Training Curriculum</h1>
+                    <button
+                        onClick={() => setShowCredits(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] hover:bg-[#E8C15A]/20 transition-colors text-xs font-bold"
+                    >
+                        <Info size={16} />
+                        <span>Credits</span>
+                    </button>
+                </div>
+
                 {/* Hero Section */}
-                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
+                <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-[#E8C15A]/10">
@@ -117,7 +129,7 @@ export default function SheetsPage() {
                                     >
                                         <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
                                             <div className="bg-[#0f0f0f] rounded-[23px] relative overflow-hidden h-full flex flex-col">
-                                                <div className="relative h-48 w-full overflow-hidden">
+                                                <div className="relative h-32 md:h-48 w-full overflow-hidden">
                                                     <img
                                                         src={level.image}
                                                         alt={level.name}
