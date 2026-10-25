@@ -15,10 +15,14 @@ export function factoryNumber(rowId: number | string): string {
     return `HUE-${String(id).padStart(6, '0')}-${(h & 0xfff).toString(16).toUpperCase().padStart(3, '0')}`;
 }
 
-/** Serial = place among everyone who earned the badge, not counting the uncounted accounts. */
+/**
+ * Serial = place among everyone who earned the badge, first earner first. Order is the real
+ * earned time, then who joined first, then record id, so ties are settled the same way every time.
+ */
 export const SERIAL_CTE = (excludedParam: string) => `
     ranked AS (
-        SELECT id, ROW_NUMBER() OVER (PARTITION BY achievement_id ORDER BY earned_at, id)::int AS serial
-        FROM user_achievements
-        WHERE user_id <> ALL(${excludedParam}::int[])
+        SELECT ua.id, ROW_NUMBER() OVER (PARTITION BY ua.achievement_id ORDER BY ua.earned_at, u.created_at, ua.id)::int AS serial
+        FROM user_achievements ua
+        JOIN users u ON u.id = ua.user_id
+        WHERE ua.user_id <> ALL(${excludedParam}::int[])
     )`;

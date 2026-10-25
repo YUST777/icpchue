@@ -1,6 +1,7 @@
 import { query, withTransaction } from '../db/db';
 import { getCache, invalidateCache, setCache } from '../cache/cache';
 import { CF_RANK_BADGES, SOLVED_BADGES, getAchievementMeta } from '../achievements/catalog';
+import { earnedTimes } from './achievement-times';
 import { ecpcTeamUserIds } from '../leaderboard/cohort';
 import { STREAK_TIERS } from '../achievements/catalog';
 
@@ -16,12 +17,12 @@ export const ACHIEVEMENTS = {
  * Grants an achievement to a user if they don't already have it.
  * Also handles updating the 'seen' status logic if needed.
  */
-export async function grantAchievement(userId: number | string, achievementId: string, notify = true) {
+export async function grantAchievement(userId: number | string, achievementId: string, notify = true, earnedAt?: Date) {
     try {
         // 1. Insert into user_achievements if user is not flagged
         const result = await query(
             `INSERT INTO user_achievements (user_id, achievement_id, earned_at, seen)
-             SELECT $1, $2, NOW(), FALSE
+             SELECT $1, $2, COALESCE($3::timestamptz, NOW()), FALSE
              WHERE EXISTS (
                  SELECT 1 FROM users 
                  WHERE id = $1 
@@ -30,7 +31,7 @@ export async function grantAchievement(userId: number | string, achievementId: s
              )
              ON CONFLICT (user_id, achievement_id) DO NOTHING
              RETURNING id`,
-            [userId, achievementId]
+            [userId, achievementId, earnedAt ?? null]
         );
 
         const wasGranted = result.rows.length > 0;
@@ -161,7 +162,8 @@ export async function checkProgressAchievements(userId: number, role?: string) {
 
     let granted = 0;
     const newlyGranted: string[] = [];
-    for (const id of earned) if (await grantAchievement(userId, id, false)) newlyGranted.push(id);
+    const times = await earnedTimes(Number(userId)).catch(() => new Map<string, Date>());
+    for (const id of earned) if (await grantAchievement(userId, id, false, times.get(id))) newlyGranted.push(id);
     granted = newlyGranted.length;
     // One bell entry per batch, not one per badge.
     const names = newlyGranted.map(id => getAchievementMeta(id)?.name).filter((n): n is string => Boolean(n));
