@@ -214,7 +214,7 @@ export default function CodeWorkspace({
 
         // Monaco handles paste inside its own textarea, so the page-level
         // 'paste' listener never saw it. Report it for behaviour tracking.
-        editor.onDidPaste((e) => {
+        editor.onDidPaste((e: { range: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number } }) => {
             const text = editor.getModel()?.getValueInRange(e.range) || '';
             window.dispatchEvent(new CustomEvent('icpchue:code-paste', { detail: { text } }));
         });
