@@ -3,7 +3,7 @@ import { Presentation, Target, BookOpen, ExternalLink, ChevronRight } from 'luci
 import SlideViewer from '@/components/sessions/SlideViewer';
 
 /** Set this to the total number of slides once PPTX is converted. */
-const SLIDE_COUNT = 0;
+const SLIDE_COUNT = 22;
 
 /** Assignment Part 1: The remaining 10 problems of Level 0, Sheet A (Q to Z). */
 const SHEET_A_ASSIGNMENT = [
