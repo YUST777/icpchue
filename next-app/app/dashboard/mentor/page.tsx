@@ -16,9 +16,6 @@ interface TraineeSummary {
     stuck_trainees: number;
     flagged_trainees: number;
     inactive_trainees: number;
-    whatsapp_joined?: number;
-    whatsapp_opened?: number;
-    whatsapp_never_opened?: number;
     level_distribution: {
         level_0: number;
         level_1: number;
@@ -64,10 +61,6 @@ interface TraineeItem {
     status_badge: 'ACTIVE' | 'STUCK' | 'FLAGGED' | 'BANNED' | 'INACTIVE';
     mentor_group?: string | null;
     mentor_name?: string | null;
-    whatsapp_status?: 'joined' | 'opened' | 'never_opened';
-    whatsapp_open_count?: number;
-    whatsapp_join_clicks?: number;
-    whatsapp_last_opened_at?: string | null;
     /** Code-integrity verdict: same code as other students, AI trap, copy-then-paste. */
     integrity?: 'likely' | 'suspicious' | null;
 }
@@ -79,7 +72,6 @@ export default function MentorTraineesDirectoryPage() {
     const [search, setSearch] = useState('');
     const [levelFilter, setLevelFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'inactive' | 'active' | 'stuck'>('all');
-    const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'joined' | 'opened' | 'never_opened'>('all');
     const [timeRange, setTimeRange] = useState('all');
     const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'oldest_active' | 'streak_desc' | 'name_asc'>('solves_desc');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -106,7 +98,6 @@ export default function MentorTraineesDirectoryPage() {
             if (search) params.set('search', search);
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (statusFilter !== 'all') params.set('status', statusFilter);
-            if (whatsappFilter !== 'all') params.set('whatsapp', whatsappFilter);
             if (timeRange !== 'all') params.set('timeRange', timeRange);
             if (sortBy) params.set('sortBy', sortBy);
             if (mentorFilter) params.set('mentor', mentorFilter);
@@ -145,12 +136,12 @@ export default function MentorTraineesDirectoryPage() {
         }, 200);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, levelFilter, statusFilter, whatsappFilter, timeRange, sortBy, mentorFilter, page]);
+    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter, page]);
 
     // Any filter change starts again from the first page.
     useEffect(() => {
         setPage(1);
-    }, [search, levelFilter, statusFilter, whatsappFilter, timeRange, sortBy, mentorFilter]);
+    }, [search, levelFilter, statusFilter, timeRange, sortBy, mentorFilter]);
 
     const formatLastActive = (isoStr?: string | null) => {
         if (!isoStr) return 'Never';
@@ -304,21 +295,6 @@ export default function MentorTraineesDirectoryPage() {
                         <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                     </div>
 
-                    {/* WhatsApp Filter */}
-                    <div className="relative">
-                        <select
-                            value={whatsappFilter}
-                            onChange={(e) => setWhatsappFilter(e.target.value as any)}
-                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
-                        >
-                            <option value="all">WhatsApp: All</option>
-                            <option value="joined">WhatsApp: Joined</option>
-                            <option value="opened">WhatsApp: Opened /group Only</option>
-                            <option value="never_opened">WhatsApp: Never Opened</option>
-                        </select>
-                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                    </div>
-
                     {/* Time Window Filter */}
                     <div className="relative">
                         <select
@@ -422,19 +398,6 @@ export default function MentorTraineesDirectoryPage() {
                                                 {t.mentor_group}
                                             </span>
                                         )}
-                                        {t.whatsapp_status === 'joined' ? (
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Joined WhatsApp">
-                                                <CheckCircle2 size={10} className="text-emerald-400" /> WhatsApp
-                                            </span>
-                                        ) : t.whatsapp_status === 'opened' ? (
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20" title={`Opened /group ${t.whatsapp_open_count}x`}>
-                                                <Clock size={10} className="text-amber-400" /> Opened link
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center text-[10px] font-medium text-red-400/80 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20" title="Never opened /group">
-                                                No /group
-                                            </span>
-                                        )}
                                     </div>
 
                                     {t.integrity ? (
@@ -510,7 +473,7 @@ export default function MentorTraineesDirectoryPage() {
                                 <tr className="border-b border-white/[0.08] bg-white/[0.02] text-white/40 text-[10px] font-semibold uppercase tracking-wider">
                                     <th className="py-3 px-4">Trainee</th>
                                     <th className="py-3 px-4">Level</th>
-                                    <th className="py-3 px-4">WhatsApp Group</th>
+                                    <th className="py-3 px-4">Group</th>
                                     <th className="py-3 px-4">Codeforces</th>
                                     <th className="py-3 px-4 text-center">Solved</th>
                                     <th className="py-3 px-4 text-center">Streak</th>
@@ -539,19 +502,6 @@ export default function MentorTraineesDirectoryPage() {
                                         <td className="py-3 px-4">
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[11px] font-medium text-white/80">{t.mentor_group || '-'}</span>
-                                                {t.whatsapp_status === 'joined' ? (
-                                                    <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 w-fit">
-                                                        <CheckCircle2 size={9} /> Joined
-                                                    </span>
-                                                ) : t.whatsapp_status === 'opened' ? (
-                                                    <span className="inline-flex items-center gap-1 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 w-fit">
-                                                        <Clock size={9} /> Opened ({t.whatsapp_open_count}x)
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[9px] text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded-full border border-red-500/20 w-fit">
-                                                        Not opened
-                                                    </span>
-                                                )}
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 font-mono text-white/60">
