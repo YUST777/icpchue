@@ -95,6 +95,7 @@ export default function AchievementsPage() {
             group: 'Level 0 sheets', id: sheet.id, modelPath: `/3d/${sheet.id}.glb`, scale: 2, title: ACHIEVEMENT_META[sheet.id].name, description: ACHIEVEMENT_META[sheet.id].desc,
             unlocked: earnedIds.has(sheet.id), rarity: ACHIEVEMENT_META[sheet.id].tier,
         })),
+        { group: 'Board', id: 'dev', modelPath: '/3d/dev.glb', title: ACHIEVEMENT_META.dev.name, description: ACHIEVEMENT_META.dev.desc, unlocked: earnedIds.has('dev'), rarity: ACHIEVEMENT_META.dev.tier },
         { group: 'Board', id: 'mentor', modelPath: '/3d/mentor.glb', scale: 2, title: ACHIEVEMENT_META.mentor.name, description: ACHIEVEMENT_META.mentor.desc, unlocked: earnedIds.has('mentor'), rarity: ACHIEVEMENT_META.mentor.tier },
         ...PROGRESS_BADGES.map(id => ({
             group: id.startsWith('disciplined') ? 'Discipline' : 'Streaks',
