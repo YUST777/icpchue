@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Lock } from 'lucide-react';
+import { Trophy, Lock, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
@@ -31,8 +31,20 @@ const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
 
 function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, onOpen }: BadgeCardProps & { onOpen: () => void }) {
     return (
-        <li title={description} onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-            className={`rounded-xl border p-3 flex flex-col items-center text-center cursor-pointer transition-colors hover:border-[#E8C15A]/40 ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
+        <li
+            title={description}
+            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-colors ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}
+        >
+            <button
+                type="button"
+                onClick={onOpen}
+                title="How to get this achievement"
+                aria-label={`How to get ${title}`}
+                className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 hover:bg-white/[0.1] transition-all cursor-pointer"
+            >
+                <Info size={14} />
+            </button>
+
             <div className="relative w-full h-40 mb-2">
                 <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)} />
                 {!unlocked && (
