@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 
@@ -16,6 +17,11 @@ const REWARDS = [
  * The three monthly podium badges. A bottom sheet on phones, a centred dialog on larger screens.
  */
 export default function PodiumRewards({ onClose }: { onClose: () => void }) {
+    // Rendered into <body>: the page content is animated with a transform, which would otherwise
+    // become the containing block for this fixed overlay and pin it to the bottom of the page.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onKey);
@@ -24,10 +30,11 @@ export default function PodiumRewards({ onClose }: { onClose: () => void }) {
         return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = previous; };
     }, [onClose]);
 
-    return (
-        <div className="fixed inset-0 z-[999999] bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+    if (!mounted) return null;
+    return createPortal(
+        <div className="fixed inset-0 z-[2147483000] bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
             <div role="dialog" aria-modal="true" aria-label="Monthly podium badges" onClick={e => e.stopPropagation()}
-                className="w-full sm:max-w-2xl max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-white/[0.08] bg-[#121214] px-5 pt-3 pb-6 sm:p-6 animate-[drawerUp_0.32s_cubic-bezier(0.32,0.72,0,1)] sm:animate-none">
+                className="w-full sm:max-w-2xl max-h-[62vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-white/[0.08] bg-[#121214] px-5 pt-3 pb-6 sm:p-6 animate-[drawerUp_0.32s_cubic-bezier(0.32,0.72,0,1)] sm:animate-none">
                 <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" aria-hidden />
                 <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
@@ -55,6 +62,7 @@ export default function PodiumRewards({ onClose }: { onClose: () => void }) {
                 </ul>
                 <style>{`@keyframes drawerUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
