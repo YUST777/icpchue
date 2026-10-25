@@ -1,5 +1,5 @@
 import { query, withTransaction } from '../db/db';
-import { invalidateCache } from '../cache/cache';
+import { getCache, invalidateCache, setCache } from '../cache/cache';
 import { CF_RANK_BADGES, SOLVED_BADGES, getAchievementMeta } from '../achievements/catalog';
 import { ecpcTeamUserIds } from '../leaderboard/cohort';
 import { STREAK_TIERS } from '../achievements/catalog';
@@ -139,7 +139,7 @@ export async function checkProgressAchievements(userId: number, role?: string) {
         [userId]
     )).rows[0]?.n || 0);
 
-    const earned: string[] = [];
+    const earned: string[] = ['welcome'];
     for (const badge of SOLVED_BADGES) if (solvedTotal >= badge.count) earned.push(badge.id);
     const skillTotal = Number(skills.rows[0]?.total || 0);
     if (skillTotal > 0 && Number(skills.rows[0]?.solved || 0) >= Math.ceil(skillTotal * 0.8)) earned.push('level0-skills');
@@ -162,6 +162,38 @@ export async function checkProgressAchievements(userId: number, role?: string) {
     let granted = 0;
     for (const id of earned) if (await grantAchievement(userId, id)) granted++;
     return granted;
+}
+
+/**
+ * Runs the progress check for every eligible member, so badges arrive even if
+ * the member never opens the site. Works through users in id order and stops at
+ * the time budget; the next run carries on from the saved cursor and wraps round.
+ */
+export async function grantProgressAchievementsForAll(budgetMs = 45_000) {
+    const started = Date.now();
+    const cursorKey = 'achievements:backfill-cursor';
+    let cursor = Number((await getCache<number>(cursorKey)) ?? 0);
+    let checked = 0;
+    let granted = 0;
+    let wrapped = false;
+
+    while (Date.now() - started < budgetMs) {
+        const batch = await query(
+            `SELECT id, role FROM users
+             WHERE id > $1 AND (is_shadow_banned = FALSE OR is_shadow_banned IS NULL)
+             ORDER BY id LIMIT 8`,
+            [cursor]
+        );
+        if (batch.rows.length === 0) { cursor = 0; wrapped = true; break; }
+        const counts = await Promise.all(batch.rows.map((u: { id: number; role: string }) =>
+            checkProgressAchievements(Number(u.id), u.role).catch(() => 0)));
+        granted += counts.reduce((a: number, b: number) => a + b, 0);
+        checked += batch.rows.length;
+        cursor = Number(batch.rows[batch.rows.length - 1].id);
+    }
+
+    await setCache(cursorKey, cursor, 7 * 24 * 3600);
+    return { checked, granted, wrapped, cursor };
 }
 
 /**
