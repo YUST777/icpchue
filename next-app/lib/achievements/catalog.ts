@@ -49,4 +49,37 @@ for (const sheet of LEVEL0_SHEET_BADGES) {
     };
 }
 
+// Codeforces ranks, lowest first. A badge is earned once the student's best rating reaches `min`.
+export const CF_RANK_BADGES = [
+    { id: 'cf-newbie', name: 'Newbie', min: 1, tier: 'common' },
+    { id: 'cf-pupil', name: 'Pupil', min: 1200, tier: 'common' },
+    { id: 'cf-specialist', name: 'Specialist', min: 1400, tier: 'rare' },
+    { id: 'cf-expert', name: 'Expert', min: 1600, tier: 'rare' },
+    { id: 'cf-candidate-master', name: 'Candidate Master', min: 1900, tier: 'rare' },
+    { id: 'cf-master', name: 'Master', min: 2100, tier: 'legendary' },
+    { id: 'cf-international-master', name: 'International Master', min: 2300, tier: 'legendary' },
+    { id: 'cf-grandmaster', name: 'Grandmaster', min: 2400, tier: 'legendary' },
+    { id: 'cf-international-grandmaster', name: 'International Grandmaster', min: 2600, tier: 'legendary' },
+    { id: 'cf-legendary-grandmaster', name: 'Legendary Grandmaster', min: 3000, tier: 'legendary' },
+] as const;
+
+for (const rank of CF_RANK_BADGES) {
+    ACHIEVEMENT_META[rank.id] = {
+        name: `Codeforces ${rank.name}`,
+        desc: rank.min === 1 ? 'Got a Codeforces rating' : `Reached ${rank.min}+ rating on Codeforces`,
+        imageSrc: `${IMG}badges/${rank.id}.webp`,
+        tier: rank.tier,
+    };
+}
+
+// Season badges: being part of ICPC HUE in that year.
+export const SEASON_BADGES = [
+    { id: 'year-2026', name: 'Class of 2026', desc: 'Trained with ICPC HUE in 2026', tier: 'rare' },
+    { id: 'year-2027', name: 'Class of 2027', desc: 'Joined ICPC HUE for 2027', tier: 'rare' },
+] as const;
+
+for (const season of SEASON_BADGES) {
+    ACHIEVEMENT_META[season.id] = { name: season.name, desc: season.desc, imageSrc: `${IMG}badges/${season.id}.webp`, tier: season.tier };
+}
+
 export const STREAK_TIERS = [3, 7, 14, 30, 60] as const;
