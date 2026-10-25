@@ -11,15 +11,21 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // Award newly earned progress badges, at most every 2 minutes per user.
-        await getCachedData(`user:${authResult.id}:achievement-check`, 120, async () => ({
+        // Award newly earned progress badges, at most every 30 seconds per user.
+        await getCachedData(`user:${authResult.id}:achievement-check`, 30, async () => ({
             granted: await checkProgressAchievements(authResult.id, authResult.role),
         }));
 
         const cacheKey = `user:${authResult.id}:achievements`;
         const data = await getCachedData(cacheKey, 300, async () => {
             const result = await query(
-                `SELECT id, achievement_id, earned_at, seen FROM user_achievements WHERE user_id = $1 ORDER BY seen ASC, earned_at DESC`,
+                `WITH ranked AS (
+                     SELECT id, ROW_NUMBER() OVER (PARTITION BY achievement_id ORDER BY earned_at, id)::int AS serial
+                     FROM user_achievements
+                 )
+                 SELECT ua.id, ua.achievement_id, ua.earned_at, ua.seen, r.serial
+                 FROM user_achievements ua JOIN ranked r ON r.id = ua.id
+                 WHERE ua.user_id = $1 ORDER BY ua.seen ASC, ua.earned_at DESC`,
                 [authResult.id]
             );
             return { achievements: result.rows };
