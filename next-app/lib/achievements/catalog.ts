@@ -108,3 +108,34 @@ export function getAchievementMeta(id: string): AchievementMeta | undefined {
         tier: place === 1 ? 'legendary' : 'rare',
     };
 }
+
+export interface AchievementHowTo { how: string; href?: string; cta?: string }
+
+/** Plain-language steps for earning an achievement, and where on the site to do it. */
+export function getAchievementHowTo(id: string): AchievementHowTo {
+    const sheets = { href: '/dashboard/sheets', cta: 'Open training sheets' };
+    if (id === 'welcome') return { how: 'Given automatically when you join ICPC HUE.' };
+    if (id === 'instructor') return { how: 'Given to the instructors who teach ICPC HUE.' };
+    if (id === 'mentor') return { how: 'Given to the mentors who guide trainees at ICPC HUE.' };
+    if (id === 'rank1-march-2026') return { how: 'Awarded for holding Rank 1 on the leaderboard in March 2026. That campaign has ended, so it is no longer available.' };
+    if (id === 'hello-world') return { how: 'Get your first accepted solution on any training problem.', ...sheets };
+    if (id === 'comeback') return { how: 'Solve a problem again after a week away from the sheets.', ...sheets };
+    const streak = /^streak-(\d+)$/.exec(id);
+    if (streak) return { how: `Solve at least one training problem every day for ${streak[1]} days in a row.`, ...sheets };
+    if (id === 'disciplined-7') return { how: 'Fill in your study log in the discipline tracker 7 days in a row.', href: '/dashboard/discipline', cta: 'Open the study log' };
+    if (id === 'disciplined-program') return { how: 'Log every single day of the 8-week program in the discipline tracker.', href: '/dashboard/discipline', cta: 'Open the study log' };
+    const sheet = LEVEL0_SHEET_BADGES.find(x => x.id === id);
+    if (sheet) return { how: `Solve every problem in the Level 0 "${sheet.name}" sheet.`, ...sheets };
+    const cf = CF_RANK_BADGES.find(x => x.id === id);
+    if (cf) return {
+        how: cf.min === 1
+            ? 'Link your Codeforces handle and take part in a rated contest to get a rating.'
+            : `Reach a Codeforces rating of ${cf.min} or higher. Link your handle on your profile or use the Verdict Helper extension; ratings refresh every few hours.`,
+        href: '/dashboard/profile', cta: 'Link Codeforces',
+    };
+    if (id === 'year-2026') return { how: 'Be part of the 2026 ICPC HUE season. It is given to everyone who trained with us this year.' };
+    if (id === 'year-2027') return { how: 'Apply for the 2027 Level 0 intake and create your ICPC HUE account.', href: '/apply', cta: 'Apply for Level 0' };
+    const podium = /^podium-(?:\d{4}-\d{2}-)?([123])$/.exec(id);
+    if (podium) return { how: `Finish ${ORDINAL[Number(podium[1]) as 1 | 2 | 3]} in a month on the Level 0 leaderboard by solving the most problems. It is awarded when the month ends.`, href: '/dashboard/leaderboard', cta: 'See the leaderboard' };
+    return { how: ACHIEVEMENT_META[id]?.desc ?? '' };
+}
