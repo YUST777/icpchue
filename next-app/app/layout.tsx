@@ -9,6 +9,7 @@ import AchievementToast from "@/components/achievements/AchievementToast";
 import { Analytics } from "@vercel/analytics/next";
 import ClientErrorReporter from "@/components/core/ClientErrorReporter";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import MicrosoftClarity from "@/components/core/MicrosoftClarity";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -271,6 +272,7 @@ export default async function RootLayout({
           {children}
           <Analytics />
           <SpeedInsights />
+          <MicrosoftClarity />
           {/* Cloudflare Web Analytics. DNS is not proxied through Cloudflare, so the
               beacon must be installed manually (automatic injection never runs). */}
           <Script
