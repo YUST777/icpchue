@@ -25,6 +25,13 @@ const nextConfig: NextConfig = {
 
     async redirects() {
         return [
+            // The 2025 recap pages are retired.
+            { source: '/2025/:path*', destination: '/', permanent: false },
+            { source: '/2025', destination: '/', permanent: false },
+            { source: '/Dec/:path*', destination: '/', permanent: false },
+            { source: '/Dec', destination: '/', permanent: false },
+            { source: '/card', destination: '/', permanent: false },
+            { source: '/fq', destination: '/', permanent: false },
             {
                 source: '/joinnow',
                 destination: '/register',
@@ -105,24 +112,6 @@ const nextConfig: NextConfig = {
                 permanent: true,
             },
         ];
-    },
-
-    async rewrites() {
-        return [
-            // Internal Redirects / Shortlinks
-            {
-                source: '/2025',
-                destination: '/Dec/2025',
-            },
-            {
-                source: '/2025/dec',
-                destination: '/Dec',
-            },
-            {
-                source: '/2025/:path*',
-                destination: '/Dec/:path*',
-            },
-        ]
     },
 };
 
