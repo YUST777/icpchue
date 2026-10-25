@@ -75,6 +75,26 @@ for (const rank of CF_RANK_BADGES) {
     };
 }
 
+// Total problems solved across all training sheets (646 exist; the best student so far has 171).
+export const SOLVED_BADGES = [
+    { id: 'solved-5', count: 5, tier: 'common' },
+    { id: 'solved-25', count: 25, tier: 'common' },
+    { id: 'solved-50', count: 50, tier: 'rare' },
+    { id: 'solved-75', count: 75, tier: 'rare' },
+    { id: 'solved-100', count: 100, tier: 'rare' },
+    { id: 'solved-150', count: 150, tier: 'legendary' },
+    { id: 'solved-250', count: 250, tier: 'legendary' },
+] as const;
+
+for (const badge of SOLVED_BADGES) {
+    ACHIEVEMENT_META[badge.id] = {
+        name: `${badge.count} Problems Solved`,
+        desc: `Solved ${badge.count} problems on the training sheets`,
+        imageSrc: `${IMG}badges/${badge.id}.webp`,
+        tier: badge.tier,
+    };
+}
+
 // Season badges: being part of ICPC HUE in that year.
 export const SEASON_BADGES = [
     { id: 'year-2026', name: 'Class of 2026', desc: 'Trained with ICPC HUE in 2026', tier: 'rare' },
@@ -119,6 +139,8 @@ export function getAchievementHowTo(id: string): AchievementHowTo {
     const sheets = { href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'welcome') return { how: 'Given automatically when you join ICPC HUE.' };
     if (id === 'instructor') return { how: 'Given to the instructors who teach ICPC HUE.' };
+    const solvedBadge = SOLVED_BADGES.find(x => x.id === id);
+    if (solvedBadge) return { how: `Solve ${solvedBadge.count} different problems on the training sheets. Every problem counts once, however many times you submit it.`, href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'ecpc-2026') return { how: 'Take part in the ECPC 2026 qualification as one of the ICPC HUE teams registered on the team page. Everyone on a registered team gets the red ACPC shirt.' };
     if (id === 'level0-skills') return { how: 'Solve 80% of the problems in the seven Level 0 topic sheets (Data Types & Conditions through Recursion). The General Easy, Medium and Hard sheets do not count.', href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'dev') return { how: 'Get a pull request merged into the icpchue.com repository on GitHub. Open an issue or a PR, and once it is merged the badge is added.', href: 'https://github.com/YUST777/icpchue', cta: 'Open the repository' };

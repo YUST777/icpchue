@@ -1,6 +1,6 @@
 import { query, withTransaction } from '../db/db';
 import { invalidateCache } from '../cache/cache';
-import { CF_RANK_BADGES } from '../achievements/catalog';
+import { CF_RANK_BADGES, SOLVED_BADGES } from '../achievements/catalog';
 import { ecpcTeamUserIds } from '../leaderboard/cohort';
 import { STREAK_TIERS } from '../achievements/catalog';
 
@@ -131,7 +131,14 @@ export async function checkProgressAchievements(userId: number, role?: string) {
         [userId]
     );
 
+    // Total distinct problems solved on the training sheets.
+    const solvedTotal = Number((await query(
+        `SELECT COUNT(DISTINCT sheet_id || ':' || problem_id) AS n FROM user_progress WHERE user_id = $1 AND status = 'SOLVED'`,
+        [userId]
+    )).rows[0]?.n || 0);
+
     const earned: string[] = [];
+    for (const badge of SOLVED_BADGES) if (solvedTotal >= badge.count) earned.push(badge.id);
     const skillTotal = Number(skills.rows[0]?.total || 0);
     if (skillTotal > 0 && Number(skills.rows[0]?.solved || 0) >= Math.ceil(skillTotal * 0.8)) earned.push('level0-skills');
     if ((await ecpcTeamUserIds()).includes(Number(userId))) earned.push('ecpc-2026');
