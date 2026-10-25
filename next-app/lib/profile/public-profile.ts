@@ -3,7 +3,7 @@ import { createBlindIndex, decrypt } from '@/lib/security/encryption';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { formatDisplayName } from '@/lib/names';
-import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
+import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
 export interface PublicSheetProblem {
@@ -52,9 +52,6 @@ export type PublicProfileResult =
     | { status: 'private' }
     | { status: 'not_found' };
 
-const ACHIEVEMENT_INFO: Record<string, Pick<PublicAchievement, 'name' | 'description' | 'rarity'>> = Object.fromEntries(
-    Object.entries(ACHIEVEMENT_META).map(([id, m]) => [id, { name: m.name, description: m.desc, rarity: m.tier }])
-);
 
 const RARITY_ORDER = { legendary: 3, rare: 2, common: 1 } as const;
 
@@ -78,7 +75,7 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
         const columns = `u.id, u.role, u.profile_visibility, u.show_public_profile, u.created_at, u.application_id,
                     u.profile_picture, u.codeforces_data, u.codeforces_handle, u.is_shadow_banned, u.cheating_flags,
                     to_jsonb(u) -> 'social_links' AS social_links`;
-        let userResult = await query(
+        const userResult = await query(
             `SELECT ${columns}
              FROM users u
              LEFT JOIN auth.users au ON au.id = u.supabase_uid
@@ -152,8 +149,10 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
         const cfHandle: string | null = user.codeforces_handle || cf?.handle || null;
 
         const achievements: PublicAchievement[] = (achievementResult.rows as { achievement_id: string; earned_at: string }[])
-            .filter(r => ACHIEVEMENT_INFO[r.achievement_id])
-            .map(r => ({ id: r.achievement_id, ...ACHIEVEMENT_INFO[r.achievement_id], earnedAt: new Date(r.earned_at).toISOString() }))
+            .flatMap(r => {
+                const meta = getAchievementMeta(r.achievement_id);
+                return meta ? [{ id: r.achievement_id, name: meta.name, description: meta.desc, rarity: meta.tier, earnedAt: new Date(r.earned_at).toISOString() }] : [];
+            })
             .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity]);
 
         let name = '';

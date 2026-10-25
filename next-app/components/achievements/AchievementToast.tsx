@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements } from '@/hooks/useAchievements';
-import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
+import { getAchievementMeta } from '@/lib/achievements/catalog';
 
 const AUTH_PAGES = ['/register', '/login', '/forgot-password', '/reset-password'];
 const SHOW_MS = 7000;
@@ -35,7 +35,7 @@ export default function AchievementToast() {
     }, [pathname, isAuthenticated, loading, onAuthPage, refetch]);
 
     const current = unseenAchievement;
-    const meta = current ? ACHIEVEMENT_META[current.achievement_id] : undefined;
+    const meta = current ? getAchievementMeta(current.achievement_id) : undefined;
 
     const dismiss = useCallback(() => {
         if (!current) return;

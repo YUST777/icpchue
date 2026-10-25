@@ -5,7 +5,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Check, ChevronDown, Code, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
-import { ACHIEVEMENT_META } from '@/lib/achievements/catalog';
+import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { SOCIALS, type SocialLinks } from '@/lib/profile/socials';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
@@ -37,13 +37,14 @@ const ACHIEVEMENT_MODELS: Record<string, { modelPath: string; scale?: number; sp
 };
 
 function getBadgeModel(id: string) {
+    const podium = /^podium-\d{4}-\d{2}-([123])$/.exec(id);
+    if (podium) return { modelPath: `/3d/podium-${podium[1]}.glb`, scale: 2, spin: false };
     return ACHIEVEMENT_MODELS[id] || { modelPath: `/3d/${id}.glb`, scale: 2, spin: true };
 }
 
 // Global marketing CSS restyles h1-h3, p and section, so this view sticks to
 // divs/spans and sets every size itself.
 
-const ACHIEVEMENT_IMAGES: Record<string, string> = Object.fromEntries(Object.entries(ACHIEVEMENT_META).map(([id, m]) => [id, m.imageSrc]));
 
 const RARITY_TEXT = { legendary: 'text-[#E8C15A]', rare: 'text-sky-400', common: 'text-white/40' } as const;
 const ROLE_LABEL: Record<string, string> = { owner: 'Founder', instructor: 'Instructor', mentor: 'Mentor' };
@@ -225,7 +226,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                                             spin={badgeModel.spin}
                                             unlocked={true}
                                             compact
-                                            fallbackSrc={ACHIEVEMENT_IMAGES[a.id]}
+                                            fallbackSrc={getAchievementMeta(a.id)?.imageSrc}
                                         />
                                     </div>
                                     <div className="px-2.5 py-2 mt-auto border-t border-white/[0.06] bg-white/[0.02]">

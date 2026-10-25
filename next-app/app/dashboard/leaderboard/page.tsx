@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ExternalLink, Trophy, Code } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
+import MonthlyPodium from '@/components/leaderboard/MonthlyPodium';
 
 // Dynamic import for Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react').then(mod => mod.Lottie), { ssr: false });
@@ -157,6 +158,8 @@ export default function LeaderboardPage() {
                         </button>
                     </div>
                 </div>
+
+                {activeTab === 'level0' && <MonthlyPodium />}
 
                 {/* Leaderboard Table */}
                 <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">

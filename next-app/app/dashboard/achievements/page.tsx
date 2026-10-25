@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
-import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES } from '@/lib/achievements/catalog';
+import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
 
 const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
 
@@ -32,7 +32,7 @@ function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocke
         <li title={description}
             className={`rounded-xl border p-3 flex flex-col items-center text-center ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}>
             <div className="relative w-full h-40 mb-2">
-                <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={badgeImage(id)} />
+                <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)} />
                 {!unlocked && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-6 h-6 text-white/60 drop-shadow" /></div>
                 )}
@@ -59,10 +59,18 @@ export default function AchievementsPage() {
 
     const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
 
+    // Monthly podium badges exist per month, so only the ones this student earned are listed.
+    const podiumBadges = earned.filter(a => isPodiumId(a.achievement_id)).sort((a, b) => b.achievement_id.localeCompare(a.achievement_id)).map(a => {
+        const meta = getAchievementMeta(a.achievement_id)!;
+        const place = a.achievement_id.slice(-1);
+        return { group: 'Monthly podium', id: a.achievement_id, modelPath: `/3d/podium-${place}.glb`, title: meta.name, description: meta.desc, unlocked: true, rarity: meta.tier };
+    });
+
     const achievements = [
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
+        ...podiumBadges,
         ...SEASON_BADGES.map(season => ({
             group: 'Seasons', id: season.id, modelPath: `/3d/${season.id}.glb`, title: ACHIEVEMENT_META[season.id].name, description: ACHIEVEMENT_META[season.id].desc,
             unlocked: earnedIds.has(season.id), rarity: ACHIEVEMENT_META[season.id].tier,
@@ -117,7 +125,7 @@ export default function AchievementsPage() {
 
                 {/* Badges, grouped */}
                 <div className="space-y-8">
-                    {['Milestones', 'Seasons', 'Level 0 sheets', 'Codeforces', 'Streaks', 'Discipline', 'Board'].map(group => {
+                    {['Milestones', 'Monthly podium', 'Seasons', 'Level 0 sheets', 'Codeforces', 'Streaks', 'Discipline', 'Board'].map(group => {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (

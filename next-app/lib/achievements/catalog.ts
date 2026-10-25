@@ -83,3 +83,28 @@ for (const season of SEASON_BADGES) {
 }
 
 export const STREAK_TIERS = [3, 7, 14, 30, 60] as const;
+
+const ORDINAL = { 1: '1st', 2: '2nd', 3: '3rd' } as const;
+
+/** Monthly podium badges have one id per month and place: podium-2026-10-1. */
+const PODIUM_ID = /^podium-(\d{4})-(\d{2})-([123])$/;
+
+export function isPodiumId(id: string): boolean {
+    return PODIUM_ID.test(id);
+}
+
+/** Catalog entry for any achievement id, including the per-month podium badges. */
+export function getAchievementMeta(id: string): AchievementMeta | undefined {
+    const fixed = ACHIEVEMENT_META[id];
+    if (fixed) return fixed;
+    const match = PODIUM_ID.exec(id);
+    if (!match) return undefined;
+    const month = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const place = Number(match[3]) as 1 | 2 | 3;
+    return {
+        name: `${month} · ${ORDINAL[place]} place`,
+        desc: `Finished ${ORDINAL[place]} on the Level 0 leaderboard in ${month}`,
+        imageSrc: `${IMG}badges/podium-${place}.webp`,
+        tier: place === 1 ? 'legendary' : 'rare',
+    };
+}
