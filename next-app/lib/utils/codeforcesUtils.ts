@@ -74,20 +74,6 @@ export function getNavigationBaseUrl(contestId: string, urlType: string, groupId
     }
 }
 
-export function getProblemDescriptionUrl(contestId: string, problemId: string, urlType: string, groupId?: string): string {
-    const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
-    const safeProblemId = Array.isArray(problemId) ? problemId[0] : problemId;
-
-    // Use /contest/ format even if it's a group contest, as Codeforces sometimes 
-    // allow public viewing via the standard URL even for group contests.
-    if (urlType === 'gym') {
-        return `https://codeforces.com/gym/${safeContestId}/problem/${safeProblemId}`;
-    } else if (urlType === 'group' && groupId) {
-        return `https://codeforces.com/group/${groupId}/contest/${safeContestId}/problem/${safeProblemId}`;
-    }
-    return `https://codeforces.com/contest/${safeContestId}/problem/${safeProblemId}`;
-}
-
 /**
  * A readable message for an error code from the Verdict Helper extension.
  * Returns null for unknown codes so callers can keep their own fallback.

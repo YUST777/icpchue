@@ -32,15 +32,6 @@ export interface Submission {
     verdict?: string; // Optional redundant field if status_id is used
 }
 
-export interface LeaderboardEntry {
-    userId: number;
-    name: string;
-    solved_count: number;
-    total_score?: number;
-    rank?: number;
-    rating?: number;
-}
-
 export interface Judge0Token {
     token: string;
 }

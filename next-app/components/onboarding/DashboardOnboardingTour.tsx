@@ -186,6 +186,3 @@ export default function DashboardOnboardingTour({
     );
 }
 
-export function resetDashboardOnboarding() {
-    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-}

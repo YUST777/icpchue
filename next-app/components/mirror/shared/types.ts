@@ -131,12 +131,3 @@ export interface CFSubmissionStatus {
     captchaUrl?: string;
 }
 
-export interface CFSubmissionTestCase {
-    input: string;
-    output: string;
-    answer: string;
-    verdict: string;
-    checkerStdoutAndStderr?: string;
-}
-
-export type ComplexityResult = ComplexityAnalysis;

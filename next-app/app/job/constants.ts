@@ -35,6 +35,3 @@ export const mediaSkills = [
   'Photography & Videography',
 ] as const;
 
-export const tshirtSizes = ['S', 'M', 'L', 'XL', '2XL'] as const;
-
-export const weeklyHoursOptions = ['3–5 hours', '5–10 hours', '10+ hours'] as const;

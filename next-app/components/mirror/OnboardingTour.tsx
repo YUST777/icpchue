@@ -209,6 +209,3 @@ export default function OnboardingTour({
     );
 }
 
-export function resetOnboarding() {
-    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-}
