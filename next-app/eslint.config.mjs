@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
       "react/no-unescaped-entities": "off",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/purity": "warn",
+      // New in react-hooks 7: real patterns to tidy up, but not bugs that break pages today.
+      "react-hooks/immutability": "warn",
+      "react-hooks/static-components": "warn",
     },
   },
   // Override default ignores of eslint-config-next.

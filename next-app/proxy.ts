@@ -8,7 +8,7 @@ const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
 const WINDOW_SIZE = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 500; // 500 requests per minute per IP
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let response: NextResponse;
 
     // Only dashboard and login/register pages need the Supabase session check;
