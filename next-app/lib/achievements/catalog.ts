@@ -125,7 +125,10 @@ export function getAchievementHowTo(id: string): AchievementHowTo {
     if (id === 'disciplined-7') return { how: 'Fill in your study log in the discipline tracker 7 days in a row.', href: '/dashboard/discipline', cta: 'Open the study log' };
     if (id === 'disciplined-program') return { how: 'Log every single day of the 8-week program in the discipline tracker.', href: '/dashboard/discipline', cta: 'Open the study log' };
     const sheet = LEVEL0_SHEET_BADGES.find(x => x.id === id);
-    if (sheet) return { how: `Solve every problem in the Level 0 "${sheet.name}" sheet.`, ...sheets };
+    if (sheet) {
+        const letter = 'abcdefg'[Number(sheet.id.split('-')[1]) - 1];
+        return { how: `Solve every problem in the Level 0 "${sheet.name}" sheet.`, href: `/dashboard/sheets/level-0/sheet-${letter}`, cta: `Open the ${sheet.name} sheet` };
+    }
     const cf = CF_RANK_BADGES.find(x => x.id === id);
     if (cf) return {
         how: cf.min === 1

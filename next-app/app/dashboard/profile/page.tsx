@@ -282,7 +282,7 @@ export default function ProfilePage() {
                             <CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} />
                         </div>
 
-                        <div className="w-full">
+                        <div className="w-full lg:col-span-2">
                             <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>

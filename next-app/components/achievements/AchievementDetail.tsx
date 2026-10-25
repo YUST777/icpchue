@@ -78,7 +78,7 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                     <p className="text-sm text-white/80 leading-relaxed">{howTo.how}</p>
                 </div>
 
-                {howTo.href && !badge.unlocked && (
+                {howTo.href && (
                     <Link href={howTo.href} onClick={onClose}
                         className="mt-5 inline-flex w-full items-center justify-center gap-2 h-10 rounded-xl bg-[#E8C15A] text-black text-sm font-semibold hover:bg-[#d4ad45] transition-colors">
                         {howTo.cta ?? 'Go'} <ArrowRight size={15} />

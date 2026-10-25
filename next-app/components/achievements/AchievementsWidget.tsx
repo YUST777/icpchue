@@ -53,49 +53,59 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
     const total = entries.length;
     const progress = (count / total) * 100;
     const [showAll, setShowAll] = useState(false);
-    const visible = showAll ? entries : entries.slice(0, PREVIEW);
+
+    const rest = entries.slice(PREVIEW);
+
+    const tile = (e: Entry, size: string) => (
+        <li key={e.id} title={e.name} className={size}>
+            <Link href="/dashboard/achievements"
+                className={`relative block aspect-square rounded-xl border overflow-hidden transition-transform hover:scale-105 ${e.unlocked ? 'border-[#E8C15A]/25 bg-gradient-to-br from-yellow-500/15 to-orange-500/5' : 'border-white/5 bg-[#131313]'}`}>
+                <Image src={e.imageSrc} alt={e.name} fill sizes="80px" className={`object-contain p-1.5 ${e.unlocked ? '' : 'grayscale opacity-30'}`} />
+                {!e.unlocked && <Lock className="absolute inset-0 m-auto w-3.5 h-3.5 text-white/60" />}
+            </Link>
+        </li>
+    );
 
     return (
         <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
             <div className="bg-[#0f0f0f] rounded-[23px] p-5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-                <div className="flex items-baseline gap-2 mb-4 relative z-10">
-                    <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
-                    <span className="text-gray-500 text-sm font-medium">/ {total} Unlocked</span>
-                </div>
-
-                <div className="relative w-full h-2.5 bg-[#1a1a1a] rounded-full mb-5 overflow-hidden border border-white/5">
-                    <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
-                </div>
-
-                <ul className="grid grid-cols-5 gap-2 mb-4 relative z-10">
-                    {visible.map(e => (
-                        <li key={e.id} title={e.name}>
-                            <Link href="/dashboard/achievements"
-                                className={`relative aspect-square rounded-xl border flex items-center justify-center overflow-hidden transition-transform hover:scale-105 ${e.unlocked ? 'border-[#E8C15A]/25 bg-gradient-to-br from-yellow-500/15 to-orange-500/5' : 'border-white/5 bg-[#131313]'}`}>
-                                <Image src={e.imageSrc} alt={e.name} fill sizes="64px" className={`object-contain p-1.5 ${e.unlocked ? '' : 'grayscale opacity-30'}`} />
-                                {!e.unlocked && <Lock className="absolute w-3.5 h-3.5 text-white/60" />}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-
-                {entries.length > PREVIEW && (
-                    <button type="button" onClick={() => setShowAll(v => !v)}
-                        className="w-full mb-2.5 h-9 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer relative z-10">
-                        {showAll ? 'Show less' : `Show all ${entries.length} badges`}
-                    </button>
-                )}
-
-                <Link href="/dashboard/achievements" className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn block">
-                    <div className="relative z-10 px-4 py-3 flex items-center justify-between">
-                        <span className="text-sm font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
-                        <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center border border-white/5 group-hover/btn:border-yellow-500/30 group-hover/btn:bg-yellow-500/10 transition-all">
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
+                {/* One row on desktop: count and progress | the best badges | actions. Stacked on phones. */}
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
+                    <div className="lg:w-64 shrink-0">
+                        <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
+                            <span className="text-gray-500 text-sm font-medium">/ {total} Unlocked</span>
+                        </div>
+                        <div className="relative w-full h-2.5 bg-[#1a1a1a] rounded-full overflow-hidden border border-white/5">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
                         </div>
                     </div>
-                </Link>
+
+                    <ul className="grid grid-cols-5 lg:flex gap-2 lg:gap-3 lg:flex-1 lg:justify-center">
+                        {entries.slice(0, PREVIEW).map(e => tile(e, 'lg:w-16'))}
+                    </ul>
+
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:w-56 shrink-0">
+                        {rest.length > 0 && (
+                            <button type="button" onClick={() => setShowAll(v => !v)}
+                                className="h-10 px-4 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer sm:flex-1 lg:flex-none">
+                                {showAll ? 'Show less' : `Show all ${entries.length} badges`}
+                            </button>
+                        )}
+                        <Link href="/dashboard/achievements" className="h-10 px-4 rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn flex items-center justify-between sm:flex-1 lg:flex-none">
+                            <span className="text-xs font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
+                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
+                        </Link>
+                    </div>
+                </div>
+
+                {showAll && (
+                    <ul className="relative z-10 grid grid-cols-6 sm:grid-cols-10 lg:grid-cols-14 gap-2 mt-5 pt-5 border-t border-white/5">
+                        {rest.map(e => tile(e, ''))}
+                    </ul>
+                )}
             </div>
         </div>
     );
