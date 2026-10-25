@@ -29,7 +29,7 @@ function monthLabel(month: string): string {
 
 /**
  * The three students who solved the most distinct problems in each month, among the
- * Level 0 cohort (applicants and mentors). Finished months also award a podium badge.
+ * Level 0 cohort (everyone not on a Level 1 team). Finished months also award a podium badge.
  */
 export async function getLevel0MonthlyPodiums(): Promise<MonthlyPodium[]> {
     const teamIds = await ecpcTeamUserIds();

@@ -31,23 +31,11 @@ export type Level = 0 | 1;
 export const LEVEL_2_USER_IDS = new Set<number>([156]); // Ahmed Ashraf Elbayoumi
 
 /**
- * Level 0: everyone who applied for the coming season's Level 0 (and has an
- * account), together with the mentors and owners training alongside them.
+ * Level 0: every member who is not on a Level 1 team (and not Level 2).
  * Level 1: the students who entered the ECPC qualification as a team (/team).
  */
 export function cohortClause(level: Level): string {
-    if (level === 0) {
-        // Students who went on to the ECPC teams are ranked on Level 1 only.
-        return `AND NOT (u.id = ANY($1::bigint[]))
-        AND (
-            u.role IN ('mentor', 'instructor', 'owner')
-            OR EXISTS (
-                SELECT 1 FROM level0_training_registrations r
-                WHERE r.application_id = u.application_id
-                  AND r.season_year = (SELECT MAX(season_year) FROM level0_training_registrations)
-            )
-        )`;
-    }
+    if (level === 0) return 'AND NOT (u.id = ANY($1::bigint[]))';
     return 'AND u.id = ANY($1::bigint[])';
 }
 

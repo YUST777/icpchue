@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/grant-achievements",
       "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/prune-tracking",
+      "schedule": "0 3 * * *"
     }
   ]
 }
