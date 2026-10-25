@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
         },
     },
 
+    // Static files in public/ were revalidated on every visit (max-age=0). Keep them a day and
+    // refresh in the background for a week: repeat visits skip the network for models and images.
+    async headers() {
+        const assetCache = [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }];
+        return ['/3d', '/images', '/draco', '/icpchue_2026', '/sessions', '/devlog', '/fonts', '/icons', '/videos', '/News']
+            .map(dir => ({ source: `${dir}/:path*`, headers: assetCache }));
+    },
+
     async redirects() {
         return [
             {
