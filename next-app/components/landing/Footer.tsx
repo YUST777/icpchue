@@ -21,36 +21,36 @@ export default function Footer() {
                         </p>
                         {/* Social Links */}
                         <div className="flex justify-center md:justify-start gap-6">
-                            <a href="https://www.facebook.com/icpchue/" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-[#1877F2] transition-colors"><SiFacebook size={20} /></a>
-                            <a href="https://www.linkedin.com/in/icpchue/" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-[#0A66C2] transition-colors"><FaLinkedin size={20} /></a>
-                            <a href="https://t.me/ICPCHUE" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-[#26A5E4] transition-colors"><SiTelegram size={20} /></a>
+                            <a href="https://www.facebook.com/icpchue/" target="_blank" rel="noopener noreferrer" className="-m-3 p-3 text-white/40 hover:text-[#1877F2] transition-colors"><SiFacebook size={20} /></a>
+                            <a href="https://www.linkedin.com/in/icpchue/" target="_blank" rel="noopener noreferrer" className="-m-3 p-3 text-white/40 hover:text-[#0A66C2] transition-colors"><FaLinkedin size={20} /></a>
+                            <a href="https://t.me/ICPCHUE" target="_blank" rel="noopener noreferrer" className="-m-3 p-3 text-white/40 hover:text-[#26A5E4] transition-colors"><SiTelegram size={20} /></a>
                         </div>
                     </div>
 
                     <div className="text-center md:text-left">
                         <h4 className="text-white font-bold mb-4">Platform</h4>
                         <ul className="space-y-2 text-sm text-white/60">
-                            <li><Link href="/" className="hover:text-[#E8C15A] transition-colors">Home</Link></li>
-                            <li><Link href="/sessions" className="hover:text-[#E8C15A] transition-colors">Sessions</Link></li>
-                            <li><Link href="/login" className="hover:text-[#E8C15A] transition-colors">Login</Link></li>
+                            <li><Link href="/" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Home</Link></li>
+                            <li><Link href="/sessions" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Sessions</Link></li>
+                            <li><Link href="/login" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Login</Link></li>
                         </ul>
                     </div>
 
                     <div className="text-center md:text-left">
                         <h4 className="text-white font-bold mb-4">Resources</h4>
                         <ul className="space-y-2 text-sm text-white/60">
-                            <li><Link href="/devlog" className="hover:text-[#E8C15A] transition-colors">Development Log</Link></li>
-                            <li><Link href="/apply" className="hover:text-[#E8C15A] transition-colors">Apply Now</Link></li>
-                            <li><Link href="/sitemap.xml" className="hover:text-[#E8C15A] transition-colors">Sitemap</Link></li>
+                            <li><Link href="/devlog" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Development Log</Link></li>
+                            <li><Link href="/apply" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Apply Now</Link></li>
+                            <li><Link href="/sitemap.xml" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Sitemap</Link></li>
                         </ul>
                     </div>
 
                     <div className="text-center md:text-left">
                         <h4 className="text-white font-bold mb-4">Legal</h4>
                         <ul className="space-y-2 text-sm text-white/60">
-                            <li><Link href="/security.txt" className="hover:text-[#E8C15A] transition-colors">Security</Link></li>
-                            <li><Link href="/privacy" className="hover:text-[#E8C15A] transition-colors">Privacy Policy</Link></li>
-                            <li><Link href="/terms" className="hover:text-[#E8C15A] transition-colors">Terms of Service</Link></li>
+                            <li><Link href="/security.txt" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Security</Link></li>
+                            <li><Link href="/privacy" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Terms of Service</Link></li>
                         </ul>
                     </div>
                 </div>

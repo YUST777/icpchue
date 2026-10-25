@@ -276,9 +276,9 @@ html {
 }
 
 /* Fix viewport height on mobile (iOS Safari) */
-@supports (-webkit-touch-callout: none) {
+@supports (min-height: 100dvh) {
   .min-h-screen {
-    min-height: -webkit-fill-available;
+    min-height: 100dvh;
   }
 }
 
@@ -1480,5 +1480,60 @@ iframe[title*="reCAPTCHA"],
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* Mobile rules.
+   1. iOS Safari zooms the page into any field under 16px and leaves it zoomed, so on phones every
+      text field is 16px whatever its desktop size.
+   2. The thin progress segments on the apply stories keep their look but get a taller tap area. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+.story-progress-segment {
+  position: relative;
+}
+.story-progress-segment::after {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
+}
+
+/* Phone legibility. Captions of 9 to 11px and very dim greys (text-white/10 to /40, #444 to #666)
+   are unreadable outdoors and fail contrast, so phones get 12px minimum text and brighter greys.
+   Hover colours are untouched. */
+@media (max-width: 767px) {
+  .text-\[9px\],
+  .text-\[10px\],
+  .text-\[11px\] {
+    font-size: 12px !important;
+  }
+  .text-white\/10,
+  .text-white\/20,
+  .text-white\/25,
+  .text-white\/30 {
+    color: rgb(255 255 255 / 0.5) !important;
+  }
+  .text-white\/40 {
+    color: rgb(255 255 255 / 0.62) !important;
+  }
+  .text-\[\#666\],
+  .text-\[\#555\],
+  .text-\[\#444\] {
+    color: #8e8e93 !important;
+  }
+}
+
+/* Press feedback on touch screens: a quick dim, never a size change, so nothing jumps. */
+@media (hover: none) and (pointer: coarse) {
+  a:active,
+  button:not(:disabled):active,
+  [role="button"]:active {
+    opacity: 0.78;
+    transition: opacity 80ms ease-out;
   }
 }
