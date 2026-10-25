@@ -87,7 +87,7 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                     <div className="sm:hidden mx-auto mb-2 h-1 w-10 rounded-full bg-white/20" aria-hidden />
                     <div className={`${field} mb-2`}>ICPC HUE · Achievement</div>
                     <div className="relative h-44 sm:h-56 w-full">
-                        <Badge3D modelPath={badge.modelPath} scale={badge.scale ?? 2} unlocked={badge.unlocked} compact fallbackSrc={meta?.imageSrc} />
+                        <Badge3D modelPath={badge.modelPath} scale={badge.scale ?? 2} unlocked={badge.unlocked} compact free fallbackSrc={meta?.imageSrc} />
                         {!badge.unlocked && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-7 h-7 text-white/60" /></div>}
                     </div>
                     <div className={`mt-2 text-xs capitalize ${RARITY_TEXT[rarity]}`}>{rarity}</div>

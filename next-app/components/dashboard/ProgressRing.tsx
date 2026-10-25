@@ -8,9 +8,11 @@ interface ProgressRingProps {
     label?: string;
     size?: number;
     href?: string;
+    /** Small ring with no label badge, for phone layouts. */
+    compact?: boolean;
 }
 
-export function ProgressRing({ progress, total, label = 'Sheet', size = 220, href }: ProgressRingProps) {
+export function ProgressRing({ progress, total, label = 'Sheet', size = 220, href, compact = false }: ProgressRingProps) {
     const [animatedProgress, setAnimatedProgress] = useState(0);
 
     useEffect(() => {
@@ -29,7 +31,7 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
             {/* Glow effect */}
             <div className="absolute inset-0 bg-[#E8C15A]/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
 
-            <div className="relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]">
+            <div className={compact ? 'relative w-[92px] h-[92px]' : 'relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]'}>
                 <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
                     {/* Background circle */}
                     <circle
@@ -69,8 +71,8 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                     {total > 0 ? (
                         <>
-                            <span className="text-4xl sm:text-5xl font-bold text-white">{progress}</span>
-                            <span className="text-xs sm:text-sm text-white/40">of {total}</span>
+                            <span className={compact ? 'text-2xl font-bold text-white leading-none' : 'text-4xl sm:text-5xl font-bold text-white'}>{progress}</span>
+                            <span className={compact ? 'text-xs text-white/40 mt-0.5' : 'text-xs sm:text-sm text-white/40'}>of {total}</span>
                         </>
                     ) : (
                         <>
@@ -81,11 +83,11 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
                 </div>
 
                 {/* Label badge */}
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                {!compact && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 bg-[#1a1a1a] border border-[#E8C15A]/30 rounded-full text-[#E8C15A] text-xs font-medium whitespace-nowrap max-w-[200px] truncate inline-block text-center">
                         {label}
                     </span>
-                </div>
+                </div>}
             </div>
 
             <style jsx>{`

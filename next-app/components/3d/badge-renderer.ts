@@ -76,6 +76,8 @@ interface Options {
     url: string;
     scale: number;
     spin: boolean;
+    /** Turns freely in every direction under a finger, with momentum (used where the page does not scroll). */
+    free?: boolean;
     onReady: () => void;
     onError: () => void;
 }
@@ -90,6 +92,9 @@ class TileImpl implements Tile {
     disposed = false;
     dragY = 0;
     dragX = 0;
+    velX = 0;
+    velY = 0;
+    private lastMove = 0;
     spinY = 0;
     phase = Math.random() * 6;
     lastDraw = 0;
@@ -127,11 +132,21 @@ class TileImpl implements Tile {
         }).catch(() => { if (!this.disposed) o.onError(); });
 
         const c = o.canvas;
-        const down = (e: PointerEvent) => { this.dragging = true; this.last = { x: e.clientX, y: e.clientY }; c.setPointerCapture(e.pointerId); };
+        const down = (e: PointerEvent) => { this.dragging = true; this.velX = 0; this.velY = 0; this.lastMove = performance.now(); this.last = { x: e.clientX, y: e.clientY }; c.setPointerCapture(e.pointerId); };
         const move = (e: PointerEvent) => {
             if (!this.dragging) return;
-            this.dragY += (e.clientX - this.last.x) * 0.012;
-            this.dragX = Math.max(-0.5, Math.min(0.5, this.dragX + (e.clientY - this.last.y) * 0.008));
+            const now = performance.now();
+            const ms = Math.max(1, now - this.lastMove);
+            const turn = this.o.free ? 0.014 : 0.012;
+            const tilt = this.o.free ? 0.012 : 0.008;
+            const ry = (e.clientX - this.last.x) * turn;
+            const rx = (e.clientY - this.last.y) * tilt;
+            const lim = this.o.free ? 1.2 : 0.5;
+            this.dragY += ry;
+            this.dragX = Math.max(-lim, Math.min(lim, this.dragX + rx));
+            this.velY = ry / ms * 1000;
+            this.velX = rx / ms * 1000;
+            this.lastMove = now;
             this.last = { x: e.clientX, y: e.clientY };
         };
         const up = () => { this.dragging = false; };
@@ -153,6 +168,15 @@ class TileImpl implements Tile {
     }
 
     update(t: number, dt: number) {
+        // After the finger lifts the badge keeps turning and slows down, like a physical object.
+        if (!this.dragging && (Math.abs(this.velY) > 0.01 || Math.abs(this.velX) > 0.01)) {
+            const lim = this.o.free ? 1.2 : 0.5;
+            this.dragY += this.velY * dt;
+            this.dragX = Math.max(-lim, Math.min(lim, this.dragX + this.velX * dt));
+            const decay = Math.exp(-dt * 3.2);
+            this.velY *= decay;
+            this.velX *= decay;
+        }
         if (this.o.spin) this.spinY += dt * 0.7;
         const sway = this.o.spin ? 0 : Math.sin(t * 0.5 + this.phase) * 0.2;
         this.holder.rotation.y = this.spinY + sway + this.dragY;
