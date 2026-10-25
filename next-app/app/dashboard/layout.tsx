@@ -75,9 +75,9 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
 
 function MobileNavItem({ icon, label, id, active = false, onClick }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; onClick: () => void }) {
     return (
-        <button id={id} onClick={onClick} className={`flex flex-col items-center justify-center gap-1 py-3 w-full transition-all duration-200 ${active ? 'text-[#E8C15A]' : 'text-[#666]'}`}>
+        <button id={id} onClick={onClick} className={`flex flex-col items-center justify-center gap-1.5 py-4 w-full transition-all duration-200 ${active ? 'text-[#E8C15A]' : 'text-[#666]'}`}>
             {icon}
-            <span className="text-[9px] font-medium text-center leading-none px-0.5">{label}</span>
+            <span className="text-xs font-medium text-center leading-none px-0.5">{label}</span>
         </button>
     );
 }
@@ -330,11 +330,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Mobile Bottom Navigation (hidden on problem page) */}
             {!isProblemPage && (
                 <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0B0B0C] border-t border-white/10 pb-[env(safe-area-inset-bottom)] grid grid-cols-5 w-full items-end">
-                    <MobileNavItem id="mobile-nav-dashboard" icon={<LayoutDashboard size={18} />} label="Home" active={activePage === 'Dashboard'} onClick={() => handleNav('/dashboard')} />
-                    <MobileNavItem id="mobile-nav-profile" icon={<Code size={18} />} label="Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
-                    <MobileNavItem id="mobile-nav-sessions" icon={<Play size={18} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
-                    <MobileNavItem id="mobile-nav-sheets" icon={<BookOpen size={18} />} label="Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
-                    <MobileNavItem id="mobile-nav-leaderboard" icon={<Trophy size={18} />} label="Rank" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
+                    <MobileNavItem id="mobile-nav-dashboard" icon={<LayoutDashboard size={22} />} label="Home" active={activePage === 'Dashboard'} onClick={() => handleNav('/dashboard')} />
+                    <MobileNavItem id="mobile-nav-profile" icon={<Code size={22} />} label="Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
+                    <MobileNavItem id="mobile-nav-sessions" icon={<Play size={22} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
+                    <MobileNavItem id="mobile-nav-sheets" icon={<BookOpen size={22} />} label="Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
+                    <MobileNavItem id="mobile-nav-leaderboard" icon={<Trophy size={22} />} label="Rank" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                 </nav>
             )}
 
@@ -524,7 +524,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 initial={false}
                 animate={{ marginLeft: isMobile || isProblemPage ? 0 : (isSidebarCollapsed ? 80 : 256) }}
                 transition={transitionsEnabled ? { type: "spring", stiffness: 300, damping: 30 } : { duration: 0 }} // Disable transition initially
-                className={`${isProblemPage ? 'pt-0 pb-0' : 'pt-14 md:pt-0 pb-16 md:pb-0'} max-md:!ml-0 max-md:!w-full max-w-[100vw]`}
+                className={`${isProblemPage ? 'pt-0 pb-0' : 'pt-14 md:pt-0 pb-24 md:pb-0'} max-md:!ml-0 max-md:!w-full max-w-[100vw]`}
             >
                 {!isProblemPage && (
                     <header className="sticky top-0 z-40 w-full h-16 bg-[#0B0B0C] flex items-center justify-between px-4 md:px-8 hidden md:flex">
