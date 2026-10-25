@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { 
             contestId, problemIndex, cfHandle, sourceCode, language, sheetId, urlType, groupId,
-            cookies, isExtensionVerified, submissionId, timeMs, memoryKb, sourceError
+            isExtensionVerified, submissionId, timeMs, memoryKb, sourceError
         } = body;
 
         if (!contestId || !problemIndex || !cfHandle) {
@@ -53,11 +53,6 @@ export async function POST(req: NextRequest) {
         if (!sourceCode && typeof sourceError === 'string') {
             console.warn(`[Verify] No source for ${targetContestId}${normalizedProblemIndex} (user ${user.id}): ${sourceError.slice(0, 300)}`);
         }
-        if (cookies !== undefined && cookies !== null &&
-            (typeof cookies !== 'string' || cookies.length > 16 * 1024)) {
-            return NextResponse.json({ error: 'Invalid Codeforces session data' }, { status: 400 });
-        }
-
         // The v1.3 extension reads private/group submissions in the user's
         // own browser and sends only the matched row back to this route (no
         // Codeforces cookies leave the browser). Validate the handoff before
@@ -125,93 +120,6 @@ export async function POST(req: NextRequest) {
         }
         let match = null;
 
-        // 1. If cookies are provided by the Chrome extension, look the submission up
-        //    on Codeforces with the user's own session.
-        if (cookies) {
-            // Try contest.status as fallback
-            if (!match && linkedHandle) {
-                console.log(`[Verify Route] Checking contest.status (Contest: ${targetContestId})...`);
-                const cfUrl = `https://codeforces.com/api/contest.status?contestId=${targetContestId}&from=1&count=200`;
-                try {
-                    const cfRes = await fetch(cfUrl, {
-                        headers: {
-                            'Cookie': cookies,
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (cfRes.ok) {
-                        const cfData = await cfRes.json();
-                        if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
-                            const rawMatch = cfData.result.find((sub: any) => {
-                                const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
-                                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                                const isUserMatch = 
-                                    sub.author?.members?.some((m: any) => m.handle?.toLowerCase() === trimmedHandle.toLowerCase()) ||
-                                    (sub.author?.handle && sub.author.handle.toLowerCase() === trimmedHandle.toLowerCase());
-                                return isProblemMatch && isAccepted && isUserMatch;
-                            });
-                            
-                            if (rawMatch) {
-                                console.log(`[Verify Route] Match found on contest.status! Submission: ${rawMatch.id}`);
-                                match = {
-                                    id: Number(rawMatch.id),
-                                    contestId: targetContestId,
-                                    timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
-                                    memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
-                                    passedTestCount: Number(rawMatch.passedTestCount) || 15,
-                                    programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
-                                };
-                            }
-                        }
-                    }
-                } catch (err: any) {
-                    console.error('[Verify Route] Cookie-auth contest.status fetch failed:', err);
-                }
-            }
-            
-            // Try user.status with cookies as fallback
-            if (!match && linkedHandle) {
-                const cfUserUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(trimmedHandle)}&from=1&count=100`;
-                try {
-                    const cfRes = await fetch(cfUserUrl, {
-                        headers: {
-                            'Cookie': cookies,
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (cfRes.ok) {
-                        const cfData = await cfRes.json();
-                        if (cfData.status === 'OK' && Array.isArray(cfData.result)) {
-                            const rawMatch = cfData.result.find((sub: any) => {
-                                const isContestMatch = Number(sub.contestId) === targetContestId;
-                                const isProblemMatch = sub.problem?.index?.toUpperCase() === normalizedProblemIndex;
-                                const isAccepted = sub.verdict === 'OK' || sub.verdict?.toUpperCase() === 'ACCEPTED';
-                                return isContestMatch && isProblemMatch && isAccepted;
-                            });
-                            
-                            if (rawMatch) {
-                                console.log(`[Verify Route] Match found on user.status! Submission: ${rawMatch.id}`);
-                                match = {
-                                    id: Number(rawMatch.id),
-                                    contestId: targetContestId,
-                                    timeConsumedMillis: Number(rawMatch.timeConsumedMillis) || 0,
-                                    memoryConsumedBytes: Number(rawMatch.memoryConsumedBytes) || 0,
-                                    passedTestCount: Number(rawMatch.passedTestCount) || 15,
-                                    programmingLanguage: rawMatch.programmingLanguage || language || 'C++'
-                                };
-                            }
-                        }
-                    }
-                } catch (err: any) {
-                    console.error('[Verify Route] Cookie-auth user.status fetch failed:', err);
-                }
-            }
-        }
-
         // The extension has already checked the user's authenticated
         // Codeforces session. Use its matched row for group/gym contests,
         // where user.status/contest.status cannot reliably see private data.
@@ -238,7 +146,8 @@ export async function POST(req: NextRequest) {
             try {
                 cfRes = await fetch(cfUrl);
             } catch (fetchErr: any) {
-                return NextResponse.json({ error: `Unable to reach Codeforces API. Please try again later. Details: ${fetchErr.message}` }, { status: 502 });
+                console.error('[Verify Route] Codeforces API unreachable:', fetchErr instanceof Error ? fetchErr.message : fetchErr);
+                return NextResponse.json({ error: 'Unable to reach Codeforces API. Please try again later.' }, { status: 502 });
             }
 
             if (cfRes.ok) {
@@ -303,7 +212,7 @@ export async function POST(req: NextRequest) {
             // A private group or gym cannot be read through the public API, so an
             // empty result there means "could not check", not "no accepted solution".
             const isPrivate = (urlType === 'group' || urlType === 'gym');
-            if (cookies && isPrivate) {
+            if (isPrivate) {
                 return NextResponse.json({
                     success: false,
                     error: 'Private groups and gyms are checked by the extension. Open the problem on Codeforces and press Check & Sync.',

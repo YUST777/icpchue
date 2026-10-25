@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { getClientIp } from '@/lib/security/request';
+import { encrypt, decrypt } from '@/lib/security/encryption';
 import { JOB_APPLICATIONS_OPEN } from '@/app/job/constants';
 
 const MAX_JSON_BYTES = 128 * 1024;
@@ -131,13 +132,14 @@ export async function POST(req: NextRequest) {
         }
 
         // --- Check for duplicates ---
-        const dupCheck = await query(
-            `SELECT id, email, student_id, national_id 
-             FROM job_applications 
-             WHERE email = $1 OR student_id = $2 OR (national_id = $3 AND national_id IS NOT NULL) 
-             LIMIT 1`,
-            [cleanEmail, cleanStudentId, cleanNationalId]
-        );
+        // Personal fields are stored encrypted, so equal values no longer look equal in SQL. The
+        // form is small (a few dozen rows), so the check decrypts them and compares here.
+        const existing = await query(`SELECT email, student_id, national_id FROM job_applications`);
+        const isDuplicate = existing.rows.some((row: { email: string | null; student_id: string | null; national_id: string | null }) =>
+            (decrypt(row.email) || '').toLowerCase() === cleanEmail ||
+            decrypt(row.student_id) === cleanStudentId ||
+            (cleanNationalId !== null && decrypt(row.national_id) === cleanNationalId));
+        const dupCheck = { rows: isDuplicate ? [1] : [] };
 
         if (dupCheck.rows.length > 0) {
             return NextResponse.json(
@@ -164,13 +166,13 @@ export async function POST(req: NextRequest) {
                 $20, $21
             ) RETURNING id, created_at`,
             [
-                cleanName,
-                cleanEmail,
-                cleanStudentId,
-                cleanPhone,
+                encrypt(cleanName),
+                encrypt(cleanEmail),
+                encrypt(cleanStudentId),
+                encrypt(cleanPhone),
                 faculty.trim(),
                 academicLevel.trim(),
-                cleanNationalId,
+                cleanNationalId ? encrypt(cleanNationalId) : null,
                 committees,
                 mediaSkills || [],
                 hasCamera ? hasCamera === 'yes' : null,

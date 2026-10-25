@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { getClientIp } from '@/lib/security/request';
+import { encrypt, decrypt } from '@/lib/security/encryption';
 
 function sanitize(s: string): string {
     // Keep Arabic chars \u0600-\u06FF, english letters, numbers, spaces, and hyphens/underscores
@@ -88,6 +89,23 @@ export async function POST(req: NextRequest) {
 
         if (errors.length > 0) return NextResponse.json({ error: errors[0], errors }, { status: 400 });
 
+        // National IDs are stored encrypted, so the database's unique indexes can no longer stop one
+        // person joining two teams. Compare against this season's teams here (a few dozen rows).
+        const taken = await query(
+            `SELECT member1_national_id, member2_national_id, member3_national_id
+             FROM team_registrations WHERE season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)`
+        );
+        const takenIds = new Set<string>();
+        for (const row of taken.rows as Record<string, string | null>[]) {
+            for (const col of ['member1_national_id', 'member2_national_id', 'member3_national_id']) {
+                const plain = decrypt(row[col]);
+                if (plain) takenIds.add(plain);
+            }
+        }
+        if (members.some(m => takenIds.has(m.nationalId))) {
+            return NextResponse.json({ error: 'One of these members is already registered in a team this season.' }, { status: 409 });
+        }
+
         const teamFolder = `${sanitize(teamName)}_${Date.now()}_${crypto.randomUUID()}`;
         const teamDir = path.join(process.cwd(), 'team-uploads', teamFolder);
 
@@ -135,10 +153,10 @@ export async function POST(req: NextRequest) {
             ) RETURNING id
         `, [
             teamName,
-            members[0].name, members[0].studentId, members[0].nationalId, members[0].codeforces || null, members[0].faculty, members[0].isLeader, filePaths.m1_front || null, filePaths.m1_back || null, members[0].icpcEmail || null,
-            members[1].name, members[1].studentId, members[1].nationalId, members[1].codeforces || null, members[1].faculty, members[1].isLeader, filePaths.m2_front || null, filePaths.m2_back || null, members[1].icpcEmail || null,
-            members[2].name, members[2].studentId, members[2].nationalId, members[2].codeforces || null, members[2].faculty, members[2].isLeader, filePaths.m3_front || null, filePaths.m3_back || null, members[2].icpcEmail || null,
-            leaderPhone, ip, userAgent,
+            encrypt(members[0].name), encrypt(members[0].studentId), encrypt(members[0].nationalId), members[0].codeforces || null, members[0].faculty, members[0].isLeader, filePaths.m1_front || null, filePaths.m1_back || null, members[0].icpcEmail || null,
+            encrypt(members[1].name), encrypt(members[1].studentId), encrypt(members[1].nationalId), members[1].codeforces || null, members[1].faculty, members[1].isLeader, filePaths.m2_front || null, filePaths.m2_back || null, members[1].icpcEmail || null,
+            encrypt(members[2].name), encrypt(members[2].studentId), encrypt(members[2].nationalId), members[2].codeforces || null, members[2].faculty, members[2].isLeader, filePaths.m3_front || null, filePaths.m3_back || null, members[2].icpcEmail || null,
+            encrypt(leaderPhone), ip, userAgent,
         ]);
 
         return NextResponse.json({ success: true, message: 'Team registered!', id: result.rows[0].id }, { status: 201 });

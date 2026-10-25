@@ -24,7 +24,10 @@ export async function GET(req: NextRequest) {
             // Unauthenticated
         }
 
-        // Cache public view for 10 minutes
+        // Members only: the list carries names and student IDs.
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Cache the shared view for 10 minutes
         if (isShadowBanned) {
             const data = await fetchLeaderboard(true, level);
             return NextResponse.json(data);

@@ -23,12 +23,6 @@ if (!BLIND_INDEX_SALT) {
 // cryptr instance — handles AES-256-GCM with PBKDF2 key derivation
 const cryptr = ENCRYPTION_KEY ? new Cryptr(ENCRYPTION_KEY) : null;
 
-// Fallback keys in case any existing rows were encrypted during key transitions
-const FALLBACK_KEYS = [
-    '0d42189dff584ba68ef6343513a9baef87a07fc2f55bb5935043d789bd0dc4d8',
-].filter((k) => k !== ENCRYPTION_KEY);
-const fallbackCryptrs = FALLBACK_KEYS.map((k) => new Cryptr(k));
-
 // ─── Encrypt (via cryptr) ───────────────────────────────────────────
 
 export const encrypt = (text: string | null | undefined): string | null => {
@@ -68,13 +62,7 @@ const decryptUncached = (ciphertext: string | null | undefined): string | null =
         try {
             return cryptr.decrypt(ciphertext);
         } catch {
-            for (const fc of fallbackCryptrs) {
-                try {
-                    return fc.decrypt(ciphertext);
-                } catch {
-                    // continue
-                }
-            }
+            // Not readable with the current key: fall through to the failure handling below.
         }
     }
 

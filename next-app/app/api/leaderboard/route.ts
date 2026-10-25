@@ -1,4 +1,5 @@
-import { NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { verifyAuth } from '@/lib/auth/auth';
 import { query } from '@/lib/db/db';
 import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
@@ -28,7 +29,9 @@ function safeDecrypt(value: string | null): string | null {
     try { return decrypt(value); } catch { return value; }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    // Names and Codeforces handles: members only.
+    if (!(await verifyAuth(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     try {
         // Ratings only change when students are rated, so a refresh every 6 hours keeps the board current.
         // The first visit after that window starts it in the background; the next load shows fresh data.
@@ -40,7 +43,7 @@ export async function GET() {
         }
 
         const headers = {
-            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+            'Cache-Control': 'private, max-age=120',
             'Vary': 'Accept-Encoding'
         };
 
