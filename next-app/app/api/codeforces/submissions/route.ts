@@ -91,49 +91,8 @@ export async function GET(req: NextRequest) {
                 })));
             }
         } catch (e) {
-            console.warn('[Submissions API] Public API failed, falling back to bridge...', e);
+            console.warn('[Submissions API] Public API failed, returning an empty list', e);
         }
-    }
-
-    // Phase 2: Fallback to Scrapling Bridge (Scraping via user's session)
-    try {
-        const SCRAPLING_BRIDGE_URL = process.env.CF_BRIDGE_URL || process.env.SCRAPLING_BRIDGE_URL || 'http://scrapling-bridge:8787';
-        
-        // Only forward Codeforces-related cookies to the bridge, not auth cookies
-        const allCookies = req.headers.get('cookie') || '';
-        const cfCookies = allCookies.split(';')
-            .map(c => c.trim())
-            .filter(c => {
-                const name = c.split('=')[0]?.toLowerCase() || '';
-                // Only keep known Codeforces session cookies. Do not relay
-                // arbitrary application cookies to an external bridge.
-                return /^(jsessionid|39ce7|x-user(?:-sha1)?|cf_clearance|rcpc|dotcom-user-token)$/.test(name);
-            })
-            .join('; ');
-
-        const bridgeRes = await fetch(`${SCRAPLING_BRIDGE_URL}/submissions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(process.env.CF_BRIDGE_SHARED_SECRET ? { Authorization: process.env.CF_BRIDGE_SHARED_SECRET } : {}),
-            },
-            body: JSON.stringify({
-                contestId,
-                problemIndex,
-                cookies: cfCookies,
-                urlType,
-                groupId
-            })
-        });
-
-        if (bridgeRes.ok) {
-            const data = await bridgeRes.json();
-            if (data.success) {
-                return NextResponse.json(data.submissions);
-            }
-        }
-    } catch (error) {
-        console.error('[Submissions API] Bridge fallback failed:', error);
     }
 
     // Final Graceful Fallback

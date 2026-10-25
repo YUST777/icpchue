@@ -15,7 +15,7 @@ const AUTH_PAGES = ['/register', '/login', '/forgot-password', '/reset-password'
 const SHOW_MS = 6000;
 const DIGEST_FROM = 3;
 const TIER_RANK = { common: 0, rare: 1, legendary: 2 } as const;
-const POLL_MS = 20000;
+const POLL_MS = 30000;
 
 const TIER_STYLE = {
     common: { label: 'text-white/60', ring: 'rgba(255,255,255,0.25)', glow: 'bg-white/20' },
