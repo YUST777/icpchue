@@ -34,7 +34,7 @@ export default function PodiumRewards({ onClose }: { onClose: () => void }) {
     return createPortal(
         <div className="fixed inset-0 z-[2147483000] bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
             <div role="dialog" aria-modal="true" aria-label="Monthly podium badges" onClick={e => e.stopPropagation()}
-                className="w-full sm:max-w-2xl max-h-[62vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-white/[0.08] bg-[#121214] px-5 pt-3 pb-6 sm:p-6 animate-[drawerUp_0.32s_cubic-bezier(0.32,0.72,0,1)] sm:animate-none">
+                className="w-full sm:max-w-2xl h-[92dvh] sm:h-auto max-h-[92dvh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-white/[0.08] bg-[#121214] px-5 pt-3 pb-6 sm:p-6 animate-[drawerUp_0.32s_cubic-bezier(0.32,0.72,0,1)] sm:animate-none">
                 <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" aria-hidden />
                 <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
