@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { addCacheBust } from '@/lib/cache/cache-version';
 import { fetchWithCache } from '@/lib/cache/api-cache';
+import { loadHolderStats } from '@/lib/achievements/holder-stats';
 
 export interface Achievement {
     id: number;
@@ -71,8 +72,10 @@ export function useAchievements(isAuthenticated: boolean = false) {
         // Use setTimeout to avoid synchronous setState in effect
         setTimeout(() => {
             fetchAchievements();
+            // Warm the rarity numbers so a badge card opens with them already there.
+            if (isAuthenticated) loadHolderStats();
         }, 0);
-    }, [fetchAchievements]);
+    }, [fetchAchievements, isAuthenticated]);
 
     const unseenAchievements = achievements.filter(a => !a.seen);
 

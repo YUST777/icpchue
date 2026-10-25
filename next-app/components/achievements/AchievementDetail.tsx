@@ -5,18 +5,28 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, Check, Lock, X } from 'lucide-react';
+import { cachedHolderStats, loadHolderStats, type HolderStats } from '@/lib/achievements/holder-stats';
 import { getAchievementHowTo, getAchievementMeta } from '@/lib/achievements/catalog';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
-const RARITY_TEXT = { common: 'text-white/50', rare: 'text-sky-400', legendary: 'text-[#E8C15A]' } as const;
+const RARITY_TEXT = { common: 'text-white/50', rare: 'text-sky-400', epic: 'text-purple-400', legendary: 'text-[#E8C15A]' } as const;
+type Rarity = keyof typeof RARITY_TEXT;
+
+/** Rarity from the share of members who hold the badge. */
+function rarityFromShare(pct: number): Rarity {
+    if (pct >= 30) return 'common';
+    if (pct >= 10) return 'rare';
+    if (pct >= 3) return 'epic';
+    return 'legendary';
+}
 
 export interface AchievementDetailData {
     id: string;
     modelPath: string;
     title: string;
     unlocked: boolean;
-    rarity: 'common' | 'rare' | 'legendary';
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
     /** ISO times it was earned; a monthly podium can have several. */
     earnedAt?: string[];
     scale?: number;
@@ -29,6 +39,8 @@ function formatDate(iso: string): string {
 /** What the badge is, how to get it, when you got it, and where to go to earn it. */
 export default function AchievementDetail({ badge, onClose }: { badge: AchievementDetailData; onClose: () => void }) {
     const [mounted, setMounted] = useState(false);
+    const [stats, setStats] = useState<HolderStats | null>(() => cachedHolderStats());
+    useEffect(() => { loadHolderStats().then(d => d && setStats(d)); }, []);
     useEffect(() => { setMounted(true); }, []);
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -41,6 +53,10 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
     if (!mounted) return null;
     const howTo = getAchievementHowTo(badge.id);
     const meta = getAchievementMeta(badge.id);
+    const holders = stats ? (stats.counts[badge.id] ?? 0) : null;
+    const pct = stats && stats.total > 0 && holders !== null ? (holders / stats.total) * 100 : null;
+    const rarity: Rarity = pct !== null ? rarityFromShare(pct) : badge.rarity;
+    const pctLabel = pct === null ? '' : pct === 0 ? '0%' : pct < 0.1 ? '<0.1%' : `${pct < 10 ? pct.toFixed(1) : Math.round(pct)}%`;
     const dates = (badge.earnedAt ?? []).slice().sort();
 
     const cta = howTo.href && (() => {
@@ -70,7 +86,7 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                         <Badge3D modelPath={badge.modelPath} scale={badge.scale ?? 2} unlocked={badge.unlocked} compact fallbackSrc={meta?.imageSrc} />
                         {!badge.unlocked && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-7 h-7 text-white/60" /></div>}
                     </div>
-                    <div className={`mt-2 text-xs capitalize ${RARITY_TEXT[badge.rarity]}`}>{badge.rarity}</div>
+                    <div className={`mt-2 text-xs capitalize ${RARITY_TEXT[rarity]}`}>{rarity}</div>
                 </div>
 
                 {/* Right page: the details */}
@@ -95,6 +111,19 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                             </div>
                         </div>
                     </div>
+
+                    {pct !== null && stats && (
+                        <div>
+                            <div className={field}>Rarity</div>
+                            <div className="mt-1 flex items-baseline gap-2 text-sm text-white/80">
+                                <span className={`font-semibold capitalize ${RARITY_TEXT[rarity]}`}>{rarity}</span>
+                                <span className="text-white/50">· {holders === 0 ? 'No one has earned it yet' : `${holders} of ${stats.total} members (${pctLabel})`}</span>
+                            </div>
+                            <div className="mt-2 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                                <div className="h-full rounded-full bg-[#E8C15A]" style={{ width: `${Math.max(pct, holders ? 2 : 0)}%` }} />
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <div className={field}>How to get it</div>
