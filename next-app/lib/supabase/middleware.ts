@@ -83,8 +83,12 @@ export async function updateSession(request: NextRequest) {
     // It blocks unauthenticated users from /dashboard/* at the server level.
     let hasValidSession = false;
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        hasValidSession = !!user;
+        // getClaims checks the session token's signature locally (the signing keys are cached),
+        // so a page navigation no longer waits on a round trip to Supabase. Projects on the old
+        // shared-secret keys fall back to asking Supabase, as before. Data routes still verify
+        // the session with getUser in verifyAuth, so this only decides whether to show a page.
+        const { data } = await supabase.auth.getClaims();
+        hasValidSession = !!data?.claims;
     } catch (e) {
         // Auth refresh failed — treat as unauthenticated
         if (e instanceof Error) {

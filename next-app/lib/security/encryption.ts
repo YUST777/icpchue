@@ -45,7 +45,7 @@ export const encrypt = (text: string | null | undefined): string | null => {
 
 const HEX_CIPHERTEXT_REGEX = /^[0-9a-fA-F]{64,}$/;
 
-export const decrypt = (ciphertext: string | null | undefined): string | null => {
+const decryptUncached = (ciphertext: string | null | undefined): string | null => {
     if (!ciphertext) return null;
 
     // Fast-path: If string contains spaces, non-hex chars, or is standard text, it's plaintext
@@ -84,6 +84,27 @@ export const decrypt = (ciphertext: string | null | undefined): string | null =>
     }
 
     return ciphertext;
+};
+
+// Each decrypt costs about 65 ms of CPU (key derivation), and a leaderboard or trainee list
+// decrypts hundreds of names. Plaintext for a given ciphertext never changes, so a warm server
+// remembers it. Kept in this process only, capped, oldest dropped first.
+const DECRYPT_MEMO_MAX = 20000;
+const decryptMemo = new Map<string, string | null>();
+
+export const decrypt = (ciphertext: string | null | undefined): string | null => {
+    if (!ciphertext) return null;
+    if (decryptMemo.has(ciphertext)) return decryptMemo.get(ciphertext) ?? null;
+    const plain = decryptUncached(ciphertext);
+    // Never remember a failure: a key problem should be retried, not frozen in.
+    if (plain !== null) {
+        if (decryptMemo.size >= DECRYPT_MEMO_MAX) {
+            const oldest = decryptMemo.keys().next().value;
+            if (oldest !== undefined) decryptMemo.delete(oldest);
+        }
+        decryptMemo.set(ciphertext, plain);
+    }
+    return plain;
 };
 
 // ─── Legacy: CryptoJS AES-CBC decrypt (read-only, for old DB data) ──
