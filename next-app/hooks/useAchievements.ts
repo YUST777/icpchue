@@ -12,6 +12,8 @@ export interface Achievement {
     seen: boolean;
     /** Mint number: 1 for the first member to earn this badge. */
     serial?: number;
+    /** Number printed on the physical badge. */
+    factory?: string;
 }
 
 export function useAchievements(isAuthenticated: boolean = false) {

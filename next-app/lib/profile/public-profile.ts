@@ -4,6 +4,7 @@ import { getCachedData } from '@/lib/cache/cache';
 import { rateLimit } from '@/lib/cache/rate-limit';
 import { formatDisplayName } from '@/lib/names';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
+import { UNCOUNTED_USER_IDS, SERIAL_CTE, factoryNumber } from '@/lib/achievements/factory';
 import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
 export interface PublicSheetProblem {
@@ -29,6 +30,8 @@ export interface PublicAchievement {
     description: string;
     rarity: 'common' | 'rare' | 'legendary';
     earnedAt: string;
+    serial?: number;
+    factory?: string;
 }
 
 export interface PublicProfile {
@@ -121,7 +124,12 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
                 'SELECT COUNT(DISTINCT solve_date) AS days FROM daily_solves WHERE user_id = $1',
                 [user.id]
             ),
-            query('SELECT achievement_id, earned_at FROM user_achievements WHERE user_id = $1', [user.id]),
+            query(
+                `WITH ${SERIAL_CTE('$2')}
+                 SELECT ua.id, ua.achievement_id, ua.earned_at, r.serial
+                 FROM user_achievements ua LEFT JOIN ranked r ON r.id = ua.id WHERE ua.user_id = $1`,
+                [user.id, UNCOUNTED_USER_IDS]
+            ),
         ]);
 
         const sheetMap = new Map<string, PublicSheet>();
@@ -148,10 +156,10 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
         const cf = user.codeforces_data as { handle?: string; rating?: number; maxRating?: number; rank?: string } | null;
         const cfHandle: string | null = user.codeforces_handle || cf?.handle || null;
 
-        const achievements: PublicAchievement[] = (achievementResult.rows as { achievement_id: string; earned_at: string }[])
+        const achievements: PublicAchievement[] = (achievementResult.rows as { id: number; achievement_id: string; earned_at: string; serial: number | null }[])
             .flatMap(r => {
                 const meta = getAchievementMeta(r.achievement_id);
-                return meta ? [{ id: r.achievement_id, name: meta.name, description: meta.desc, rarity: meta.tier, earnedAt: new Date(r.earned_at).toISOString() }] : [];
+                return meta ? [{ id: r.achievement_id, name: meta.name, description: meta.desc, rarity: meta.tier, earnedAt: new Date(r.earned_at).toISOString(), ...(r.serial != null && !/^podium-/.test(r.achievement_id) ? { serial: r.serial, factory: factoryNumber(r.id) } : {}) }] : [];
             })
             .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity]);
 

@@ -24,6 +24,7 @@ interface BadgeCardProps {
     rarity: 'common' | 'rare' | 'legendary';
     earnedAt?: string[];
     serial?: number;
+    factory?: string;
 }
 
 const RARITY_TEXT = { common: 'text-white/40', rare: 'text-sky-400', legendary: 'text-[#E8C15A]' } as const;
@@ -127,9 +128,10 @@ export default function AchievementsPage() {
     // Attach the time each regular badge was earned.
     const earnedTimes = new Map(earned.map(a => [a.achievement_id, a.earned_at]));
     const serials = new Map(earned.map(a => [a.achievement_id, a.serial]));
+    const factories = new Map(earned.map(a => [a.achievement_id, a.factory]));
     for (const a of achievements as BadgeCardProps[]) {
         if (!a.earnedAt && earnedTimes.has(a.id)) a.earnedAt = [earnedTimes.get(a.id)!];
-        if (!isPodiumId(a.id) && serials.get(a.id) != null) a.serial = serials.get(a.id);
+        if (!isPodiumId(a.id) && serials.get(a.id) != null) { a.serial = serials.get(a.id); a.factory = factories.get(a.id); }
     }
     const selected = achievements.find(a => a.id === selectedId) as BadgeCardProps | undefined;
 
@@ -186,7 +188,7 @@ export default function AchievementsPage() {
                     })}
                 </div>
             </div>
-            {selected && <AchievementDetail badge={{ id: selected.id, modelPath: selected.modelPath, title: selected.title, unlocked: selected.unlocked, rarity: selected.rarity, earnedAt: selected.earnedAt, serial: selected.serial, scale: selected.scale }} onClose={() => setSelectedId(null)} />}
+            {selected && <AchievementDetail badge={{ id: selected.id, modelPath: selected.modelPath, title: selected.title, unlocked: selected.unlocked, rarity: selected.rarity, earnedAt: selected.earnedAt, serial: selected.serial, factory: selected.factory, scale: selected.scale }} onClose={() => setSelectedId(null)} />}
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }`}</style>
         </>
     );

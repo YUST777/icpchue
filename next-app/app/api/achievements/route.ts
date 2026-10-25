@@ -3,6 +3,7 @@ import { query } from '@/lib/db/db';
 import { verifyAuth } from '@/lib/auth/auth';
 import { getCachedData } from '@/lib/cache/cache';
 import { checkProgressAchievements } from '@/lib/services/achievements';
+import { UNCOUNTED_USER_IDS, SERIAL_CTE, factoryNumber } from '@/lib/achievements/factory';
 
 export async function GET(req: NextRequest) {
     const authResult = await verifyAuth(req);
@@ -19,16 +20,13 @@ export async function GET(req: NextRequest) {
         const cacheKey = `user:${authResult.id}:achievements`;
         const data = await getCachedData(cacheKey, 300, async () => {
             const result = await query(
-                `WITH ranked AS (
-                     SELECT id, ROW_NUMBER() OVER (PARTITION BY achievement_id ORDER BY earned_at, id)::int AS serial
-                     FROM user_achievements
-                 )
+                `WITH ${SERIAL_CTE('$2')}
                  SELECT ua.id, ua.achievement_id, ua.earned_at, ua.seen, r.serial
-                 FROM user_achievements ua JOIN ranked r ON r.id = ua.id
+                 FROM user_achievements ua LEFT JOIN ranked r ON r.id = ua.id
                  WHERE ua.user_id = $1 ORDER BY ua.seen ASC, ua.earned_at DESC`,
-                [authResult.id]
+                [authResult.id, UNCOUNTED_USER_IDS]
             );
-            return { achievements: result.rows };
+            return { achievements: result.rows.map((r: { id: number; serial: number | null }) => ({ ...r, serial: r.serial ?? undefined, factory: r.serial == null ? undefined : factoryNumber(r.id) })) };
         });
 
         return NextResponse.json(data);
