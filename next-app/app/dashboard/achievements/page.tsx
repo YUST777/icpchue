@@ -84,7 +84,7 @@ export default function AchievementsPage() {
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
         ...podiumBadges,
-        { group: 'Seasons', id: 'ecpc-2026', modelPath: '/3d/ecpc-2026.glb', scale: 1.3, title: ACHIEVEMENT_META['ecpc-2026'].name, description: ACHIEVEMENT_META['ecpc-2026'].desc, unlocked: earnedIds.has('ecpc-2026'), rarity: ACHIEVEMENT_META['ecpc-2026'].tier },
+        { group: 'Milestones', id: 'ecpc-2026', modelPath: '/3d/ecpc-2026.glb', scale: 1.3, title: ACHIEVEMENT_META['ecpc-2026'].name, description: ACHIEVEMENT_META['ecpc-2026'].desc, unlocked: earnedIds.has('ecpc-2026'), rarity: ACHIEVEMENT_META['ecpc-2026'].tier },
         ...SEASON_BADGES.map(season => ({
             group: 'Seasons', id: season.id, modelPath: `/3d/${season.id}.glb`, title: ACHIEVEMENT_META[season.id].name, description: ACHIEVEMENT_META[season.id].desc,
             unlocked: earnedIds.has(season.id), rarity: ACHIEVEMENT_META[season.id].tier,
