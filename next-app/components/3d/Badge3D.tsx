@@ -124,11 +124,17 @@ export function loadModel(path: string, onProgress: (pct: number | null) => void
     return pending;
 }
 
-function BadgeFallback({ onRetry, src }: { onRetry?: () => void; src?: string }) {
+function BadgeFallback({ onRetry, src, stock }: { onRetry?: () => void; src?: string; stock?: string }) {
+    // A snapshot that fails to decode falls back to the stock picture, then to a plain icon.
+    const [broken, setBroken] = useState(false);
+    const shown = broken ? stock : src;
     return (
         <button type="button" onClick={onRetry} title="3D preview unavailable. Click to retry."
             className="absolute inset-0 flex items-center justify-center text-[#E8C15A]/70 cursor-pointer">
-            {src ? <Image src={src} alt="" fill sizes="320px" className="object-contain p-2" /> : <Award size={40} strokeWidth={1.5} />}
+            {shown ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={shown} alt="" onError={() => setBroken(true)} className="h-full w-full object-contain p-2" />
+            ) : <Award size={40} strokeWidth={1.5} />}
         </button>
     );
 }
@@ -172,7 +178,7 @@ class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void
 }
 
 /** Chrome allows ~16 WebGL contexts per page. Allow up to 16 live 3D badges on screen simultaneously. */
-const MAX_LIVE_SCENES = 14;
+const MAX_LIVE_SCENES = 10;
 
 interface SceneEntry { visible: boolean; lastSeen: number; evict: () => void }
 const liveScenes = new Map<symbol, SceneEntry>();
@@ -214,7 +220,11 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
         lastSeen: 0,
         // When this scene is released, keep a picture of its last frame so scrolling back shows no flash.
         evict: () => {
-            try { if (glCanvas.current) setSnapshot(glCanvas.current.toDataURL('image/png')); } catch { /* keep the stock picture */ }
+            try {
+                const shot = glCanvas.current?.toDataURL('image/png');
+                // A lost context returns "data:," or a blank image; only keep a real frame.
+                setSnapshot(shot && shot.length > 3000 ? shot : null);
+            } catch { setSnapshot(null); }
             setSceneReady(false);
             setGranted(false);
         },
@@ -259,20 +269,31 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
             ) : !url ? (
                 <LoadingBadge pct={pct} src={fallbackSrc} />
             ) : !granted ? (
-                <BadgeFallback onRetry={retry} src={snapshot ?? fallbackSrc} />
+                <BadgeFallback onRetry={retry} src={snapshot ?? fallbackSrc} stock={fallbackSrc} />
             ) : (
             <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
             <div className={`absolute inset-0 ${introDone ? '' : 'animate-[badgeIn_0.6s_ease-out]'} ${!unlocked ? 'grayscale opacity-45' : ''}`}>
             {snapshot && !sceneReady && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={snapshot} alt="" className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain" />
+                <img src={snapshot} alt="" onError={() => setSnapshot(null)} className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain" />
             )}
             <Canvas
                 // A tight depth range keeps the layered panels from z-fighting on GPUs with a 16-bit depth buffer.
                 camera={{ position: [0, 0, 5], fov: 45, near: 2.5, far: 9 }}
                 dpr={[1, 1.5]}
                 gl={{ preserveDrawingBuffer: true }}
-                onCreated={({ gl }) => { glCanvas.current = gl.domElement; setTimeout(() => setSceneReady(true), 250); }}
+                onCreated={({ gl }) => {
+                    glCanvas.current = gl.domElement;
+                    setTimeout(() => setSceneReady(true), 250);
+                    // The browser drops old WebGL contexts when it runs short; show the picture and rebuild on demand.
+                    gl.domElement.addEventListener('webglcontextlost', e => {
+                        e.preventDefault();
+                        liveScenes.delete(id.current);
+                        setSnapshot(null);
+                        setSceneReady(false);
+                        setGranted(false);
+                    });
+                }}
                 frameloop={visible ? 'always' : 'never'}
             >
                 <ambientLight intensity={1.5} />
