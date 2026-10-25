@@ -240,14 +240,18 @@ div[style*="position: absolute"][style*="bottom"]>a[href*="spline"] {
   touch-action: manipulation;
 }
 
-/* Touch-friendly tap targets (minimum 44x44px) */
-button,
-a,
-input,
-select,
-textarea {
-  min-height: 44px;
-  min-width: 44px;
+/* Touch-friendly tap targets (minimum 44x44px).
+   Kept in the base layer so Tailwind sizing utilities (h-8, w-6, p-1.5 ...) win. Unlayered,
+   this stretched every small icon button, such as the X on dialogs, into an off-centre 44px box. */
+@layer base {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Smooth scrolling for anchor links */
@@ -320,11 +324,13 @@ button {
   }
 
   /* Ensure buttons are touch-friendly */
-  button,
-  a[class*="button"],
-  a[class*="btn"] {
-    padding: 0.75rem 1.5rem;
-    min-height: 48px;
+  @layer base {
+    button,
+    a[class*="button"],
+    a[class*="btn"] {
+      padding: 0.75rem 1.5rem;
+      min-height: 48px;
+    }
   }
 
   /* Optimize form inputs for mobile */
@@ -387,9 +393,11 @@ button {
   }
 
   /* Better button sizing on tablets */
-  button,
-  a[class*="button"] {
-    padding: 0.875rem 1.75rem;
+  @layer base {
+    button,
+    a[class*="button"] {
+      padding: 0.875rem 1.75rem;
+    }
   }
 
   /* Optimize text sizes for tablets */
@@ -468,10 +476,12 @@ button {
   }
 
   /* Compact buttons on small screens */
-  button,
-  a[class*="button"] {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
+  @layer base {
+    button,
+    a[class*="button"] {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+    }
   }
 
   /* Reduce gaps in grids */
@@ -972,10 +982,12 @@ select {
   }
 
   /* Larger touch targets */
-  button,
-  a[class*="button"] {
-    min-height: 52px;
-    padding: 1rem 2rem;
+  @layer base {
+    button,
+    a[class*="button"] {
+      min-height: 52px;
+      padding: 1rem 2rem;
+    }
   }
 }
 
@@ -1005,16 +1017,18 @@ select {
 /* Improve tap targets across all touch devices */
 @media (hover: none) and (pointer: coarse) {
 
-  /* Minimum tap target size */
-  a,
-  button,
-  input,
-  select,
-  textarea,
-  [role="button"],
-  [onclick] {
-    min-height: 44px;
-    min-width: 44px;
+  /* Minimum tap target size (base layer: utilities override it) */
+  @layer base {
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [onclick] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 
   /* Better spacing for touch */
@@ -1031,8 +1045,10 @@ select {
   }
 
   /* Better button spacing */
-  button:not(.ui-compact *) {
-    padding: 0.875rem 1.75rem;
+  @layer base {
+    button:not(.ui-compact *) {
+      padding: 0.875rem 1.75rem;
+    }
   }
 }
 
@@ -1162,9 +1178,11 @@ iframe[title*="reCAPTCHA"],
   }
 
   /* Better button sizing on mobile */
-  button {
-    min-height: 48px;
-    font-size: 0.875rem;
+  @layer base {
+    button {
+      min-height: 48px;
+      font-size: 0.875rem;
+    }
   }
 
   /* Compact progress bar on mobile */
@@ -1217,8 +1235,10 @@ iframe[title*="reCAPTCHA"],
   }
 
   /* Larger touch targets on tablets */
-  button {
-    min-height: 52px;
+  @layer base {
+    button {
+      min-height: 52px;
+    }
   }
 
   input[type="text"],
@@ -1448,4 +1468,17 @@ iframe[title*="reCAPTCHA"],
 .achievement-toast-timer { animation-name: achievement-toast-timer; animation-timing-function: linear; animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
   .achievement-toast-in, .achievement-badge-pop, .achievement-badge-glow { animation: none; }
+}
+
+/* Icon-only buttons (a lone SVG, e.g. the X on dialogs) hug their icon and keep it centred,
+   instead of inheriting the 44-52px marketing tap-target minimums. Base layer: Tailwind
+   utilities such as h-10 w-10 or min-w-* still win. */
+@layer base {
+  button:has(> svg:only-child) {
+    min-width: 0;
+    min-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
