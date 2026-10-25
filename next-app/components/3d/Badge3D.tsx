@@ -172,8 +172,30 @@ class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void
 }
 
 /** Chrome allows ~16 WebGL contexts per page. Allow up to 16 live 3D badges on screen simultaneously. */
-const MAX_LIVE_SCENES = 16;
-const liveScenes = new Set<symbol>();
+const MAX_LIVE_SCENES = 12;
+
+interface SceneEntry { visible: boolean; lastSeen: number; evict: () => void }
+const liveScenes = new Map<symbol, SceneEntry>();
+
+/**
+ * Scenes stay mounted (paused) after they scroll off screen, so scrolling back is
+ * instant. Only when more than MAX_LIVE_SCENES want to exist is the one that left
+ * the screen longest ago released.
+ */
+function claimScene(id: symbol, entry: SceneEntry): boolean {
+    if (liveScenes.has(id)) return true;
+    if (liveScenes.size >= MAX_LIVE_SCENES) {
+        let oldest: [symbol, SceneEntry] | null = null;
+        for (const item of liveScenes) {
+            if (!item[1].visible && (!oldest || item[1].lastSeen < oldest[1].lastSeen)) oldest = item;
+        }
+        if (!oldest) return false;
+        liveScenes.delete(oldest[0]);
+        oldest[1].evict();
+    }
+    liveScenes.set(id, entry);
+    return true;
+}
 
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
@@ -182,17 +204,28 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
     const [url, setUrl] = useState<string | null>(null);
     const [failed, setFailed] = useState(false);
     const [granted, setGranted] = useState(false);
-    const slot = useRef(Symbol('badge-scene'));
+    const [introDone, setIntroDone] = useState(false);
+    const id = useRef(Symbol('badge-scene'));
+    const entry = useRef<SceneEntry>({ visible: false, lastSeen: 0, evict: () => setGranted(false) });
 
-    // Claim a scene slot while this badge is on screen with its model loaded.
+    // Claim a scene slot when the badge is on screen with its model loaded; keep it afterwards.
     useEffect(() => {
-        const mine = slot.current;
-        if (visible && url && liveScenes.size < MAX_LIVE_SCENES) {
-            liveScenes.add(mine);
-            setGranted(true);
-        }
-        return () => { liveScenes.delete(mine); setGranted(false); };
+        entry.current.visible = visible;
+        if (visible) entry.current.lastSeen = Date.now();
+        if (visible && url && claimScene(id.current, entry.current)) setGranted(true);
     }, [visible, url]);
+
+    useEffect(() => {
+        const mine = id.current;
+        return () => { liveScenes.delete(mine); };
+    }, []);
+
+    // The fade-in plays once, not every time the badge scrolls back into view.
+    useEffect(() => {
+        if (!granted) return;
+        const t = setTimeout(() => setIntroDone(true), 700);
+        return () => clearTimeout(t);
+    }, [granted]);
 
     useEffect(() => {
         if (!seen) return;
@@ -207,19 +240,17 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
 
     return (
         <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative`}>
-            {/* Unmount the canvas once it scrolls away: Chrome keeps only ~16 WebGL
-                contexts per page, and the achievements page has more badges than that. */}
-            {!seen || !visible ? (
-                <LoadingBadge pct={pct} src={fallbackSrc} />
-            ) : failed || !hasWebGL() ? (
+            {failed || (seen && !hasWebGL()) ? (
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
+            ) : !seen ? (
+                <BadgeFallback src={fallbackSrc} />
             ) : !url ? (
                 <LoadingBadge pct={pct} src={fallbackSrc} />
             ) : !granted ? (
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : (
             <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
-            <div className={`absolute inset-0 animate-[badgeIn_0.6s_ease-out] ${!unlocked ? 'grayscale opacity-45' : ''}`}>
+            <div className={`absolute inset-0 ${introDone ? '' : 'animate-[badgeIn_0.6s_ease-out]'} ${!unlocked ? 'grayscale opacity-45' : ''}`}>
             <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 1.5]} frameloop={visible ? 'always' : 'never'}>
                 <ambientLight intensity={1.5} />
                 <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
