@@ -7,6 +7,7 @@ Competitive-programming community platform (icpchue.com). Keep answers and explo
 - `supabase/` — migrations and auth email templates.
 - `polygon/` — training sheets as Polygon problems. One folder per sheet (`level0-sheet1/A-say-hello/...`): `problem.json`, `statement.json`, `validator.cpp`, `solution.cpp`, `wrong-*.cpp`, `tests/NN.txt`. Method for every sheet: skill `polygon-sheet`. Push with `python3 polygon/push.py polygon/<sheet>`; ids land in `<sheet>/polygon-ids.json`. Keys in `next-app/.env.local`.
 - `pdf_gen/` — progress reports, booklet, certificates, Gamma deck. Use the `print-docs` skill.
+- `creative_work/vids/` — recorded sessions edited into chaptered videos. Use the `lesson-video` skill.
 - `extension/` — Verdict Helper Chrome extension.
 - `whatsapp-worker/`, `icpchue-whatsapp/`, `cf-bridge/` — side services.
 
