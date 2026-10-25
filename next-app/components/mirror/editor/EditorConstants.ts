@@ -57,6 +57,3 @@ export function getLanguageById(id: string): Language | undefined {
     return SUPPORTED_LANGUAGES.find(l => l.id === id);
 }
 
-export function getTemplateForLanguage(langId: string): string {
-    return TEMPLATES[langId] || '';
-}

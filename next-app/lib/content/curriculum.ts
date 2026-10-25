@@ -233,7 +233,6 @@ export const curriculum: Level[] = [
     }
 ];
 
-
 // Helper functions
 export function getLevel(levelId: string): Level | undefined {
     return curriculum.find(l => l.id === levelId || l.slug === levelId);
@@ -244,9 +243,3 @@ export function getSheet(levelId: string, sheetId: string): Sheet | undefined {
     return level?.sheets.find(s => s.id === sheetId);
 }
 
-export function getProblemUrl(sheet: Sheet, problemId: string): string {
-    return `https://codeforces.com/group/${sheet.groupId}/contest/${sheet.contestId}/problem/${problemId}`;
-}
-
-// Problem data cache (for use after mirror scraping)
-export const problemDataCache: Map<string, CFProblemData> = new Map();

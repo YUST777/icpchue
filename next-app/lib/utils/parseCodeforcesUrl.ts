@@ -60,10 +60,3 @@ export function getDifficultyColor(rating?: number): { bg: string; text: string;
     return { bg: 'bg-red-500/15', text: 'text-red-400', label: 'Hard' };
 }
 
-/** CF Rating to numeric difficulty tier (for sorting) */
-export function getDifficultyTier(rating?: number): number {
-    if (!rating) return 0;
-    if (rating <= 1600) return 1; // Easy
-    if (rating <= 2100) return 2; // Medium
-    return 3; // Hard
-}

@@ -6,36 +6,13 @@ Every route under `next-app/app/api`, what it does, who can call it, and whether
 - **Used**: how many source files outside `app/api` mention the path (website, extension, side services). `0` means nothing calls it.
 - Generated from the code on 2026-10-25. Re-check before deleting: a route can be called with a computed URL that a text search misses.
 
-## Delete candidates (nothing calls them)
+## Removed on 2026-10-25
 
-- `/api/admin/applications` – Admin list of applications (old admin dashboard).
-- `/api/admin/cleanup` – Deletes old tracking data (sessions, logs, activity). Secret-header job.
-- `/api/admin/export/top-active` – Owner-only CSV of the most active trainees with contact details.
-- `/api/admin/overview` – Admin totals: users, pending applications, submissions per day, sheet counts.
-- `/api/admin/rankings` – Admin ranking of students by solves.
-- `/api/admin/sheet-progress` – Admin view of progress per sheet and per user.
-- `/api/admin/submissions` – Admin list of all submissions.
-- `/api/admin/top-students` – Admin top students by solved count.
-- `/api/admin/users` – Admin user list with solve and submission counts.
-- `/api/analyze-complexity` – Sends code to Gemini to estimate time and space complexity.
-- `/api/card` – Closed. Always answers that card submissions are finished.
-- `/api/codeforces/report-solve` – Marks a problem as ATTEMPTED from the page (never SOLVED).
-- `/api/get-ip` – Returns your IP address.
-- `/api/judge/submit` – Runs your code on the judge for a sheet problem and records the submission.
-- `/api/mirror/fetch` – Proxy used by the mirror service to fetch Codeforces problem content.
-- `/api/recap/[id]/share` – Shareable recap image/card.
-- `/api/sheets/my-submissions` – Your accepted submissions on training sheets.
-- `/api/sheets/submission/[id]` – Deletes one of your sheet submissions.
-- `/api/sheets/submit` – Saves a manual sheet submission.
-- `/api/stats/distribution` – Distribution of accepted submissions for charts.
-- `/api/submit-application` – Old application form submit.
-- `/api/track/flush` – Manual flush of buffered tracking events (secret header).
+These had no callers and were deleted: `/api/admin/applications`, `/api/admin/cleanup`, `/api/admin/export/top-active`, `/api/admin/overview`, `/api/admin/rankings`, `/api/admin/sheet-progress`, `/api/admin/submissions`, `/api/admin/top-students`, `/api/admin/users`, `/api/analyze-complexity`, `/api/card`, `/api/codeforces/report-solve`, `/api/get-ip`, `/api/judge/submit`, `/api/mirror/fetch`, `/api/recap/[id]/share`, `/api/sheets/my-submissions`, `/api/sheets/submission/[id]`, `/api/sheets/submit`, `/api/stats/distribution`, `/api/submit-application`, `/api/track/flush`.
 
-Already removed today: `/api/codeforces/submit`, `/api/codeforces/submit-result`, `/api/codeforces/submission` (all depended on the deleted bridge).
+Also removed (they depended on the deleted bridge): `/api/codeforces/submit`, `/api/codeforces/submit-result`, `/api/codeforces/submission`.
 
 Looks unused in a text search but is NOT dead: `/api/apply/level0` and `/api/apply/level1` (the apply form builds the URL as `/api/apply/${level}`) and `/api/auth/callback/codeforces` (Codeforces redirects the browser back to it after OAuth login).
-
-Check before deleting, because outside services may call them: `/api/admin/cleanup` and `/api/track/flush` (secret-header jobs for a cron) and `/api/mirror/fetch` (called by the mirror service).
 
 Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel cron), `/api/health`, `/api/achievements/[id]/seen` (called with a template string).
 
@@ -51,15 +28,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/admin/applications` | GET | owner/admin | Admin list of applications (old admin dashboard). | 0 |
-| `/api/admin/cleanup` | POST | secret header | Deletes old tracking data (sessions, logs, activity). Secret-header job. | 0 |
-| `/api/admin/export/top-active` | GET | owner/admin | Owner-only CSV of the most active trainees with contact details. | 0 |
-| `/api/admin/overview` | GET | owner/admin | Admin totals: users, pending applications, submissions per day, sheet counts. | 0 |
-| `/api/admin/rankings` | GET | owner/admin | Admin ranking of students by solves. | 0 |
-| `/api/admin/sheet-progress` | GET | owner/admin | Admin view of progress per sheet and per user. | 0 |
-| `/api/admin/submissions` | GET | owner/admin | Admin list of all submissions. | 0 |
-| `/api/admin/top-students` | GET | owner/admin | Admin top students by solved count. | 0 |
-| `/api/admin/users` | GET | owner/admin | Admin user list with solve and submission counts. | 0 |
 
 ## analytics
 
@@ -71,7 +39,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/analyze-complexity` | POST | signed in | Sends code to Gemini to estimate time and space complexity. | 0 |
 
 ## apply
 
@@ -102,7 +69,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/card` | POST/GET | public | Closed. Always answers that card submissions are finished. | 0 |
 
 ## client-errors
 
@@ -122,7 +88,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 | `/api/codeforces/mirror` | GET | signed in | Fetches a Codeforces problem statement through the mirror service (cached). | 2 |
 | `/api/codeforces/missing-sources` | POST | signed in | Your synced submissions that still have no source code saved. | 1 |
 | `/api/codeforces/problem-stats` | GET | signed in | Solved-by counts for a Codeforces problem (cached 1 h). | 1 |
-| `/api/codeforces/report-solve` | POST | signed in | Marks a problem as ATTEMPTED from the page (never SOLVED). | 0 |
 | `/api/codeforces/save-submission` | POST | signed in | Saves a Codeforces submission and verdict from the extension, updates progress, streak and badges. | 1 |
 | `/api/codeforces/submissions` | GET | signed in | Lists your submissions on a contest through the public API. | 1 |
 | `/api/codeforces/sync-handle` | POST | signed in | Links or re-checks your Codeforces handle (a handle belongs to one account). | 2 |
@@ -157,7 +122,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/get-ip` | GET | signed in | Returns your IP address. | 0 |
 
 ## health
 
@@ -175,7 +139,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/judge/submit` | POST | signed in | Runs your code on the judge for a sheet problem and records the submission. | 0 |
 | `/api/judge/test` | POST | signed in | Runs your code against sample/custom tests without saving. | 1 |
 
 ## leaderboard
@@ -206,7 +169,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/mirror/fetch` | POST | signed in | Proxy used by the mirror service to fetch Codeforces problem content. | 0 |
 
 ## news
 
@@ -232,22 +194,17 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
 | `/api/recap/[id]` | GET | public | 2025 recap data for a student. | 2 |
-| `/api/recap/[id]/share` | GET | public | Shareable recap image/card. | 0 |
 
 ## sheets
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/sheets/my-submissions` | GET | signed in | Your accepted submissions on training sheets. | 0 |
 | `/api/sheets/solved` | GET | signed in | List of problem ids you solved in a sheet. | 1 |
-| `/api/sheets/submission/[id]` | DELETE | signed in | Deletes one of your sheet submissions. | 0 |
-| `/api/sheets/submit` | POST | signed in | Saves a manual sheet submission. | 0 |
 
 ## stats
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/stats/distribution` | GET | signed in | Distribution of accepted submissions for charts. | 0 |
 
 ## submissions
 
@@ -262,7 +219,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
-| `/api/submit-application` | POST | public | Old application form submit. | 0 |
 
 ## team
 
@@ -275,7 +231,6 @@ Kept on purpose even though nothing in the app calls them: `/api/cron/*` (Vercel
 | Route | Methods | Access | What it does | Used |
 |---|---|---|---|---|
 | `/api/track` | POST | signed in | Event tracking (UI actions, errors). | 5 |
-| `/api/track/flush` | POST | public | Manual flush of buffered tracking events (secret header). | 0 |
 | `/api/track/navigation` | POST | signed in | Page visit and session activity tracking. | 1 |
 | `/api/track/session-watch` | POST | signed in | Heartbeat for session pages: video watch time, page time. | 1 |
 | `/api/track/time` | POST | signed in | Active/idle/away seconds on a problem page. | 1 |

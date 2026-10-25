@@ -123,7 +123,3 @@ export function similarity(a: Analyzed, b: Analyzed): number {
     return (2 * shared) / (a.fingerprints.size + b.fingerprints.size);
 }
 
-/** Distinctive identifiers both submissions use (e.g. "first_digit"). */
-export function sharedIdentifiers(a: Analyzed, b: Analyzed): string[] {
-    return [...a.identifiers].filter((id) => b.identifiers.has(id));
-}

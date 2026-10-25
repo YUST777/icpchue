@@ -143,24 +143,3 @@ export function searchDevLogs(query: string): SearchResult[] {
     return results.sort((a, b) => b.score - a.score);
 }
 
-/**
- * Get all unique years from DevLog entries
- */
-export function getDevLogYears(): number[] {
-    const years = new Set<number>();
-    devLogs.forEach(entry => {
-        const year = new Date(entry.date).getFullYear();
-        years.add(year);
-    });
-    return Array.from(years).sort((a, b) => b - a);
-}
-
-/**
- * Filter DevLog entries by year
- */
-export function filterDevLogsByYear(year: number): LogEntry[] {
-    return devLogs.filter(entry => {
-        const entryYear = new Date(entry.date).getFullYear();
-        return entryYear === year;
-    });
-}

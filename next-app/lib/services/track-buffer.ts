@@ -36,5 +36,3 @@ export async function flushEvents(): Promise<number> {
     return 0;
 }
 
-/** Kept for API compatibility; no timer is needed without a buffer. */
-export function startFlushTimer(): void {}

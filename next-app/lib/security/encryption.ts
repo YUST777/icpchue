@@ -155,20 +155,3 @@ export const createBlindIndex = (value: string | null | undefined): string | nul
 
 // ─── TOTP verification (via speakeasy — established lib) ────────────
 
-export const verifyTOTP = (token: string): boolean => {
-    if (!TOTP_SECRET) {
-        console.error('TOTP_SECRET is not defined');
-        return false;
-    }
-    try {
-        return speakeasy.totp.verify({
-            secret: TOTP_SECRET,
-            encoding: 'base32',
-            token,
-            window: 2,
-        });
-    } catch (error) {
-        console.error('TOTP verification error:', error);
-        return false;
-    }
-};

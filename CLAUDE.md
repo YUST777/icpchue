@@ -9,7 +9,7 @@ Competitive-programming community platform (icpchue.com). Keep answers and explo
 - `pdf_gen/` — progress reports, booklet, certificates, Gamma deck. Use the `print-docs` skill.
 - `creative_work/vids/` — recorded sessions edited into chaptered videos. Use the `lesson-video` skill.
 - `extension/` — Verdict Helper Chrome extension.
-- `whatsapp-worker/`, `icpchue-whatsapp/`, `cf-bridge/` — side services.
+- `whatsapp-worker/`, `icpchue-whatsapp/` — side services.
 
 ## Rules
 - Printable sheets: no highlights or review notes; small ICPC HUE logo top left.
