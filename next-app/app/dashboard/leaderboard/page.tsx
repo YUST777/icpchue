@@ -49,8 +49,22 @@ interface SheetUser {
 
 import { fetchWithCache } from '@/lib/cache/api-cache';
 
+// Small "You" tag next to the signed-in user's name (hidden on phones, where the name column is narrow)
+const YouBadge = () => (
+    <span className="hidden sm:inline-flex shrink-0 items-center rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[10px] font-bold leading-none text-black">
+        You
+    </span>
+);
+
+// "https://codeforces.com/profile/Tourist/" or "Tourist" -> "tourist"
+const normalizeCfHandle = (value?: string | null) => {
+    if (!value) return '';
+    const parts = value.trim().split('/').filter(Boolean);
+    return (parts[parts.length - 1] ?? '').toLowerCase();
+};
+
 export default function LeaderboardPage() {
-    useAuth(); // Keep auth context active
+    const { user, profile } = useAuth();
     const [activeTab, setActiveTab] = useState<'codeforces' | 'sheets'>('sheets');
     const [cfLeaderboard, setCfLeaderboard] = useState<CFUser[]>([]);
     const [sheetsLeaderboard, setSheetsLeaderboard] = useState<SheetUser[]>([]);
@@ -99,6 +113,16 @@ export default function LeaderboardPage() {
         if (count >= 5) return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
         return 'bg-[#333] text-[#A0A0A0]';
     };
+
+    // Position of the signed-in user in each list (-1 when they are not on it).
+    // Sheets rows carry the user id; Codeforces rows only carry the handle.
+    const mySheetsIndex = user
+        ? sheetsLeaderboard.findIndex(entry => Number(entry.userId) === Number(user.id))
+        : -1;
+    const myCfHandle = normalizeCfHandle(profile?.codeforces_data?.handle ?? profile?.codeforces_profile);
+    const myCfIndex = myCfHandle
+        ? cfLeaderboard.findIndex(entry => normalizeCfHandle(entry.handle) === myCfHandle)
+        : -1;
 
     return (
         <>
@@ -214,20 +238,28 @@ export default function LeaderboardPage() {
                                 <VirtualLeaderboard
                                     items={sheetsLeaderboard}
                                     itemSize={56}
+                                    currentUserIndex={mySheetsIndex}
                                 >
                                     {({ index, style }: { index: number; style: React.CSSProperties }) => {
                                         const user = sheetsLeaderboard[index];
+                                        const isMe = index === mySheetsIndex;
                                         return (
-                                            <div style={style} key={user.userId} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
+                                            <div
+                                                style={style}
+                                                key={user.userId}
+                                                aria-current={isMe ? 'true' : undefined}
+                                                className={`grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 transition-colors items-center border-b border-white/5 last:border-0 ${isMe ? 'bg-[#E8C15A]/10 hover:bg-[#E8C15A]/15 shadow-[inset_3px_0_0_#E8C15A]' : 'hover:bg-white/5'}`}
+                                            >
                                                 <div className="col-span-1 flex items-center justify-center">
                                                     {index < 3 ? (
                                                         <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
                                                     ) : (
-                                                        <span className="text-sm font-bold text-[#666]">{index + 1}</span>
+                                                        <span className={`text-sm font-bold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
                                                     )}
                                                 </div>
-                                                <div className="col-span-2 sm:col-span-4 min-w-0">
-                                                    <span className="text-sm font-medium text-[#F2F2F2] truncate block">{user.username}</span>
+                                                <div className="col-span-2 sm:col-span-4 min-w-0 flex items-center gap-2">
+                                                    <span className={`text-sm font-medium truncate ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}>{user.username}</span>
+                                                    {isMe && <YouBadge />}
                                                 </div>
                                                 <div className="col-span-3">
                                                     <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold ${getSolvedBadge(user.solvedCount)}`}>
@@ -306,28 +338,38 @@ export default function LeaderboardPage() {
                                 <VirtualLeaderboard
                                     items={cfLeaderboard}
                                     itemSize={56}
+                                    currentUserIndex={myCfIndex}
                                 >
                                     {({ index, style }: { index: number; style: React.CSSProperties }) => {
                                         const user = cfLeaderboard[index];
+                                        const isMe = index === myCfIndex;
                                         return (
-                                            <div style={style} key={user.handle} className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 hover:bg-white/5 transition-colors items-center border-b border-white/5 last:border-0">
+                                            <div
+                                                style={style}
+                                                key={user.handle}
+                                                aria-current={isMe ? 'true' : undefined}
+                                                className={`grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 transition-colors items-center border-b border-white/5 last:border-0 ${isMe ? 'bg-[#E8C15A]/10 hover:bg-[#E8C15A]/15 shadow-[inset_3px_0_0_#E8C15A]' : 'hover:bg-white/5'}`}
+                                            >
                                                 <div className="flex items-center justify-center">
                                                     {index < 3 ? (
                                                         <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
                                                     ) : (
-                                                        <span className="text-sm font-bold text-[#666]">{index + 1}</span>
+                                                        <span className={`text-sm font-bold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <a
-                                                        href={`https://codeforces.com/profile/${user.handle}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-sm font-medium text-[#F2F2F2] hover:text-[#E8C15A] flex items-center gap-1.5 truncate"
-                                                    >
-                                                        <span className="truncate">{user.handle}</span>
-                                                        <ExternalLink size={12} className="text-[#666] flex-shrink-0 hidden sm:inline" />
-                                                    </a>
+                                                    <div className="flex items-center gap-2">
+                                                        <a
+                                                            href={`https://codeforces.com/profile/${user.handle}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`text-sm font-medium hover:text-[#E8C15A] flex items-center gap-1.5 truncate ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}
+                                                        >
+                                                            <span className="truncate">{user.handle}</span>
+                                                            <ExternalLink size={12} className="text-[#666] flex-shrink-0 hidden sm:inline" />
+                                                        </a>
+                                                        {isMe && <YouBadge />}
+                                                    </div>
                                                     <p className="text-xs text-[#666] truncate hidden sm:block">{user.name}</p>
                                                 </div>
                                                 <div className={`text-sm font-bold text-right ${getRatingColor(user.rating)}`}>
