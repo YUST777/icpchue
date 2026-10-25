@@ -332,7 +332,6 @@ export default function CodeWorkspace({
         <div
             ref={editorContainerRef}
             id="onboarding-code-workspace"
-            data-clarity-mask="true"
             className={`flex-1 flex flex-col bg-[#1e1e1e] min-w-0 min-h-0 ${mobileView === 'problem' ? 'hidden md:flex' : 'flex'}`}
             style={{
                 cursor: isResizingVertical ? 'row-resize' : 'auto',

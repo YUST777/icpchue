@@ -72,12 +72,15 @@ export default function VirtualLeaderboard<T = unknown>({ items, itemSize, child
         currentUserIndex !== undefined && currentUserIndex >= 0 && currentUserIndex < items.length
             ? currentUserIndex + 1
             : null;
+    // On phones the fixed bottom tab bar covers the last ~72px of the list: rows there count as
+    // hidden, the last row can be scrolled clear of it, and the button sits above it.
+    const bottomInset = typeof window !== 'undefined' && window.innerWidth < 768 ? 72 : 0;
     let jumpDirection: 'up' | 'down' | null = null;
     if (currentUserRank !== null) {
         const rowTop = (currentUserRank - 1) * itemSize;
         if (rowTop < scrollTop) {
             jumpDirection = 'up';
-        } else if (rowTop + itemSize > scrollTop + containerHeight) {
+        } else if (rowTop + itemSize > scrollTop + containerHeight - bottomInset) {
             jumpDirection = 'down';
         }
     }
@@ -101,7 +104,7 @@ export default function VirtualLeaderboard<T = unknown>({ items, itemSize, child
                     overflow: 'auto',
                 }}
             >
-                <div style={{ height: totalHeight, position: 'relative' }}>
+                <div style={{ height: totalHeight, position: 'relative', paddingBottom: bottomInset, boxSizing: 'content-box' }}>
                     {visibleItems.map(({ index, offsetTop }) => {
                         // Create the positioning style to pass to children
                         const itemStyle: React.CSSProperties = {
@@ -126,7 +129,8 @@ export default function VirtualLeaderboard<T = unknown>({ items, itemSize, child
                     type="button"
                     onClick={scrollToCurrentUser}
                     aria-label={`Scroll to your rank, number ${currentUserRank}`}
-                    className={`absolute left-1/2 z-10 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-[#E8C15A] px-3.5 py-2 text-xs font-bold text-black shadow-lg shadow-black/50 transition-colors hover:bg-[#D4AF37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${jumpDirection === 'down' ? 'bottom-3' : 'top-3'}`}
+                    style={jumpDirection === 'down' ? { bottom: 12 + bottomInset } : undefined}
+                    className={`absolute left-1/2 z-10 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-[#E8C15A] px-3.5 py-2 text-xs font-bold text-black shadow-lg shadow-black/50 transition-colors hover:bg-[#D4AF37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${jumpDirection === 'down' ? '' : 'top-3'}`}
                 >
                     {jumpDirection === 'down' ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
                     Your rank #{currentUserRank}
