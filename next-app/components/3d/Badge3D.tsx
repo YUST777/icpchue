@@ -1,43 +1,12 @@
 'use client';
 
-
-import { Component, Suspense, useEffect, useRef, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Award } from 'lucide-react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Environment, Float, OrbitControls, Center, Html } from '@react-three/drei';
-import * as THREE from 'three';
-import Loader from '@/components/common/Loader';
+import { acquireTile, type Tile } from './badge-renderer';
 
 // Draco decoder served from our own origin instead of Google's CDN.
 export const DRACO_PATH = '/draco/';
-
-interface ModelProps {
-    path: string;
-    scale?: number;
-    unlocked?: boolean;
-    spin?: boolean;
-}
-
-export function Model({ path, scale = 1, spin = false }: ModelProps) {
-    const { scene } = useGLTF(path, DRACO_PATH);
-    // Clone scene to avoid mutating the shared cache
-    const clone = useMemo(() => scene.clone(), [scene]);
-    const ref = useRef<THREE.Group>(null);
-
-    useFrame((state, delta) => {
-        if (!ref.current) return;
-        // Badges with a designed back turn all the way round; the rest sway.
-        if (spin) ref.current.rotation.y += delta * 0.7;
-        else ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-    });
-
-    return (
-        <group ref={ref}>
-            <primitive object={clone} scale={scale} />
-        </group>
-    );
-}
 
 interface Badge3DProps {
     modelPath: string;
@@ -166,42 +135,6 @@ function LoadingBadge({ pct, src }: { pct: number | null; src?: string }) {
     );
 }
 
-/** If the scene still fails to start, show the static badge instead of erroring the page. */
-class SceneBoundary extends Component<{ children: ReactNode; onRetry: () => void; fallbackSrc?: string }, { failed: boolean }> {
-    state = { failed: false };
-    static getDerivedStateFromError() { return { failed: true }; }
-    render() {
-        return this.state.failed
-            ? <BadgeFallback src={this.props.fallbackSrc} onRetry={() => { this.setState({ failed: false }); this.props.onRetry(); }} />
-            : this.props.children;
-    }
-}
-
-/** Chrome allows ~16 WebGL contexts per page. Allow up to 16 live 3D badges on screen simultaneously. */
-const MAX_LIVE_SCENES = 10;
-
-interface SceneEntry { visible: boolean; lastSeen: number; evict: () => void }
-const liveScenes = new Map<symbol, SceneEntry>();
-
-/**
- * Scenes stay mounted (paused) after they scroll off screen, so scrolling back is
- * instant. Only when more than MAX_LIVE_SCENES want to exist is the one that left
- * the screen longest ago released.
- */
-function claimScene(id: symbol, entry: SceneEntry): boolean {
-    if (liveScenes.has(id)) return true;
-    if (liveScenes.size >= MAX_LIVE_SCENES) {
-        let oldest: [symbol, SceneEntry] | null = null;
-        for (const item of liveScenes) {
-            if (!item[1].visible && (!oldest || item[1].lastSeen < oldest[1].lastSeen)) oldest = item;
-        }
-        if (!oldest) return false;
-        liveScenes.delete(oldest[0]);
-        oldest[1].evict();
-    }
-    liveScenes.set(id, entry);
-    return true;
-}
 
 export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = false, compact = false, fallbackSrc }: Badge3DProps) {
     const { ref, seen, visible } = useNearViewport<HTMLDivElement>();
@@ -209,45 +142,9 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
     const [pct, setPct] = useState<number | null>(0);
     const [url, setUrl] = useState<string | null>(null);
     const [failed, setFailed] = useState(false);
-    const [granted, setGranted] = useState(false);
-    const [snapshot, setSnapshot] = useState<string | null>(null);
-    const [sceneReady, setSceneReady] = useState(false);
-    const glCanvas = useRef<HTMLCanvasElement | null>(null);
-    const [introDone, setIntroDone] = useState(false);
-    const id = useRef(Symbol('badge-scene'));
-    const entry = useRef<SceneEntry>({
-        visible: false,
-        lastSeen: 0,
-        // When this scene is released, keep a picture of its last frame so scrolling back shows no flash.
-        evict: () => {
-            try {
-                const shot = glCanvas.current?.toDataURL('image/png');
-                // A lost context returns "data:," or a blank image; only keep a real frame.
-                setSnapshot(shot && shot.length > 3000 ? shot : null);
-            } catch { setSnapshot(null); }
-            setSceneReady(false);
-            setGranted(false);
-        },
-    });
-
-    // Claim a scene slot when the badge is on screen with its model loaded; keep it afterwards.
-    useEffect(() => {
-        entry.current.visible = visible;
-        if (visible) entry.current.lastSeen = Date.now();
-        if (visible && url && claimScene(id.current, entry.current)) setGranted(true);
-    }, [visible, url]);
-
-    useEffect(() => {
-        const mine = id.current;
-        return () => { liveScenes.delete(mine); };
-    }, []);
-
-    // The fade-in plays once, not every time the badge scrolls back into view.
-    useEffect(() => {
-        if (!granted) return;
-        const t = setTimeout(() => setIntroDone(true), 700);
-        return () => clearTimeout(t);
-    }, [granted]);
+    const [ready, setReady] = useState(false);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const tile = useRef<Tile | null>(null);
 
     useEffect(() => {
         if (!seen) return;
@@ -258,7 +155,18 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
         return () => { cancelled = true; };
     }, [seen, modelPath, attempt]);
 
-    const retry = () => { setFailed(false); setPct(0); setAttempt(n => n + 1); };
+    // Every badge draws through one shared WebGL renderer, so none is ever swapped for a picture.
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!url || !canvas) return;
+        const t = acquireTile({ canvas, url, scale, spin, onReady: () => setReady(true), onError: () => setFailed(true) });
+        tile.current = t;
+        return () => { t.dispose(); tile.current = null; setReady(false); };
+    }, [url, scale, spin]);
+
+    useEffect(() => { tile.current?.setVisible(visible); }, [visible, ready]);
+
+    const retry = () => { setFailed(false); setPct(0); setUrl(null); setAttempt(n => n + 1); };
 
     return (
         <div ref={ref} className={`w-full h-full ${compact ? '' : 'min-h-[160px]'} relative`}>
@@ -266,61 +174,14 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
                 <BadgeFallback onRetry={retry} src={fallbackSrc} />
             ) : !seen ? (
                 <BadgeFallback src={fallbackSrc} />
-            ) : !url ? (
-                <LoadingBadge pct={pct} src={fallbackSrc} />
-            ) : !granted ? (
-                <BadgeFallback onRetry={retry} src={snapshot ?? fallbackSrc} stock={fallbackSrc} />
             ) : (
-            <SceneBoundary onRetry={retry} fallbackSrc={fallbackSrc}>
-            <div className={`absolute inset-0 ${introDone ? '' : 'animate-[badgeIn_0.6s_ease-out]'} ${!unlocked ? 'grayscale opacity-45' : ''}`}>
-            {snapshot && !sceneReady && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={snapshot} alt="" onError={() => setSnapshot(null)} className="pointer-events-none absolute inset-0 z-10 h-full w-full object-contain" />
-            )}
-            <Canvas
-                // A tight depth range keeps the layered panels from z-fighting on GPUs with a 16-bit depth buffer.
-                camera={{ position: [0, 0, 5], fov: 45, near: 2.5, far: 9 }}
-                dpr={[1, 1.5]}
-                gl={{ preserveDrawingBuffer: true }}
-                onCreated={({ gl }) => {
-                    glCanvas.current = gl.domElement;
-                    setTimeout(() => setSceneReady(true), 250);
-                    // The browser drops old WebGL contexts when it runs short; show the picture and rebuild on demand.
-                    gl.domElement.addEventListener('webglcontextlost', e => {
-                        e.preventDefault();
-                        liveScenes.delete(id.current);
-                        setSnapshot(null);
-                        setSceneReady(false);
-                        setGranted(false);
-                    });
-                }}
-                frameloop={visible ? 'always' : 'never'}
-            >
-                <ambientLight intensity={1.5} />
-                <spotLight position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} />
-                <pointLight position={[-10, -10, -10]} intensity={1} />
-
-                <Suspense fallback={
-                    <Html center>
-                        <Loader />
-                    </Html>
-                }>
-                    <Float
-                        speed={2}
-                        rotationIntensity={0.5}
-                        floatIntensity={0.5}
-                        floatingRange={[-0.1, 0.1]}
-                    >
-                        <Center>
-                            <Model path={url} scale={scale * 1.45} unlocked={unlocked} spin={spin} />
-                        </Center>
-                    </Float>
-                    <Environment files="/hdr/potsdamer_platz_1k.hdr" />
-                    <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 4} maxPolarAngle={Math.PI / 1.5} />
-                </Suspense>
-            </Canvas>
-            </div>
-            </SceneBoundary>
+                <>
+                    {!ready && (url ? <BadgeFallback src={fallbackSrc} /> : <LoadingBadge pct={pct} src={fallbackSrc} />)}
+                    {url && (
+                        <canvas ref={canvasRef}
+                            className={`absolute inset-0 h-full w-full touch-pan-y cursor-grab active:cursor-grabbing transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'} ${!unlocked ? 'grayscale !opacity-45' : ''}`} />
+                    )}
+                </>
             )}
         </div>
     );
