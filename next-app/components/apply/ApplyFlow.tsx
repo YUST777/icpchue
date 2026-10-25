@@ -23,7 +23,7 @@ const LEVEL_CONFIG: Record<ApplyLevel, { label: string; draftKey: string; whatsa
     level1: {
         label: 'Level 1',
         draftKey: 'icpchue:apply:level1:v1',
-        whatsapp: null,
+        whatsapp: 'https://chat.whatsapp.com/Bhue4LuWsRm03UXQY0OXZM',
     },
 };
 // A new code can be requested at most once a minute; each new code cancels the previous one.
@@ -74,7 +74,8 @@ export default function ApplyFlow({ level }: { level: ApplyLevel }) {
     // Step 2: Level 0 handoff and account explanation
     // Step 3: Account Credentials (Email & Password)
     // Step 4: OTP Verification & Final Submit
-    const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
+    // Level 1 goes straight to the form; Level 0 opens with the community story first.
+    const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(level === 'level1' ? 1 : 0);
     const [storySlide, setStorySlide] = useState(0);
     const [teamFrame, setTeamFrame] = useState(0);
     const [sessionFrame, setSessionFrame] = useState(0);
