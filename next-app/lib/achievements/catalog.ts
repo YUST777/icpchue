@@ -14,6 +14,7 @@ const IMG = '/images/achievements/';
 
 export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}badges/welcome.webp`, tier: 'common' },
+    'github-star': { name: 'Stargazer', desc: 'Starred the ICPC HUE repository on GitHub', imageSrc: `${IMG}badges/dev.webp`, tier: 'rare' },
     instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}badges/instructor.webp`, tier: 'legendary' },
     'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}badges/rank1-march-2026.webp`, tier: 'legendary' },
 
@@ -138,6 +139,7 @@ export interface AchievementHowTo { how: string; href?: string; cta?: string }
 export function getAchievementHowTo(id: string): AchievementHowTo {
     const sheets = { href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'welcome') return { how: 'Given automatically when you join ICPC HUE.' };
+    if (id === 'github-star') return { how: 'Star the ICPC HUE repository on GitHub, then enter your GitHub user name below and press Claim. We check the repo\'s stars, so it can take a minute to show up.', href: 'https://github.com/YUST777/icpchue', cta: 'Open the repo' };
     if (id === 'instructor') return { how: 'Given to the instructors who teach ICPC HUE.' };
     const solvedBadge = SOLVED_BADGES.find(x => x.id === id);
     if (solvedBadge) return { how: `Solve ${solvedBadge.count} different problems on the training sheets. Every problem counts once, however many times you submit it.`, href: '/dashboard/sheets', cta: 'Open training sheets' };

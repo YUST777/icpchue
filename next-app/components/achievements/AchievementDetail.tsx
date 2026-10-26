@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, Lock, X } from 'lucide-react';
 import { cachedHolderStats, loadHolderStats, type HolderStats } from '@/lib/achievements/holder-stats';
 import { getAchievementHowTo, getAchievementMeta } from '@/lib/achievements/catalog';
+import StarClaim from '@/components/achievements/StarClaim';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 
@@ -141,6 +142,8 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
                         <div className={field}>How to get it</div>
                         <p className="text-sm text-white/80 leading-relaxed mt-1">{howTo.how}</p>
                     </div>
+
+                    {badge.id === 'github-star' && !badge.unlocked && <StarClaim onClaimed={onClose} />}
 
                     {cta && <div className="pt-1">{cta}</div>}
                 </div>
