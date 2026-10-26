@@ -10,7 +10,7 @@ import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, GraduationCap, Flame
+    ChevronRight, ChevronLeft, GraduationCap, Flame, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
@@ -310,6 +310,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </Link>
                     <div className="flex items-center gap-3">
+                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5 rounded-lg transition-all">
+                            <Star size={20} />
+                        </a>
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
@@ -568,6 +571,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5 rounded-lg transition-all">
+                                <Star size={18} />
+                            </a>
                             <div className="relative">
                                 <button
                                     onClick={() => setShowNotifications(!showNotifications)}
