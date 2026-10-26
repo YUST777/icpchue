@@ -51,3 +51,12 @@ icpchue_videos/
 *.mp4
 *.webm
 *.crdownload
+
+# Internal notes and generated docs live in the private repo
+CLAUDE.md
+AGENTS.md
+API.md
+mirror/
+migrations/
+supabase/migrations/
+scripts/one-off/

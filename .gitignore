@@ -122,3 +122,13 @@ polygon/
 creative_work/
 whatsapp-worker/
 .wrangler/
+
+# Kept in the private repo, never committed here
+.claude/
+CLAUDE.md
+AGENTS.md
+/index.md
+/extension/
+/infrastructure/
+/database/
+/scripts/

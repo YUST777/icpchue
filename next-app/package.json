@@ -12,8 +12,7 @@
     "test:otp": "node scripts/test-otp-contract.mjs",
     "test:password-reset": "node scripts/test-password-reset-contract.mjs",
     "otp:smoke": "node scripts/otp-smoke.mjs",
-    "knip": "knip",
-    "errors": "node --env-file=.env.local scripts/errors-report.mjs"
+    "knip": "knip"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",

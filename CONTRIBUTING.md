@@ -34,7 +34,7 @@ Help us keep the community specialized and welcoming. Please be respectful of ot
 2. **Install**: `pnpm install` (Root and `next-app`).
 3. **Docker**: `docker compose up -d` to launch the full stack.
 
-For detailed architecture and internal docs, see [docs/rules/PROJECT_KNOWLEDGE_BASE.md](docs/rules/PROJECT_KNOWLEDGE_BASE.md).
+The engineering rules are in [docs/rules](docs/rules).
 
 ---
 

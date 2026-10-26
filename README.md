@@ -102,7 +102,7 @@ ICPC HUE is committed to transparency and security. By open-sourcing our entire 
 ## Quick Start
 
 1. **Visit**: [icpchue.com](https://icpchue.com)
-2. **Setup Locally**: Clone this repo and follow our [Installation Guide](docs/INSTALLATION.md) (or see the [Quick Start](#quick-setup)).
+2. **Setup Locally**: Clone this repo and see the [Quick Setup](#quick-setup) below.
 3. **Install Extension**: [Download Here](https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj)
 
 ---
@@ -188,10 +188,7 @@ graph TB
 
 - `/next-app` - Next.js 16 frontend and API routes.
 - **Browser Extension** - [Source Code](https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj) of the ICPC HUE Browser Extension.
-- `/scripts/scraping` - Puppeteer-based Codeforces scraping service.
-- `/scripts` - Database and maintenance utilities.
-- `/infrastructure` - Docker configurations for Judge0, Mail, and Monitoring.
-- `/docs` - Comprehensive documentation and security policies.
+- `/docs/rules` - Engineering rules for contributors.
 
 ---
 
