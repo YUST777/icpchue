@@ -75,7 +75,8 @@ export default function AchievementsPage() {
     const { achievements: earned } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
-    const isInstructorUnlocked = user?.role === 'instructor' || user?.role === 'owner';
+    // Only the people given the badge hold it; a role alone does not unlock it.
+    const isInstructorUnlocked = earnedIds.has('instructor');
 
     // Monthly podium: three tiles that show what can be won; each opens once the student has placed that high.
     const PODIUM_TILES = [

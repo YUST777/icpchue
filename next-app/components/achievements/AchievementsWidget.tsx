@@ -30,14 +30,13 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
     const { user } = useAuth();
     const { achievements: earned } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
-    const isStaff = user?.role === 'instructor' || user?.role === 'owner';
 
     const entries: Entry[] = [
         ...Object.entries(ACHIEVEMENT_META).map(([id, meta]) => ({
             id,
             name: meta.name,
             imageSrc: meta.imageSrc,
-            unlocked: id === 'welcome' || earnedIds.has(id) || (id === 'instructor' && isStaff),
+            unlocked: id === 'welcome' || earnedIds.has(id),
             weight: TIER_WEIGHT[meta.tier],
         })),
         ...PODIUM.map(p => ({
