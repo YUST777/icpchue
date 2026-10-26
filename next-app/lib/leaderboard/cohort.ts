@@ -28,7 +28,10 @@ export function decryptName(name: string | null): string | null {
 export type Level = 0 | 1;
 
 // Students who are past Level 1 (Level 2 training) and so rank on neither board.
-export const LEVEL_2_USER_IDS = new Set<number>([156]); // Ahmed Ashraf Elbayoumi
+// Comma-separated user ids in LEVEL_2_USER_IDS.
+export const LEVEL_2_USER_IDS = new Set<number>(
+    (process.env.LEVEL_2_USER_IDS ?? '').split(',').map(s => Number(s.trim())).filter(n => Number.isInteger(n) && n > 0)
+);
 
 /**
  * Level 0: every member who is not on a Level 1 team (and not Level 2).

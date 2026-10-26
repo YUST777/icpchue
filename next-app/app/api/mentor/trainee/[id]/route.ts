@@ -563,10 +563,7 @@ export async function GET(
             };
         });
 
-        // 6. The old automatic flags (Accepted within 15s of opening, 5+ pastes)
-        // fired on normal behaviour such as re-submitting a solution written
-        // elsewhere. Cheating evidence now comes from lib/integrity (code shared
-        // with other students, the AI trap, copy-then-paste).
+        // 6. Flagged problems come from the mentor-only integrity service.
         const flaggedProblems: any[] = [];
 
         // 7. Heatmap
