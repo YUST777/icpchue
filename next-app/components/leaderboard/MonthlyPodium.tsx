@@ -31,7 +31,7 @@ function Place({ entry }: { entry: PodiumEntry | undefined; }) {
 }
 
 /** The month's top three on one card, with a month switcher: one widget instead of a row per month. */
-export default function MonthlyPodium() {
+export default function MonthlyPodium({ live }: { live?: { userId: number; username: string; studentId?: string | null; solvedCount: number; }[]; }) {
     const [months, setMonths] = useState<Month[]>([]);
     const [selected, setSelected] = useState<string | null>(null);
     const [rewardsOpen, setRewardsOpen] = useState(false);
@@ -48,8 +48,12 @@ export default function MonthlyPodium() {
         return () => { cancelled = true; };
     }, []);
 
-    const current = months.find(m => m.month === selected);
-    if (!current) return null;
+    const base = months.find(m => m.month === selected);
+    if (!base) return null;
+    // The running month takes its top three straight from the table below, so the two always agree.
+    const current = !base.complete && live && live.length
+        ? { ...base, top: live.slice(0, 3).map((u, i) => ({ rank: (i + 1) as 1 | 2 | 3, userId: u.userId, username: u.username, studentId: u.studentId ?? null, solved: u.solvedCount })) }
+        : base;
     const byRank = (rank: 1 | 2 | 3) => current.top.find(t => t.rank === rank);
 
     return (
