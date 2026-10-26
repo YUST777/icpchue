@@ -79,12 +79,53 @@ export async function getLevel0MonthlyPodiums(): Promise<MonthlyPodium[]> {
         byMonth.set(row.month, list);
     }
 
+    // The running month mirrors the Level 0 table exactly (same source, filters and tie-break),
+    // so the podium can never disagree with the ranks beneath it.
+    const live = await query(
+        `SELECT u.id, u.email, u.profile_visibility, u.show_public_profile, a.name, a.student_id,
+                uss.distinct_solved AS solved
+         FROM users u
+         INNER JOIN user_solve_stats uss ON u.id = uss.user_id
+         LEFT JOIN applications a ON u.application_id = a.id
+         WHERE uss.distinct_solved > 0
+           AND uss.season_year = (SELECT year FROM seasons WHERE is_current LIMIT 1)
+           ${cohortClause(0)}
+           AND (u.show_on_sheets_leaderboard = TRUE OR u.show_on_sheets_leaderboard IS NULL)
+           AND (u.is_shadow_banned = FALSE OR u.is_shadow_banned IS NULL)
+         ORDER BY uss.distinct_solved DESC, uss.total_submissions ASC, uss.last_solve_at ASC
+         LIMIT 10`,
+        [teamIds]
+    );
+    const liveTop: PodiumEntry[] = [];
+    for (const row of live.rows) {
+        if (liveTop.length >= 3) break;
+        if (LEVEL_2_USER_IDS.has(Number(row.id))) continue;
+        const isPublic = row.profile_visibility !== 'private' && row.show_public_profile !== false;
+        let studentId: string | null = null;
+        if (isPublic) {
+            if (row.student_id && /^\d{7,10}$/.test(String(row.student_id))) studentId = String(row.student_id);
+            else {
+                const local = (safeDecrypt(row.email) || '').split('@')[0];
+                if (/^\d{7,10}$/.test(local)) studentId = local;
+            }
+        }
+        const raw = decryptName(row.name);
+        liveTop.push({
+            rank: (liveTop.length + 1) as 1 | 2 | 3,
+            userId: Number(row.id),
+            username: raw ? formatDisplayName(raw) : 'Member',
+            studentId,
+            solved: Number(row.solved),
+        });
+    }
+    if (liveTop.length) byMonth.set(currentMonth, liveTop);
+
     const podiums: MonthlyPodium[] = [...byMonth.entries()].map(([month, top]) => ({
         month,
         label: monthLabel(month),
         complete: month < currentMonth,
         top,
-    }));
+    })).sort((a, b) => b.month.localeCompare(a.month));
 
     // Finished months award their podium badges (idempotent).
     for (const podium of podiums) {
