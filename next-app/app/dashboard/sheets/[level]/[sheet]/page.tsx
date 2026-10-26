@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle2, Lock, List, FileText, XCircle, AlertTriangle, Users, Filter, ArrowUpDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { SheetBalloon, getSheetBalloonColor } from '@/components/sheets/SheetBalloon';
 
 interface Problem {
     id: string;
@@ -307,8 +308,14 @@ export default function SheetDetailPage() {
         <>
             <div className="space-y-6 animate-fade-in">
                 {/* Sheet Header */}
-                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-start justify-between flex-wrap gap-4">
+                <div className="relative bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 border border-white/10">
+                    <SheetBalloon
+                        color={getSheetBalloonColor(levelSlug, sheetSlug)}
+                        solved={solvedCount}
+                        total={availableProblems.length}
+                        className="absolute -top-4 right-3"
+                    />
+                    <div className="flex items-start justify-between flex-wrap gap-4 pr-14">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-[#F2F2F2] mb-2">{sheet.name}</h1>
                             <p className="text-[#808080] text-sm">{sheet.description}</p>
