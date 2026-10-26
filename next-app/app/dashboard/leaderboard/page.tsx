@@ -183,7 +183,7 @@ export default function LeaderboardPage() {
                     </div>
                 </div>
 
-                {activeTab === 'level0' && <MonthlyPodium />}
+                {activeTab === 'level0' && <MonthlyPodium live={sheetsLeaderboard} />}
 
                 {/* Leaderboard Table */}
                 <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">
