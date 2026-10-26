@@ -110,3 +110,15 @@ skills-lock.json
 
 # Private data dumps (student activity etc.), never commit
 secrets/
+
+# Private anti-cheat code is overlaid from the private repo (next-app/scripts/overlay-private.mjs)
+next-app/lib/integrity/similarity.ts
+next-app/lib/services/track-buffer.ts
+next-app/components/dashboard/mentor/integrity/shared.tsx
+next-app/scripts/one-off/verify-integrity.js
+polygon/
+
+# Local-only work: media, browser profiles with logged-in sessions, side services
+creative_work/
+whatsapp-worker/
+.wrangler/

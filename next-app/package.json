@@ -5,6 +5,7 @@
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "next dev -p 3000 --turbopack",
+    "prebuild": "node scripts/overlay-private.mjs",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint",
