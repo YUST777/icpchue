@@ -110,13 +110,13 @@ export default function EditorToolbar({
                     {isLangOpen && langRect && createPortal(
                         <>
                             <div className="fixed inset-0" style={{ zIndex: 2147482999 }} onClick={() => setIsLangOpen(false)} />
-                            <div className="fixed w-44 bg-[#282828] border border-white/10 rounded shadow-2xl py-1.5 max-h-80 overflow-y-auto"
-                                style={{ zIndex: 2147483000, top: langRect.bottom + 4, left: langRect.left }}>
+                            <div className="ui-compact fixed w-44 bg-[#282828] border border-white/10 rounded shadow-2xl py-1.5 max-h-80 overflow-y-auto"
+                                style={{ zIndex: 2147483000, top: langRect.bottom + 4, left: langRect.left, backgroundColor: '#282828' }}>
                                 {SUPPORTED_LANGUAGES.map(lang => (
                                     <button
                                         key={lang.id}
                                         onClick={() => handleLanguageChange(lang.id)}
-                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 hover:text-white transition-colors ${language === lang.id ? 'text-[#E8C15A] bg-white/5' : 'text-[#A0A0A0]'}`}
+                                        className={`w-full text-left px-3 py-1.5 text-xs leading-5 hover:bg-white/5 hover:text-white transition-colors ${language === lang.id ? 'text-[#E8C15A] bg-white/5' : 'text-[#A0A0A0]'}`}
                                     >
                                         {lang.name}
                                     </button>

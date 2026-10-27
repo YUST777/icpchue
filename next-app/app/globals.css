@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* Utility scan: components/, app/ and hooks/ are all scanned (ignore rules are anchored to the project root). */
 
 /* Explicit spin animation for loading spinners */
 @keyframes spin {
