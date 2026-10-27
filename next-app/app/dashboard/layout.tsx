@@ -18,9 +18,6 @@ import AutoBackfillTrigger from '@/components/codeforces/AutoBackfillTrigger';
 import QuickSyncTrigger from '@/components/codeforces/QuickSyncTrigger';
 import CodeBackfillTrigger from '@/components/codeforces/CodeBackfillTrigger';
 
-// The mentor panel stays live at /dashboard/mentor; flip this to show it in the menus again.
-const SHOW_MENTOR_NAV = false;
-
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '', badge }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string; badge?: React.ReactNode }) {
     const [showTooltip, setShowTooltip] = useState(false);
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -403,7 +400,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             className="text-lg font-medium"
                                             badge="NEW"
                                         />
-                                        {SHOW_MENTOR_NAV && isMentor && (
+                                        {isMentor && (
                                             <NavItem
                                                 icon={<GraduationCap size={32} />}
                                                 label="Mentor Panel"
@@ -486,7 +483,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
                             <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                             <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} badge="NEW" />
-                            {SHOW_MENTOR_NAV && isMentor && (
+                            {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
                         </nav>
