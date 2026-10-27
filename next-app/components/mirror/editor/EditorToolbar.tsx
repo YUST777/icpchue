@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2, Play, CloudUpload } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, getLanguageById } from './EditorConstants';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -37,6 +38,9 @@ export default function EditorToolbar({
     onFormat,
 }: EditorToolbarProps) {
     const [isLangOpen, setIsLangOpen] = useState(false);
+    const langButtonRef = useRef<HTMLButtonElement>(null);
+    // The menu lives on <body> so the editor's own layers can never draw over it.
+    const langRect = isLangOpen ? langButtonRef.current?.getBoundingClientRect() : undefined;
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
 
     useEffect(() => {
@@ -95,6 +99,7 @@ export default function EditorToolbar({
             <div className={`w-full h-10 px-3 flex items-center justify-between text-neutral-400 bg-[#1a1a1a] overflow-visible`}>
                 <div className="relative">
                     <button
+                        ref={langButtonRef}
                         onClick={() => setIsLangOpen(!isLangOpen)}
                         className="flex items-center gap-2 outline-none transition-all duration-300 hover:bg-white/5 px-2 py-1 rounded-md cursor-pointer text-[13px] text-white/60 hover:text-white"
                     >
@@ -102,10 +107,11 @@ export default function EditorToolbar({
                         <ChevronUp className='w-4 rotate-180 opacity-50' />
                     </button>
 
-                    {isLangOpen && (
+                    {isLangOpen && langRect && createPortal(
                         <>
-                            <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
-                            <div className="absolute top-full left-0 mt-1 w-44 bg-[#282828] border border-white/10 rounded shadow-2xl z-50 py-1.5 max-h-80 overflow-y-auto">
+                            <div className="fixed inset-0" style={{ zIndex: 2147482999 }} onClick={() => setIsLangOpen(false)} />
+                            <div className="fixed w-44 bg-[#282828] border border-white/10 rounded shadow-2xl py-1.5 max-h-80 overflow-y-auto"
+                                style={{ zIndex: 2147483000, top: langRect.bottom + 4, left: langRect.left }}>
                                 {SUPPORTED_LANGUAGES.map(lang => (
                                     <button
                                         key={lang.id}
@@ -116,7 +122,8 @@ export default function EditorToolbar({
                                     </button>
                                 ))}
                             </div>
-                        </>
+                        </>,
+                        document.body
                     )}
                 </div>
 
