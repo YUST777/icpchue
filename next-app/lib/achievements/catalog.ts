@@ -14,7 +14,7 @@ const IMG = '/images/achievements/';
 
 export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     welcome: { name: 'Welcome Badge', desc: 'Joined the ICPC HUE community', imageSrc: `${IMG}badges/welcome.webp`, tier: 'common' },
-    'github-star': { name: 'Stargazer', desc: 'Starred the ICPC HUE repository on GitHub', imageSrc: `${IMG}badges/dev.webp`, tier: 'rare' },
+    'github-star': { name: 'Stargazer', desc: 'Starred the ICPC HUE repository on GitHub', imageSrc: `${IMG}badges/github-star.webp`, tier: 'rare' },
     instructor: { name: 'Instructor', desc: 'Teaches at ICPC HUE', imageSrc: `${IMG}badges/instructor.webp`, tier: 'legendary' },
     'rank1-march-2026': { name: 'Rank 1 · March 2026', desc: 'Held Rank 1 on the leaderboard in March 2026', imageSrc: `${IMG}badges/rank1-march-2026.webp`, tier: 'legendary' },
 
