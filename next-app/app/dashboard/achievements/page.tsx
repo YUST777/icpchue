@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
 import { useAchievements } from '@/hooks/useAchievements';
+import { cachedHolderStats, loadHolderStats, type HolderStats } from '@/lib/achievements/holder-stats';
+import { RARITY_TEXT, holderShare, rarityFromShare, shareLabel } from '@/lib/achievements/rarity';
 import AchievementDetail from '@/components/achievements/AchievementDetail';
 import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, SOLVED_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
 
@@ -25,13 +27,13 @@ interface BadgeCardProps {
     earnedAt?: string[];
     serial?: number;
     factory?: string;
+    /** Share of members who hold it, when the numbers have loaded. */
+    share?: number | null;
 }
-
-const RARITY_TEXT = { common: 'text-white/40', rare: 'text-sky-400', legendary: 'text-[#E8C15A]' } as const;
 
 const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
 
-function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, serial, onOpen }: BadgeCardProps & { onOpen: () => void }) {
+function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, share, serial, onOpen }: BadgeCardProps & { onOpen: () => void }) {
     return (
         <li
             title={description}
@@ -55,7 +57,14 @@ function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocke
             </div>
             <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>{title}</h3>
             <p className={`text-[11px] mt-1 leading-snug line-clamp-2 ${unlocked ? 'text-white/45' : 'text-white/25'}`}>{description}</p>
-            <span className={`mt-2 text-[10px] capitalize ${unlocked ? RARITY_TEXT[rarity] : 'text-white/20'}`}>{rarity}</span>
+            {(() => {
+                const shown = share != null ? rarityFromShare(share) : rarity;
+                return (
+                    <span className={`mt-2 text-[10px] capitalize ${unlocked ? RARITY_TEXT[shown] : 'text-white/30'}`}>
+                        {shown}{share != null && <span className="text-white/35"> · {shareLabel(share)} of members</span>}
+                    </span>
+                );
+            })()}
             {unlocked && serial != null && <span className="mt-1 font-mono text-[10px] tracking-wider text-white/35">#{String(serial).padStart(4, '0')}</span>}
         </li>
     );
@@ -72,6 +81,8 @@ export default function AchievementsPage() {
 
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [holderStats, setHolderStats] = useState<HolderStats | null>(() => cachedHolderStats());
+    useEffect(() => { loadHolderStats().then(d => d && setHolderStats(d)); }, []);
     const { achievements: earned } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
@@ -95,7 +106,7 @@ export default function AchievementsPage() {
     });
 
     const achievements = [
-        { group: 'Problems solved', id: 'level0-skills', modelPath: '/3d/level0-skills.glb', title: ACHIEVEMENT_META['level0-skills'].name, description: ACHIEVEMENT_META['level0-skills'].desc, unlocked: earnedIds.has('level0-skills'), rarity: ACHIEVEMENT_META['level0-skills'].tier },
+        { group: 'Level 0 sheets', id: 'level0-skills', modelPath: '/3d/level0-skills.glb', title: ACHIEVEMENT_META['level0-skills'].name, description: ACHIEVEMENT_META['level0-skills'].desc, unlocked: earnedIds.has('level0-skills'), rarity: ACHIEVEMENT_META['level0-skills'].tier },
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Milestones', id: 'github-star', modelPath: '/3d/github-star.glb', title: ACHIEVEMENT_META['github-star'].name, description: ACHIEVEMENT_META['github-star'].desc, unlocked: earnedIds.has('github-star'), rarity: ACHIEVEMENT_META['github-star'].tier },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
@@ -135,6 +146,7 @@ export default function AchievementsPage() {
         if (!a.earnedAt && earnedTimes.has(a.id)) a.earnedAt = [earnedTimes.get(a.id)!];
         if (!isPodiumId(a.id) && serials.get(a.id) != null) { a.serial = serials.get(a.id); a.factory = factories.get(a.id); }
     }
+    for (const a of achievements as BadgeCardProps[]) a.share = isPodiumId(a.id) || a.id.startsWith('podium-') ? null : holderShare(holderStats, a.id);
     const selected = achievements.find(a => a.id === selectedId) as BadgeCardProps | undefined;
 
     const unlockedCount = achievements.filter(a => a.unlocked).length;
