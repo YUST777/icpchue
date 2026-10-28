@@ -3,7 +3,7 @@
 import React from 'react';
 import { 
     LayoutDashboard, BarChart3, FileCode2, Terminal, 
-    ShieldAlert, Flame, Timer, PlayCircle, CalendarCheck
+    ShieldAlert, Flame, Timer, PlayCircle
 } from 'lucide-react';
 
 export const TABS = [
@@ -11,7 +11,6 @@ export const TABS = [
     { id: 'progress', label: 'Progress Matrix', icon: BarChart3 },
     { id: 'time', label: 'Time & Focus', icon: Timer },
     { id: 'sessions', label: 'Sessions', icon: PlayCircle },
-    { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
     { id: 'discipline', label: 'Study Log', icon: Flame },
     { id: 'submissions', label: 'Submissions', icon: FileCode2 },
     { id: 'workspace', label: 'Code Inspector', icon: Terminal },

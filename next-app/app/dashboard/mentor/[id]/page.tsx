@@ -544,14 +544,12 @@ export default function TraineeDossierPage() {
                 />
             )}
 
-            {/* Recorded sessions: video watch time, coverage, slides */}
+            {/* Sessions: live attendance and recordings watched, then the detail of every recording */}
             {activeTab === 'sessions' && (
-                <SessionWatchView rows={data.session_watch || []} />
-            )}
-
-            {/* Live sessions attended and the matching recordings watched on the site */}
-            {activeTab === 'attendance' && (
-                <AttendanceView attendance={data.attendance || []} watch={data.session_watch || []} />
+                <div className="space-y-6">
+                    <AttendanceView attendance={data.attendance || []} watch={data.session_watch || []} />
+                    <SessionWatchView rows={data.session_watch || []} />
+                </div>
             )}
 
             {/* Tab 3: Submissions Feed */}
