@@ -777,6 +777,30 @@ export async function GET(
             };
         });
 
+        // 12. Live sessions: did the trainee join, and for how long (live_attendance, loaded from the Teams exports)
+        const attendanceRes = await query(`
+            SELECT s.session_key, s.label, s.held_on, s.meeting_start, s.meeting_end,
+                   COALESCE(SUM(a.minutes), 0)::int AS minutes,
+                   MIN(a.first_join) AS first_join, MAX(a.last_leave) AS last_leave,
+                   COUNT(a.id)::int AS entries,
+                   COALESCE(BOOL_OR(a.match_method = 'id'), FALSE) AS by_id
+            FROM live_sessions s
+            LEFT JOIN live_attendance a ON a.session_key = s.session_key AND a.user_id = $1
+            GROUP BY s.session_key, s.label, s.held_on, s.meeting_start, s.meeting_end
+            ORDER BY s.held_on
+        `, [userId ?? null]).catch(() => ({ rows: [] }));
+        const attendance = attendanceRes.rows.map((r: any) => ({
+            session_key: r.session_key,
+            label: r.label,
+            held_on: r.held_on,
+            meeting_minutes: Math.max(1, Math.round((new Date(r.meeting_end).getTime() - new Date(r.meeting_start).getTime()) / 60000)),
+            attended: r.entries > 0,
+            minutes: r.minutes,
+            first_join: r.first_join,
+            last_leave: r.last_leave,
+            matched_by: r.entries > 0 ? (r.by_id ? 'student ID' : 'name') : null,
+        }));
+
         const responsePayload = {
             profile,
             metrics,
@@ -790,6 +814,7 @@ export async function GET(
             time_on_problems: timeOnProblems,
             time_sessions: timeSessions,
             session_watch: sessionWatch,
+            attendance,
             behavioral_analysis: {
                 cheating_flags: profile.cheating_flags || 0,
             },

@@ -12,6 +12,7 @@ import { CodeWorkspaceInspector } from '@/components/dashboard/mentor/CodeWorksp
 import { CodeMatchesPanel, type StudentIntegrity } from '@/components/dashboard/mentor/integrity/CodeMatchesPanel';
 import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
+import { AttendanceView } from '@/components/dashboard/mentor/AttendanceView';
 import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
 
 export default function TraineeDossierPage() {
@@ -546,6 +547,11 @@ export default function TraineeDossierPage() {
             {/* Recorded sessions: video watch time, coverage, slides */}
             {activeTab === 'sessions' && (
                 <SessionWatchView rows={data.session_watch || []} />
+            )}
+
+            {/* Live sessions attended and the matching recordings watched on the site */}
+            {activeTab === 'attendance' && (
+                <AttendanceView attendance={data.attendance || []} watch={data.session_watch || []} />
             )}
 
             {/* Tab 3: Submissions Feed */}
