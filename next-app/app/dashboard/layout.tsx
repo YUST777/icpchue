@@ -307,8 +307,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </Link>
                     <div className="flex items-center gap-3">
-                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 text-xs font-medium text-[#A0A0A0] active:text-white active:bg-white/5 transition-all">
-                            <Star size={14} className="group-active:text-[#E8C15A] group-active:fill-[#E8C15A] transition-colors" />
+                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full border border-[#E8C15A]/30 bg-[#E8C15A]/[0.08] text-xs font-semibold text-white/90 active:bg-[#E8C15A]/20 transition-colors">
+                            <Star size={14} className="text-[#E8C15A] fill-[#E8C15A]" />
                             <span>Put a star</span>
                         </a>
                         <div className="relative">
@@ -569,8 +569,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 text-xs font-medium text-[#A0A0A0] hover:text-white hover:bg-white/5 hover:border-white/20 transition-all">
-                                <Star size={14} className="group-hover:text-[#E8C15A] group-hover:fill-[#E8C15A] transition-colors" />
+                            <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full border border-[#E8C15A]/30 bg-[#E8C15A]/[0.08] text-xs font-semibold text-white/90 hover:bg-[#E8C15A]/20 hover:border-[#E8C15A]/50 transition-colors">
+                                <Star size={14} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
                                 <span className="hidden sm:inline">Put a star</span>
                             </a>
                             <div className="relative">
