@@ -348,7 +348,7 @@ export default function TraineeDossierPage() {
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={setActiveTab} 
-                    flagsCount={integrity ? integrity.matches.length + integrity.traps.length : 0}
+                    flagsCount={integrity ? integrity.matches.length + integrity.traps.length + (integrity.commentFlags?.length || 0) : 0}
                 />
 
                 {/* Global Time Filter Pills */}
