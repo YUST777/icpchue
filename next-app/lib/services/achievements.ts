@@ -41,7 +41,10 @@ export async function grantAchievement(userId: number | string, achievementId: s
             await invalidateCache(`user:${userId}:achievements`);
             await invalidateCache(`user:${userId}:dashboard_stats`);
             const meta = getAchievementMeta(achievementId);
-            if (meta && notify) await createNotification(userId, `Achievement unlocked: ${meta.name}`, meta.desc, 'achievement');
+            if (meta && notify) {
+                const link = `/dashboard/achievements?badge=${achievementId}`;
+                await createNotification(userId, `Achievement unlocked: ${meta.name}`, meta.desc, 'achievement', achievementId, link);
+            }
         }
 
         return wasGranted;
@@ -167,8 +170,15 @@ export async function checkProgressAchievements(userId: number, role?: string) {
     granted = newlyGranted.length;
     // One bell entry per batch, not one per badge.
     const names = newlyGranted.map(id => getAchievementMeta(id)?.name).filter((n): n is string => Boolean(n));
-    if (names.length === 1) await createNotification(userId, `Achievement unlocked: ${names[0]}`, getAchievementMeta(newlyGranted[0])!.desc, 'achievement');
-    else if (names.length > 1) await createNotification(userId, `${names.length} new achievements`, names.slice(0, 4).join(', ') + (names.length > 4 ? ` and ${names.length - 4} more` : ''), 'achievement');
+    if (names.length === 1) {
+        const badgeId = newlyGranted[0];
+        const link = `/dashboard/achievements?badge=${badgeId}`;
+        await createNotification(userId, `Achievement unlocked: ${names[0]}`, getAchievementMeta(badgeId)!.desc, 'achievement', badgeId, link);
+    } else if (names.length > 1) {
+        const badgeId = newlyGranted[0];
+        const link = `/dashboard/achievements?badge=${badgeId}`;
+        await createNotification(userId, `${names.length} new achievements`, names.slice(0, 4).join(', ') + (names.length > 4 ? ` and ${names.length - 4} more` : ''), 'achievement', badgeId, link);
+    }
     return granted;
 }
 
@@ -230,11 +240,18 @@ export async function grantSheetBadge(userId: number | string, levelNumber: numb
 /**
  * Creates a notification for a user.
  */
-export async function createNotification(userId: number | string, title: string, message: string, type: 'achievement' | 'leaderboard' | 'system' = 'system') {
+export async function createNotification(
+    userId: number | string,
+    title: string,
+    message: string,
+    type: 'achievement' | 'leaderboard' | 'system' = 'system',
+    achievementId?: string,
+    link?: string
+) {
     try {
         await query(
-            `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
-            [userId, title, message, type]
+            `INSERT INTO notifications (user_id, title, message, type, achievement_id, link) VALUES ($1, $2, $3, $4, $5, $6)`,
+            [userId, title, message, type, achievementId ?? null, link ?? null]
         );
     } catch (error) {
         console.error(`[Notification Error] Failed to create notification for ${userId}:`, error);
@@ -288,15 +305,15 @@ export async function syncRank1Achievement(triggerType: string) {
                 // Notify OLD leader (if any)
                 if (prevHolderId) {
                     await client.query(
-                        `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
-                        [prevHolderId, 'T-Shirt Lost!', 'Someone just overtook your Rank 1 spot. Get back to work to reclaim your T-shirt!', 'leaderboard']
+                        `INSERT INTO notifications (user_id, title, message, type, link) VALUES ($1, $2, $3, $4, $5)`,
+                        [prevHolderId, 'T-Shirt Lost!', 'Someone just overtook your Rank 1 spot. Get back to work to reclaim your T-shirt!', 'leaderboard', '/dashboard/leaderboard']
                     );
                 }
 
                 // Notify NEW leader
                 await client.query(
-                    `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
-                    [currentLeaderId, 'T-Shirt Acquired!', "You've taken the lead in the March Campaign! Keep it until April to win the T-shirt.", 'leaderboard']
+                    `INSERT INTO notifications (user_id, title, message, type, link) VALUES ($1, $2, $3, $4, $5)`,
+                    [currentLeaderId, 'T-Shirt Acquired!', "You've taken the lead in the March Campaign! Keep it until April to win the T-shirt.", 'leaderboard', '/dashboard/leaderboard']
                 );
 
                 // Check if this user has ever held Rank 1 before (anti-spam check on the big pop-up)

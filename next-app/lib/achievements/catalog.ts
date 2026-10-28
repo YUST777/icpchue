@@ -172,3 +172,35 @@ export function getAchievementHowTo(id: string): AchievementHowTo {
     if (podium) return { how: `Finish ${ORDINAL[Number(podium[1]) as 1 | 2 | 3]} in a month on the Level 0 leaderboard by solving the most problems. It is awarded when the month ends.`, href: '/dashboard/leaderboard', cta: 'See the leaderboard' };
     return { how: ACHIEVEMENT_META[id]?.desc ?? '' };
 }
+
+/**
+ * Resolves a notification's badge ID and metadata from its achievement_id,
+ * title, or message. Works for both newly created and legacy unmapped notifications.
+ */
+export function resolveNotificationBadge(n: {
+    title?: string;
+    message?: string;
+    achievement_id?: string | null;
+}): { id: string; meta: AchievementMeta } | null {
+    if (n.achievement_id) {
+        const meta = getAchievementMeta(n.achievement_id);
+        if (meta) return { id: n.achievement_id, meta };
+    }
+    const title = (n.title || '').trim();
+    const message = (n.message || '').trim();
+    const titleClean = title.replace(/^Achievement unlocked:\s*/i, '').trim();
+
+    // Direct match against known names
+    for (const [id, meta] of Object.entries(ACHIEVEMENT_META)) {
+        if (meta.name.toLowerCase() === titleClean.toLowerCase()) {
+            return { id, meta };
+        }
+    }
+    // Substring match in title or message
+    for (const [id, meta] of Object.entries(ACHIEVEMENT_META)) {
+        if (title.includes(meta.name) || message.includes(meta.name)) {
+            return { id, meta };
+        }
+    }
+    return null;
+}

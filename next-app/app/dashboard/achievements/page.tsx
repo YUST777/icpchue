@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Lock, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -29,16 +30,43 @@ interface BadgeCardProps {
     factory?: string;
     /** Share of members who hold it, when the numbers have loaded. */
     share?: number | null;
+    isHighlighted?: boolean;
 }
 
 const badgeImage = (id: string) => `/images/achievements/badges/${id}.webp`;
 
-function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocked, rarity, share, serial, onOpen }: BadgeCardProps & { onOpen: () => void }) {
+function BadgeCard({
+    id,
+    modelPath,
+    scale = 2,
+    spin,
+    title,
+    description,
+    unlocked,
+    rarity,
+    share,
+    serial,
+    isHighlighted,
+    onOpen,
+}: BadgeCardProps & { onOpen: () => void }) {
     return (
         <li
+            id={`badge-${id}`}
             title={description}
-            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-colors ${unlocked ? 'border-white/[0.1] bg-[#121214]' : 'border-white/[0.05] bg-white/[0.02]'}`}
+            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-all duration-500 ${
+                isHighlighted
+                    ? 'border-[#E8C15A] ring-2 ring-[#E8C15A] shadow-[0_0_35px_rgba(232,193,90,0.6)] scale-[1.03] bg-gradient-to-b from-[#1c1a14] to-[#121214] z-20'
+                    : unlocked
+                    ? 'border-white/[0.1] bg-[#121214]'
+                    : 'border-white/[0.05] bg-white/[0.02]'
+            }`}
         >
+            {isHighlighted && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#E8C15A] via-[#f59e0b] to-[#E8C15A] text-black text-[10px] font-black tracking-wider uppercase shadow-[0_0_20px_rgba(232,193,90,0.9)] animate-bounce flex items-center gap-1.5 whitespace-nowrap">
+                    <span>✨</span>
+                    <span>Unlocked!</span>
+                </div>
+            )}
             <button
                 type="button"
                 onClick={onOpen}
@@ -50,13 +78,26 @@ function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocke
             </button>
 
             <div className="relative w-full h-40 mb-2">
-                <Badge3D modelPath={modelPath} scale={scale} spin={spin} unlocked={unlocked} compact fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)} />
+                <Badge3D
+                    modelPath={modelPath}
+                    scale={scale}
+                    spin={spin || isHighlighted}
+                    unlocked={unlocked}
+                    compact
+                    fallbackSrc={getAchievementMeta(id)?.imageSrc ?? badgeImage(id)}
+                />
                 {!unlocked && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><Lock className="w-6 h-6 text-white/60 drop-shadow" /></div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Lock className="w-6 h-6 text-white/60 drop-shadow" />
+                    </div>
                 )}
             </div>
-            <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>{title}</h3>
-            <p className={`text-[11px] mt-1 leading-snug line-clamp-2 ${unlocked ? 'text-white/45' : 'text-white/25'}`}>{description}</p>
+            <h3 className={`text-sm font-medium leading-tight ${unlocked ? 'text-white' : 'text-white/40'}`}>
+                {title}
+            </h3>
+            <p className={`text-[11px] mt-1 leading-snug line-clamp-2 ${unlocked ? 'text-white/45' : 'text-white/25'}`}>
+                {description}
+            </p>
             {(() => {
                 const shown = share != null ? rarityFromShare(share) : rarity;
                 return (
@@ -65,20 +106,27 @@ function BadgeCard({ id, modelPath, scale = 2, spin, title, description, unlocke
                     </span>
                 );
             })()}
-            {unlocked && serial != null && <span className="mt-1 font-mono text-[10px] tracking-wider text-white/35">#{String(serial).padStart(4, '0')}</span>}
+            {unlocked && serial != null && (
+                <span className="mt-1 font-mono text-[10px] tracking-wider text-white/35">
+                    #{String(serial).padStart(4, '0')}
+                </span>
+            )}
         </li>
     );
 }
 
-export default function AchievementsPage() {
+function AchievementsContent() {
     const { user, profile: authProfile } = useAuth();
+    const searchParams = useSearchParams();
+    const badgeParam = searchParams?.get('badge') || null;
+    const [highlightedBadgeId, setHighlightedBadgeId] = useState<string | null>(null);
+
     const profile = (authProfile || {}) as { 
         codeforces_data?: { rating?: string }; 
         is_approval_unlocked?: boolean; 
         sheet_1_solved?: boolean;
         achievements?: { achievement_id: string }[];
     };
-
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [holderStats, setHolderStats] = useState<HolderStats | null>(() => cachedHolderStats());
@@ -160,9 +208,49 @@ export default function AchievementsPage() {
         return () => clearTimeout(timer);
     }, [progress]);
 
+    const rollToBadge = (rawBadgeId: string) => {
+        const podiumMatch = /^podium-(?:\d{4}-\d{2}-)?([123])$/.exec(rawBadgeId);
+        const targetId = podiumMatch ? `podium-${podiumMatch[1]}` : rawBadgeId;
+
+        let attempts = 0;
+        const tryScroll = () => {
+            const el = document.getElementById(`badge-${targetId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setHighlightedBadgeId(targetId);
+                const timer = setTimeout(() => {
+                    setHighlightedBadgeId(prev => (prev === targetId ? null : prev));
+                }, 7000);
+                return () => clearTimeout(timer);
+            } else if (attempts < 10) {
+                attempts++;
+                setTimeout(tryScroll, 150);
+            }
+        };
+        tryScroll();
+    };
+
+    // Roll to badge if specified in URL query
+    useEffect(() => {
+        if (badgeParam) {
+            rollToBadge(badgeParam);
+        }
+    }, [badgeParam]);
+
+    // Roll to badge if triggered by notification click while already on achievements page
+    useEffect(() => {
+        const handleHighlight = (e: Event) => {
+            const ce = e as CustomEvent<{ badgeId: string }>;
+            if (ce.detail?.badgeId) {
+                rollToBadge(ce.detail.badgeId);
+            }
+        };
+        window.addEventListener('highlight-badge', handleHighlight);
+        return () => window.removeEventListener('highlight-badge', handleHighlight);
+    }, []);
+
     return (
         <>
-
             <div className="ui-compact animate-fade-in">
                 {/* Header with Progress */}
                 <div className="flex items-center gap-4 mb-6">
@@ -194,7 +282,12 @@ export default function AchievementsPage() {
                                 </div>
                                 <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                     {items.map(achievement => (
-                                        <BadgeCard key={achievement.id} {...achievement} onOpen={() => setSelectedId(achievement.id)} />
+                                        <BadgeCard
+                                            key={achievement.id}
+                                            {...achievement}
+                                            isHighlighted={highlightedBadgeId === achievement.id}
+                                            onOpen={() => setSelectedId(achievement.id)}
+                                        />
                                     ))}
                                 </ul>
                             </section>
@@ -205,5 +298,13 @@ export default function AchievementsPage() {
             {selected && <AchievementDetail badge={{ id: selected.id, modelPath: selected.modelPath, title: selected.title, unlocked: selected.unlocked, rarity: selected.rarity, earnedAt: selected.earnedAt, serial: selected.serial, factory: selected.factory, scale: selected.scale }} onClose={() => setSelectedId(null)} />}
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }`}</style>
         </>
+    );
+}
+
+export default function AchievementsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-white/40">Loading achievements...</div>}>
+            <AchievementsContent />
+        </Suspense>
     );
 }

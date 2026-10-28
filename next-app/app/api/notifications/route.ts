@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     try {
         const result = await query(
-            `SELECT id, title, message, type, is_read, created_at 
+            `SELECT id, title, message, type, is_read, created_at, link, achievement_id 
              FROM notifications 
              WHERE user_id = $1 
              ORDER BY created_at DESC 

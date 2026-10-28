@@ -10,13 +10,14 @@ import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, GraduationCap, Flame, Star
+    ChevronRight, ChevronLeft, GraduationCap, Flame, Star, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import AutoBackfillTrigger from '@/components/codeforces/AutoBackfillTrigger';
 import QuickSyncTrigger from '@/components/codeforces/QuickSyncTrigger';
 import CodeBackfillTrigger from '@/components/codeforces/CodeBackfillTrigger';
+import { resolveNotificationBadge } from '@/lib/achievements/catalog';
 
 function NavItem({ icon, label, id, active = false, collapsed = false, onClick, className = '', badge }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; collapsed?: boolean; onClick: () => void; className?: string; badge?: React.ReactNode }) {
     const [showTooltip, setShowTooltip] = useState(false);
@@ -79,6 +80,186 @@ function MobileNavItem({ icon, label, id, active = false, onClick }: { icon: Rea
             {icon}
             <span className="text-xs font-medium text-center leading-none px-0.5">{label}</span>
         </button>
+    );
+}
+
+function formatNotificationTime(dateStr: string): string {
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffSecs = Math.floor(diffMs / 1000);
+        if (diffSecs < 60) return 'Just now';
+        const diffMins = Math.floor(diffSecs / 60);
+        if (diffMins < 60) return `${diffMins}m ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch {
+        return '';
+    }
+}
+
+function getTierTheme(tier: string) {
+    switch (tier) {
+        case 'legendary':
+            return {
+                border: 'border-[#E8C15A]/40 group-hover:border-[#E8C15A]',
+                bg: 'bg-gradient-to-br from-[#E8C15A]/15 via-[#E8C15A]/5 to-black/40',
+                glow: 'shadow-[0_0_15px_rgba(232,193,90,0.25)]',
+                tag: 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30',
+                cardHighlight: 'hover:bg-[#E8C15A]/[0.05]',
+                accentText: 'text-[#E8C15A]',
+            };
+        case 'rare':
+            return {
+                border: 'border-purple-500/40 group-hover:border-purple-400',
+                bg: 'bg-gradient-to-br from-purple-500/15 via-purple-500/5 to-black/40',
+                glow: 'shadow-[0_0_15px_rgba(168,85,247,0.25)]',
+                tag: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+                cardHighlight: 'hover:bg-purple-500/[0.05]',
+                accentText: 'text-purple-400',
+            };
+        default: // common
+            return {
+                border: 'border-sky-500/40 group-hover:border-sky-400',
+                bg: 'bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-black/40',
+                glow: 'shadow-[0_0_15px_rgba(56,189,248,0.25)]',
+                tag: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+                cardHighlight: 'hover:bg-sky-500/[0.05]',
+                accentText: 'text-sky-400',
+            };
+    }
+}
+
+function NotificationsDropdown({
+    notifications,
+    unreadCount,
+    onMarkAllAsRead,
+    onNotificationClick,
+}: {
+    notifications: any[];
+    unreadCount: number;
+    onMarkAllAsRead: () => void;
+    onNotificationClick: (n: any) => void;
+}) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="notification-dropdown absolute right-0 mt-2 w-[calc(100vw-32px)] sm:w-96 max-w-sm bg-[#141416]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 overflow-hidden"
+        >
+            <div className="p-3.5 sm:p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                        <span className="text-[10px] bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 px-2 py-0.5 rounded-full font-bold">
+                            {unreadCount} NEW
+                        </span>
+                    )}
+                </div>
+                {notifications.length > 0 && (
+                    <button
+                        onClick={onMarkAllAsRead}
+                        className="text-[10px] font-bold text-[#A0A0A0] hover:text-[#E8C15A] transition-colors uppercase tracking-wider"
+                    >
+                        Mark all as read
+                    </button>
+                )}
+            </div>
+
+            <div className="max-h-[420px] overflow-y-auto divide-y divide-white/[0.04] scrollbar-thin scrollbar-thumb-white/10">
+                {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <Bell className="w-8 h-8 text-[#555] mx-auto mb-2 opacity-30" />
+                        <p className="text-xs text-[#888]">No notifications yet</p>
+                    </div>
+                ) : (
+                    notifications.map((n) => {
+                        const badge = resolveNotificationBadge(n);
+                        const isAchievement = n.type === 'achievement' || Boolean(badge);
+                        const tier = badge?.meta.tier || 'rare';
+                        const badgeImageSrc = badge?.meta.imageSrc || (n.achievement_id ? `/images/achievements/badges/${n.achievement_id}.webp` : null);
+                        const theme = getTierTheme(tier);
+
+                        return (
+                            <div
+                                key={n.id}
+                                onClick={() => onNotificationClick(n)}
+                                className={`p-3.5 flex gap-3.5 transition-all cursor-pointer group relative ${
+                                    !n.is_read ? 'bg-white/[0.03]' : ''
+                                } ${isAchievement ? theme.cardHighlight : 'hover:bg-white/5'}`}
+                            >
+                                {/* 3D Badge Preview if achievement, else icon */}
+                                {isAchievement && badgeImageSrc ? (
+                                    <div className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl shrink-0 p-1 flex items-center justify-center overflow-hidden border transition-all duration-300 group-hover:scale-105 group-hover:rotate-1 ${theme.border} ${theme.bg} ${theme.glow}`}>
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-transparent pointer-events-none" />
+                                        <Image
+                                            src={badgeImageSrc}
+                                            alt={badge?.meta.name || n.title}
+                                            width={56}
+                                            height={56}
+                                            className="w-full h-full object-contain filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)] group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300"
+                                            unoptimized
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
+                                        n.type === 'leaderboard'
+                                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                                            : 'bg-white/5 border-white/10 text-[#A0A0A0]'
+                                    }`}>
+                                        {n.type === 'leaderboard' ? <Trophy size={18} /> : <Bell size={18} />}
+                                    </div>
+                                )}
+
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                        {isAchievement ? (
+                                            <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${theme.tag}`}>
+                                                <Sparkles size={10} className="shrink-0" />
+                                                <span>{tier}</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">
+                                                {n.type || 'Notice'}
+                                            </span>
+                                        )}
+                                        <span className="text-[10px] text-white/40 font-medium">
+                                            {formatNotificationTime(n.created_at)}
+                                        </span>
+                                        {!n.is_read && (
+                                            <span className="w-2 h-2 rounded-full bg-[#E8C15A] shadow-[0_0_8px_rgba(232,193,90,0.9)] ml-auto shrink-0" />
+                                        )}
+                                    </div>
+
+                                    <h4 className="text-xs font-bold text-white group-hover:text-[#E8C15A] transition-colors leading-tight line-clamp-1">
+                                        {badge?.meta.name || n.title}
+                                    </h4>
+
+                                    <p className="text-[11px] text-white/60 line-clamp-2 leading-snug mt-1">
+                                        {badge?.meta.desc || n.message}
+                                    </p>
+
+                                    {isAchievement && (
+                                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-[#E8C15A]/80 group-hover:text-[#E8C15A] transition-colors">
+                                            <span>View in 3D</span>
+                                            <span className="transition-transform group-hover:translate-x-1">→</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+        </motion.div>
     );
 }
 
@@ -229,6 +410,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const handleNotificationClick = (n: any) => {
+        markAsRead(n.id);
+        setShowNotifications(false);
+
+        const badge = resolveNotificationBadge(n);
+        const targetBadgeId = n.achievement_id || badge?.id;
+        const targetLink = n.link || (targetBadgeId ? `/dashboard/achievements?badge=${targetBadgeId}` : null);
+
+        if (targetLink) {
+            if (pathname === '/dashboard/achievements' && targetBadgeId) {
+                window.dispatchEvent(new CustomEvent('highlight-badge', { detail: { badgeId: targetBadgeId } }));
+                router.push(targetLink);
+            } else {
+                router.push(targetLink);
+            }
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
@@ -314,7 +513,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
+                                className={`notification-trigger w-8 h-8 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
                             >
                                 <Bell size={20} />
                                 {unreadCount > 0 && (
@@ -323,6 +522,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     </div>
                                 )}
                             </button>
+                            <AnimatePresence>
+                                {showNotifications && (
+                                    <NotificationsDropdown
+                                        notifications={notifications}
+                                        unreadCount={unreadCount}
+                                        onMarkAllAsRead={markAllAsRead}
+                                        onNotificationClick={handleNotificationClick}
+                                    />
+                                )}
+                            </AnimatePresence>
                         </div>
                         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1 text-white/80 hover:text-white">
                             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -588,60 +797,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                                 <AnimatePresence>
                                     {showNotifications && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            transition={{ duration: 0.15, ease: "easeOut" }}
-                                            className="notification-dropdown absolute right-0 mt-2 w-80 bg-[#161617] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
-                                        >
-                                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                                <h3 className="text-sm font-bold text-white">Notifications</h3>
-                                                {unreadCount > 0 && (
-                                                    <span className="text-[10px] bg-[#E8C15A]/10 text-[#E8C15A] px-2 py-0.5 rounded-full font-bold">{unreadCount} NEW</span>
-                                                )}
-                                            </div>
-                                            <div className="max-h-[400px] overflow-y-auto">
-                                                {notifications.length === 0 ? (
-                                                    <div className="p-8 text-center">
-                                                        <Bell className="w-8 h-8 text-[#333] mx-auto mb-2 opacity-20" />
-                                                        <p className="text-xs text-[#666]">No notifications yet</p>
-                                                    </div>
-                                                ) : (
-                                                    notifications.map((n) => (
-                                                        <div 
-                                                            key={n.id} 
-                                                            onClick={() => markAsRead(n.id)}
-                                                            className="p-4 flex gap-3 hover:bg-white/5 transition-colors cursor-pointer group border-b border-white/[0.02] last:border-0"
-                                                        >
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.type === 'achievement' ? 'bg-[#E8C15A]/10 text-[#E8C15A]' : n.type === 'leaderboard' ? 'bg-blue-500/10 text-blue-400' : 'bg-white/5 text-[#A0A0A0]'}`}>
-                                                                {n.type === 'achievement' ? <Trophy size={14} /> : n.type === 'leaderboard' ? <Trophy size={14} /> : <Bell size={14} />}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-bold text-[#F2F2F2] mb-0.5">{n.title}</p>
-                                                                <p className="text-[11px] text-[#A0A0A0] leading-relaxed line-clamp-3">
-                                                                    {n.message}
-                                                                </p>
-                                                                <p className="text-[9px] text-[#444] mt-1.5 uppercase font-black">
-                                                                    {new Date(n.created_at).toLocaleDateString()}
-                                                                </p>
-                                                            </div>
-                                                            {!n.is_read && <div className="w-1.5 h-1.5 bg-[#E8C15A] rounded-full mt-1 shrink-0"></div>}
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                            {notifications.length > 0 && (
-                                                <div className="p-3 bg-white/[0.02] border-t border-white/5 text-center">
-                                                    <button 
-                                                        onClick={markAllAsRead}
-                                                        className="text-[10px] font-bold text-[#A0A0A0] hover:text-[#E8C15A] transition-colors uppercase tracking-wider"
-                                                    >
-                                                        Mark all as read
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </motion.div>
+                                        <NotificationsDropdown
+                                            notifications={notifications}
+                                            unreadCount={unreadCount}
+                                            onMarkAllAsRead={markAllAsRead}
+                                            onNotificationClick={handleNotificationClick}
+                                        />
                                     )}
                                 </AnimatePresence>
                             </div>
