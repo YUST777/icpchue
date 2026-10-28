@@ -307,8 +307,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </Link>
                     <div className="flex items-center gap-3">
-                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5 rounded-lg transition-all">
-                            <Star size={20} />
+                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 text-xs font-medium text-[#A0A0A0] active:text-white active:bg-white/5 transition-all">
+                            <Star size={14} className="group-active:text-[#E8C15A] group-active:fill-[#E8C15A] transition-colors" />
+                            <span>Put a star</span>
                         </a>
                         <div className="relative">
                             <button
