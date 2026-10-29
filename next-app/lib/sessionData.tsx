@@ -8,6 +8,7 @@ import Session7Content from './content/sessions/Session7Content';
 import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Programming1Content';
 import Level0Session1Content from './content/sessions/season2027/Level0Session1Content';
 import Level0Session2Content from './content/sessions/season2027/Level0Session2Content';
+import Level0Contest1Content from './content/sessions/season2027/Level0Contest1Content';
 
 // --- Data Definitions ---
 
@@ -79,6 +80,20 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session02.webp',
                 videoId: 'fHp72ASCTp0',
                 content: <Level0Session2Content />
+            },
+            {
+                id: 103,
+                campSlug: 'level0-2027',
+                number: '3',
+                displayNumber: '03',
+                slug: 'contest-1-upsolve',
+                tag: 'Upsolve',
+                title: 'Contest #1 Upsolve',
+                desc: 'Detailed solutions and walkthrough for Contest #1 on Codeforces (Group contest 728330).',
+                description: 'Full upsolve and step-by-step editorial for Level 0 Contest #1. Learn the problem-solving approaches, edge cases, and submit your accepted solutions on Codeforces.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session03.webp',
+                videoId: 'zuNtjjPQaik',
+                content: <Level0Contest1Content />
             },
         ],
     },
