@@ -197,34 +197,7 @@ export function useBehaviorTracking({
         };
     }, [contestId, problemId, sheetId]);
 
-    // 9. Context menu (right-click)
-    useEffect(() => {
-        const handler = () => track({ action: 'context_menu', ...ctx(), metadata: { timeMs: Date.now() - enterTimeRef.current } });
-        document.addEventListener('contextmenu', handler);
-        return () => document.removeEventListener('contextmenu', handler);
-    }, [track, ctx]);
-
-    // 10. Scroll depth tracking on the problem description panel
-    useEffect(() => {
-        const panel = document.querySelector('.problem-panel .custom-scrollbar');
-        if (!panel) return;
-        let lastReported = 0;
-        const handler = () => {
-            const el = panel as HTMLElement;
-            const depth = Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100) || 0;
-            if (depth > maxScrollDepthRef.current) maxScrollDepthRef.current = depth;
-            // Report at 25% increments
-            const bucket = Math.floor(depth / 25) * 25;
-            if (bucket > lastReported) {
-                lastReported = bucket;
-                track({ action: 'scroll_depth', ...ctx(), metadata: { depth: bucket, timeMs: Date.now() - enterTimeRef.current } });
-            }
-        };
-        panel.addEventListener('scroll', handler, { passive: true });
-        return () => panel.removeEventListener('scroll', handler);
-    }, [track, ctx]);
-
-    // 11. Code change frequency — listen for Monaco editor changes via custom event
+    // 9. Code change frequency — listen for Monaco editor changes via custom event
     useEffect(() => {
         const handler = () => {
             codeChangeCountRef.current++;
@@ -235,10 +208,8 @@ export function useBehaviorTracking({
         return () => window.removeEventListener('icpchue:code-change', handler);
     }, []);
 
-    // 12. DevTools detection (window resize heuristic + debugger timing)
+    // 10. DevTools detection (window resize heuristic + debugger timing)
     useEffect(() => {
-        let lastWidth = window.outerWidth;
-        let lastHeight = window.outerHeight;
         const handler = () => {
             const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
             const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
@@ -246,20 +217,12 @@ export function useBehaviorTracking({
             if (widthDiff > 200 || heightDiff > 200) {
                 track({ action: 'devtools_open', ...ctx(), metadata: { widthDiff, heightDiff, timeMs: Date.now() - enterTimeRef.current } });
             }
-            // Also track significant window resizes (screen sharing indicator)
-            const wChange = Math.abs(window.outerWidth - lastWidth);
-            const hChange = Math.abs(window.outerHeight - lastHeight);
-            if (wChange > 100 || hChange > 100) {
-                track({ action: 'resize_window', ...ctx(), metadata: { w: window.innerWidth, h: window.innerHeight, timeMs: Date.now() - enterTimeRef.current } });
-            }
-            lastWidth = window.outerWidth;
-            lastHeight = window.outerHeight;
         };
         window.addEventListener('resize', handler);
         return () => window.removeEventListener('resize', handler);
     }, [track, ctx]);
 
-    // 13. Print attempt detection (Ctrl+P)
+    // 11. Print attempt detection (Ctrl+P)
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
@@ -268,40 +231,5 @@ export function useBehaviorTracking({
         };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
-    }, [track, ctx]);
-
-    // 14. Mouse idle zone tracking — which panel the mouse spends time in
-    useEffect(() => {
-        let currentZone = '';
-        let zoneEnterTime = 0;
-        const handler = (e: MouseEvent) => {
-            lastActivityRef.current = Date.now();
-            const target = e.target as HTMLElement;
-            let zone = 'other';
-            if (target.closest('.problem-panel')) zone = 'problem';
-            else if (target.closest('#onboarding-code-workspace')) zone = 'editor';
-            else if (target.closest('#onboarding-test-panel')) zone = 'testpanel';
-
-            if (zone !== currentZone) {
-                // Report time spent in previous zone (only if >5s)
-                if (currentZone && zoneEnterTime) {
-                    const spent = Date.now() - zoneEnterTime;
-                    if (spent > 5000) {
-                        track({ action: 'mouse_idle_zone', ...ctx(), metadata: { zone: currentZone, spentMs: spent } });
-                    }
-                }
-                currentZone = zone;
-                zoneEnterTime = Date.now();
-            }
-        };
-        // Throttle to every 2s
-        let throttleTimer: ReturnType<typeof setTimeout> | null = null;
-        const throttled = (e: MouseEvent) => {
-            if (throttleTimer) return;
-            throttleTimer = setTimeout(() => { throttleTimer = null; }, 2000);
-            handler(e);
-        };
-        document.addEventListener('mousemove', throttled, { passive: true });
-        return () => document.removeEventListener('mousemove', throttled);
     }, [track, ctx]);
 }

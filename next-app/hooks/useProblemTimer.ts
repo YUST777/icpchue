@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 // statement without touching anything still counts as active until then).
 const IDLE_AFTER_MS = 90_000;
 const TICK_MS = 1_000;
-const FLUSH_MS = 30_000;
+const FLUSH_MS = 60_000;
 const ENDPOINT = '/api/track/time';
 
 function newVisitId(): string {

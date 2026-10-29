@@ -46,11 +46,6 @@ export async function proxy(request: NextRequest) {
     headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: blob: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: blob: data: wss: ws:; media-src 'self' https: blob: data: mediastream:; frame-src 'self' https://drive.google.com https://www.youtube.com https://www.youtube-nocookie.com https://accounts.google.com https://*.supabase.co; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;");
 
-    // Stricter script policy in report-only mode: scripts may load only from this site and the
-    // few services we use, not from any https page. Violations are logged by ClientErrorReporter;
-    // once that log is quiet this replaces the policy above.
-    headers.set('Content-Security-Policy-Report-Only', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://www.clarity.ms https://scripts.clarity.ms https://www.youtube.com https://s.ytimg.com https://va.vercel-scripts.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
-
     // --- 2. Bot Blocking ---
     const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
     const allowedBots = ['googlebot', 'bingbot', 'applebot', 'yandexbot', 'duckduckbot', 'baiduspider', 'facebookexternalhit', 'twitterbot', 'linkedinbot', 'slackbot'];

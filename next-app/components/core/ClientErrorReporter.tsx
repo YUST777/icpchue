@@ -33,21 +33,8 @@ export default function ClientErrorReporter() {
             reportClientError({ kind: 'unhandledrejection', message, stack });
         };
 
-        // The stricter script policy runs in report-only mode first: anything it would block is
-        // logged here, so it can be tightened for real once the log stays quiet.
-        const onCsp = (event: SecurityPolicyViolationEvent) => {
-            if (event.disposition !== 'report') return;
-            reportClientError({
-                kind: 'error',
-                message: `CSP report-only: ${event.effectiveDirective} would block ${event.blockedURI || 'inline'}`,
-                source: event.sourceFile || undefined,
-                line: event.lineNumber || undefined,
-            });
-        };
-
         window.addEventListener('error', onError);
         window.addEventListener('unhandledrejection', onRejection);
-        window.addEventListener('securitypolicyviolation', onCsp);
 
         const w = window as unknown as { __icpchueNativeFetch?: typeof fetch };
         const nativeFetch = w.__icpchueNativeFetch || window.fetch;
@@ -63,7 +50,7 @@ export default function ClientErrorReporter() {
             } catch {
                 // ignore
             }
-            const watched = path.startsWith('/api/') && path !== '/api/client-errors';
+            const watched = path.startsWith('/api/') && path !== '/api/client-errors' && !path.startsWith('/api/track');
 
             // Weak mobile connections drop requests. Retry safe GETs to our
             // own API a couple of times before giving up.
@@ -119,7 +106,6 @@ export default function ClientErrorReporter() {
         return () => {
             window.removeEventListener('error', onError);
             window.removeEventListener('unhandledrejection', onRejection);
-            window.removeEventListener('securitypolicyviolation', onCsp);
             if (window.fetch === trackedFetch) window.fetch = nativeFetch;
         };
     }, []);

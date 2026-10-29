@@ -11,7 +11,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
  */
 
 const ENDPOINT = '/api/track/session-watch';
-const FLUSH_MS = 20_000;
+const FLUSH_MS = 60_000;
 const BUCKET_SECONDS = 10;
 
 interface Pending {

@@ -41,17 +41,34 @@ export function useTrack() {
     const sessionId = useMemo(() => getSessionId(), []);
 
     const flush = useCallback(() => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
         const batch = queueRef.current.splice(0);
         if (batch.length === 0) return;
-        // Send each event individually (server buffers in Redis)
-        for (const payload of batch) {
-            fetch('/api/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...payload, sessionId }),
-                keepalive: true,
-            }).catch(() => {});
+
+        const body = JSON.stringify({
+            events: batch.map((p) => ({ ...p, sessionId })),
+            sessionId,
+        });
+
+        // Use sendBeacon if available, otherwise fetch with keepalive
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+            try {
+                const blob = new Blob([body], { type: 'application/json' });
+                if (navigator.sendBeacon('/api/track', blob)) return;
+            } catch {
+                // fallback to fetch
+            }
         }
+
+        fetch('/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+        }).catch(() => {});
     }, [sessionId]);
 
     const track = useCallback((payload: TrackPayload) => {
@@ -63,8 +80,9 @@ export function useTrack() {
         lastSent.set(key, now);
 
         queueRef.current.push(payload);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(flush, 500);
+        if (!timerRef.current) {
+            timerRef.current = setTimeout(flush, 3000);
+        }
     }, [flush]);
 
     // Flush on page unload

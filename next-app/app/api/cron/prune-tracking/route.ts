@@ -7,9 +7,10 @@ export const maxDuration = 60;
 // Table, timestamp column, days to keep. Learning data (submissions, progress,
 // time on problems, session watch) is never touched here.
 const RETENTION: Array<{ table: string; column: string; days: number }> = [
-    { table: 'user_activity', column: 'created_at', days: 90 },
-    { table: 'error_logs', column: 'created_at', days: 30 },
-    { table: 'user_sessions', column: 'started_at', days: 90 },
+    { table: 'user_activity', column: 'created_at', days: 45 },
+    { table: 'error_logs', column: 'created_at', days: 14 },
+    { table: 'app_error_logs', column: 'created_at', days: 14 },
+    { table: 'user_sessions', column: 'started_at', days: 60 },
     { table: 'login_logs', column: 'logged_in_at', days: 180 },
 ];
 const BATCH = 20_000;
@@ -17,7 +18,7 @@ const BATCH = 20_000;
 // Registration and submission rows keep their data, but the network address and browser string
 // that came with them are dropped after 90 days.
 const SCRUB: Array<{ table: string; column: string; fields: string[] }> = [
-    { table: 'applications', column: 'created_at', fields: ['ip_address', 'user_agent'] },
+    { table: 'applications', column: 'submitted_at', fields: ['ip_address', 'user_agent'] },
     { table: 'level0_training_registrations', column: 'submitted_at', fields: ['ip_address', 'user_agent'] },
     { table: 'level1_training_registrations', column: 'submitted_at', fields: ['ip_address', 'user_agent'] },
     { table: 'student_card_uploads', column: 'created_at', fields: ['ip_address', 'user_agent'] },
