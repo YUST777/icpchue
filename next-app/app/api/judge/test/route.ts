@@ -4,9 +4,9 @@ import { rateLimit } from '@/lib/cache/rate-limit';
 import { Judge0Token, Judge0SubmissionResult } from '@/lib/types';
 import { z } from 'zod';
 
-// Judge polling can take a while on the self-hosted box; allow up to 60s.
-export const maxDuration = 60;
-const JUDGE_POLL_BUDGET_MS = 50_000;
+// Judge polling budget tuned to preserve serverless Fluid Active CPU quota
+export const maxDuration = 30;
+const JUDGE_POLL_BUDGET_MS = 25_000;
 
 // Judge0 Configuration.
 // Defaults to the free public Judge0 CE API (no self-hosted Docker needed on
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
         const pollDeadline = Date.now() + JUDGE_POLL_BUDGET_MS;
 
         while (Date.now() < pollDeadline) {
-            await new Promise(r => setTimeout(r, 750));
+            await new Promise(r => setTimeout(r, 1250));
 
             const resultsResponse = await fetch(
                 `${JUDGE0_API_URL}/submissions/batch?tokens=${tokenString}&base64_encoded=true&fields=token,stdout,stderr,status_id,time,memory,compile_output`,

@@ -61,10 +61,12 @@ export default function AutoBackfillTrigger() {
                     return;
                 }
                 // Public API completed, but private/group history still needs
-                // the browser extension. Leave the client timestamp untouched
-                // when it is absent so installing it and revisiting the
-                // dashboard retries the group sync.
-                if (!document.getElementById('verdict-extension-installed')) return;
+                // the browser extension. Set cooldown so trainees without
+                // the extension do not dogpile /api/codeforces/auto-backfill on every navigation.
+                if (!document.getElementById('verdict-extension-installed')) {
+                    localStorage.setItem(storageKey, String(Date.now()));
+                    return;
+                }
 
                 const planResponse = await fetch('/api/codeforces/backfill-plan', { credentials: 'include' });
                 if (!planResponse.ok) return;
