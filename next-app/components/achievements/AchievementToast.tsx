@@ -38,13 +38,15 @@ export default function AchievementToast() {
         if (isAuthenticated && !loading && !onAuthPage) refetch();
     }, [pathname, isAuthenticated, loading, onAuthPage, refetch]);
 
-    // Live: look for new badges while the tab is open, and the moment it comes back into view.
+    // Live: look for new badges while the tab is open, and when it comes back into view.
     useEffect(() => {
         if (!isAuthenticated || loading || onAuthPage) return;
         let known = '';
         let stopped = false;
+        let lastRun = 0;
         const check = async () => {
             if (stopped || document.visibilityState !== 'visible') return;
+            lastRun = Date.now();
             try {
                 const res = await fetch(addCacheBust('/api/achievements'), { credentials: 'include', cache: 'no-store' });
                 if (!res.ok) return;
@@ -56,7 +58,12 @@ export default function AchievementToast() {
         };
         void check();
         const timer = setInterval(check, POLL_MS);
-        const onVisible = () => { if (document.visibilityState === 'visible') void check(); };
+        const onVisible = () => {
+            // Throttle focus refetches to at most once per minute
+            if (document.visibilityState === 'visible' && Date.now() - lastRun > 60000) {
+                void check();
+            }
+        };
         document.addEventListener('visibilitychange', onVisible);
         window.addEventListener('focus', onVisible);
         return () => { stopped = true; clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible); };

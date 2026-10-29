@@ -312,14 +312,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!isAuthenticated) return;
 
-        fetchNotifications();
+        let lastNotifFetch = Date.now();
+        const safeFetchNotifications = () => {
+            lastNotifFetch = Date.now();
+            fetchNotifications();
+        };
 
-        // Poll every 3m, but only when tab is visible (saves serverless invocations)
+        safeFetchNotifications();
+
+        // Poll every 5m, but only when tab is visible (saves serverless invocations)
         let interval: ReturnType<typeof setInterval> | null = null;
 
         const startPolling = () => {
             if (interval) return;
-            interval = setInterval(fetchNotifications, 180000);
+            interval = setInterval(safeFetchNotifications, 300000);
         };
         const stopPolling = () => {
             if (interval) { clearInterval(interval); interval = null; }
@@ -327,7 +333,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         const handleVisibility = () => {
             if (document.hidden) stopPolling();
-            else { fetchNotifications(); startPolling(); }
+            else {
+                if (Date.now() - lastNotifFetch > 60000) safeFetchNotifications();
+                startPolling();
+            }
         };
 
         startPolling();
