@@ -13,7 +13,7 @@ export default function Level0Contest1Content() {
                     <h2 className="text-xl sm:text-2xl font-bold text-white">
                         Contest #1 &bull; Level 0 (2027)
                     </h2>
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-white/60 text-right" dir="rtl">
                         رابط المسابقة على كودفورسيز لمتابعة وحل المسائل (Upsolve).
                     </p>
                 </div>
@@ -30,22 +30,31 @@ export default function Level0Contest1Content() {
 
             {/* How to Join Section with Desktop & Mobile Guides */}
             <section className="space-y-6 pt-4 border-t border-white/10">
-                <div className="space-y-1.5">
+                <div className="space-y-2 text-right" dir="rtl">
                     <h3 className="text-lg sm:text-xl font-bold text-white">
                         طريقة الانضمام والتسجيل في المسابقة
                     </h3>
-                    <p className="text-sm text-white/60 leading-relaxed">
-                        1. اطلب الانضمام للجروب أولاً من <span className="text-white font-medium">Member management</span> واضغط <span className="text-[#E8C15A] font-medium">Join</span>.
-                        <br />
-                        2. بعد قبول الانضمام، ادخل على صفحة <span className="text-white font-medium">Contests</span> واضغط <span className="text-[#E8C15A] font-medium">Register</span> للدخول والتسجيل في المسابقة.
-                    </p>
+                    <ul className="space-y-2 text-sm text-white/70 leading-relaxed">
+                        <li className="flex items-start gap-2">
+                            <span className="text-[#E8C15A] font-bold shrink-0">1.</span>
+                            <span>
+                                اطلب الانضمام للجروب أولاً من <span className="text-white font-medium" dir="ltr">Member management</span> واضغط <span className="text-[#E8C15A] font-medium" dir="ltr">Join</span>.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-[#E8C15A] font-bold shrink-0">2.</span>
+                            <span>
+                                بعد قبول الانضمام، ادخل على صفحة <span className="text-white font-medium" dir="ltr">Contests</span> واضغط <span className="text-[#E8C15A] font-medium" dir="ltr">Register</span> للدخول والتسجيل في المسابقة.
+                            </span>
+                        </li>
+                    </ul>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Desktop Guide */}
                     <div className="space-y-2.5">
-                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider block">
-                            Desktop &bull; الكمبيوتر واللابتوب
+                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider block text-right" dir="rtl">
+                            الكمبيوتر واللابتوب &bull; Desktop
                         </span>
                         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f0f0f]">
                             <Image
@@ -61,8 +70,8 @@ export default function Level0Contest1Content() {
 
                     {/* Mobile Guide */}
                     <div className="space-y-2.5">
-                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider block">
-                            Mobile &bull; الموبايل
+                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider block text-right" dir="rtl">
+                            الموبايل &bull; Mobile
                         </span>
                         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f0f0f]">
                             <Image
@@ -80,7 +89,7 @@ export default function Level0Contest1Content() {
 
             {/* Practice Sheets */}
             <section className="space-y-4 pt-6 border-t border-white/10">
-                <div className="flex items-center gap-2.5 text-white/80">
+                <div className="flex items-center gap-2.5 text-white/80 justify-end" dir="rtl">
                     <BookOpen className="w-5 h-5 text-[#E8C15A]" />
                     <h3 className="text-base sm:text-lg font-bold text-white">شيتات التدريب المرتبطة</h3>
                 </div>
