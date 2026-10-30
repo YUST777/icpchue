@@ -17,14 +17,15 @@ const STORAGE_PREFIX = 'api_cache_';
 
 /**
  * Synchronous cache lookup for instantaneous initial render without flashing skeletons.
+ * By default allows stale data (SWR) so previously visited sheets/pages render immediately.
  */
-export function getCachedData<T>(url: string, method: string = 'GET'): T | null {
+export function getCachedData<T>(url: string, method: string = 'GET', allowStale: boolean = true): T | null {
     const cacheKey = `${method}:${url}`;
     const now = Date.now();
 
     // 1. Check in-memory cache first (fastest)
     const entry = memoryCache.get(cacheKey);
-    if (entry && now < entry.expiry) {
+    if (entry && (now < entry.expiry || allowStale)) {
         return entry.data as T;
     }
 
@@ -34,12 +35,10 @@ export function getCachedData<T>(url: string, method: string = 'GET'): T | null 
             const raw = sessionStorage.getItem(STORAGE_PREFIX + cacheKey);
             if (raw) {
                 const parsed = JSON.parse(raw);
-                if (parsed && now < parsed.expiry) {
+                if (parsed && (now < parsed.expiry || allowStale)) {
                     // Rehydrate memory cache
                     memoryCache.set(cacheKey, parsed);
                     return parsed.data as T;
-                } else {
-                    sessionStorage.removeItem(STORAGE_PREFIX + cacheKey);
                 }
             }
         } catch {
@@ -62,8 +61,8 @@ export async function fetchWithCache<T>(
     const cacheKey = `${options.method || 'GET'}:${url}`;
     const now = Date.now();
 
-    // 1. Check if we have valid non-expired cached data
-    const cached = getCachedData<T>(url, (options.method as string) || 'GET');
+    // 1. Check if we have valid non-expired cached data (strict expiry check)
+    const cached = getCachedData<T>(url, (options.method as string) || 'GET', false);
     if (cached !== null) {
         return cached;
     }
@@ -98,7 +97,7 @@ export async function fetchWithCache<T>(
 
             memoryCache.set(cacheKey, cacheItem);
 
-            // Persist to sessionStorage for seamless back-navigation
+            // Persist to sessionStorage for seamless back-navigation across tabs/unmounts
             if (typeof window !== 'undefined') {
                 try {
                     sessionStorage.setItem(STORAGE_PREFIX + cacheKey, JSON.stringify(cacheItem));

@@ -107,6 +107,20 @@ export default function SheetDetailPage() {
         }
     }, [detailsUrl, router]);
 
+    // Keep sheet in sync with cache when navigating between sheets
+    useEffect(() => {
+        const cached = getCachedData<any>(detailsUrl);
+        if (cached?.sheet && cached?.problems) {
+            const problems = cached.problems.map((p: any) => ({
+                ...p,
+                available: true,
+                userStatus: p.userStatus
+            }));
+            setSheet({ ...cached.sheet, problems });
+            setLoading(false);
+        }
+    }, [detailsUrl]);
+
     useEffect(() => {
         fetchSheetData();
     }, [fetchSheetData]);
@@ -265,7 +279,9 @@ export default function SheetDetailPage() {
         if (!authLoading && !user) router.push('/login');
     }, [authLoading, user, router]);
 
-    if (authLoading || loading) {
+    // Only show skeleton on first visit when we don't have sheet data yet.
+    // If sheet data was already cached or loaded, render it immediately with zero skeleton.
+    if (!sheet) {
         // Same containers as the loaded page below, with grey bars in place of text.
         return (
             <div className="space-y-6" role="status" aria-label="Loading sheet">

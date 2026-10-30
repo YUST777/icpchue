@@ -71,7 +71,7 @@ export default function SheetsPage() {
         }
     }, [authLoading, user, router]);
 
-    if (authLoading) {
+    if (authLoading && levels.length === 0) {
         return (
             <div className="space-y-8" role="status" aria-label="Loading levels">
                 <div className="space-y-4">

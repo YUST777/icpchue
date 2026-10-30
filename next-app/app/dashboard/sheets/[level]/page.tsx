@@ -96,7 +96,8 @@ export default function LevelOverviewPage() {
         return { totalSolved, totalProblems, percentage };
     }, [sheets]);
 
-    if (authLoading || loading) {
+    // Only show skeleton on first visit when we don't have level data yet.
+    if (!level) {
         return (
             <div className="space-y-8">
                 {/* Hero skeleton */}
