@@ -669,15 +669,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             rel="noopener noreferrer"
                                             className="group flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-[0.98]"
                                         >
-                                            <div className="flex items-center gap-2.5">
-                                                <Star size={16} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
-                                                <span className="text-sm font-semibold text-white/90">Support us</span>
-                                            </div>
-                                            {starCount !== null && (
-                                                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-white/10 text-[#E8C15A] border border-[#E8C15A]/20">
-                                                    ★ {starCount}
-                                                </span>
-                                            )}
+                                            <span className="text-sm font-semibold text-white/90">Support us</span>
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-white/10 text-[#E8C15A] border border-[#E8C15A]/20">
+                                                <Star size={13} className="text-[#E8C15A] fill-[#E8C15A]" />
+                                                <span>{starCount !== null ? starCount : ''}</span>
+                                            </span>
                                         </a>
                                     </div>
                                 </div>
@@ -861,12 +857,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                         <div className="flex items-center gap-2">
                             <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Support ICPC HUE on GitHub" aria-label="Support ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-xs font-medium text-white/90 hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-95">
-                                <Star size={13} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
                                 <span className="hidden sm:inline">Support us</span>
-                                {starCount !== null && (
-                                    <span className="text-[11px] font-mono text-white/50 pl-1 border-l border-white/10 ml-0.5">
-                                        {starCount}
+                                {starCount !== null ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/70 pl-1.5 border-l border-white/15 ml-0.5">
+                                        <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
+                                        <span>{starCount}</span>
                                     </span>
+                                ) : (
+                                    <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform ml-0.5" />
                                 )}
                             </a>
                             <div className="relative">
