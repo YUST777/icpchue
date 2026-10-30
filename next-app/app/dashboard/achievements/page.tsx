@@ -56,9 +56,9 @@ function BadgeCard({
             title={description}
             className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-all duration-500 ${
                 isHighlighted
-                    ? 'border-[#E8C15A] shadow-[0_0_16px_rgba(232,193,90,0.25)] scale-[1.02] bg-gradient-to-b from-[#181611] to-[#121214] z-40'
+                    ? 'border-[#E8C15A] shadow-[0_0_20px_rgba(232,193,90,0.35),0_0_8px_rgba(232,193,90,0.25)] scale-[1.02] bg-gradient-to-b from-[#1c1a13] to-[#151412] z-50'
                     : unlocked
-                    ? 'border-white/[0.1] bg-[#121214] z-10'
+                    ? 'border-white/[0.1] bg-[#121214] z-0'
                     : 'border-white/[0.05] bg-white/[0.02] z-0'
             }`}
         >
@@ -280,12 +280,12 @@ function AchievementsContent() {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (
-                            <section key={group} className={`relative transition-all ${items.some(a => highlightedBadgeId === a.id) ? 'z-30' : 'z-0'}`}>
+                            <div key={group} className={`relative transition-all overflow-visible ${items.some(a => highlightedBadgeId === a.id) ? 'z-40' : 'z-0'}`}>
                                 <div className="flex items-baseline justify-between mb-3">
                                     <h2 className="text-sm font-semibold text-white">{group}</h2>
                                     <span className="text-xs text-white/40 tabular-nums">{items.filter(a => a.unlocked).length}/{items.length}</span>
                                 </div>
-                                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 overflow-visible">
+                                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-1 -m-1 overflow-visible">
                                     {items.map(achievement => (
                                         <BadgeCard
                                             key={achievement.id}
@@ -295,7 +295,7 @@ function AchievementsContent() {
                                         />
                                     ))}
                                 </ul>
-                            </section>
+                            </div>
                         );
                     })}
                 </div>

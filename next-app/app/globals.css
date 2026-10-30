@@ -899,10 +899,15 @@ a:active {
   overflow: hidden;
 }
 
-/* Ensure all sections are mobile-friendly */
-section {
+/* Ensure all sections are mobile-friendly without clipping visible overlays or cards */
+section:not(.overflow-visible):not(.ui-compact section) {
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+.ui-compact section,
+section.overflow-visible {
+  overflow: visible !important;
 }
 
 /* Improve readability on mobile */
@@ -1485,6 +1490,7 @@ iframe[title*="reCAPTCHA"],
 .ui-compact section {
   padding-top: 0;
   padding-bottom: 0;
+  overflow: visible !important;
 }
 
 .ui-compact :is(input, select, textarea):focus,
