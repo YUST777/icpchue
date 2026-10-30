@@ -1,5 +1,4 @@
 import { FileText, Code } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface MobileViewToggleProps {
     mobileView: "problem" | "code";
@@ -52,47 +51,29 @@ export function MobileViewToggle({
 
     // "pill" variant
     return (
-        <div className="relative flex md:hidden bg-[#1a1a1a] p-0.5 rounded-lg border border-white/10 shrink-0">
-            <motion.button
+        <div className="flex md:hidden bg-[#1a1a1a] p-0.5 rounded-lg border border-white/10 shrink-0">
+            <button
                 onClick={() => setMobileView("problem")}
                 aria-label="View problem statement"
-                aria-pressed={mobileView === "problem"}
-                whileTap={{ scale: 0.94 }}
-                className={`relative z-10 min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-colors text-xs font-semibold ${
+                className={`min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-all text-xs font-semibold ${
                     mobileView === "problem"
-                        ? "text-white"
+                        ? "bg-[#2a2a2a] text-white shadow-sm border border-white/10"
                         : "text-white/40 hover:text-white/60 active:bg-white/5"
                 }`}
             >
-                {mobileView === "problem" && (
-                    <motion.span
-                        layoutId="mobile-view-toggle-active"
-                        transition={{ type: "spring", stiffness: 480, damping: 34, mass: 0.55 }}
-                        className="absolute inset-0 rounded-md border border-white/10 bg-[#2a2a2a] shadow-sm"
-                    />
-                )}
-                <FileText size={14} strokeWidth={2.5} className="relative z-10" />
-            </motion.button>
-            <motion.button
+                <FileText size={14} strokeWidth={2.5} />
+            </button>
+            <button
                 onClick={() => setMobileView("code")}
                 aria-label="View code editor"
-                aria-pressed={mobileView === "code"}
-                whileTap={{ scale: 0.94 }}
-                className={`relative z-10 min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-colors text-xs font-semibold ${
+                className={`min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-all text-xs font-semibold ${
                     mobileView === "code"
-                        ? "text-white"
+                        ? "bg-[#2a2a2a] text-white shadow-sm border border-white/10"
                         : "text-white/40 hover:text-white/60 active:bg-white/5"
                 }`}
             >
-                {mobileView === "code" && (
-                    <motion.span
-                        layoutId="mobile-view-toggle-active"
-                        transition={{ type: "spring", stiffness: 480, damping: 34, mass: 0.55 }}
-                        className="absolute inset-0 rounded-md border border-white/10 bg-[#2a2a2a] shadow-sm"
-                    />
-                )}
-                <Code size={14} strokeWidth={2.5} className="relative z-10" />
-            </motion.button>
+                <Code size={14} strokeWidth={2.5} />
+            </button>
         </div>
     );
 }
