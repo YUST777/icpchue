@@ -605,6 +605,8 @@ function MirrorUI({
                     onSubmit={trackedOnSubmit}
                     onRunTests={trackedOnRunTests}
                     submitting={submitting}
+                    isRunningTests={testSubmitting}
+                    isSubmittingCF={cfSubmitting}
                     activeTab={activeTab}
                     setActiveTab={trackedSetActiveTab}
                     showNotes={showNotes}
@@ -659,6 +661,8 @@ function MirrorUI({
                         code={code}
                         setCode={setCode}
                         submitting={submitting}
+                        isRunningTests={testSubmitting}
+                        isSubmittingCF={cfSubmitting}
                         onSubmit={trackedOnSubmit}
                         onRunTests={trackedOnRunTests}
                         handleEditorDidMount={handleEditorDidMount}

@@ -56,6 +56,7 @@ export function useLocalTestRunner({
         if (!currentCode.trim() || submitting || currentTestCases.length === 0) return;
 
         setSubmitting(true);
+        setResult(null);
         setIsTestPanelVisible(true);
         if (setTestPanelActiveTab) setTestPanelActiveTab('result');
 

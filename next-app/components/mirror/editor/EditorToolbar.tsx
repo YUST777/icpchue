@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2, Play, CloudUpload } from 'lucide-react';
+import { Bookmark, Braces, Maximize2, Minimize2, Copy, Check, ChevronUp, Share2, Play, CloudUpload, Loader2 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, getLanguageById } from './EditorConstants';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -12,6 +12,8 @@ interface EditorToolbarProps {
     code: string;
     setCode: (code: string) => void;
     submitting: boolean;
+    isRunningTests?: boolean;
+    isSubmittingCF?: boolean;
     onSubmit: () => void;
     onRunTests?: () => void;
     isTestPanelVisible: boolean;
@@ -29,6 +31,8 @@ export default function EditorToolbar({
     code,
     setCode,
     submitting,
+    isRunningTests,
+    isSubmittingCF,
     onSubmit,
     onRunTests,
     isTestPanelVisible,
@@ -168,10 +172,18 @@ export default function EditorToolbar({
                                 onClick={onRunTests}
                                 disabled={submitting}
                                 aria-label="Run tests"
-                                className="h-8 px-2 sm:px-3 flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 text-xs font-semibold active:bg-white/10 disabled:opacity-50"
+                                className={`h-8 px-2 sm:px-3 flex items-center gap-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                                    isRunningTests
+                                        ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 text-[#E8C15A]'
+                                        : 'bg-white/[0.06] border-white/10 text-white/80 active:bg-white/10 disabled:opacity-50'
+                                }`}
                             >
-                                <Play size={12} fill="currentColor" />
-                                Run
+                                {isRunningTests ? (
+                                    <Loader2 size={12} className="animate-spin text-[#E8C15A]" />
+                                ) : (
+                                    <Play size={12} fill="currentColor" />
+                                )}
+                                {isRunningTests ? 'Judging...' : 'Run'}
                             </button>
                         )}
                         <button
@@ -179,10 +191,18 @@ export default function EditorToolbar({
                             onClick={handleSubmitClick}
                             disabled={submitting}
                             aria-label="Submit to Codeforces"
-                            className="h-8 px-2.5 sm:px-3 flex items-center gap-1.5 rounded-lg bg-[#E8C15A] text-black text-xs font-bold active:bg-[#F0D06A] disabled:opacity-50"
+                            className={`h-8 px-2.5 sm:px-3 flex items-center gap-1.5 rounded-lg text-xs font-bold transition-all ${
+                                isSubmittingCF
+                                    ? 'bg-[#E8C15A]/80 text-black cursor-wait'
+                                    : 'bg-[#E8C15A] text-black active:bg-[#F0D06A] disabled:opacity-50'
+                            }`}
                         >
-                            <CloudUpload size={13} />
-                            Submit
+                            {isSubmittingCF ? (
+                                <Loader2 size={13} className="animate-spin text-black" />
+                            ) : (
+                                <CloudUpload size={13} />
+                            )}
+                            {isSubmittingCF ? 'Submitting...' : 'Submit'}
                         </button>
                     </div>
                 </div>

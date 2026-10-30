@@ -29,6 +29,8 @@ interface CodeWorkspaceProps {
     code: string;
     setCode: (code: string) => void;
     submitting: boolean;
+    isRunningTests?: boolean;
+    isSubmittingCF?: boolean;
     onSubmit: () => void;
     onRunTests?: () => void;
     handleEditorDidMount: OnMount;
@@ -57,6 +59,8 @@ export default function CodeWorkspace({
     code,
     setCode,
     submitting,
+    isRunningTests,
+    isSubmittingCF,
     onSubmit,
     onRunTests,
     handleEditorDidMount,
@@ -346,6 +350,8 @@ export default function CodeWorkspace({
                 code={code}
                 setCode={setCode}
                 submitting={submitting}
+                isRunningTests={isRunningTests}
+                isSubmittingCF={isSubmittingCF}
                 onSubmit={onSubmit}
                 onRunTests={onRunTests}
                 isTestPanelVisible={!isCollapsed}
@@ -467,10 +473,18 @@ export default function CodeWorkspace({
                                 : 'text-[#808080] hover:text-[#b0b0b0]'
                                 }`}
                         >
-                            <Play size={14} />
-                            Test Result
+                            {isRunningTests ? (
+                                <Loader2 size={14} className="animate-spin text-[#E8C15A]" />
+                            ) : (
+                                <Play size={14} />
+                            )}
+                            {isRunningTests ? (
+                                <span className="text-[#E8C15A] font-semibold">Judging...</span>
+                            ) : (
+                                'Test Result'
+                            )}
                             {testPanelTab === 'result' && (
-                                <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
+                                <div className={`absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full ${isRunningTests ? 'animate-pulse' : ''}`} />
                             )}
                         </button>
                         <button
@@ -532,7 +546,11 @@ export default function CodeWorkspace({
                                 />
                             )}
                             {testPanelTab === 'result' && (
-                                <TestResultTabInline result={result} />
+                                <TestResultTabInline
+                                    result={result}
+                                    isRunning={isRunningTests}
+                                    testCasesCount={testCases.length}
+                                />
                             )}
                             {testPanelTab === 'codeforces' && (
                                 <CFStatusTabInline

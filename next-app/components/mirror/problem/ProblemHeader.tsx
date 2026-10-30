@@ -9,7 +9,7 @@ import {
     MobileViewToggle,
     useNavigationIds,
 } from "../header";
-import { Play, CloudUpload, StickyNote, Search } from "lucide-react";
+import { Play, CloudUpload, StickyNote, Search, Loader2 } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { CommandPalette } from "../header/CommandPalette";
 import { useUIStore } from "@/hooks/useUIStore";
@@ -28,6 +28,8 @@ interface ProblemHeaderProps {
     onSubmit: () => void;
     onRunTests: () => void;
     submitting: boolean;
+    isRunningTests?: boolean;
+    isSubmittingCF?: boolean;
     activeTab: 'description' | 'submissions' | 'analytics' | 'solution';
     setActiveTab: (tab: 'description' | 'submissions' | 'analytics' | 'solution') => void;
     showNotes: boolean;
@@ -45,6 +47,8 @@ export default function ProblemHeader({
     onSubmit,
     onRunTests,
     submitting,
+    isRunningTests,
+    isSubmittingCF,
     activeTab,
     setActiveTab,
     showNotes,
@@ -101,24 +105,42 @@ export default function ProblemHeader({
 
                         <div className="hidden lg:block w-px h-4 bg-white/5 mx-0.5" />
 
-                        <Tooltip content="Run Local Tests" shortcut={["Ctrl", "'"]} position="bottom">
+                        <Tooltip content={isRunningTests ? "Judging test cases..." : "Run Local Tests"} shortcut={["Ctrl", "'"]} position="bottom">
                             <button
                                 onClick={onRunTests}
                                 disabled={submitting}
-                                className="p-2 w-10 h-10 flex items-center justify-center bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white/70 hover:text-white rounded-lg transition-all border border-white/5 hover:border-white/10"
+                                aria-label="Run Local Tests"
+                                className={`p-2 w-10 h-10 flex items-center justify-center rounded-lg transition-all border ${
+                                    isRunningTests
+                                        ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 text-[#E8C15A] shadow-[0_0_12px_rgba(232,193,90,0.2)]'
+                                        : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white/70 hover:text-white border-white/5 hover:border-white/10'
+                                }`}
                             >
-                                <Play size={18} fill="currentColor" className="ml-0.5" />
+                                {isRunningTests ? (
+                                    <Loader2 size={18} className="animate-spin text-[#E8C15A]" />
+                                ) : (
+                                    <Play size={18} fill="currentColor" className="ml-0.5" />
+                                )}
                             </button>
                         </Tooltip>
 
-                        <Tooltip content="Submit to Codeforces" shortcut={["Ctrl", "Enter"]} position="bottom">
+                        <Tooltip content={isSubmittingCF ? "Submitting to Codeforces..." : "Submit to Codeforces"} shortcut={["Ctrl", "Enter"]} position="bottom">
                             <button
                                 onClick={onSubmit}
                                 disabled={submitting}
-                                className="flex items-center gap-2 px-3 lg:px-5 h-10 bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all border border-white/5 hover:border-white/10 lg:min-w-[120px] justify-center"
+                                aria-label="Submit to Codeforces"
+                                className={`flex items-center gap-2 px-3 lg:px-5 h-10 font-semibold rounded-lg transition-all border lg:min-w-[120px] justify-center ${
+                                    isSubmittingCF
+                                        ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 text-[#E8C15A] shadow-[0_0_12px_rgba(232,193,90,0.2)]'
+                                        : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed text-white border-white/5 hover:border-white/10'
+                                }`}
                             >
-                                <CloudUpload size={18} className="text-[#E8C15A]" />
-                                <span className="text-sm">Submit</span>
+                                {isSubmittingCF ? (
+                                    <Loader2 size={18} className="animate-spin text-[#E8C15A]" />
+                                ) : (
+                                    <CloudUpload size={18} className="text-[#E8C15A]" />
+                                )}
+                                <span className="text-sm">{isSubmittingCF ? "Submitting..." : "Submit"}</span>
                             </button>
                         </Tooltip>
 
