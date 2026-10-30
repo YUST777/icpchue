@@ -168,6 +168,13 @@ div[style*="position: absolute"][style*="bottom"]>a[href*="spline"] {
   align-items: center !important;
   line-height: 1 !important;
   vertical-align: middle !important;
+  text-decoration: none !important;
+}
+
+.dashboard-breadcrumbs a:hover {
+  text-decoration: none !important;
+  color: #E8C15A !important;
+  filter: drop-shadow(0 0 8px rgba(232, 193, 90, 0.65)) !important;
 }
 
 /* Hide scrollbar utility */

@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { FileCode2, ChevronRight, Info, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchWithCache } from '@/lib/cache/api-cache';
+import { fetchWithCache, getCachedData } from '@/lib/cache/api-cache';
 
 interface DBSheet {
     id: string;
@@ -37,9 +37,19 @@ export default function LevelOverviewPage() {
     const { user, loading: authLoading } = useAuth();
     const levelSlug = params.level as string;
 
-    const [level, setLevel] = useState<DBLevel | null>(null);
-    const [sheets, setSheets] = useState<DBSheet[]>([]);
-    const [loading, setLoading] = useState(true);
+    const cacheUrl = `/api/curriculum/sheets/${levelSlug}`;
+    const initialCached = useMemo(() => getCachedData<any>(cacheUrl), [cacheUrl]);
+
+    const [level, setLevel] = useState<DBLevel | null>(() => initialCached?.level || null);
+    const [sheets, setSheets] = useState<DBSheet[]>(() => {
+        if (!initialCached?.sheets) return [];
+        return initialCached.sheets.map((s: any) => ({
+            ...s,
+            solvedCount: Number(s.solvedCount) || 0,
+            totalProblems: Number(s.totalProblems) || 0
+        }));
+    });
+    const [loading, setLoading] = useState(!initialCached?.level);
     const [showCredits, setShowCredits] = useState(false);
 
     useEffect(() => {

@@ -805,7 +805,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             ) : (
                                                 <Link
                                                     href={href}
-                                                    className="text-[#A0A0A0] hover:text-[#F2F2F2] transition-colors shrink-0 hover:underline decoration-white/20 underline-offset-4"
+                                                    className="text-[#A0A0A0] hover:text-[#E8C15A] hover:drop-shadow-[0_0_8px_rgba(232,193,90,0.65)] transition-all shrink-0 no-underline"
                                                 >
                                                     {label}
                                                 </Link>

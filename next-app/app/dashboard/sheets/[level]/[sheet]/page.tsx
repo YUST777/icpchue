@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle2, Lock, List, FileText, XCircle, AlertTriangle, Users, Filter, ArrowUpDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCachedData, fetchWithCache } from '@/lib/cache/api-cache';
 
 interface Problem {
     id: string;
@@ -52,8 +53,19 @@ export default function SheetDetailPage() {
     const levelSlug = params.level as string;
     const sheetSlug = params.sheet as string;
 
-    const [sheet, setSheet] = useState<Sheet | null>(null);
-    const [loading, setLoading] = useState(true);
+    const detailsUrl = `/api/curriculum/details/${levelSlug}/${sheetSlug}`;
+    const initialCached = useMemo(() => getCachedData<any>(detailsUrl), [detailsUrl]);
+
+    const [sheet, setSheet] = useState<Sheet | null>(() => {
+        if (!initialCached?.sheet || !initialCached?.problems) return null;
+        const problems = initialCached.problems.map((p: any) => ({
+            ...p,
+            available: true,
+            userStatus: p.userStatus
+        }));
+        return { ...initialCached.sheet, problems };
+    });
+    const [loading, setLoading] = useState(!initialCached?.sheet);
     const [activeTab, setActiveTab] = useState<'problems' | 'submissions'>('problems');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -76,9 +88,8 @@ export default function SheetDetailPage() {
 
     const fetchSheetData = useCallback(async () => {
         try {
-            const res = await fetch(`/api/curriculum/details/${levelSlug}/${sheetSlug}`);
-            if (res.ok) {
-                const data = await res.json();
+            const data = await fetchWithCache<any>(detailsUrl, {}, 180);
+            if (data?.sheet && data?.problems) {
                 // Add "available" property to problems (all are available in curriculum)
                 const problems = data.problems.map((p: any) => ({
                     ...p,
@@ -94,7 +105,7 @@ export default function SheetDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [levelSlug, sheetSlug, router]);
+    }, [detailsUrl, router]);
 
     useEffect(() => {
         fetchSheetData();
@@ -104,21 +115,26 @@ export default function SheetDetailPage() {
 
     const fetchSubmissions = useCallback(async () => {
         if (!user || !sheet?.id) return;
-        setSubmissionsLoading(true);
+        const subUrl = `/api/submissions?sheetId=${sheet.id}&limit=100`;
+        const cachedSubs = getCachedData<any>(subUrl);
+        if (cachedSubs?.submissions && submissions.length === 0) {
+            setSubmissions(cachedSubs.submissions);
+        } else {
+            setSubmissionsLoading(true);
+        }
         try {
-            const res = await fetch(`/api/submissions?sheetId=${sheet.id}&limit=100`, {
+            const data = await fetchWithCache<any>(subUrl, {
                 credentials: 'include'
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSubmissions(data.submissions || []);
+            }, 60);
+            if (data?.submissions) {
+                setSubmissions(data.submissions);
             }
         } catch (error) {
             console.error('Failed to fetch submissions:', error);
         } finally {
             setSubmissionsLoading(false);
         }
-    }, [user, sheet?.id]);
+    }, [user, sheet?.id, submissions.length]);
 
     useEffect(() => {
         if (activeTab === 'submissions' && sheet?.id) {

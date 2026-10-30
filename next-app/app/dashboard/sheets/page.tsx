@@ -1,23 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileCode2, Info, X, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchWithCache } from '@/lib/cache/api-cache';
+import { fetchWithCache, getCachedData } from '@/lib/cache/api-cache';
 
 export default function SheetsPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const [levels, setLevels] = useState<any[]>([]);
-    const [progress, setProgress] = useState<Record<string, { solved: number; total: number }>>({});
-    const [loading, setLoading] = useState(true);
+
+    const levelsCached = useMemo(() => getCachedData<any>('/api/curriculum/levels'), []);
+    const progressCached = useMemo(() => getCachedData<any>('/api/curriculum/progress'), []);
+
+    const [levels, setLevels] = useState<any[]>(() => {
+        if (!levelsCached?.levels) return [];
+        return levelsCached.levels.map((l: any) => ({
+            id: l.slug,
+            slug: l.slug,
+            name: l.name,
+            description: l.description,
+            totalProblems: l.total_problems,
+            duration: `${l.duration_weeks} weeks`,
+            image: `/images/lessons/levels/${l.level_number}.webp`
+        }));
+    });
+    const [progress, setProgress] = useState<Record<string, { solved: number; total: number }>>(() => progressCached?.progress || {});
+    const [loading, setLoading] = useState(!levelsCached?.levels);
     const [showCredits, setShowCredits] = useState(false);
 
     const fetchData = async () => {
-        setLoading(true);
+        if (levels.length === 0) setLoading(true);
         try {
             // Fetch levels and progress in parallel
             const [levelsData, progressData] = await Promise.all([
