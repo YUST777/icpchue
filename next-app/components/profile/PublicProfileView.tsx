@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Check, ChevronDown, Code, Info, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
+import { RARITY_TEXT, holderShare, rarityFromShare, shareLabel, type Rarity } from '@/lib/achievements/rarity';
+import { cachedHolderStats, loadHolderStats, type HolderStats } from '@/lib/achievements/holder-stats';
 import { SOCIALS, type SocialLinks } from '@/lib/profile/socials';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
@@ -46,7 +48,6 @@ function getBadgeModel(id: string) {
 // divs/spans and sets every size itself.
 
 
-const RARITY_TEXT = { legendary: 'text-[#E8C15A]', rare: 'text-sky-400', common: 'text-white/40' } as const;
 const ROLE_LABEL: Record<string, string> = { owner: 'Founder', instructor: 'Instructor', mentor: 'Mentor' };
 const SITE_URL = 'https://icpchue.com';
 
@@ -61,6 +62,8 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
     const [copied, setCopied] = useState(false);
     const [openBadge, setOpenBadge] = useState<AchievementDetailData | null>(null);
     const [socials, setSocials] = useState<SocialLinks>(profile.socials || {});
+    const [holderStats, setHolderStats] = useState<HolderStats | null>(() => cachedHolderStats());
+    useEffect(() => { loadHolderStats().then(d => d && setHolderStats(d)); }, []);
 
     const copyLink = async () => {
         try {
@@ -218,10 +221,12 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                     <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {profile.achievements.map(a => {
                             const badgeModel = getBadgeModel(a.id);
+                            const share = holderShare(holderStats, a.id) ?? a.share ?? null;
+                            const rarity: Rarity = share !== null ? rarityFromShare(share) : a.rarity;
                             return (
                                 <li key={a.id} title={a.description} className="relative rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-all group">
                                     <button type="button" aria-label={`About ${a.name}`}
-                                        onClick={() => setOpenBadge({ id: a.id, modelPath: badgeModel.modelPath, title: a.name, unlocked: true, rarity: a.rarity, earnedAt: [a.earnedAt], serial: a.serial, factory: a.factory, scale: badgeModel.scale })}
+                                        onClick={() => setOpenBadge({ id: a.id, modelPath: badgeModel.modelPath, title: a.name, unlocked: true, rarity, earnedAt: [a.earnedAt], serial: a.serial, factory: a.factory, scale: badgeModel.scale })}
                                         className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 transition-all cursor-pointer">
                                         <Info size={13} />
                                     </button>
@@ -237,7 +242,10 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                                     </div>
                                     <div className="px-2.5 py-2 mt-auto border-t border-white/[0.06] bg-white/[0.02]">
                                         <div className="text-xs font-medium text-white truncate" title={a.name}>{a.name}</div>
-                                        <div className={`text-[10px] font-mono uppercase tracking-wider mt-0.5 ${RARITY_TEXT[a.rarity]}`}>{a.rarity}</div>
+                                        <div className={`text-[10px] font-mono uppercase tracking-wider mt-0.5 ${RARITY_TEXT[rarity]}`}>
+                                            {rarity}
+                                            {share !== null && <span className="text-white/35 normal-case font-sans"> · {shareLabel(share)}</span>}
+                                        </div>
                                     </div>
                                 </li>
                             );

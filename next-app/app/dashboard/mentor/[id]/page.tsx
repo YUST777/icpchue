@@ -23,12 +23,25 @@ export default function TraineeDossierPage() {
 
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<TabId>('overview');
+    const [activeTab, setActiveTab] = useState<TabId>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem('mentor_dossier_tab');
+            if (saved) return saved as TabId;
+        }
+        return 'overview';
+    });
     const [expandedSheetId, setExpandedSheetId] = useState<number | string | null>(null);
     const [progressSearch, setProgressSearch] = useState('');
     const [selectedLevelId, setSelectedLevelId] = useState<string>('all');
     const [loadError, setLoadError] = useState<string | null>(null);
     const [timeHorizon, setTimeHorizon] = useState<'all' | '24h' | '7d' | '30d' | '90d'>('all');
+
+    const handleTabChange = (tab: TabId) => {
+        setActiveTab(tab);
+        if (typeof window !== 'undefined') {
+            try { sessionStorage.setItem('mentor_dossier_tab', tab); } catch {}
+        }
+    };
 
     // Submissions pagination with deduplication
     const [submissionsList, setSubmissionsList] = useState<any[]>([]);
@@ -56,7 +69,8 @@ export default function TraineeDossierPage() {
         setData(null);
         setSubmissionsList([]);
         setLoadError(null);
-        setActiveTab('overview');
+        const savedTab = typeof window !== 'undefined' ? sessionStorage.getItem('mentor_dossier_tab') : null;
+        if (savedTab) setActiveTab(savedTab as TabId);
         setExpandedSheetId(null);
         setTimeHorizon('all');
         try {
@@ -347,7 +361,7 @@ export default function TraineeDossierPage() {
             <div className="flex flex-col xl:flex-row items-stretch xl:items-start justify-between gap-2">
                 <TraineeTabNav 
                     activeTab={activeTab} 
-                    onChange={setActiveTab} 
+                    onChange={handleTabChange} 
                     flagsCount={integrity ? integrity.matches.length + integrity.traps.length + (integrity.commentFlags?.length || 0) : 0}
                 />
 

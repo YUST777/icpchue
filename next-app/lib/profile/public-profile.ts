@@ -4,6 +4,8 @@ import { getCachedData } from '@/lib/cache/cache';
 import { formatDisplayName } from '@/lib/names';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { UNCOUNTED_USER_IDS, SERIAL_CTE, factoryNumber } from '@/lib/achievements/factory';
+import { getServerHolderStats } from '@/lib/achievements/stats-server';
+import { rarityFromShare, type Rarity } from '@/lib/achievements/rarity';
 import { cleanSocials, toHandle, type SocialLinks } from './socials';
 
 export interface PublicSheetProblem {
@@ -27,7 +29,8 @@ export interface PublicAchievement {
     id: string;
     name: string;
     description: string;
-    rarity: 'common' | 'rare' | 'legendary';
+    rarity: Rarity;
+    share?: number | null;
     earnedAt: string;
     serial?: number;
     factory?: string;
@@ -55,7 +58,7 @@ export type PublicProfileResult =
     | { status: 'not_found' };
 
 
-const RARITY_ORDER = { legendary: 3, rare: 2, common: 1 } as const;
+const RARITY_ORDER: Record<Rarity, number> = { legendary: 4, epic: 3, rare: 2, common: 1 };
 
 /**
  * Everything the public profile page, its API and its share image show.
@@ -155,10 +158,29 @@ export async function getPublicProfile(studentId: string): Promise<PublicProfile
         const cf = user.codeforces_data as { handle?: string; rating?: number; maxRating?: number; rank?: string } | null;
         const cfHandle: string | null = user.codeforces_handle || cf?.handle || null;
 
+        let holderStats: { total: number; counts: Record<string, number> } | null = null;
+        try {
+            holderStats = await getServerHolderStats();
+        } catch {
+            holderStats = null;
+        }
+
         const achievements: PublicAchievement[] = (achievementResult.rows as { id: number; achievement_id: string; earned_at: string; serial: number | null }[])
             .flatMap(r => {
                 const meta = getAchievementMeta(r.achievement_id);
-                return meta ? [{ id: r.achievement_id, name: meta.name, description: meta.desc, rarity: meta.tier, earnedAt: new Date(r.earned_at).toISOString(), ...(r.serial != null && !/^podium-/.test(r.achievement_id) ? { serial: r.serial, factory: factoryNumber(r.id) } : {}) }] : [];
+                if (!meta) return [];
+                const count = holderStats?.counts[r.achievement_id] ?? 0;
+                const share = (holderStats && holderStats.total > 0) ? (count / holderStats.total) * 100 : null;
+                const dynamicRarity: Rarity = share !== null ? rarityFromShare(share) : meta.tier;
+                return [{
+                    id: r.achievement_id,
+                    name: meta.name,
+                    description: meta.desc,
+                    rarity: dynamicRarity,
+                    share,
+                    earnedAt: new Date(r.earned_at).toISOString(),
+                    ...(r.serial != null && !/^podium-/.test(r.achievement_id) ? { serial: r.serial, factory: factoryNumber(r.id) } : {})
+                }];
             })
             .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity]);
 

@@ -65,12 +65,30 @@ export default function MentorTraineesDirectoryPage() {
     const [trainees, setTrainees] = useState<TraineeItem[]>([]);
     const [summary, setSummary] = useState<TraineeSummary | null>(null);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [levelFilter, setLevelFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'inactive' | 'active' | 'stuck'>('all');
+    const [search, setSearch] = useState(() => {
+        if (typeof window !== 'undefined') return sessionStorage.getItem('mentor_filter_search') || '';
+        return '';
+    });
+    const [levelFilter, setLevelFilter] = useState(() => {
+        if (typeof window !== 'undefined') return sessionStorage.getItem('mentor_filter_level') || 'all';
+        return 'all';
+    });
+    const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'inactive' | 'active' | 'stuck'>(() => {
+        if (typeof window !== 'undefined') {
+            const s = sessionStorage.getItem('mentor_filter_status');
+            if (s === 'all' || s === 'flagged' || s === 'inactive' || s === 'active' || s === 'stuck') return s;
+        }
+        return 'all';
+    });
     const [timeRange, setTimeRange] = useState('all');
     const [sortBy, setSortBy] = useState<'solves_desc' | 'recent_active' | 'oldest_active' | 'streak_desc' | 'name_asc'>('solves_desc');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+        if (typeof window !== 'undefined') {
+            const v = sessionStorage.getItem('mentor_view_mode');
+            if (v === 'grid' || v === 'table') return v;
+        }
+        return 'grid';
+    });
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
@@ -78,6 +96,16 @@ export default function MentorTraineesDirectoryPage() {
     // Owners/instructors only: Mentor 1..7, to see one mentor's group.
     const [mentorGroups, setMentorGroups] = useState<{ name: string; mentorName: string | null; trainees: number }[] | null>(null);
     const [mentorFilter, setMentorFilter] = useState('');
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            sessionStorage.setItem('mentor_filter_search', search);
+            sessionStorage.setItem('mentor_filter_level', levelFilter);
+            sessionStorage.setItem('mentor_filter_status', statusFilter);
+            sessionStorage.setItem('mentor_view_mode', viewMode);
+        } catch {}
+    }, [search, levelFilter, statusFilter, viewMode]);
 
     const abortControllerRef = useRef<AbortController | null>(null);
 

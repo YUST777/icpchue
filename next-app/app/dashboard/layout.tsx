@@ -428,9 +428,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
     }, [loading, isAuthenticated, router]);
 
-    // Remember last visited sub-route for complex nested sections (Sheets, Sessions)
+    // Remember last visited sub-route for complex nested sections (Sheets, Sessions, Mentor)
     // so navigating away (e.g. to Leaderboard or Profile) and clicking back returns
-    // the student directly to their working sheet/session in 1 click instead of 3.
+    // the student or mentor directly to their working subroute in 1 click instead of 3.
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if (pathname.startsWith('/dashboard/sheets/') && pathname !== '/dashboard/sheets') {
@@ -441,6 +441,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (pathname.startsWith('/dashboard/sessions/') && pathname !== '/dashboard/sessions') {
             try {
                 sessionStorage.setItem('last_sessions_path', pathname);
+            } catch {}
+        }
+        if (pathname.startsWith('/dashboard/mentor/') && pathname !== '/dashboard/mentor') {
+            try {
+                sessionStorage.setItem('last_mentor_path', pathname);
             } catch {}
         }
     }, [pathname]);
@@ -489,6 +494,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 return;
             }
             router.push('/dashboard/sessions');
+            return;
+        }
+
+        if (path === '/dashboard/mentor') {
+            if (pathname.startsWith('/dashboard/mentor') && pathname !== '/dashboard/mentor') {
+                router.push('/dashboard/mentor');
+                return;
+            }
+            const saved = typeof window !== 'undefined' ? sessionStorage.getItem('last_mentor_path') : null;
+            if (saved && saved !== pathname) {
+                router.push(saved);
+                return;
+            }
+            router.push('/dashboard/mentor');
             return;
         }
 

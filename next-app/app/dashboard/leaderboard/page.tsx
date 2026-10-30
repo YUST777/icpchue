@@ -67,11 +67,24 @@ const normalizeCfHandle = (value?: string | null) => {
 
 export default function LeaderboardPage() {
     const { user, profile } = useAuth();
-    const [activeTab, setActiveTab] = useState<'level0' | 'level1' | 'codeforces'>('level0');
+    const [activeTab, setActiveTab] = useState<'level0' | 'level1' | 'codeforces'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem('leaderboard_active_tab');
+            if (saved === 'level0' || saved === 'level1' || saved === 'codeforces') return saved;
+        }
+        return 'level0';
+    });
     const [cfLeaderboard, setCfLeaderboard] = useState<CFUser[]>([]);
     const [sheetsLeaderboard, setSheetsLeaderboard] = useState<SheetUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const handleTabChange = (key: 'level0' | 'level1' | 'codeforces') => {
+        setActiveTab(key);
+        if (typeof window !== 'undefined') {
+            try { sessionStorage.setItem('leaderboard_active_tab', key); } catch {}
+        }
+    };
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
@@ -150,7 +163,7 @@ export default function LeaderboardPage() {
                         {([['level0', 'Level 0'], ['level1', 'Level 1']] as const).map(([key, label]) => (
                             <button
                                 key={key}
-                                onClick={() => setActiveTab(key)}
+                                onClick={() => handleTabChange(key)}
                                 className={`pb-4 text-sm font-medium transition-all relative ${activeTab === key
                                     ? 'text-[#E8C15A]'
                                     : 'text-[#A0A0A0] hover:text-[#F2F2F2]'

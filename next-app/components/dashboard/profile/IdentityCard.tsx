@@ -15,10 +15,22 @@ interface IdentityCardProps {
     handleDeletePfp?: () => void;
 }
 
+const ROLE_BADGE: Record<string, string> = {
+    owner: 'Founder',
+    instructor: 'Instructor',
+    mentor: 'Mentor',
+    admin: 'Admin',
+    trainee: 'Trainee',
+    student: 'Trainee',
+};
+
 export function IdentityCard({
     user,
     profile,
 }: IdentityCardProps) {
+    const rawRole = (user?.role || profile?.role || 'trainee').toLowerCase();
+    const roleLabel = ROLE_BADGE[rawRole] || (rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1) : 'Trainee');
+
     return (
         <div className="bg-[#121212] rounded-2xl border border-white/5 relative overflow-hidden h-full flex flex-col group hover:border-white/10 transition-colors w-full">
             {/* Decorative Cover */}
@@ -27,7 +39,7 @@ export function IdentityCard({
                 <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
                     <Shield size={12} className="text-[#E8C15A]" />
                     <span className="text-[10px] uppercase font-bold tracking-wider text-[#E8C15A]">
-                        {user?.role === 'instructor' || user?.role === 'owner' || profile?.role === 'instructor' || profile?.role === 'owner' ? 'Instructor' : 'Trainee'}
+                        {roleLabel}
                     </span>
                 </div>
             </div>

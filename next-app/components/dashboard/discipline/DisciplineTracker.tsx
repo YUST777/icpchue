@@ -149,8 +149,16 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
     const [logs, setLogs] = useState<DisciplineLog[]>([]);
     const [summary, setSummary] = useState<{ total_hours: number; active_days: number; mentor_reviews: number; total_entries: number } | null>(null);
     const [loading, setLoading] = useState(true);
-    // Open on the current week instead of eight weeks of rows.
+    // Open on the current week instead of eight weeks of rows (or restore saved week).
     const [selectedWeek, setSelectedWeek] = useState<number | 'all'>(() => {
+        if (typeof window !== 'undefined' && !targetUserId) {
+            const saved = sessionStorage.getItem('discipline_selected_week');
+            if (saved === 'all') return 'all';
+            if (saved) {
+                const n = parseInt(saved, 10);
+                if (n >= 1 && n <= TOTAL_WEEKS) return n;
+            }
+        }
         const today = new Date();
         for (let w = 1; w <= TOTAL_WEEKS; w++) {
             const start = getDayDate(w, 1), end = getDayDate(w, 7);
@@ -159,6 +167,13 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         }
         return today < getDayDate(1, 1) ? 1 : 'all';
     });
+
+    const handleSelectWeek = (w: number | 'all') => {
+        setSelectedWeek(w);
+        if (typeof window !== 'undefined' && !targetUserId) {
+            try { sessionStorage.setItem('discipline_selected_week', String(w)); } catch {}
+        }
+    };
     const [activeEditCell, setActiveEditCell] = useState<{ week: number; day: number; mode: 'day' | 'mentor' } | null>(null);
     const [tasksBuffer, setTasksBuffer] = useState('');
     const [refsBuffer, setRefsBuffer] = useState('');
@@ -363,7 +378,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
 
                 <div className="flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/10 bg-[#0B0B0C] w-fit max-w-full" role="tablist" aria-label="Week">
                     {(['all', ...Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1)] as const).map(w => (
-                        <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => setSelectedWeek(w)}
+                        <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => handleSelectWeek(w)}
                             className={`relative shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-semibold' : w !== 'all' && w > currentWeek ? 'text-white/25 hover:text-white/60 hover:bg-white/[0.06]' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
                             {w === 'all' ? 'All' : `Week ${w}`}
                             {w === currentWeek && selectedWeek !== w && (
