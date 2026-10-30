@@ -6,6 +6,7 @@ import ClientVersionManager from '@/components/core/ClientVersionManager';
 import "./globals.css";
 import Providers from "@/components/core/Providers";
 import AchievementToast from "@/components/achievements/AchievementToast";
+import AchievementsUpdateModal from "@/components/achievements/AchievementsUpdateModal";
 import { Analytics } from "@vercel/analytics/next";
 import ClientErrorReporter from "@/components/core/ClientErrorReporter";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -269,6 +270,7 @@ export default async function RootLayout({
           <ClientErrorReporter />
           <ClientVersionManager />
           <AchievementToast />
+          <AchievementsUpdateModal />
 
           {children}
           <Analytics />

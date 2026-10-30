@@ -106,14 +106,18 @@ function formatNotificationTime(dateStr: string): string {
 function NotificationsDropdown({
     notifications,
     unreadCount,
+    hasSeenUpdate,
     onMarkAllAsRead,
     onNotificationClick,
 }: {
     notifications: any[];
     unreadCount: number;
+    hasSeenUpdate: boolean;
     onMarkAllAsRead: () => void;
     onNotificationClick: (n: any) => void;
 }) {
+    const totalUnread = unreadCount + (!hasSeenUpdate ? 1 : 0);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -125,13 +129,13 @@ function NotificationsDropdown({
             <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-white tracking-tight">Notifications</span>
-                    {unreadCount > 0 && (
+                    {totalUnread > 0 && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono">
-                            {unreadCount}
+                            {totalUnread}
                         </span>
                     )}
                 </div>
-                {notifications.length > 0 && (
+                {(notifications.length > 0 || !hasSeenUpdate) && (
                     <button
                         onClick={onMarkAllAsRead}
                         className="text-[11px] text-white/40 hover:text-white transition-colors"
@@ -142,10 +146,52 @@ function NotificationsDropdown({
             </div>
 
             <div className="max-h-[380px] overflow-y-auto divide-y divide-white/[0.05] scrollbar-thin scrollbar-thumb-white/10">
+                {/* 3D Achievements System Video Announcement */}
+                <div
+                    onClick={() => {
+                        onNotificationClick({
+                            id: 'update-achievements-v3',
+                            type: 'announcement',
+                            title: '3D Achievements',
+                            message: 'Watch the video & explore interactive 3D badges on ICPC HUE',
+                        });
+                    }}
+                    className={`px-4 py-3 flex items-start gap-3 transition-colors cursor-pointer group ${
+                        !hasSeenUpdate
+                            ? 'bg-[#E8C15A]/[0.05] hover:bg-[#E8C15A]/[0.1] border-b border-[#E8C15A]/20'
+                            : 'hover:bg-white/[0.04]'
+                    }`}
+                >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+                        !hasSeenUpdate
+                            ? 'bg-[#E8C15A]/20 border border-[#E8C15A]/35 text-[#E8C15A] shadow-[0_0_12px_rgba(232,193,90,0.25)]'
+                            : 'bg-white/5 border border-white/10 text-white/60'
+                    }`}>
+                        <Play size={17} fill="currentColor" className="ml-0.5" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-baseline justify-between gap-2">
+                            <h4 className={`text-xs font-semibold truncate ${
+                                !hasSeenUpdate ? 'text-[#E8C15A] group-hover:underline' : 'text-white group-hover:text-[#E8C15A]'
+                            }`}>
+                                3D Achievements
+                            </h4>
+                            {!hasSeenUpdate && (
+                                <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 bg-[#E8C15A]/20 text-[#E8C15A] border border-[#E8C15A]/30">
+                                    NEW
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed mt-0.5">
+                            Watch the video & explore interactive 3D badges
+                        </p>
+                    </div>
+                </div>
+
                 {notifications.length === 0 ? (
                     <div className="p-8 text-center">
                         <Bell className="w-6 h-6 text-white/20 mx-auto mb-2" />
-                        <p className="text-xs text-white/40">No notifications yet</p>
+                        <p className="text-xs text-white/40">No other notifications</p>
                     </div>
                 ) : (
                     notifications.map((n) => {
@@ -231,6 +277,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [hasSeenUpdate, setHasSeenUpdate] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        try {
+            return Boolean(localStorage.getItem('seen_achievements_v3_update'));
+        } catch {
+            return true;
+        }
+    });
+
+    useEffect(() => {
+        const handleSeen = () => setHasSeenUpdate(true);
+        window.addEventListener('achievements-update-seen', handleSeen);
+        return () => window.removeEventListener('achievements-update-seen', handleSeen);
+    }, []);
+
+    const totalUnreadCount = unreadCount + (!hasSeenUpdate ? 1 : 0);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [transitionsEnabled, setTransitionsEnabled] = useState(false);
     const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -363,6 +425,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     const markAllAsRead = async () => {
         try {
+            localStorage.setItem('seen_achievements_v3_update', 'true');
+            setHasSeenUpdate(true);
             const res = await fetch('/api/notifications', { method: 'PATCH' });
             if (res.ok) {
                 setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
@@ -386,8 +450,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
 
     const handleNotificationClick = (n: any) => {
-        markAsRead(n.id);
         setShowNotifications(false);
+
+        if (n.id === 'update-achievements-v3') {
+            try {
+                localStorage.setItem('seen_achievements_v3_update', 'true');
+                setHasSeenUpdate(true);
+            } catch {}
+            window.dispatchEvent(new CustomEvent('open-achievements-update-log'));
+            return;
+        }
+
+        markAsRead(n.id);
 
         const badge = resolveNotificationBadge(n);
         const targetBadgeId = n.achievement_id || badge?.id;
@@ -558,9 +632,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 className={`notification-trigger min-w-[38px] min-h-[38px] p-2 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
                             >
                                 <Bell size={20} />
-                                {unreadCount > 0 && (
+                                {totalUnreadCount > 0 && (
                                     <div className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                        {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                                     </div>
                                 )}
                             </button>
@@ -569,6 +643,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     <NotificationsDropdown
                                         notifications={notifications}
                                         unreadCount={unreadCount}
+                                        hasSeenUpdate={hasSeenUpdate}
                                         onMarkAllAsRead={markAllAsRead}
                                         onNotificationClick={handleNotificationClick}
                                     />
@@ -892,9 +967,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     className={`notification-trigger w-8 h-8 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
                                 >
                                     <Bell size={18} />
-                                    {unreadCount > 0 && (
+                                    {totalUnreadCount > 0 && (
                                         <div className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                            {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                                         </div>
                                     )}
                                 </button>
@@ -904,6 +979,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         <NotificationsDropdown
                                             notifications={notifications}
                                             unreadCount={unreadCount}
+                                            hasSeenUpdate={hasSeenUpdate}
                                             onMarkAllAsRead={markAllAsRead}
                                             onNotificationClick={handleNotificationClick}
                                         />
