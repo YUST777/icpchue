@@ -319,12 +319,9 @@ export default function SheetDetailPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: 16 }).map((_, i) => (
-                        <div key={i} className="rounded-xl p-2.5 sm:p-3 border border-white/10 bg-[#121212] aspect-square flex flex-col justify-between items-center">
-                            <div className="w-full flex justify-between">
-                                <Skeleton className="h-3 w-8 rounded" />
-                            </div>
-                            <Skeleton className="h-8 w-7 rounded my-auto" />
-                            <Skeleton className="h-2.5 w-4/5 rounded" />
+                        <div key={i} className="rounded-xl p-3 sm:p-3.5 border border-white/10 bg-[#121212] flex flex-col items-center">
+                            <Skeleton className="h-7 w-6 rounded mb-1 mt-0.5" />
+                            <Skeleton className="h-3 w-4/5 rounded" />
                         </div>
                     ))}
                 </div>
@@ -417,7 +414,7 @@ export default function SheetDetailPage() {
                                     key={problem.id}
                                     href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
-                                        relative group rounded-xl p-2.5 sm:p-3 border transition-all aspect-square flex flex-col justify-between items-center text-center
+                                        relative group rounded-xl p-3 sm:p-3.5 border transition-all text-center
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/15'
@@ -429,31 +426,27 @@ export default function SheetDetailPage() {
                                     `}
                                     onClick={(e) => !isAvailable && e.preventDefault()}
                                 >
-                                    {/* Top bar: solve count on left, lock on right if unavailable */}
-                                    <div className="w-full flex items-center justify-between min-h-[14px]">
-                                        {isAvailable ? (
-                                            <div className={`flex items-center gap-1 text-[10px] font-mono tracking-tight transition-colors ${
-                                                isSolved
-                                                    ? 'text-green-400/60 group-hover:text-green-300'
-                                                    : isAttempted
-                                                        ? 'text-red-400/60 group-hover:text-red-300'
-                                                        : 'text-white/45 group-hover:text-white/80'
-                                            }`}>
-                                                <Users size={10} className="opacity-70" />
-                                                <span>{problem.solvedCount || 0}</span>
-                                            </div>
-                                        ) : (
-                                            <div />
-                                        )}
+                                    {isAvailable && (
+                                        <div className={`absolute top-1.5 left-2 flex items-center gap-1 text-[10px] font-mono tracking-tight transition-colors ${
+                                            isSolved
+                                                ? 'text-green-400/60 group-hover:text-green-300'
+                                                : isAttempted
+                                                    ? 'text-red-400/60 group-hover:text-red-300'
+                                                    : 'text-white/40 group-hover:text-white/80'
+                                        }`}>
+                                            <Users size={10} className="opacity-70" />
+                                            <span>{problem.solvedCount || 0}</span>
+                                        </div>
+                                    )}
 
-                                        {!isAvailable && (
+                                    {!isAvailable && (
+                                        <div className="absolute top-1.5 right-2">
                                             <Lock size={12} className="text-[#444]" />
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
-                                    {/* Center: Problem Letter */}
                                     <div className={`
-                                        text-2xl sm:text-3xl font-bold my-auto leading-none transition-colors
+                                        text-2xl font-bold mb-1 mt-0.5
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400'
@@ -466,15 +459,14 @@ export default function SheetDetailPage() {
                                         {problem.letter}
                                     </div>
 
-                                    {/* Bottom: Problem Title */}
                                     <div className={`
-                                        w-full text-[10px] sm:text-[11px] truncate font-medium text-center transition-colors
+                                        text-[10px] truncate
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400/70 group-hover:text-green-300'
                                                 : isAttempted
                                                     ? 'text-red-400/70 group-hover:text-red-300'
-                                                    : 'text-[#808080] group-hover:text-[#A0A0A0]'
+                                                    : 'text-[#808080] group-hover:text-white/80'
                                             : 'text-[#333]'
                                         }
                                     `} title={problem.title}>
