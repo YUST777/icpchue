@@ -319,9 +319,12 @@ export default function SheetDetailPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: 16 }).map((_, i) => (
-                        <div key={i} className="rounded-xl p-3 sm:p-4 border border-white/10 bg-[#121212] flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]">
-                            <Skeleton className="h-7 w-6 rounded mb-1.5" />
-                            <Skeleton className="h-3 w-4/5 rounded" />
+                        <div key={i} className="relative rounded-xl p-3 sm:p-4 border border-white/10 bg-[#121212] flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]">
+                            <div className="absolute top-2 left-2.5 flex items-center gap-1">
+                                <Skeleton className="h-2.5 w-6 rounded" />
+                            </div>
+                            <Skeleton className="h-7 w-7 rounded-md mb-1.5" />
+                            <Skeleton className="h-3 w-16 max-w-[80%] rounded" />
                         </div>
                     ))}
                 </div>

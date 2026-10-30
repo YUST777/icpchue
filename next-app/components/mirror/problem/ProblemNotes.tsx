@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bold, Italic, List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon, Eye, Type, Edit3, Loader2, Check } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ProblemNotesProps {
     contestId: string;
@@ -95,9 +96,25 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-white/40">
-                <Loader2 size={32} className="animate-spin" />
-                <span className="text-sm font-medium uppercase tracking-widest opacity-50">Syncing Notes...</span>
+            <div className="flex flex-col h-full bg-[#121212] overflow-hidden" role="status" aria-label="Loading notes">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-[#1a1a1a] shrink-0">
+                    <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <Skeleton key={i} className="h-6 w-6 rounded" />
+                        ))}
+                    </div>
+                    <Skeleton className="h-6 w-14 rounded" />
+                </div>
+                <div className="p-4 space-y-3 flex-1">
+                    <Skeleton className="h-4 w-1/3 rounded" />
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 w-5/6 rounded" />
+                    <Skeleton className="h-4 w-2/3 rounded" />
+                    <div className="pt-2 space-y-2">
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 w-3/4 rounded" />
+                    </div>
+                </div>
             </div>
         );
     }

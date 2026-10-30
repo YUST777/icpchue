@@ -28,6 +28,7 @@ export default function ProfilePage() {
     const [pfpError, setPfpError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [sheetsRank, setSheetsRank] = useState<number | null>(null);
+    const [rankLoading, setRankLoading] = useState(true);
 
     // Achievements hook for popup reveals
 
@@ -49,10 +50,16 @@ export default function ProfilePage() {
                 }
             } catch (err) {
                 console.error('Failed to load rank', err);
+            } finally {
+                setRankLoading(false);
             }
         };
 
-        if (user) fetchRank();
+        if (user) {
+            fetchRank();
+        } else {
+            setRankLoading(false);
+        }
     }, [user]);
 
     const handlePfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +167,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="flex flex-col gap-6">
-                            <LeaderboardWidget sheetsRank={sheetsRank} />
+                            <LeaderboardWidget sheetsRank={sheetsRank} loading={rankLoading} />
                             <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>

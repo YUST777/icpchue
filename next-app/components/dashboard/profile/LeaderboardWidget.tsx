@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Trophy, ChevronRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface LeaderboardWidgetProps {
     sheetsRank: number | null;
+    loading?: boolean;
 }
 
-export function LeaderboardWidget({ sheetsRank }: LeaderboardWidgetProps) {
+export function LeaderboardWidget({ sheetsRank, loading = false }: LeaderboardWidgetProps) {
     return (
         <div className="bg-[#121212] p-4 md:p-5 rounded-xl border border-white/5 flex-1 flex flex-col justify-center relative overflow-hidden group">
             {/* Background Decor */}
@@ -26,7 +28,12 @@ export function LeaderboardWidget({ sheetsRank }: LeaderboardWidgetProps) {
 
             <div className="space-y-2 relative z-10">
                 <div className="flex items-baseline gap-2">
-                    {sheetsRank ? (
+                    {loading ? (
+                        <>
+                            <Skeleton className="h-9 w-16 rounded-lg" />
+                            <Skeleton className="h-4 w-28 rounded" />
+                        </>
+                    ) : sheetsRank ? (
                         <>
                             <span className="text-4xl font-black text-white tracking-tight">#{sheetsRank}</span>
                             <span className="text-sm text-[#666] font-medium">Current Position</span>
@@ -35,9 +42,13 @@ export function LeaderboardWidget({ sheetsRank }: LeaderboardWidgetProps) {
                         <span className="text-sm text-[#666] italic">Not ranked yet</span>
                     )}
                 </div>
-                <div className="w-full bg-[#1A1A1A] h-1.5 rounded-full overflow-hidden border border-white/5 mt-2">
-                    <div className="bg-gradient-to-r from-[#E8C15A] to-[#F2F2F2] h-full w-full opacity-50 animate-pulse"></div>
-                </div>
+                {loading ? (
+                    <Skeleton className="h-1.5 w-full rounded-full mt-2" />
+                ) : (
+                    <div className="w-full bg-[#1A1A1A] h-1.5 rounded-full overflow-hidden border border-white/5 mt-2">
+                        <div className="bg-gradient-to-r from-[#E8C15A] to-[#F2F2F2] h-full w-full opacity-50 animate-pulse"></div>
+                    </div>
+                )}
                 <p className="text-[10px] text-[#555] mt-2">
                     Solve more problems to climb the ranks!
                 </p>

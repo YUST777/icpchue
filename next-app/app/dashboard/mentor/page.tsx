@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { yearLabel } from '@/lib/utils/levels';
 import { Search, Users, ShieldAlert, CheckCircle2, Clock, ArrowRight, LayoutGrid, Table, Flame, ChevronDown } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface TraineeSummary {
     total_trainees: number;
@@ -392,7 +393,7 @@ export default function MentorTraineesDirectoryPage() {
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-48 bg-[#121214] border border-white/5 rounded-2xl animate-pulse" />
+                        <TraineeCardSkeleton key={i} />
                     ))}
                 </div>
             ) : trainees.length === 0 ? (
@@ -594,6 +595,42 @@ export default function MentorTraineesDirectoryPage() {
                         className="px-3 py-1.5 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Next</button>
                 </nav>
             )}
+        </div>
+    );
+}
+
+function TraineeCardSkeleton() {
+    return (
+        <div className="bg-[#121214] border border-white/5 rounded-2xl p-5 flex flex-col justify-between min-h-[192px]">
+            <div>
+                {/* Header: avatar + pills */}
+                <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                {/* Identity */}
+                <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-36 rounded" />
+                    <Skeleton className="h-3 w-28 rounded" />
+                    <Skeleton className="h-2.5 w-24 rounded" />
+                </div>
+                {/* Progress */}
+                <div className="mt-4 space-y-1.5">
+                    <div className="flex justify-between">
+                        <Skeleton className="h-3 w-28 rounded" />
+                        <Skeleton className="h-3 w-16 rounded" />
+                    </div>
+                    <Skeleton className="h-1.5 w-full rounded-full" />
+                </div>
+            </div>
+            {/* Footer */}
+            <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between">
+                <Skeleton className="h-3 w-24 rounded" />
+                <Skeleton className="h-3 w-24 rounded" />
+            </div>
         </div>
     );
 }

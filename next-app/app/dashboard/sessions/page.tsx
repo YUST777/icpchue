@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { CalendarClock, ChevronRight, Folder, Play } from 'lucide-react';
 import { camps, CURRENT_SEASON, SEASONS, type Season } from '@/lib/sessionData';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const SEASON_LABELS: Record<Season, string> = {
     '2027': 'Season 2027',
@@ -138,10 +139,58 @@ function SessionsContent() {
     );
 }
 
+function CampCardSkeleton() {
+    return (
+        <div className="rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden h-full">
+            <div className="bg-[#0f0f0f] rounded-[23px] overflow-hidden h-full flex flex-col">
+                <Skeleton className="h-48 w-full rounded-none" />
+                <div className="p-5 pt-4 mt-auto">
+                    <div className="mb-3 space-y-1.5">
+                        <Skeleton className="h-6 w-36 rounded" />
+                        <Skeleton className="h-4 w-28 rounded" />
+                    </div>
+                    <Skeleton className="h-4 w-full rounded mb-1.5" />
+                    <Skeleton className="h-4 w-3/4 rounded mb-4" />
+                    <Skeleton className="h-11 w-full rounded-xl" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SessionsLoadingSkeleton() {
+    return (
+        <div className="font-sans text-white space-y-8 animate-fade-in pb-12" role="status" aria-label="Loading sessions">
+            <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
+                <div className="flex items-center gap-4 mb-4">
+                    <Skeleton className="w-12 h-12 rounded-xl" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48 rounded-lg" />
+                        <Skeleton className="h-4 w-64 rounded" />
+                    </div>
+                </div>
+                <Skeleton className="h-4 w-full max-w-lg rounded mb-2" />
+                <Skeleton className="h-4 w-3/4 max-w-md rounded" />
+            </div>
+            <div className="max-w-7xl mx-auto space-y-4">
+                <div className="flex items-center justify-between">
+                    <Skeleton className="h-6 w-36 rounded" />
+                    <Skeleton className="h-9 w-48 rounded-xl" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {[1, 2, 3].map(i => (
+                        <CampCardSkeleton key={i} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // useSearchParams needs a Suspense boundary in the App Router.
 export default function SessionsPage() {
     return (
-        <Suspense>
+        <Suspense fallback={<SessionsLoadingSkeleton />}>
             <SessionsContent />
         </Suspense>
     );

@@ -15,6 +15,7 @@ import { ProblemTimeView } from '@/components/dashboard/mentor/ProblemTimeView';
 import { SessionWatchView } from '@/components/dashboard/mentor/SessionWatchView';
 import { AttendanceView } from '@/components/dashboard/mentor/AttendanceView';
 import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTracker';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function TraineeDossierPage() {
     const params = useParams();
@@ -210,9 +211,53 @@ export default function TraineeDossierPage() {
 
     if (loading) {
         return (
-            <div className="space-y-3 animate-pulse">
-                <div className="h-44 bg-[#121214] border border-white/5 rounded-2xl" />
-                <div className="h-64 bg-[#121214] border border-white/5 rounded-2xl" />
+            <div className="space-y-4 max-w-7xl mx-auto" role="status" aria-label="Loading trainee dossier">
+                {/* Back link */}
+                <Skeleton className="h-4 w-28 rounded" />
+
+                {/* TraineeProfileCard skeleton */}
+                <div className="bg-[#121214] border border-white/5 rounded-2xl p-5 md:p-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="w-16 h-16 rounded-2xl shrink-0" />
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="h-6 w-44 rounded-lg" />
+                                    <Skeleton className="h-5 w-20 rounded-full" />
+                                </div>
+                                <Skeleton className="h-3.5 w-32 rounded" />
+                                <Skeleton className="h-3 w-48 rounded" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-3 min-w-[100px] text-center space-y-1">
+                                    <Skeleton className="h-6 w-12 mx-auto rounded" />
+                                    <Skeleton className="h-3 w-16 mx-auto rounded" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs nav skeleton */}
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <Skeleton key={i} className="h-9 w-24 rounded-xl shrink-0" />
+                    ))}
+                </div>
+
+                {/* Heatmap & content skeleton */}
+                <div className="space-y-4">
+                    <div className="bg-[#121214] border border-white/5 rounded-2xl p-5">
+                        <Skeleton className="h-4 w-36 rounded mb-4" />
+                        <Skeleton className="h-32 w-full rounded-xl" />
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <Skeleton className="h-64 rounded-2xl" />
+                        <Skeleton className="h-64 rounded-2xl" />
+                    </div>
+                </div>
             </div>
         );
     }

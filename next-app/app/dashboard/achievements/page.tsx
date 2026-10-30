@@ -12,6 +12,7 @@ import { cachedHolderStats, loadHolderStats, type HolderStats } from '@/lib/achi
 import { RARITY_TEXT, holderShare, rarityFromShare, shareLabel } from '@/lib/achievements/rarity';
 import AchievementDetail from '@/components/achievements/AchievementDetail';
 import { ACHIEVEMENT_META, LEVEL0_SHEET_BADGES, CF_RANK_BADGES, SEASON_BADGES, SOLVED_BADGES, getAchievementMeta, isPodiumId } from '@/lib/achievements/catalog';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const PROGRESS_BADGES = ['hello-world', 'streak-3', 'streak-7', 'streak-14', 'streak-30', 'streak-60', 'comeback', 'disciplined-7', 'disciplined-program'];
 
@@ -131,7 +132,7 @@ function AchievementsContent() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [holderStats, setHolderStats] = useState<HolderStats | null>(() => cachedHolderStats());
     useEffect(() => { loadHolderStats().then(d => d && setHolderStats(d)); }, []);
-    const { achievements: earned } = useAchievements(Boolean(user));
+    const { achievements: earned, loading } = useAchievements(Boolean(user));
     const earnedIds = new Set(earned.map(a => a.achievement_id));
 
     // Only the people given the badge hold it; a role alone does not unlock it.
@@ -249,6 +250,10 @@ function AchievementsContent() {
         return () => window.removeEventListener('highlight-badge', handleHighlight);
     }, []);
 
+    if (loading) {
+        return <AchievementsSkeleton />;
+    }
+
     return (
         <>
             <div className="ui-compact animate-fade-in">
@@ -301,9 +306,55 @@ function AchievementsContent() {
     );
 }
 
+function BadgeCardSkeleton() {
+    return (
+        <li className="rounded-xl border border-white/10 bg-[#121214] p-3 flex flex-col items-center text-center justify-between min-h-[190px]">
+            <Skeleton className="w-20 h-20 rounded-full my-2" />
+            <div className="w-full flex flex-col items-center space-y-1.5 mt-auto">
+                <Skeleton className="h-4 w-24 rounded" />
+                <Skeleton className="h-4 w-14 rounded-full" />
+                <Skeleton className="h-3 w-32 rounded mt-1" />
+            </div>
+        </li>
+    );
+}
+
+function AchievementsSkeleton() {
+    return (
+        <div className="ui-compact animate-fade-in" role="status" aria-label="Loading achievements">
+            <div className="flex items-center gap-4 mb-6">
+                <Trophy className="w-6 h-6 text-[#E8C15A]" />
+                <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <Skeleton className="h-6 w-44 rounded-lg" />
+                        <Skeleton className="h-4 w-28 rounded" />
+                    </div>
+                    <Skeleton className="w-full h-2.5 rounded-full" />
+                </div>
+            </div>
+
+            <div className="space-y-8">
+                {[1, 2].map(g => (
+                    <div key={g} className="space-y-3">
+                        <div className="flex items-baseline justify-between mb-3">
+                            <Skeleton className="h-4 w-28 rounded" />
+                            <Skeleton className="h-3 w-12 rounded" />
+                        </div>
+                        <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <BadgeCardSkeleton key={i} />
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function AchievementsPage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center text-white/40">Loading achievements...</div>}>
+        <Suspense fallback={<AchievementsSkeleton />}>
             <AchievementsContent />
         </Suspense>
     );

@@ -17,6 +17,7 @@ import { FaLinkedin } from 'react-icons/fa';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/lib/utils/translations';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const socialLinks = [
     { name: 'Facebook', url: 'https://www.facebook.com/icpchue/', icon: SiFacebook, color: '#1877F2' },
@@ -100,7 +101,7 @@ export default function Navbar() {
                                 <div className="w-px h-8 bg-white/10 mx-3" />
 
                                 {loading ? (
-                                    <div className="bg-white/10 animate-pulse px-8 py-3 rounded-2xl w-[120px] h-[48px]" />
+                                    <Skeleton className="w-[120px] h-[48px] rounded-2xl" />
                                 ) : isAuthenticated ? (
                                     <Link href="/dashboard" className="flex items-center gap-2 bg-[#E8C15A] hover:bg-white hover:text-black text-black px-6 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl shadow-[#E8C15A]/10">
                                         <User {...iconProps} size={18} strokeWidth={2} />
@@ -167,7 +168,7 @@ export default function Navbar() {
                                     </div>
 
                                     {loading ? (
-                                        <div className="w-full h-[68px] bg-white/10 animate-pulse rounded-[24px]" />
+                                        <Skeleton className="w-full h-[68px] rounded-[24px]" />
                                     ) : isAuthenticated ? (
                                         <Link
                                             href="/dashboard"

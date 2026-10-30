@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface SolutionViewProps {
     contestId: string;
@@ -135,15 +136,19 @@ export default function SolutionView({ contestId, problemId, sheetSlug, levelSlu
 
     if (loading) {
         return (
-            <div className="flex-1 bg-[#0B0B0C] p-3 sm:p-4 md:p-5 flex flex-col items-center justify-center">
+            <div className="flex-1 bg-[#0B0B0C] p-3 sm:p-4 md:p-5 flex flex-col items-center justify-center" role="status" aria-label="Loading solution video">
                 <div className="w-full max-w-4xl space-y-6">
-                    <div className="aspect-video w-full rounded-xl bg-white/5 animate-pulse border border-white/10" />
+                    <div className="aspect-video w-full rounded-xl bg-[#121214] border border-white/10 relative overflow-hidden flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                            <Skeleton className="w-5 h-5 rounded-md" />
+                        </div>
+                    </div>
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1">
                         <div className="space-y-2">
-                            <div className="h-3 w-48 rounded bg-white/5 animate-pulse" />
-                            <div className="h-3 w-32 rounded bg-white/5 animate-pulse" />
+                            <Skeleton className="h-3.5 w-48 rounded" />
+                            <Skeleton className="h-3 w-32 rounded" />
                         </div>
-                        <div className="h-10 w-40 rounded-xl bg-white/5 animate-pulse border border-white/5" />
+                        <Skeleton className="h-10 w-40 rounded-xl" />
                     </div>
                 </div>
             </div>

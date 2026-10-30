@@ -122,8 +122,8 @@ export default function LevelOverviewPage() {
                 <div className="space-y-4">
                     <Skeleton className="h-6 w-36 rounded" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[1,2,3,4].map(i => (
-                            <Skeleton key={i} className="h-44 rounded-xl" />
+                        {[1, 2, 3, 4].map(i => (
+                            <SheetCardSkeleton key={i} />
                         ))}
                     </div>
                 </div>
@@ -298,5 +298,35 @@ export default function LevelOverviewPage() {
                 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
             `}</style>
         </>
+    );
+}
+
+function SheetCardSkeleton() {
+    return (
+        <div className="rounded-xl border border-white/10 bg-[#121212] p-5 flex flex-col justify-between min-h-[160px]">
+            <div>
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                        <div className="space-y-1.5">
+                            <Skeleton className="h-5 w-40 rounded" />
+                            <Skeleton className="h-3.5 w-24 rounded" />
+                        </div>
+                    </div>
+                    <Skeleton className="w-5 h-5 rounded-md" />
+                </div>
+                <div className="space-y-1.5 mb-4">
+                    <Skeleton className="h-3.5 w-full rounded" />
+                    <Skeleton className="h-3.5 w-3/4 rounded" />
+                </div>
+            </div>
+            <div>
+                <div className="flex justify-between mb-1.5">
+                    <Skeleton className="h-3 w-16 rounded" />
+                    <Skeleton className="h-3 w-20 rounded" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+            </div>
+        </div>
     );
 }

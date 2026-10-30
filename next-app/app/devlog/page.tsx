@@ -13,11 +13,12 @@ import { SiFacebook, SiTelegram } from 'react-icons/si';
 import { FaLinkedin } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 import { MapExpandedProvider } from '@/context/MapExpandedContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 // Dynamically import BuildingPublicly to avoid SSR issues with ReactFlow
 const BuildingPublicly = dynamic(() => import('@/components/landing/BuildingPublicly'), {
     ssr: false,
-    loading: () => <div className="w-full h-96 bg-zinc-900/50 rounded-3xl animate-pulse" />
+    loading: () => <Skeleton className="w-full h-96 rounded-3xl" />
 });
 
 interface DevLogEntryProps {
@@ -246,11 +247,11 @@ export default function DevLogPage() {
                     {/* Entries Container */}
                     <div className={`${searchQuery ? 'pt-8' : 'pt-20'} border-t border-zinc-100 dark:border-zinc-800 transition-all duration-300`}>
                         {loading ? (
-                            <div className="space-y-20 animate-pulse">
+                            <div className="space-y-20">
                                 {[1, 2].map(i => (
                                     <div key={i} className="flex gap-12">
-                                        <div className="w-1/3 h-24 bg-zinc-100 dark:bg-zinc-900 rounded-xl" />
-                                        <div className="w-2/3 h-64 bg-zinc-100 dark:bg-zinc-900 rounded-xl" />
+                                        <Skeleton className="w-1/3 h-24 rounded-xl" />
+                                        <Skeleton className="w-2/3 h-64 rounded-xl" />
                                     </div>
                                 ))}
                             </div>

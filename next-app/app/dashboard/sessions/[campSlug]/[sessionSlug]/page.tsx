@@ -67,8 +67,30 @@ function DashboardSessionContent() {
         }
     }, [loading, isAuthenticated, router, campSlug, sessionSlug, session]);
 
-    if (loading || !authChecked) return <div className="space-y-4 max-w-4xl mx-auto"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-4 w-72 rounded" /><Skeleton className="h-64 rounded-xl" /></div>;
-    if (!isAuthenticated) return <div className="space-y-4 max-w-4xl mx-auto"><Skeleton className="h-8 w-48 rounded-lg" /><Skeleton className="h-64 rounded-xl" /></div>;
+    if (loading || !authChecked || !isAuthenticated) {
+        return (
+            <div className="font-sans text-white space-y-8 animate-fade-in pb-16 max-w-7xl mx-auto" role="status" aria-label="Loading session">
+                <div>
+                    <Skeleton className="h-6 w-24 rounded-full mb-4" />
+                    <Skeleton className="h-10 sm:h-12 w-3/4 max-w-xl rounded-xl mb-4" />
+                    <Skeleton className="h-5 w-full max-w-2xl rounded" />
+                </div>
+                <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center relative">
+                    <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                        <Skeleton className="w-6 h-6 rounded-md" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="p-4 rounded-xl bg-[#121214] border border-white/5 space-y-2">
+                            <Skeleton className="h-4 w-24 rounded" />
+                            <Skeleton className="h-3 w-36 rounded" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (!camp || !session) {
         return (

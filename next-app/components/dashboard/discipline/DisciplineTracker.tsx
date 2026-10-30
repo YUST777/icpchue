@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Check, Lock, X } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface DisciplineLog {
     id?: number;
@@ -394,7 +395,37 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                     {traineeName || 'This trainee'} has not logged any study days yet.
                 </div>
             ) : loading ? (
-                <div className="py-16 text-center text-sm text-white/30">Loading…</div>
+                <div className="space-y-6" role="status" aria-label="Loading discipline logs">
+                    {[1, 2].map(w => (
+                        <div key={w} className="rounded-2xl border border-white/[0.08] bg-[#121214] overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] bg-black/20">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-4 w-20 rounded" />
+                                    <Skeleton className="h-3 w-32 rounded" />
+                                </div>
+                                <Skeleton className="h-3 w-10 rounded" />
+                            </div>
+                            <div className="hidden md:grid grid-cols-[96px_72px_1fr_1fr_1fr] gap-4 px-4 py-2 border-b border-white/[0.06]">
+                                <Skeleton className="h-3 w-12 rounded" />
+                                <Skeleton className="h-3 w-12 rounded" />
+                                <Skeleton className="h-3 w-20 rounded" />
+                                <Skeleton className="h-3 w-20 rounded" />
+                                <Skeleton className="h-3 w-16 rounded" />
+                            </div>
+                            <div className="divide-y divide-white/[0.04]">
+                                {[1, 2, 3, 4, 5, 6, 7].map(d => (
+                                    <div key={d} className="p-3 md:px-4 md:py-2.5 flex flex-col md:grid md:grid-cols-[96px_72px_1fr_1fr_1fr] gap-2 md:gap-4 items-start md:items-center">
+                                        <Skeleton className="h-3.5 w-16 rounded" />
+                                        <Skeleton className="h-3.5 w-10 rounded" />
+                                        <Skeleton className="h-3.5 w-3/4 rounded" />
+                                        <Skeleton className="h-3.5 w-1/2 rounded" />
+                                        <Skeleton className="h-3.5 w-20 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
                 <div className="space-y-6">
                     {weeksToRender.map(weekNum => {

@@ -10,6 +10,7 @@ import { HeroSection } from '@/components/dashboard/HeroSection';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { ActivityCalendar } from '@/components/dashboard/ActivityCalendar';
 import DashboardOnboardingTour from '@/components/onboarding/DashboardOnboardingTour';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function DashboardHome() {
     const { user, profile } = useAuth();
@@ -39,37 +40,66 @@ export default function DashboardHome() {
                 <h1 className="text-2xl font-bold text-white leading-tight">
                     Hey {firstName}<span className="text-[#E8C15A]">.</span>
                 </h1>
-                <Link
-                    href={sheetHref}
-                    className="block rounded-2xl border border-white/10 bg-[#121214] p-4 active:bg-[#17171a]"
-                >
-                    <div className="flex items-center gap-4">
-                        <ProgressRing progress={progress} total={total} size={220} compact />
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm text-white/60">{sheet ? 'Where you stopped' : 'Get started'}</p>
-                            <p className="mt-0.5 text-base font-semibold text-white leading-snug line-clamp-2">{sheetLabel}</p>
-                            {total > 0 && <p className="mt-1 text-sm text-white/60">{total - progress > 0 ? `${total - progress} left to solve` : 'Sheet complete'}</p>}
+                {loading ? (
+                    <div className="rounded-2xl border border-white/10 bg-[#121214] p-4">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="w-[92px] h-[92px] rounded-full shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-2">
+                                <Skeleton className="h-4 w-28 rounded" />
+                                <Skeleton className="h-5 w-40 rounded" />
+                                <Skeleton className="h-3 w-24 rounded" />
+                            </div>
                         </div>
+                        <Skeleton className="mt-4 h-12 w-full rounded-xl" />
                     </div>
-                    <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#E8C15A] text-base font-bold text-black">
-                        Continue Solving
-                        <ArrowRight size={18} />
-                    </div>
-                </Link>
+                ) : (
+                    <Link
+                        href={sheetHref}
+                        className="block rounded-2xl border border-white/10 bg-[#121214] p-4 active:bg-[#17171a]"
+                    >
+                        <div className="flex items-center gap-4">
+                            <ProgressRing progress={progress} total={total} size={220} compact />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm text-white/60">{sheet ? 'Where you stopped' : 'Get started'}</p>
+                                <p className="mt-0.5 text-base font-semibold text-white leading-snug line-clamp-2">{sheetLabel}</p>
+                                {total > 0 && <p className="mt-1 text-sm text-white/60">{total - progress > 0 ? `${total - progress} left to solve` : 'Sheet complete'}</p>}
+                            </div>
+                        </div>
+                        <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#E8C15A] text-base font-bold text-black">
+                            Continue Solving
+                            <ArrowRight size={18} />
+                        </div>
+                    </Link>
+                )}
             </div>
 
             {/* Hero Section (tablet and desktop) */}
             <div className="hidden md:flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 lg:gap-16">
-                <HeroSection
-                    firstName={firstName}
-                    sheetHref={sheetHref}
-                />
-                <ProgressRing
-                    progress={progress}
-                    total={total}
-                    label={sheetLabel}
-                    href={sheetHref}
-                />
+                {loading ? (
+                    <div className="flex-1 space-y-3">
+                        <Skeleton className="h-3 w-28 rounded" />
+                        <Skeleton className="h-10 sm:h-12 w-3/4 max-w-md rounded-xl" />
+                        <Skeleton className="h-4 w-full max-w-sm rounded" />
+                        <Skeleton className="h-12 w-44 rounded-xl mt-4" />
+                    </div>
+                ) : (
+                    <HeroSection
+                        firstName={firstName}
+                        sheetHref={sheetHref}
+                    />
+                )}
+                {loading ? (
+                    <div className="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
+                        <Skeleton className="w-full h-full rounded-full" />
+                    </div>
+                ) : (
+                    <ProgressRing
+                        progress={progress}
+                        total={total}
+                        label={sheetLabel}
+                        href={sheetHref}
+                    />
+                )}
             </div>
 
             {/* Activity Calendar */}
