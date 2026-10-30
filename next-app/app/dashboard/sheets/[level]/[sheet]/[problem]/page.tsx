@@ -24,7 +24,6 @@ import { useProblemData } from '@/hooks/contest/useProblemData';
 import { useCodePersistence } from '@/hooks/contest/useCodePersistence';
 import { useCustomTestCases } from '@/hooks/contest/useCustomTestCases';
 import { useResizableLayout } from '@/hooks/contest/useResizableLayout';
-import { useWhiteboardResize } from '@/hooks/contest/useWhiteboardResize';
 import { useCodeforcesSubmission } from '@/hooks/contest/useCodeforcesSubmission';
 import { useLocalTestRunner } from '@/hooks/contest/useLocalTestRunner';
 import { useCodeforcesHandle } from '@/hooks/contest/useCodeforcesHandle';
@@ -196,7 +195,6 @@ function MirrorUI({
 
     // Layout Hooks
     const { containerRef, leftPanelRef, handleMouseDown, lastWidth } = useResizableLayout();
-    const { whiteboardHeight, handleResizeStart: handleWhiteboardResizeStart } = useWhiteboardResize();
 
     // Codeforces Handle
     const { handle: cfHandle, setHandle: setCfHandle, loading: handleLoading } = useCodeforcesHandle();
@@ -627,8 +625,6 @@ function MirrorUI({
                         cfStats={cfStats}
                         contestId={contestId}
                         problemId={problemId}
-                        whiteboardHeight={whiteboardHeight}
-                        handleWhiteboardResizeStart={handleWhiteboardResizeStart}
                         analyzeComplexity={noopAnalyze}
                         complexityLoading={false}
                         leftPanelRef={leftPanelRef}

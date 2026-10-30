@@ -2,6 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
+import styles from './Whiteboard.module.css';
 
 // Import the library directly with No SSR
 const Excalidraw = dynamic(
@@ -34,13 +35,24 @@ export default function WhiteboardEditor({
     initialData
 }: WhiteboardEditorProps) {
     return (
-        <div className="h-full w-full relative bg-[#121212]">
+        <div className={`${styles.surface} h-full w-full relative bg-[#121212]`}>
             <Excalidraw
                 excalidrawAPI={onApiReady}
                 onChange={onChange}
-                initialData={initialData}
+                initialData={{
+                    ...initialData,
+                    appState: {
+                        viewBackgroundColor: '#121212',
+                        currentItemStrokeColor: '#1e1e1e',
+                        activeTool: { type: 'freedraw', lastActiveTool: null, customType: null, locked: false },
+                        ...initialData?.appState,
+                    },
+                }}
                 theme="dark"
+                handleKeyboardGlobally={false}
+                autoFocus={false}
                 UIOptions={{
+                    welcomeScreen: false,
                     canvasActions: {
                         saveAsImage: false,
                         loadScene: false,

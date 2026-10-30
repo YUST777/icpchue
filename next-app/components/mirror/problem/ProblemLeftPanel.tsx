@@ -27,8 +27,6 @@ interface ProblemLeftPanelProps {
     cfStats: { rating?: number; solvedCount: number } | null;
     contestId: string;
     problemId: string;
-    whiteboardHeight: number;
-    handleWhiteboardResizeStart: (e: React.MouseEvent) => void;
     analyzeComplexity: () => void;
     complexityLoading: boolean;
     leftPanelRef: React.RefObject<HTMLDivElement | null>;
@@ -59,8 +57,6 @@ function ProblemLeftPanel({
     cfStats,
     contestId,
     problemId,
-    whiteboardHeight,
-    handleWhiteboardResizeStart,
     analyzeComplexity,
     complexityLoading,
     leftPanelRef,

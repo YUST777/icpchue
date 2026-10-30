@@ -92,9 +92,12 @@ export function useWhiteboardData(contestId: string, problemIndex: string, board
     }, [loadSavedData]);
 
     const clearData = useCallback(() => {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        pendingDataRef.current = null;
         localStorage.removeItem(storageKey);
+        if (legacyKey) localStorage.removeItem(legacyKey);
         setSavedData(null);
-    }, [storageKey]);
+    }, [storageKey, legacyKey]);
 
     return {
         savedData,

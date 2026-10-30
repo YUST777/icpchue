@@ -1,0 +1,60 @@
+.board:fullscreen {
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  min-height: 0;
+  zoom: 1;
+}
+
+.board :global(.excalidraw .excalidraw-logo),
+.board :global(.excalidraw .help-icon),
+.board :global(.excalidraw .github-link) {
+  display: none !important;
+}
+
+/* Keep the drawing engine's controls independent of landing-page touch styles. */
+.surface :global(.excalidraw) :is(button, input, select, textarea) {
+  min-width: 0;
+  min-height: 0;
+}
+
+.surface :global(.excalidraw.theme--dark) {
+  --color-primary: #e8c15a;
+  --color-primary-darker: #d4ac43;
+  --color-primary-darkest: #b88d27;
+  --color-surface-primary-container: #493e24;
+  --color-on-primary-container: #f3d98e;
+  --island-bg-color: #222225;
+  --default-button-size: 2rem;
+  --lg-button-size: 2rem;
+  --default-icon-size: 1rem;
+  --lg-icon-size: 1.125rem;
+}
+
+/* The embedded canvas uses Excalidraw's mobile layout even on laptops.
+   Float its utility controls instead of reserving a full-width bottom bar. */
+.surface :global(.excalidraw.excalidraw--mobile .App-bottom-bar) {
+  left: 0.5rem;
+  right: auto;
+  bottom: 0.5rem;
+  width: max-content;
+  max-width: calc(100% - 1rem);
+  padding: 0;
+}
+
+.surface :global(.excalidraw.excalidraw--mobile .App-bottom-bar > .Island) {
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid #ffffff14;
+  border-radius: 0.625rem;
+}
+
+.surface :global(.excalidraw.excalidraw--mobile .App-toolbar-content) {
+  justify-content: flex-start;
+  gap: 0.375rem;
+  padding: 0.25rem;
+}
+
+.surface :global(.excalidraw.excalidraw--mobile .App-toolbar-container) {
+  max-width: calc(100% - 1rem);
+}

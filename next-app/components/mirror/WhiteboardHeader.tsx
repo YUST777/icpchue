@@ -1,6 +1,6 @@
 'use client';
 
-import { Minimize2, ExternalLink, Trash2, Download } from 'lucide-react';
+import { PenTool, Maximize2, Minimize2, ExternalLink, Trash2, Download, Scan, X } from 'lucide-react';
 
 interface WhiteboardHeaderProps {
     boardId: string;
@@ -9,61 +9,33 @@ interface WhiteboardHeaderProps {
     onExport?: () => void;
     onOpenInNewTab: () => void;
     onToggleExpand: () => void;
+    isFullscreen: boolean;
+    onFullscreen: () => void;
+    onFit: () => void;
 }
 
+const controlClass = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md p-0 text-white/65 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8C15A]';
+
 export default function WhiteboardHeader({
-    boardId,
-    variant,
-    onClear,
-    onExport,
-    onOpenInNewTab,
-    onToggleExpand
+    boardId, variant, onClear, onExport, onOpenInNewTab, onToggleExpand,
+    isFullscreen, onFullscreen, onFit
 }: WhiteboardHeaderProps) {
     return (
-        <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-white/10 shrink-0">
-            <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#E8C15A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <path d="M9 9l6 6m0-6l-6 6" />
-                </svg>
-                <span className="text-sm font-medium text-white">Whiteboard</span>
-                {variant === 'page' && (
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">{boardId}</span>
-                )}
+        <div className="flex h-11 items-center justify-between gap-2 border-b border-white/10 bg-[#1c1c1f] px-2 sm:px-3">
+            <div className="flex min-w-0 items-center gap-2">
+                <PenTool size={15} className="shrink-0 text-[#E8C15A]" />
+                <span className="truncate text-xs font-semibold text-white sm:text-sm">Whiteboard</span>
+                {variant === 'page' && <span className="hidden text-[10px] text-white/40 sm:inline">{boardId}</span>}
             </div>
-            <div className="flex items-center gap-2">
-                {onExport && (
-                    <button
-                        onClick={onExport}
-                        className="p-1.5 text-[#E8C15A] hover:text-[#f0d080] transition-colors rounded hover:bg-white/5"
-                        title="Download as Image"
-                    >
-                        <Download size={14} />
-                    </button>
-                )}
-                <button
-                    onClick={onClear}
-                    className="p-1.5 text-[#666] hover:text-red-400 transition-colors rounded hover:bg-white/5"
-                    title="Clear whiteboard"
-                >
-                    <Trash2 size={14} />
+            <div className="flex shrink-0 items-center gap-0.5">
+                <button type="button" onClick={onFit} className={controlClass} title="Fit drawing to view" aria-label="Fit drawing to view"><Scan size={16} /></button>
+                {onExport && <button type="button" onClick={onExport} className={controlClass} title="Download drawing as PNG" aria-label="Download drawing as PNG"><Download size={16} /></button>}
+                <button type="button" onClick={onClear} className={`${controlClass} hover:text-red-400`} title="Clear whiteboard" aria-label="Clear whiteboard"><Trash2 size={16} /></button>
+                <button type="button" onClick={onOpenInNewTab} className={`${controlClass} hidden sm:flex`} title="Open whiteboard in new tab" aria-label="Open whiteboard in new tab"><ExternalLink size={16} /></button>
+                <button type="button" onClick={onFullscreen} className={`${controlClass} bg-[#E8C15A]/10 text-[#E8C15A] hover:bg-[#E8C15A]/20 hover:text-[#E8C15A]`} title={isFullscreen ? 'Exit fullscreen' : 'Expand whiteboard to fullscreen'} aria-label={isFullscreen ? 'Exit whiteboard fullscreen' : 'Expand whiteboard to fullscreen'}>
+                    {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                 </button>
-                <button
-                    onClick={onOpenInNewTab}
-                    className="p-1.5 text-[#666] hover:text-white transition-colors rounded hover:bg-white/5"
-                    title="Open in new tab"
-                >
-                    <ExternalLink size={14} />
-                </button>
-                {variant === 'embedded' && (
-                    <button
-                        onClick={onToggleExpand}
-                        className="p-1.5 text-[#666] hover:text-white transition-colors rounded hover:bg-white/5"
-                        title="Minimize"
-                    >
-                        <Minimize2 size={14} />
-                    </button>
-                )}
+                {variant === 'embedded' && !isFullscreen && <button type="button" onClick={onToggleExpand} className={controlClass} title="Close whiteboard" aria-label="Close whiteboard"><X size={16} /></button>}
             </div>
         </div>
     );
