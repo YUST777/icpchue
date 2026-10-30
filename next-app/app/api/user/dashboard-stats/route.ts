@@ -52,11 +52,9 @@ export async function GET(request: NextRequest) {
 
                 // Query 2: Read pre-computed streak from user_streaks
                 query(`
-                    SELECT current_streak,
-                           (SELECT MAX(max_streak) FROM user_streaks WHERE user_id = $1) AS max_streak,
-                           last_solve_date
+                    SELECT COALESCE(MAX(current_streak) FILTER (WHERE last_solve_date >= (now() AT TIME ZONE 'Africa/Cairo')::date - 1), 0)::int AS current_streak,
+                           COALESCE(MAX(max_streak), 0)::int AS max_streak
                     FROM user_streaks WHERE user_id = $1
-                    ORDER BY last_solve_date DESC NULLS LAST LIMIT 1
                 `, [user.id]),
 
                 // Query 3: Current active sheet (Optimized: use sheet_id in user_progress for counting)
@@ -90,16 +88,7 @@ export async function GET(request: NextRequest) {
             if (streakResult.rows.length > 0) {
                 const row = streakResult.rows[0];
                 maxStreak = row.max_streak || 0;
-                if (row.last_solve_date) {
-                    const lastDate = new Date(row.last_solve_date).toISOString().split('T')[0];
-                    const today = new Date().toISOString().split('T')[0];
-                    const yesterdayDate = new Date();
-                    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-                    const yesterday = yesterdayDate.toISOString().split('T')[0];
-                    if (lastDate === today || lastDate === yesterday) {
-                        streak = row.current_streak || 0;
-                    }
-                }
+                streak = row.current_streak || 0;
             }
 
             const consistencyMap: Record<string, number> = {};

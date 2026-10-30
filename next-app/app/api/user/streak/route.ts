@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
         const streakData = await getUserStreak(user.id);
         
-        await setCache(cacheKey, streakData, 3600); // 1 hour cache
+        await setCache(cacheKey, streakData, 300); // 5 minute cache (also cleared on every solve)
 
         return NextResponse.json(streakData);
 
