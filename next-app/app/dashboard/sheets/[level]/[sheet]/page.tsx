@@ -319,9 +319,10 @@ export default function SheetDetailPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: 16 }).map((_, i) => (
-                        <div key={i} className="rounded-xl p-3 sm:p-3.5 border border-white/10 bg-[#121212] flex flex-col items-center">
-                            <Skeleton className="h-7 w-6 rounded mb-1 mt-0.5" />
-                            <Skeleton className="h-3 w-4/5 rounded" />
+                        <div key={i} className="rounded-xl p-4 border border-white/10 bg-[#121212] flex flex-col items-center">
+                            <Skeleton className="h-8 w-6 rounded mb-1" />
+                            <Skeleton className="h-[15px] w-4/5 rounded mb-1" />
+                            <div className="h-[14px] mt-1" />
                         </div>
                     ))}
                 </div>
@@ -414,7 +415,7 @@ export default function SheetDetailPage() {
                                     key={problem.id}
                                     href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
-                                        relative group rounded-xl p-3 sm:p-3.5 border transition-all text-center
+                                        relative group rounded-xl p-4 border transition-all text-center
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/15'
@@ -427,7 +428,7 @@ export default function SheetDetailPage() {
                                     onClick={(e) => !isAvailable && e.preventDefault()}
                                 >
                                     {isAvailable && (
-                                        <div className={`absolute top-1.5 left-2 flex items-center gap-1 text-[10px] font-mono tracking-tight transition-colors ${
+                                        <div className={`absolute top-2 left-2.5 flex items-center gap-1 text-[10px] font-mono tracking-tight transition-colors ${
                                             isSolved
                                                 ? 'text-green-400/60 group-hover:text-green-300'
                                                 : isAttempted
@@ -440,13 +441,13 @@ export default function SheetDetailPage() {
                                     )}
 
                                     {!isAvailable && (
-                                        <div className="absolute top-1.5 right-2">
+                                        <div className="absolute top-2 right-2.5">
                                             <Lock size={12} className="text-[#444]" />
                                         </div>
                                     )}
 
                                     <div className={`
-                                        text-2xl font-bold mb-1 mt-0.5
+                                        text-2xl font-bold mb-1
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400'
@@ -460,7 +461,7 @@ export default function SheetDetailPage() {
                                     </div>
 
                                     <div className={`
-                                        text-[10px] truncate
+                                        text-[10px] truncate mb-1
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400/70 group-hover:text-green-300'
@@ -472,6 +473,9 @@ export default function SheetDetailPage() {
                                     `} title={problem.title}>
                                         {problem.title}
                                     </div>
+
+                                    {/* Preserves the exact height & spacing of the old design */}
+                                    <div className="h-[14px] mt-1" />
                                 </Link>
                             );
                         })}
