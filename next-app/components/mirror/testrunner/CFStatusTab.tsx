@@ -4,7 +4,6 @@ import {
     XCircle,
     Loader2,
     ExternalLink,
-    Send,
     AlertTriangle
 } from 'lucide-react';
 import { CFSubmissionStatus } from '../types';
@@ -105,7 +104,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
         return (
             <div className="flex flex-col items-center justify-center h-full text-[#888] gap-3 p-4 text-center">
                 <div className="w-14 h-14 rounded-full bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
-                    <Send size={24} />
+                    <span className="text-[11px] font-black tracking-tight">CF</span>
                 </div>
                 <p className="text-base font-bold text-white">Submitting from your phone</p>
                 <p className="text-sm leading-relaxed max-w-xs">
@@ -172,7 +171,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
             <div className="h-full flex flex-col space-y-4 p-4 bg-[#252526]/30 rounded-xl border border-white/5 animate-fade-in text-left">
                 <div className="flex items-center gap-3 text-[#E8C15A]">
                     <div className="p-2 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                        <Send size={20} />
+                        <span className="text-[10px] font-black tracking-tight">CF</span>
                     </div>
                     <div>
                         <h3 className="font-bold text-sm text-white">Sync your Codeforces submissions</h3>
@@ -359,7 +358,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
                         ) : cfStatus.status === 'error' ? (
                             <XCircle size={18} />
                         ) : (
-                            <Send size={18} />
+                            <span className="h-2.5 w-2.5 rounded-full bg-current opacity-70" aria-hidden="true" />
                         )}
                     </div>
                     <div className="flex-1">

@@ -65,17 +65,17 @@ export default function TestResultTab({ result, isRunning, testCasesCount = 2 }:
     return (
         <div className="h-full flex flex-col space-y-2 animate-fade-in">
             <div className={`flex items-center gap-3 p-3 rounded-xl border ${result.passed
-                ? 'bg-[#E8C15A]/10 border-[#E8C15A]/20 text-green-400'
+                ? 'bg-emerald-400/[0.08] border-emerald-400/20'
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
                 }`}>
-                <div className={`p-2 rounded-full ${result.passed ? 'bg-[#E8C15A]/20' : 'bg-red-500/20'}`}>
+                <div className={`p-2 rounded-full ${result.passed ? 'bg-emerald-400/15' : 'bg-red-500/20'}`}>
                     {getVerdictIcon(result.verdict)}
                 </div>
                 <div>
-                    <div className="font-bold text-lg">
+                    <div className={`font-bold text-lg ${result.passed ? 'text-emerald-300' : 'text-red-300'}`}>
                         {result.verdict}
                     </div>
-                    <div className="text-xs opacity-70 mt-0.5 font-mono">
+                    <div className="text-xs text-white/55 mt-0.5 font-mono">
                         {result.testsPassed}/{result.totalTests} tests passed • {result.time || '0ms'}
                     </div>
                 </div>
@@ -101,7 +101,7 @@ export default function TestResultTab({ result, isRunning, testCasesCount = 2 }:
 
             <div className="bg-[#252526] rounded-xl border border-white/5 overflow-hidden">
                 {result.results.map((r) => (
-                    <div key={r.testCase} className={`flex items-center justify-between p-3 text-xs border-b border-white/5 last:border-[#E8C15A] hover:bg-[#252526] transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
+                    <div key={r.testCase} className={`flex items-center justify-between px-3.5 py-3 text-xs border-b border-white/5 last:border-b-0 transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
                         <div className="flex items-center gap-3">
                             {r.passed ? <CheckCircle2 size={16} className="text-[#E8C15A]" /> : <XCircle size={16} className="text-red-500" />}
                             <span className="font-medium text-[#d4d4d4]">Test Case {r.testCase}</span>
@@ -109,7 +109,7 @@ export default function TestResultTab({ result, isRunning, testCasesCount = 2 }:
                         <div className="flex items-center gap-2 sm:gap-4 font-mono text-[#888]">
                             <span>{r.time || '0ms'}</span>
                             <span>{r.memory || '0KB'}</span>
-                            <span className={`font-bold w-12 text-right ${r.passed ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className={`font-bold min-w-10 text-center rounded-md border px-1.5 py-0.5 ${r.passed ? 'text-emerald-300 border-emerald-400/20 bg-emerald-400/5' : 'text-red-300 border-red-400/20 bg-red-400/5'}`}>
                                 {getVerdictShort(r.verdict)}
                             </span>
                         </div>

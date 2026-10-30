@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Bold, Italic, List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon, Eye, Type, Edit3, Loader2, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bold, Italic, List, ListOrdered, Quote, Code, Eye, Type, Edit3, Check } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -16,24 +16,32 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const savingResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Fetch initial notes
     useEffect(() => {
+        const controller = new AbortController();
         const fetchNotes = async () => {
             setIsLoading(true);
+            setIsPreview(false);
+            setLastSaved(null);
             try {
-                const res = await fetch(`/api/user/notes?contestId=${contestId}&problemIndex=${problemIndex}`);
+                const res = await fetch(`/api/user/notes?contestId=${contestId}&problemIndex=${problemIndex}`, { signal: controller.signal });
                 if (res.ok) {
                     const data = await res.json();
                     setContent(data.content || '');
                 }
             } catch (error) {
-                console.error('Failed to load notes:', error);
+                if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                    console.error('Failed to load notes:', error);
+                }
             } finally {
-                setIsLoading(false);
+                if (!controller.signal.aborted) setIsLoading(false);
             }
         };
         fetchNotes();
+        return () => controller.abort();
     }, [contestId, problemIndex]);
 
     // Auto-save logic (debounced) — uses abort flag to prevent cross-problem saves
@@ -56,15 +64,21 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
             } catch (error) {
                 console.error('Auto-save failed:', error);
             } finally {
-                if (!cancelled) setTimeout(() => setIsSaving(false), 500);
+                if (!cancelled) {
+                    savingResetTimerRef.current = setTimeout(() => setIsSaving(false), 500);
+                }
             }
         }, 1500);
 
-        return () => { cancelled = true; clearTimeout(timer); };
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+            if (savingResetTimerRef.current) clearTimeout(savingResetTimerRef.current);
+        };
     }, [content, contestId, problemIndex, isLoading]);
 
     const handleToolbarAction = (type: string) => {
-        const textarea = document.getElementById('notes-textarea') as HTMLTextAreaElement;
+        const textarea = textareaRef.current;
         if (!textarea) return;
 
         const start = textarea.selectionStart;
@@ -80,8 +94,6 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
             case 'ordered': replacement = `\n1. ${selectedText}`; break;
             case 'quote': replacement = `\n> ${selectedText}`; break;
             case 'code': replacement = `\`${selectedText}\``; break;
-            case 'link': replacement = `[${selectedText || 'link'}](url)`; break;
-            case 'image': replacement = `![${selectedText || 'alt'}](url)`; break;
         }
 
         const newContent = content.substring(0, start) + replacement + content.substring(end);
@@ -133,9 +145,6 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                     <div className="w-px h-4 bg-white/10 mx-1" />
                     <ToolbarButton icon={<Quote size={16} />} onClick={() => handleToolbarAction('quote')} label="Quote" />
                     <ToolbarButton icon={<Code size={16} />} onClick={() => handleToolbarAction('code')} label="Inline Code" />
-                    <div className="w-px h-4 bg-white/10 mx-1" />
-                    <ToolbarButton icon={<LinkIcon size={16} />} onClick={() => handleToolbarAction('link')} label="Link" />
-                    <ToolbarButton icon={<ImageIcon size={16} />} onClick={() => handleToolbarAction('image')} label="Image" />
                 </div>
 
                 <div className="flex items-center gap-3 pr-2">
@@ -152,15 +161,18 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                     </div>
 
                     <button
+                        type="button"
                         onClick={() => setIsPreview(!isPreview)}
-                        className={`p-1.5 rounded-md transition-all flex items-center gap-2 ${
+                        aria-pressed={isPreview}
+                        title={isPreview ? 'Edit markdown' : 'Preview markdown'}
+                        className={`!min-h-0 !min-w-0 h-8 px-2.5 rounded-lg transition-colors flex items-center gap-1.5 border text-[10px] font-bold uppercase tracking-[0.12em] ${
                             isPreview 
-                                ? 'bg-[#E8C15A] text-black shadow-[0_0_15px_rgba(232,193,90,0.3)]' 
-                                : 'text-white/40 hover:text-white hover:bg-white/5'
+                                ? 'border-[#E8C15A]/70 bg-[#E8C15A] text-black shadow-[0_4px_14px_rgba(232,193,90,0.18)]'
+                                : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-white/20 hover:bg-white/[0.07] hover:text-white'
                         }`}
                     >
-                        {isPreview ? <Edit3 size={16} /> : <Eye size={16} />}
-                        <span className="text-[11px] font-bold uppercase tracking-wider hidden sm:inline">
+                        {isPreview ? <Edit3 size={14} /> : <Eye size={14} />}
+                        <span>
                             {isPreview ? 'Edit' : 'Preview'}
                         </span>
                     </button>
@@ -178,6 +190,7 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                 ) : (
                     <textarea
                         id="notes-textarea"
+                        ref={textareaRef}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Type your notes here... Supports Markdown."
@@ -188,18 +201,6 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
                 )}
             </div>
             
-            {/* Footer Tip */}
-            {!isPreview && (
-                <div className="px-4 py-2 bg-[#171718] border-t border-white/5 text-[10px] text-white/30 flex justify-between items-center">
-                    <span className="opacity-40 uppercase tracking-widest font-bold flex items-center gap-2">
-                        Markdown Support
-                        <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + N</span>
-                    </span>
-                    {lastSaved && (
-                        <span className="opacity-60">Last synced at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    )}
-                </div>
-            )}
         </div>
     );
 }

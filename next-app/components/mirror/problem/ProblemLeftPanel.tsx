@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { CFProblemData, Submission } from '../shared/types';
 import { CFProblemDescription } from './CFProblemDescription';
@@ -86,6 +86,11 @@ function ProblemLeftPanel({
         whiteboardImport();
     }, []);
 
+    const handleActiveTabChange = useCallback((tab: ProblemLeftPanelProps['activeTab']) => {
+        if (showNotes) setShowNotes(false);
+        setActiveTab(tab);
+    }, [setActiveTab, setShowNotes, showNotes]);
+
     return (
         <div
             ref={leftPanelRef}
@@ -100,7 +105,7 @@ function ProblemLeftPanel({
         >
             <ProblemTabs
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleActiveTabChange}
                 isWhiteboardExpanded={isWhiteboardExpanded}
                 setIsWhiteboardExpanded={setIsWhiteboardExpanded}
             />
