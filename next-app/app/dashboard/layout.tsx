@@ -428,7 +428,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
     }, [loading, isAuthenticated, router]);
 
+    // Remember last visited sub-route for complex nested sections (Sheets, Sessions)
+    // so navigating away (e.g. to Leaderboard or Profile) and clicking back returns
+    // the student directly to their working sheet/session in 1 click instead of 3.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (pathname.startsWith('/dashboard/sheets/') && pathname !== '/dashboard/sheets') {
+            try {
+                sessionStorage.setItem('last_sheets_path', pathname);
+            } catch {}
+        }
+        if (pathname.startsWith('/dashboard/sessions/') && pathname !== '/dashboard/sessions') {
+            try {
+                sessionStorage.setItem('last_sessions_path', pathname);
+            } catch {}
+        }
+    }, [pathname]);
+
     const handleBack = () => {
+        if (typeof window !== 'undefined' && window.history.state && window.history.state.idx > 0) {
+            router.back();
+            return;
+        }
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length <= 1) {
             router.push('/');
@@ -438,7 +459,41 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         router.push(parentPath);
     };
 
-    const handleNav = (path: string) => { router.push(path); setMobileMenuOpen(false); };
+    const handleNav = (path: string) => {
+        setMobileMenuOpen(false);
+
+        if (path === '/dashboard/sheets') {
+            // If already inside sheets subroute, clicking Training Sheets toggles back to the root sheets list
+            if (pathname.startsWith('/dashboard/sheets') && pathname !== '/dashboard/sheets') {
+                router.push('/dashboard/sheets');
+                return;
+            }
+            // If coming from another section (e.g. Leaderboard, Profile, Dashboard), restore active sheet
+            const saved = typeof window !== 'undefined' ? sessionStorage.getItem('last_sheets_path') : null;
+            if (saved && saved !== pathname) {
+                router.push(saved);
+                return;
+            }
+            router.push('/dashboard/sheets');
+            return;
+        }
+
+        if (path === '/dashboard/sessions') {
+            if (pathname.startsWith('/dashboard/sessions') && pathname !== '/dashboard/sessions') {
+                router.push('/dashboard/sessions');
+                return;
+            }
+            const saved = typeof window !== 'undefined' ? sessionStorage.getItem('last_sessions_path') : null;
+            if (saved && saved !== pathname) {
+                router.push(saved);
+                return;
+            }
+            router.push('/dashboard/sessions');
+            return;
+        }
+
+        router.push(path);
+    };
 
     // Only a first visit (no remembered login) waits here; returning students
     // render straight away while the session is checked in the background.
@@ -702,42 +757,64 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 className={`${isProblemPage ? 'pt-0 pb-0' : 'pt-14 md:pt-0 pb-24 md:pb-0'} max-md:!ml-0 max-md:!w-full max-w-[100vw]`}
             >
                 {!isProblemPage && (
-                    <header className="sticky top-0 z-40 w-full h-16 bg-[#0B0B0C] flex items-center justify-between px-4 md:px-8 hidden md:flex">
+                    <header className="sticky top-0 z-40 w-full h-16 bg-[#0B0B0C] flex items-center justify-between px-4 md:px-8 hidden md:flex border-b border-white/[0.04]">
                         {/* Dynamic Breadcrumbs Layout */}
-                        <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#A0A0A0]">
-                            <button onClick={handleBack} className="hover:text-white transition-colors mr-2"><ChevronLeft size={16} /></button>
+                        <nav aria-label="Breadcrumbs" className="dashboard-breadcrumbs flex items-center gap-2 text-xs font-semibold tracking-wider text-[#A0A0A0] min-w-0 flex-nowrap overflow-x-auto scrollbar-none py-1">
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                aria-label="Go back"
+                                className="hover:text-white transition-colors mr-1 shrink-0 p-1 rounded-md hover:bg-white/5 flex items-center justify-center leading-none"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
 
-                            {pathname.split('/').filter(Boolean).map((segment, index, array) => {
-                                // Map segments to readable labels
-                                let label = segment;
+                            {(() => {
+                                const pathSegments = pathname.split('/').filter(Boolean);
+                                return pathSegments.map((segment, index) => {
+                                    const href = '/' + pathSegments.slice(0, index + 1).join('/');
 
-                                // Specific Overrides
-                                if (segment === 'dashboard') label = 'DASHBOARD';
-                                else if (segment === 'sheets') label = 'SHEETS';
-                                else if (segment === 'roadmap') label = 'ROADMAP';
-                                else if (segment === 'profile') label = 'PROFILE';
-                                else if (segment === 'leaderboard') label = 'LEADERBOARD';
-                                else if (segment === 'sessions') label = 'SESSIONS';
-                                else if (segment === 'news') label = 'NEWS';
-                                else if (segment === 'admin') label = 'ADMIN';
-                                else if (segment.startsWith('level')) label = `LEVEL ${segment.replace('level', '')}`;
-                                else if (segment.startsWith('sheet-')) label = `SHEET ${segment.replace('sheet-', '').toUpperCase()}`;
-                                else if (segment.startsWith('week-')) label = `WEEK ${segment.replace('week-', '')}`;
-                                else if (segment.length > 20) label = '...'; // Truncate IDs/UUIDs
-                                else label = segment.toUpperCase().replace(/-/g, ' ');
+                                    // Map segments to readable labels
+                                    let label = segment;
 
-                                const isLast = index === array.length - 1;
+                                    if (segment === 'dashboard') label = 'DASHBOARD';
+                                    else if (segment === 'sheets') label = 'SHEETS';
+                                    else if (segment === 'roadmap') label = 'ROADMAP';
+                                    else if (segment === 'profile') label = 'PROFILE';
+                                    else if (segment === 'leaderboard') label = 'LEADERBOARD';
+                                    else if (segment === 'sessions') label = 'SESSIONS';
+                                    else if (segment === 'news') label = 'NEWS';
+                                    else if (segment === 'admin') label = 'ADMIN';
+                                    else if (segment === 'discipline') label = 'SELF DISCIPLINE';
+                                    else if (segment.startsWith('level-')) label = `LEVEL ${segment.replace('level-', '')}`;
+                                    else if (segment.startsWith('level')) label = `LEVEL ${segment.replace('level', '')}`;
+                                    else if (segment.startsWith('sheet-')) label = `SHEET ${segment.replace('sheet-', '').toUpperCase()}`;
+                                    else if (segment.startsWith('week-')) label = `WEEK ${segment.replace('week-', '')}`;
+                                    else if (segment.length > 24) label = '...';
+                                    else label = segment.toUpperCase().replace(/-/g, ' ');
 
-                                return (
-                                    <div key={segment} className="flex items-center gap-2">
-                                        {index > 0 && <ChevronRight size={14} className="text-[#444]" />}
-                                        <span className={isLast ? "text-[#F2F2F2]" : "hover:text-[#F2F2F2] transition-colors"}>
-                                            {label}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    const isLast = index === pathSegments.length - 1;
+
+                                    return (
+                                        <div key={href} className="flex items-center gap-2 shrink-0 flex-nowrap whitespace-nowrap">
+                                            {index > 0 && <ChevronRight size={14} className="text-[#444] shrink-0" />}
+                                            {isLast ? (
+                                                <span className="text-[#F2F2F2] font-semibold shrink-0 cursor-default">
+                                                    {label}
+                                                </span>
+                                            ) : (
+                                                <Link
+                                                    href={href}
+                                                    className="text-[#A0A0A0] hover:text-[#F2F2F2] transition-colors shrink-0 hover:underline decoration-white/20 underline-offset-4"
+                                                >
+                                                    {label}
+                                                </Link>
+                                            )}
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </nav>
 
                         <div className="flex items-center gap-2">
                             <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Star ICPC HUE on GitHub" aria-label="Star ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full border border-[#E8C15A]/30 bg-[#E8C15A]/[0.08] text-xs font-semibold text-white/90 hover:bg-[#E8C15A]/20 hover:border-[#E8C15A]/50 transition-colors">

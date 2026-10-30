@@ -146,6 +146,30 @@ div[style*="position: absolute"][style*="bottom"]>a[href*="spline"] {
   pointer-events: none !important;
 }
 
+/* Bulletproof Breadcrumb Safety: strictly single-line, zero wrapping, pixel-perfect baseline */
+.dashboard-breadcrumbs {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  line-height: 1 !important;
+}
+
+.dashboard-breadcrumbs > * {
+  flex-shrink: 0 !important;
+}
+
+.dashboard-breadcrumbs a,
+.dashboard-breadcrumbs span,
+.dashboard-breadcrumbs button {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
