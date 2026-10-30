@@ -163,8 +163,13 @@ export default function Badge3D({ modelPath, unlocked = true, scale = 2, spin = 
         if (!url || !canvas) return;
         const t = acquireTile({ canvas, url, scale, spin, free, onReady: () => setReady(true), onError: () => setFailed(true) });
         tile.current = t;
+        t.setVisible(visible);
         return () => { t.dispose(); tile.current = null; setReady(false); };
-    }, [url, scale, spin, free]);
+    }, [url, scale, free]);
+
+    useEffect(() => {
+        tile.current?.setSpin(spin);
+    }, [spin]);
 
     useEffect(() => { tile.current?.setVisible(visible); }, [visible, ready]);
 

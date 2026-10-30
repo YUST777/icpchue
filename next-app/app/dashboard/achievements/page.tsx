@@ -56,14 +56,14 @@ function BadgeCard({
             title={description}
             className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-all duration-500 ${
                 isHighlighted
-                    ? 'border-[#E8C15A] ring-2 ring-[#E8C15A] shadow-[0_0_35px_rgba(232,193,90,0.6)] scale-[1.03] bg-gradient-to-b from-[#1c1a14] to-[#121214] z-20'
+                    ? 'border-[#E8C15A] shadow-[0_0_16px_rgba(232,193,90,0.25)] scale-[1.02] bg-gradient-to-b from-[#181611] to-[#121214] z-40'
                     : unlocked
-                    ? 'border-white/[0.1] bg-[#121214]'
-                    : 'border-white/[0.05] bg-white/[0.02]'
+                    ? 'border-white/[0.1] bg-[#121214] z-10'
+                    : 'border-white/[0.05] bg-white/[0.02] z-0'
             }`}
         >
             {isHighlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#E8C15A] via-[#f59e0b] to-[#E8C15A] text-black text-[10px] font-black tracking-wider uppercase shadow-[0_0_20px_rgba(232,193,90,0.9)] animate-bounce flex items-center gap-1.5 whitespace-nowrap">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-50 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#E8C15A] to-[#d4af37] text-black text-[10px] font-black tracking-wider uppercase shadow-[0_2px_8px_rgba(232,193,90,0.35)] animate-bounce flex items-center gap-1.5 whitespace-nowrap">
                     <span>✨</span>
                     <span>Unlocked!</span>
                 </div>
@@ -157,7 +157,7 @@ function AchievementsContent() {
     const achievements = [
         { group: 'Level 0 sheets', id: 'level0-skills', modelPath: '/3d/level0-skills.glb', title: ACHIEVEMENT_META['level0-skills'].name, description: ACHIEVEMENT_META['level0-skills'].desc, unlocked: earnedIds.has('level0-skills'), rarity: ACHIEVEMENT_META['level0-skills'].tier },
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
-        { group: 'Milestones', id: 'github-star', modelPath: '/3d/github-star.glb', title: ACHIEVEMENT_META['github-star'].name, description: ACHIEVEMENT_META['github-star'].desc, unlocked: earnedIds.has('github-star'), rarity: ACHIEVEMENT_META['github-star'].tier },
+        { group: 'Milestones', id: 'github-star', modelPath: '/3d/github-star.glb', scale: 2, spin: true, title: ACHIEVEMENT_META['github-star'].name, description: ACHIEVEMENT_META['github-star'].desc, unlocked: earnedIds.has('github-star'), rarity: ACHIEVEMENT_META['github-star'].tier },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
         { group: 'Milestones', id: 'rank1-march-2026', modelPath: '/3d/rank1_march.glb', scale: 1.5, title: 'Rank 1 March 2026', description: 'Achieve Rank 1 on the leaderboard during March 2026', unlocked: (profile?.achievements || []).some((a: any) => (a.achievement_id || a) === 'rank1-march-2026'), rarity: 'legendary' as const },
         ...podiumBadges,
@@ -280,12 +280,12 @@ function AchievementsContent() {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (
-                            <section key={group}>
+                            <section key={group} className={`relative transition-all ${items.some(a => highlightedBadgeId === a.id) ? 'z-30' : 'z-0'}`}>
                                 <div className="flex items-baseline justify-between mb-3">
                                     <h2 className="text-sm font-semibold text-white">{group}</h2>
                                     <span className="text-xs text-white/40 tabular-nums">{items.filter(a => a.unlocked).length}/{items.length}</span>
                                 </div>
-                                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 overflow-visible">
                                     {items.map(achievement => (
                                         <BadgeCard
                                             key={achievement.id}

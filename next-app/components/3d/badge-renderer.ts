@@ -68,6 +68,7 @@ function loadModelScene(url: string): Promise<THREE.Group> {
 
 export interface Tile {
     setVisible(v: boolean): void;
+    setSpin(s: boolean): void;
     dispose(): void;
 }
 
@@ -167,6 +168,10 @@ class TileImpl implements Tile {
         if (v) start();
     }
 
+    setSpin(s: boolean) {
+        this.o.spin = s;
+    }
+
     update(t: number, dt: number) {
         // After the finger lifts the badge keeps turning and slows down, like a physical object.
         if (!this.dragging && (Math.abs(this.velY) > 0.01 || Math.abs(this.velX) > 0.01)) {
@@ -177,7 +182,14 @@ class TileImpl implements Tile {
             this.velY *= decay;
             this.velX *= decay;
         }
-        if (this.o.spin) this.spinY += dt * 0.7;
+        if (this.o.spin) {
+            this.spinY += dt * 0.7;
+        } else if (Math.abs(this.spinY) > 0.001) {
+            // Smoothly ease towards the nearest full rotation to face forward cleanly
+            const fullTurns = Math.round(this.spinY / (Math.PI * 2));
+            const targetY = fullTurns * Math.PI * 2;
+            this.spinY += (targetY - this.spinY) * Math.min(1, dt * 2.5);
+        }
         const sway = this.o.spin ? 0 : Math.sin(t * 0.5 + this.phase) * 0.2;
         this.holder.rotation.y = this.spinY + sway + this.dragY;
         this.holder.rotation.x = this.dragX;
@@ -240,7 +252,7 @@ export function acquireTile(o: Options): Tile {
     if (!getShared()) {
         // No usable WebGL: let the badge show its picture instead of an empty canvas.
         queueMicrotask(o.onError);
-        return { setVisible() {}, dispose() {} };
+        return { setVisible() {}, setSpin() {}, dispose() {} };
     }
     const impl = new TileImpl(o);
     tiles.add(impl);
