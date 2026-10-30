@@ -1,4 +1,4 @@
-import { CheckCircle2, Play, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Play, XCircle, Loader2, ChevronUp, ChevronDown, Check, Maximize2, MoreVertical } from 'lucide-react';
 import { Editor, OnMount } from '@monaco-editor/react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { SubmissionResult, Example, CFSubmissionStatus } from '../shared/types';
@@ -109,6 +109,7 @@ export default function CodeWorkspace({
     const savedHeightRef = useRef(DEFAULT_PANEL_PERCENT);
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Editor settings (persisted) — read with individual selectors so this
     // component only re-renders when a value it actually uses changes.
@@ -330,7 +331,10 @@ export default function CodeWorkspace({
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             // Persist final height and tell the parent whether the panel is open
-            if (!dragRef.current.moved) return;
+            if (!dragRef.current.moved) {
+                togglePanel();
+                return;
+            }
             const final = panelPercentRef.current;
             setIsTestPanelVisible(final > 0);
             if (final > 0) {
@@ -466,85 +470,216 @@ export default function CodeWorkspace({
             >
                 {/* Grip Handle + Tab Bar (always visible) */}
                 <div
-                    className="shrink-0 select-none"
+                    className="shrink-0 select-none relative"
                     style={{ height: `${PANEL_TAB_BAR_HEIGHT}px` }}
                 >
-                    {/* Grip pill - draggable area */}
+                    {/* Grip pill - draggable area with generous touch target */}
                     <div
                         className="flex items-center justify-center cursor-row-resize group touch-none relative z-10"
-                        style={{ height: '20px', marginTop: '-10px' }}
+                        style={{ height: '28px', marginTop: '-14px' }}
                         onMouseDown={handleGripMouseDown}
                         onTouchStart={handleGripMouseDown}
                         onDoubleClick={handleGripDoubleClick}
                     >
-                        <div className="w-10 h-[3px] rounded-full bg-white/15 group-hover:bg-[#E8C15A]/60 group-active:bg-[#E8C15A] transition-colors" />
+                        <div className="w-16 h-1.5 rounded-full bg-white/30 group-hover:bg-[#E8C15A] group-active:bg-[#E8C15A] transition-all shadow-[0_0_8px_rgba(0,0,0,0.5)]" />
                     </div>
 
-                    {/* Tab buttons */}
-                    <div className="flex items-center px-1 bg-[#1a1a1a]" style={{ height: `${PANEL_TAB_BAR_HEIGHT - 10}px` }}>
-                        <button
-                            onClick={() => handleTabClick('testcase')}
-                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'testcase'
-                                ? 'text-white'
-                                : 'text-[#808080] hover:text-[#b0b0b0]'
-                                }`}
-                        >
-                            <CheckCircle2 size={14} />
-                            Testcase
-                            {testPanelTab === 'testcase' && (
-                                <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleTabClick('result')}
-                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'result'
-                                ? 'text-white'
-                                : 'text-[#808080] hover:text-[#b0b0b0]'
-                                }`}
-                        >
-                            {isRunningTests ? (
-                                <Loader2 size={14} className="animate-spin text-[#E8C15A]" />
-                            ) : (
-                                <Play size={14} />
-                            )}
-                            Test Result
-                            {testPanelTab === 'result' && (
-                                <div className={`absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full`} />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleTabClick('codeforces')}
-                            className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'codeforces'
-                                ? 'text-white'
-                                : 'text-[#808080] hover:text-[#b0b0b0]'
-                                }`}
-                        >
-                            {cfStatus && cfStatus.status !== 'idle' ? (
-                                cfStatus.status === 'done' ? (
-                                    cfStatus.verdict === 'OK' || cfStatus.verdict === 'Accepted' ? (
-                                        <CheckCircle2 size={14} className="text-green-400" />
-                                    ) : cfStatus.verdict === 'Submitted' ? (
-                                        <CheckCircle2 size={14} className="text-[#E8C15A]" />
-                                    ) : (
-                                        <XCircle size={14} className="text-red-400" />
-                                    )
-                                ) : cfStatus && cfStatus.status === 'error' ? (
-                                    <XCircle size={14} className="text-red-400" />
+                    {/* Tab buttons + Drop down/up toggle menu */}
+                    <div className="flex items-center justify-between px-1 bg-[#1a1a1a] relative" style={{ height: `${PANEL_TAB_BAR_HEIGHT - 10}px` }}>
+                        <div className="flex items-center overflow-x-auto scrollbar-hide min-w-0">
+                            <button
+                                onClick={() => handleTabClick('testcase')}
+                                className={`flex items-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 h-full text-[12px] sm:text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'testcase'
+                                    ? 'text-white'
+                                    : 'text-[#808080] hover:text-[#b0b0b0]'
+                                    }`}
+                            >
+                                <CheckCircle2 size={14} />
+                                Testcase
+                                {testPanelTab === 'testcase' && (
+                                    <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => handleTabClick('result')}
+                                className={`flex items-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 h-full text-[12px] sm:text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'result'
+                                    ? 'text-white'
+                                    : 'text-[#808080] hover:text-[#b0b0b0]'
+                                    }`}
+                            >
+                                {isRunningTests ? (
+                                    <Loader2 size={14} className="animate-spin text-[#E8C15A]" />
                                 ) : (
-                                    <Loader2 size={14} className="animate-spin text-blue-400" />
-                                )
-                            ) : (
-                                <img
-                                    src="/icons/codeforces-favicon.png"
-                                    alt="CF"
-                                    className="w-3.5 h-3.5"
-                                />
+                                    <Play size={14} />
+                                )}
+                                Test Result
+                                {testPanelTab === 'result' && (
+                                    <div className={`absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full`} />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => handleTabClick('codeforces')}
+                                className={`flex items-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-4 h-full text-[12px] sm:text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors relative ${testPanelTab === 'codeforces'
+                                    ? 'text-white'
+                                    : 'text-[#808080] hover:text-[#b0b0b0]'
+                                    }`}
+                            >
+                                {cfStatus && cfStatus.status !== 'idle' ? (
+                                    cfStatus.status === 'done' ? (
+                                        cfStatus.verdict === 'OK' || cfStatus.verdict === 'Accepted' ? (
+                                            <CheckCircle2 size={14} className="text-green-400" />
+                                        ) : cfStatus.verdict === 'Submitted' ? (
+                                            <CheckCircle2 size={14} className="text-[#E8C15A]" />
+                                        ) : (
+                                            <XCircle size={14} className="text-red-400" />
+                                        )
+                                    ) : cfStatus && cfStatus.status === 'error' ? (
+                                        <XCircle size={14} className="text-red-400" />
+                                    ) : (
+                                        <Loader2 size={14} className="animate-spin text-blue-400" />
+                                    )
+                                ) : (
+                                    <img
+                                        src="/icons/codeforces-favicon.png"
+                                        alt="CF"
+                                        className="w-3.5 h-3.5"
+                                    />
+                                )}
+                                Codeforces
+                                {testPanelTab === 'codeforces' && (
+                                    <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Drop Down & Up Menu (Next to CF button) */}
+                        <div className="relative shrink-0 flex items-center pr-1.5 ml-1">
+                            <div className="flex items-center rounded-lg overflow-hidden border border-white/10 bg-white/[0.04] shadow-sm">
+                                {/* 1-Click Toggle Button: Drops up if closed, Drops down if open */}
+                                <button
+                                    type="button"
+                                    onClick={togglePanel}
+                                    title={isCollapsed ? "Drop up (Open panel)" : "Drop down (Close panel)"}
+                                    aria-label={isCollapsed ? "Open panel" : "Close panel"}
+                                    className={`h-7 px-2 flex items-center gap-1 text-xs font-medium transition-all active:scale-95 ${
+                                        isCollapsed
+                                            ? 'text-[#E8C15A] hover:bg-[#E8C15A]/15 active:bg-[#E8C15A]/25'
+                                            : 'text-white/80 hover:text-white hover:bg-white/10 active:bg-white/20'
+                                    }`}
+                                >
+                                    {isCollapsed ? (
+                                        <ChevronUp size={15} className="text-[#E8C15A]" />
+                                    ) : (
+                                        <ChevronDown size={15} />
+                                    )}
+                                    <span className="text-[11px] font-semibold hidden sm:inline">
+                                        {isCollapsed ? 'Open' : 'Close'}
+                                    </span>
+                                </button>
+
+                                <div className="w-px h-3.5 bg-white/10" />
+
+                                {/* Dropdown menu trigger */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsMenuOpen(!isMenuOpen);
+                                    }}
+                                    title="Panel options"
+                                    aria-label="Panel size options"
+                                    className={`h-7 px-1.5 flex items-center justify-center transition-all ${
+                                        isMenuOpen
+                                            ? 'bg-white/15 text-white'
+                                            : 'text-white/50 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    <MoreVertical size={13} />
+                                </button>
+                            </div>
+
+                            {/* Drop-up Menu Overlay & Popup */}
+                            {isMenuOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-[9990]"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    />
+                                    <div
+                                        className="absolute right-1 bottom-full mb-2 w-48 bg-[#202022] border border-white/15 rounded-xl shadow-2xl p-1.5 z-[9991] flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150 select-none"
+                                        style={{ backgroundColor: '#202022' }}
+                                    >
+                                        <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/40 border-b border-white/5 mb-1">
+                                            Panel Options
+                                        </div>
+
+                                        {/* Option 1: Collapse (Drop Down) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                collapsePanel();
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors ${
+                                                isCollapsed
+                                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] font-semibold'
+                                                    : 'text-white/80 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <ChevronDown size={14} className={isCollapsed ? "text-[#E8C15A]" : "text-white/60"} />
+                                                Drop Down (Close)
+                                            </span>
+                                            {isCollapsed && <Check size={13} className="text-[#E8C15A]" />}
+                                        </button>
+
+                                        {/* Option 2: Default Height (Drop Up - 45%) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                animatePanel(DEFAULT_PANEL_PERCENT);
+                                                savedHeightRef.current = DEFAULT_PANEL_PERCENT;
+                                                setIsTestPanelVisible(true);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors ${
+                                                !isCollapsed && panelContentPercent <= 46
+                                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] font-semibold'
+                                                    : 'text-white/80 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <ChevronUp size={14} className={!isCollapsed && panelContentPercent <= 46 ? "text-[#E8C15A]" : "text-white/60"} />
+                                                Drop Up (Default 45%)
+                                            </span>
+                                            {!isCollapsed && panelContentPercent <= 46 && <Check size={13} className="text-[#E8C15A]" />}
+                                        </button>
+
+                                        {/* Option 3: Max Height (50%) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                animatePanel(MAX_PANEL_PERCENT);
+                                                savedHeightRef.current = MAX_PANEL_PERCENT;
+                                                setIsTestPanelVisible(true);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors ${
+                                                !isCollapsed && panelContentPercent > 46
+                                                    ? 'bg-[#E8C15A]/15 text-[#E8C15A] font-semibold'
+                                                    : 'text-white/80 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Maximize2 size={13} className={!isCollapsed && panelContentPercent > 46 ? "text-[#E8C15A]" : "text-white/60"} />
+                                                Full View (Max 50%)
+                                            </span>
+                                            {!isCollapsed && panelContentPercent > 46 && <Check size={13} className="text-[#E8C15A]" />}
+                                        </button>
+                                    </div>
+                                </>
                             )}
-                            Codeforces
-                            {testPanelTab === 'codeforces' && (
-                                <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full" />
-                            )}
-                        </button>
+                        </div>
                     </div>
                 </div>
 
