@@ -1,7 +1,7 @@
 # Security Policy for ICPC HUE
 # https://icpchue.com
 
-Contact: mailto:icpchue@hours.edu
+Contact: mailto:contact@icpchue.com
 Expires: 2027-01-01T00:00:00.000Z
 Preferred-Languages: en, ar
 Canonical: https://icpchue.com/.well-known/security.txt

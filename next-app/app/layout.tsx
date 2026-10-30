@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   keywords: [
     "ICPC",
     "competitive programming",
-    "Hours University",
+    "Horus University",
     "coding",
     "algorithms",
     "Codeforces",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   creator: "ICPC HUE",
   publisher: "ICPC HUE",
   openGraph: {
-    title: "ICPC HUE - First ICPC Community in Hours University",
+    title: "ICPC HUE - First ICPC Community in Horus University",
     description:
-      "Join our competitive programming community at Hours University",
+      "Join our competitive programming community at Horus University",
     url: "https://icpchue.com",
     siteName: "ICPC HUE",
     images: [
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ICPC HUE",
-    description: "First ICPC Community in Hours University",
+    description: "First ICPC Community in Horus University",
     images: ["/images/ui/metadata.webp"],
   },
   robots: {
@@ -119,7 +119,7 @@ const jsonLdOrganization = {
   ],
   contactPoint: {
     '@type': 'ContactPoint',
-    email: 'icpchue@hours.edu',
+    email: 'contact@icpchue.com',
     contactType: 'customer support',
     availableLanguage: ['English', 'Arabic']
   },

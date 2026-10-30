@@ -38,7 +38,7 @@
 html {
   font-family: var(--font-sans);
   font-feature-settings: "rlig" 1, "calt" 1;
-  background-color: #000000;
+  background-color: #0B0B0C;
   scrollbar-width: none !important;
 }
 
@@ -49,7 +49,7 @@ html[dir="rtl"] {
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #000000;
+  background-color: #0B0B0C;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -650,7 +650,7 @@ a:active {
   input:focus,
   select:focus,
   textarea:focus {
-    outline: 2px solid #d59928;
+    outline: 2px solid #E8C15A;
     outline-offset: 2px;
   }
 }
@@ -1141,7 +1141,7 @@ a,
 /* Better focus indicators for keyboard navigation */
 @media (hover: hover) and (pointer: fine) {
   *:focus-visible {
-    outline: 2px solid #d59928;
+    outline: 2px solid #E8C15A;
     outline-offset: 2px;
   }
 }
@@ -1158,7 +1158,7 @@ a,
 /* Dark mode optimizations (already dark, but for consistency) */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000000;
+    background-color: #0B0B0C;
     color: #ffffff;
   }
 }
@@ -1409,7 +1409,7 @@ iframe[title*="reCAPTCHA"],
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #d59928;
+  background: #E8C15A;
 }
 
 /* Firefox */

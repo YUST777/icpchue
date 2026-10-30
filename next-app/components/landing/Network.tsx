@@ -8,9 +8,9 @@ export default function Network() {
     const { language } = useLanguage();
     const t = translations[language].network;
     const regionColors = [
-        'from-[#d59928]/20 to-[#e6b04a]/20',
-        'from-[#b8811f]/20 to-[#d59928]/20',
-        'from-[#d59928]/20 to-[#f5d078]/20',
+        'from-[#E8C15A]/20 to-[#f5d078]/20',
+        'from-[#b89830]/20 to-[#E8C15A]/20',
+        'from-[#E8C15A]/20 to-[#f5d078]/20',
     ];
 
     return (
@@ -18,7 +18,7 @@ export default function Network() {
             <div className="relative mx-auto max-w-7xl px-4">
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#d59928] to-[#e6b04a] flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#E8C15A] to-[#f5d078] flex items-center justify-center">
                             <Globe2 className="h-5 w-5 text-white" />
                         </div>
                         <p className="text-xs uppercase tracking-[0.4em] text-white/40">{t.sectionTag}</p>

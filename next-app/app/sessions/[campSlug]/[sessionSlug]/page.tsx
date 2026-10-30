@@ -51,16 +51,16 @@ function SessionContent() {
 
     if (!camp || !session) {
         return (
-            <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-[#0B0B0C] text-white p-8 flex flex-col items-center justify-center">
                 <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
-                <Link href="/sessions" className="text-[#d59928] hover:underline">Return to Sessions</Link>
+                <Link href="/sessions" className="text-[#E8C15A] hover:underline">Return to Sessions</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans">
-            <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10">
+        <div className="min-h-screen bg-[#0B0B0C] text-white font-sans">
+            <div className="sticky top-0 z-50 bg-[#0B0B0C]/80 backdrop-blur-xl border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href={`/sessions/${campSlug}`} className="flex items-center gap-2 text-white/70 hover:text-white transition">
                         <ArrowLeft className="w-5 h-5" />
@@ -68,7 +68,7 @@ function SessionContent() {
                     </Link>
                     <div className="font-bold text-lg">
                         {/* <span className="text-white/50 mr-2">{camp.title}</span> */}
-                        Session <span className="text-[#d59928]">{session.displayNumber || session.number}</span>
+                        Session <span className="text-[#E8C15A]">{session.displayNumber || session.number}</span>
                     </div>
                     <div className="w-20"></div>
                 </div>
@@ -76,7 +76,7 @@ function SessionContent() {
 
             <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
                 <div className="mb-8 sm:mb-12">
-                    <span className="inline-block px-3 py-1 bg-[#d59928]/10 text-[#d59928] border border-[#d59928]/20 rounded-full text-xs font-bold uppercase tracking-wider mb-4">{session.tag}</span>
+                    <span className="inline-block px-3 py-1 bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20 rounded-full text-xs font-bold uppercase tracking-wider mb-4">{session.tag}</span>
                     <h1 className="text-3xl sm:text-5xl font-black mb-4">{session.title}</h1>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <p className="text-lg text-white/60 max-w-2xl">{session.description}</p>
@@ -91,7 +91,7 @@ function SessionContent() {
 
                 <div className="mb-12 sm:mb-16">
                     {session.videoId ? (
-                        <div className="aspect-video w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
                             <iframe
                                 src={getEmbedUrl(session.videoId)}
                                 width="100%"
@@ -102,7 +102,7 @@ function SessionContent() {
                             ></iframe>
                         </div>
                     ) : (
-                        <div className="aspect-video w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
+                        <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
                             <div className="text-center px-6">
                                 <p className="text-white/60 font-bold text-sm sm:text-base">الفيديو هيكون متاح قريب</p>
                                 <p className="text-white/30 text-xs mt-1">Video coming soon</p>
@@ -115,7 +115,7 @@ function SessionContent() {
                             <div className="mt-4 px-2">
                                 <p className="text-sm text-white/40 flex items-center gap-2">
                                     <Info className="w-4 h-4" />
-                                    If video doesn&apos;t load, <a href={direct.url} target="_blank" rel="noopener noreferrer" className="text-[#d59928] hover:underline">watch on {direct.platform}</a>
+                                    If video doesn&apos;t load, <a href={direct.url} target="_blank" rel="noopener noreferrer" className="text-[#E8C15A] hover:underline">watch on {direct.platform}</a>
                                 </p>
                             </div>
                         );
@@ -128,7 +128,7 @@ function SessionContent() {
                     <div className="h-px bg-white/10 flex-1"></div>
                 </div>
 
-                <article className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-a:text-[#d59928] prose-strong:text-white prose-code:text-[#d59928] prose-pre:bg-[#0a0a0a] prose-pre:border prose-pre:border-white/10">
+                <article className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-a:text-[#E8C15A] prose-strong:text-white prose-code:text-[#E8C15A] prose-pre:bg-[#121214] prose-pre:border prose-pre:border-white/10">
                     {session.content}
                 </article>
             </div>

@@ -4,14 +4,14 @@ export default function Session1Content() {
     return (
         <div className="space-y-12 text-white/90">
             <section className="space-y-6">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Terminal className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Standard I/O: iostream</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Console Output (cout)</h3>
                     <p className="text-white/70 mb-4 leading-relaxed">
-                        The <code className="text-[#d59928] bg-white/5 px-1.5 py-0.5 rounded font-mono">cout</code> object is used for outputting data to the standard output device (usually your screen). It is buffered and type-safe.
+                        The <code className="text-[#E8C15A] bg-white/5 px-1.5 py-0.5 rounded font-mono">cout</code> object is used for outputting data to the standard output device (usually your screen). It is buffered and type-safe.
                     </p>
                     <div className="bg-black/50 rounded-xl p-4 font-mono text-sm border border-white/5 mb-6 overflow-x-auto">
                         <pre className="text-green-400">{`// Example of formatting with iomanip
@@ -24,9 +24,9 @@ string str = "Hello, CPP!";
 cout << "Result: " << num << " - " << str << endl;`}</pre>
                     </div>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Console Input (cin)</h3>
-                    <p className="text-white/70 mb-4">Used for getting input from the user. Note that <code className="text-[#d59928]">cin</code> stops reading at whitespace (space, tab, newline).</p>
+                    <p className="text-white/70 mb-4">Used for getting input from the user. Note that <code className="text-[#E8C15A]">cin</code> stops reading at whitespace (space, tab, newline).</p>
                     <div className="bg-blue-900/20 border border-blue-500/20 rounded-xl p-4 mb-6">
                         <h4 className="text-blue-400 font-bold mb-2 text-sm uppercase tracking-wider flex items-center gap-2">
                             <Info className="w-4 h-4" /> Pro Tip: getline()
@@ -48,16 +48,16 @@ getline(cin, str, '.');`}</pre>
             </section>
 
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <AlertTriangle className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Error & Logging</h2>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
+                    <div className="bg-[#121214] p-5 rounded-xl border border-white/10">
                         <h4 className="font-bold text-red-400 mb-2">cerr (Unbuffered)</h4>
                         <p className="text-sm text-white/60">Outputs immediately. Best for critical errors.</p>
                     </div>
-                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-white/5">
+                    <div className="bg-[#121214] p-5 rounded-xl border border-white/10">
                         <h4 className="font-bold text-yellow-400 mb-2">clog (Buffered)</h4>
                         <p className="text-sm text-white/60">Stores in buffer first. Best for non-critical logging.</p>
                     </div>
@@ -65,17 +65,17 @@ getline(cin, str, '.');`}</pre>
             </section>
 
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <FileText className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Data Types & Limits</h2>
                 </div>
                 <p className="text-white/70">Understanding the limits of data types is crucial in Competitive Programming to avoid Overflow and Underflow.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                     {['int', 'double', 'float', 'char', 'bool', 'long long', 'short', 'unsigned int'].map(type => (
-                        <div key={type} className="bg-[#1a1a1a] p-3 rounded-lg border border-white/5 font-mono text-sm text-[#d59928]">{type}</div>
+                        <div key={type} className="bg-[#121214] p-3 rounded-lg border border-white/10 font-mono text-sm text-[#E8C15A]">{type}</div>
                     ))}
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6">
                     <h3 className="text-lg font-bold mb-3 text-white">How to check limits?</h3>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>

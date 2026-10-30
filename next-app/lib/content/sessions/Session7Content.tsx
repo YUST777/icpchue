@@ -5,11 +5,11 @@ export default function Session7Content() {
         <div className="space-y-12 text-white/90">
             {/* Section 1: What is Complexity? */}
             <section className="space-y-6">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Timer className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">What is Complexity?</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Why Do We Care?</h3>
                     <p className="text-white/70 mb-4 leading-relaxed">
                         In competitive programming, getting the <strong className="text-white">correct answer</strong> is not enough — your solution must also run <strong className="text-white">fast enough</strong>. Complexity analysis is how we predict whether our code will pass within the time limit before we even submit it.
@@ -19,7 +19,7 @@ export default function Session7Content() {
                             <Info className="w-4 h-4" /> Rule of Thumb
                         </h4>
                         <p className="text-sm text-white/80">
-                            A modern computer can execute roughly <code className="text-[#d59928] bg-white/5 px-1.5 py-0.5 rounded font-mono">10⁸</code> simple operations per second. If the time limit is 1 second and <code className="text-[#d59928] bg-white/5 px-1.5 py-0.5 rounded font-mono">n ≤ 10⁵</code>, an O(n²) solution does 10¹⁰ operations — <strong className="text-red-400">too slow</strong>. An O(n log n) solution does ~1.7 × 10⁶ — <strong className="text-green-400">fast enough</strong>.
+                            A modern computer can execute roughly <code className="text-[#E8C15A] bg-white/5 px-1.5 py-0.5 rounded font-mono">10⁸</code> simple operations per second. If the time limit is 1 second and <code className="text-[#E8C15A] bg-white/5 px-1.5 py-0.5 rounded font-mono">n ≤ 10⁵</code>, an O(n²) solution does 10¹⁰ operations — <strong className="text-red-400">too slow</strong>. An O(n log n) solution does ~1.7 × 10⁶ — <strong className="text-green-400">fast enough</strong>.
                         </p>
                     </div>
                 </div>
@@ -27,13 +27,13 @@ export default function Session7Content() {
 
             {/* Section 2: Big-O Notation */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <TrendingUp className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Big-O Notation</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <p className="text-white/70 mb-6 leading-relaxed">
-                        Big-O describes the <strong className="text-white">upper bound</strong> of how an algorithm's runtime grows relative to its input size <code className="text-[#d59928] bg-white/5 px-1.5 py-0.5 rounded font-mono">n</code>. We always focus on the <strong className="text-white">dominant term</strong> and drop constants.
+                        Big-O describes the <strong className="text-white">upper bound</strong> of how an algorithm's runtime grows relative to its input size <code className="text-[#E8C15A] bg-white/5 px-1.5 py-0.5 rounded font-mono">n</code>. We always focus on the <strong className="text-white">dominant term</strong> and drop constants.
                     </p>
                     <div className="bg-black/50 rounded-xl p-4 font-mono text-sm border border-white/5 mb-6 overflow-x-auto">
                         <pre className="text-green-400">{`// O(1) — Constant: doesn't depend on n
@@ -57,7 +57,7 @@ sort(arr, arr + n);`}</pre>
 
             {/* Section 3: Common Complexities */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <BarChart3 className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Common Complexities Ranked</h2>
                 </div>
@@ -82,7 +82,7 @@ sort(arr, arr + n);`}</pre>
                                 { big: 'O(2ⁿ)', name: 'Exponential', ops: '🤯', ok: false },
                             ].map((row) => (
                                 <tr key={row.big} className="hover:bg-white/[0.02] transition-colors">
-                                    <td className="px-4 py-3 font-mono text-[#d59928]">{row.big}</td>
+                                    <td className="px-4 py-3 font-mono text-[#E8C15A]">{row.big}</td>
                                     <td className="px-4 py-3 text-white/70">{row.name}</td>
                                     <td className="px-4 py-3 text-white/70 font-mono">{row.ops}</td>
                                     <td className="px-4 py-3">
@@ -99,13 +99,13 @@ sort(arr, arr + n);`}</pre>
 
             {/* Section 4: Estimating from Constraints */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Zap className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Estimating from Constraints</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <p className="text-white/70 mb-4 leading-relaxed">
-                        Before writing code, check the constraint on <code className="text-[#d59928] bg-white/5 px-1.5 py-0.5 rounded font-mono">n</code> in the problem. This tells you the maximum complexity your solution can have:
+                        Before writing code, check the constraint on <code className="text-[#E8C15A] bg-white/5 px-1.5 py-0.5 rounded font-mono">n</code> in the problem. This tells you the maximum complexity your solution can have:
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {[
@@ -116,15 +116,15 @@ sort(arr, arr + n);`}</pre>
                             { range: 'n ≤ 10⁶', target: 'O(n log n)' },
                             { range: 'n ≤ 10⁸', target: 'O(n)' },
                         ].map((item) => (
-                            <div key={item.range} className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                            <div key={item.range} className="bg-[#121214] p-4 rounded-xl border border-white/10 flex items-center justify-between">
                                 <span className="text-white/80 font-mono text-sm">{item.range}</span>
-                                <span className="text-[#d59928] font-mono text-sm font-bold">{item.target}</span>
+                                <span className="text-[#E8C15A] font-mono text-sm font-bold">{item.target}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Counting Operations — Example</h3>
                     <div className="bg-black/50 rounded-xl p-4 font-mono text-sm border border-white/5 mb-4 overflow-x-auto">
                         <pre className="text-green-400">{`// What is the complexity of this?

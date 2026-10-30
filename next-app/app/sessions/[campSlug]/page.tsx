@@ -35,7 +35,7 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
     }
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans p-4 sm:p-8">
+        <div className="min-h-screen bg-[#0B0B0C] text-white font-sans p-4 sm:p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <header className="flex justify-between items-center mb-12 sm:mb-16">
@@ -48,7 +48,7 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
                 {/* Hero Section */}
                 <div className="mb-12 md:mb-16 text-center max-w-3xl mx-auto">
                     <h1 className="text-4xl sm:text-6xl font-black mb-6 tracking-tight">
-                        <span className="text-[#d59928]">{camp.title}</span> Sessions
+                        <span className="text-[#E8C15A]">{camp.title}</span> Sessions
                     </h1>
                     <p className="text-white/60 text-lg">
                         {camp.description}
@@ -61,7 +61,7 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
                         <Link
                             key={session.id}
                             href={`/sessions/${camp.slug}/${session.slug}`}
-                            className="group relative bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden hover:border-[#d59928]/50 transition-all duration-300 hover:-translate-y-1 block"
+                            className="group relative bg-[#121214] border border-white/10 rounded-2xl overflow-hidden hover:border-[#E8C15A]/50 transition-all duration-300 hover:-translate-y-1 block"
                         >
                             <div className="aspect-video relative overflow-hidden bg-[#1a1a1a]">
                                 {/* Thumbnail */}
@@ -80,17 +80,17 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
                                 )}
 
                                 <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a]/50 to-[#050505]/50 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                                    <Play className="w-12 h-12 text-white/20 group-hover:text-[#d59928] transition-colors" />
+                                    <Play className="w-12 h-12 text-white/20 group-hover:text-[#E8C15A] transition-colors" />
                                 </div>
                                 <div className="absolute top-4 left-4 z-10">
-                                    <span className="px-3 py-1 bg-[#d59928] text-black font-bold text-xs rounded-full uppercase tracking-wider shadow-lg">
+                                    <span className="px-3 py-1 bg-[#E8C15A] text-black font-bold text-xs rounded-full uppercase tracking-wider shadow-lg">
                                         Session {session.number}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="p-6">
-                                <h3 className="text-2xl font-bold mb-3 text-white group-hover:text-[#d59928] transition-colors">
+                                <h3 className="text-2xl font-bold mb-3 text-white group-hover:text-[#E8C15A] transition-colors">
                                     {session.title}
                                 </h3>
                                 <p className="text-white/60 text-sm mb-6 line-clamp-2 min-h-[40px]">
@@ -106,7 +106,7 @@ async function CampSessionsContent({ params }: { params: Promise<{ campSlug: str
                                             <FileText className="w-3 h-3" /> PDF/Notes
                                         </span>
                                     </div>
-                                    <span className="flex items-center gap-2 text-sm text-[#d59928] font-medium group-hover:translate-x-1 transition-transform">
+                                    <span className="flex items-center gap-2 text-sm text-[#E8C15A] font-medium group-hover:translate-x-1 transition-transform">
                                         Start Learning <ArrowRight className="w-4 h-4" />
                                     </span>
                                 </div>

@@ -4,11 +4,11 @@ export default function Session6Content() {
     return (
         <div className="space-y-12 text-white/90">
             <section className="space-y-6">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Box className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Introduction to Arrays</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">1D Arrays</h3>
                     <p className="text-white/70 mb-4 leading-relaxed">
                         An array is a collection of elements of the same type placed in contiguous memory locations. It's used to store multiple values in a single variable, making it easier to manage and manipulate data sets.
@@ -28,7 +28,7 @@ for(int i = 0; i < 5; i++) {
                     </div>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">2D Arrays (Matrices)</h3>
                     <p className="text-white/70 mb-4 leading-relaxed">
                         A 2D array is essentially an array of arrays. It is useful for representing grids, matrices, or any tabular data.
@@ -50,11 +50,11 @@ cout << matrix[1][2] << endl; // Prints 6 (row 1, column 2)`}</pre>
             </section>
 
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Lightbulb className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Ad-Hoc Problems</h2>
                 </div>
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">What are Ad-Hoc problems?</h3>
                     <p className="text-white/70 mb-4">
                         Ad-hoc problems do not fall into standard algorithmic categories (like Graph Theory or Dynamic Programming). They typically require careful reading, logical deduction, and translating the problem description directly into code.

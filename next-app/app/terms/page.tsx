@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function TermsOfService() {
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <div className="min-h-screen bg-[#0B0B0C] text-white font-sans">
             <main className="max-w-4xl mx-auto px-6 py-20">
                 <Link href="/" className="text-[#E8C15A]/40 text-xs font-bold uppercase tracking-widest hover:text-[#E8C15A] transition-colors mb-8 inline-block">&larr; Back to Home</Link>
 

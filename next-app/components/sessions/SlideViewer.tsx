@@ -65,7 +65,7 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
                 touchX.current = null;
             }}
             onContextMenu={(e) => e.preventDefault()}
-            className={`relative bg-black rounded-2xl border border-white/10 overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[#d59928] select-none ${isFullscreen ? 'flex flex-col justify-center rounded-none border-0' : ''}`}
+            className={`relative bg-[#121214] rounded-2xl border border-white/10 overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A] select-none ${isFullscreen ? 'flex flex-col justify-center rounded-none border-0' : ''}`}
         >
             <div className="relative w-full aspect-video">
                 <Image
@@ -88,7 +88,7 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
                 </button>
             </div>
 
-            <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[#111] border-t border-white/10">
+            <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[#161618] border-t border-white/10">
                 <div className="flex items-center gap-1">
                     <button type="button" onClick={() => go(-1)} disabled={index === 1} aria-label="Previous slide"
                         className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent">
@@ -101,7 +101,7 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
                     </button>
                 </div>
                 <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden max-w-[240px]">
-                    <div className="h-full bg-[#d59928] transition-all" style={{ width: `${(index / count) * 100}%` }} />
+                    <div className="h-full bg-[#E8C15A] transition-all" style={{ width: `${(index / count) * 100}%` }} />
                 </div>
                 <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
                     className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10">

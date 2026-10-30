@@ -21,7 +21,7 @@ export default function Level0Contest1Content() {
                     href={CONTEST_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8C15A] hover:bg-[#d59928] text-black text-sm font-semibold transition-colors shrink-0"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8C15A] hover:bg-[#d8b046] text-black text-sm font-semibold transition-colors shrink-0"
                 >
                     <span>Open Contest</span>
                     <ExternalLink className="w-4 h-4" />

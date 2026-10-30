@@ -60,7 +60,7 @@ export default function Showcase() {
                                             className="w-full h-auto object-contain block"
                                         />
                                         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                                            <p className="text-[10px] tracking-[0.2em] text-[#d59928] font-bold uppercase mb-1">
+                                            <p className="text-[10px] tracking-[0.2em] text-[#E8C15A] font-bold uppercase mb-1">
                                                 {slide.tag}
                                             </p>
                                             <h3 className="text-lg font-bold text-white leading-tight">{slide.title}</h3>
@@ -75,7 +75,7 @@ export default function Showcase() {
                         {slides.map((_, idx) => (
                             <div
                                 key={idx}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeIndex ? 'w-6 bg-[#d59928]' : 'w-1.5 bg-white/20'
+                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeIndex ? 'w-6 bg-[#E8C15A]' : 'w-1.5 bg-white/20'
                                     }`}
                             />
                         ))}

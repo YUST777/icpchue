@@ -24,7 +24,7 @@ export default function Contact() {
                 <p className="text-lg text-white/70 mb-8">{t.ctaDescription}</p>
                 <Link
                     href="/apply"
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#d59928] to-[#e6b04a] text-white font-bold text-lg hover:scale-105 transition-transform"
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#E8C15A] to-[#F3D78A] text-black font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-[#E8C15A]/10"
                 >
                     {t.ctaButton} <ArrowRight className="h-5 w-5" />
                 </Link>

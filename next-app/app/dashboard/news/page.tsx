@@ -54,7 +54,7 @@ function getTypeColor(type: string) {
         case 'camp': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
         case 'recap': return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
         case 'community': return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
-        case 'devlog': return 'bg-[#d59928]/10 text-[#d59928] border-[#d59928]/30';
+        case 'devlog': return 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30';
         default: return 'bg-white/10 text-white border-white/30';
     }
 }

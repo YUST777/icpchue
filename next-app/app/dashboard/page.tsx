@@ -84,7 +84,7 @@ export default function DashboardHome() {
                 <div className="flex justify-center pb-4">
                     <button
                         onClick={() => setForceShowTour(true)}
-                        className="text-xs text-white/30 hover:text-[#d59928] transition-colors flex items-center gap-1.5"
+                        className="text-xs text-white/30 hover:text-[#E8C15A] transition-colors flex items-center gap-1.5"
                     >
                         <HelpCircle className="w-3.5 h-3.5" />
                         إزاي تستخدم الداشبورد؟

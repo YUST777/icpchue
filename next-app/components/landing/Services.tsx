@@ -44,7 +44,7 @@ export default function Services() {
                             <div className="p-6">
                                 <h3 className="text-xl font-bold text-white mb-2">{sol.title}</h3>
                                 <p className="text-sm text-white/70 mb-4">{sol.desc}</p>
-                                <span className="inline-flex items-center gap-2 text-sm text-[#d59928] group-hover:text-white transition-colors">
+                                <span className="inline-flex items-center gap-2 text-sm text-[#E8C15A] group-hover:text-white transition-colors">
                                     {t.learnMore} <ArrowRight className="h-4 w-4" />
                                 </span>
                             </div>

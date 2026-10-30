@@ -6,12 +6,12 @@ export default function Session5Content() {
         <div className="space-y-12 text-white/90">
             {/* Introduction to Algorithms and Complexity */}
             <section className="space-y-6">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Terminal className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Introduction to Algorithms</h2>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Basic Concepts</h3>
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
                         <div className="bg-black/30 p-4 rounded-lg">
@@ -44,14 +44,14 @@ export default function Session5Content() {
                     </div>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">Algorithms</h3>
                     <div className="mb-4">
-                        <p className="text-lg text-white mb-2"><strong className="text-[#d59928]">What is an Algorithm?</strong></p>
+                        <p className="text-lg text-white mb-2"><strong className="text-[#E8C15A]">What is an Algorithm?</strong></p>
                         <p className="text-white/70">An Algorithm is a sequence of <strong>well-defined instructions</strong> for solving a problem.</p>
                     </div>
                     <div>
-                        <p className="text-lg text-white mb-2"><strong className="text-[#d59928]">Why Study Algorithms?</strong></p>
+                        <p className="text-lg text-white mb-2"><strong className="text-[#E8C15A]">Why Study Algorithms?</strong></p>
                         <ul className="list-disc list-inside text-white/70 space-y-1 ml-2">
                             <li>To know a standard set of important algorithms from different areas of computing.</li>
                             <li>To be able to design new algorithms and analyze their efficiency.</li>
@@ -62,12 +62,12 @@ export default function Session5Content() {
 
             {/* Time Complexity */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <AlertTriangle className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Time Complexity Analysis</h2>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <h3 className="text-xl font-bold mb-4 text-white">What is Time Complexity?</h3>
                     <p className="text-white/70 mb-6">Time Complexity describes how many times program instructions are executed as the input size increases.</p>
 
@@ -94,13 +94,13 @@ export default function Session5Content() {
 
             {/* Complexity Examples */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#d59928] mb-6">
+                <div className="flex items-center gap-3 text-[#E8C15A] mb-6">
                     <Terminal className="w-6 h-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold">Complexity Examples</h2>
                 </div>
 
                 {/* Example 1: O(n) */}
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">1. Linear Time: <span className="text-green-400 font-mono">O(n)</span></h3>
                     </div>
@@ -114,16 +114,16 @@ for (int i = 1; i <= n; i++) {
                     <div className="space-y-2 text-sm text-white/60 mb-4">
                         <p><strong>Counting Instructions:</strong></p>
                         <ul className="list-disc list-inside ml-2 space-y-1">
-                            <li><code className="text-[#d59928]">sum = 0</code> → executed <strong>1 time</strong></li>
+                            <li><code className="text-[#E8C15A]">sum = 0</code> → executed <strong>1 time</strong></li>
                             <li>Loop runs → <strong>n times</strong></li>
-                            <li><code className="text-[#d59928]">sum = sum + i</code> → executed <strong>n times</strong></li>
+                            <li><code className="text-[#E8C15A]">sum = sum + i</code> → executed <strong>n times</strong></li>
                         </ul>
                         <p className="mt-2 text-white/80 italic">The number of instructions increases linearly with n.</p>
                     </div>
                 </div>
 
                 {/* Example 2: O(1) */}
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">2. Constant Time: <span className="text-green-400 font-mono">O(1)</span></h3>
                     </div>
@@ -142,7 +142,7 @@ for (int i = 1; i <= n; i++) {
                 </div>
 
                 {/* Example 3: O(n^2) */}
-                <div className="bg-[#111] rounded-2xl border border-white/10 p-6 sm:p-8">
+                <div className="bg-[#121214] rounded-2xl border border-white/10 p-6 sm:p-8">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-white">3. Quadratic Time: <span className="text-green-400 font-mono">O(n²)</span></h3>
                     </div>

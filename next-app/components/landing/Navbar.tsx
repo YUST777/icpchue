@@ -74,7 +74,7 @@ export default function Navbar() {
                             </div>
                             <div className="flex flex-col justify-center h-10">
                                 <span className="text-white font-black text-xl leading-none tracking-tight group-hover:text-[#E8C15A] transition-colors">ICPC HUE</span>
-                                <span className={`text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] leading-none mt-1.5 ${isAr ? 'text-right' : 'text-left'}`}>University of Hue</span>
+                                <span className={`text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] leading-none mt-1.5 ${isAr ? 'text-right' : 'text-left'}`}>Horus University</span>
                             </div>
                         </Link>
 
