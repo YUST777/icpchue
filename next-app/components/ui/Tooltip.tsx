@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useRef, useLayoutEffect } from "react";
+import React, { ReactNode, useState, useRef, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,7 @@ interface TooltipProps {
     position?: "top" | "bottom" | "left" | "right";
     className?: string;
     delay?: number;
+    disabled?: boolean;
 }
 
 export function Tooltip({
@@ -17,14 +18,20 @@ export function Tooltip({
     shortcut,
     position = "bottom",
     className = "",
-    delay = 50
+    delay = 50,
+    disabled = false
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const triggerRef = useRef<HTMLDivElement>(null);
     const timeoutId = useRef<NodeJS.Timeout | null>(null);
 
-    const updatePosition = () => {
+    const canShowTooltip = useCallback(() => {
+        if (disabled || typeof window === 'undefined') return false;
+        return window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches;
+    }, [disabled]);
+
+    const updatePosition = useCallback(() => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             let top = 0;
@@ -51,7 +58,7 @@ export function Tooltip({
             }
             setCoords({ top, left });
         }
-    };
+    }, [position]);
 
     useLayoutEffect(() => {
         if (isVisible) {
@@ -63,10 +70,13 @@ export function Tooltip({
             window.removeEventListener('resize', updatePosition);
             window.removeEventListener('scroll', updatePosition, true);
         };
-    }, [isVisible, position]);
+    }, [isVisible, updatePosition]);
 
     const handleEnter = () => {
-        timeoutId.current = setTimeout(() => setIsVisible(true), delay);
+        if (!canShowTooltip()) return;
+        timeoutId.current = setTimeout(() => {
+            if (canShowTooltip()) setIsVisible(true);
+        }, delay);
     };
 
     const handleLeave = () => {
