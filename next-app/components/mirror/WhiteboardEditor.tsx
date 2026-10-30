@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useLayoutEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import dynamic from 'next/dynamic';
 import styles from './Whiteboard.module.css';
 
@@ -34,15 +35,69 @@ export default function WhiteboardEditor({
     onChange,
     initialData
 }: WhiteboardEditorProps) {
+    const surfaceRef = useRef<HTMLDivElement>(null);
+    const apiRef = useRef<{ refresh: () => void } | null>(null);
+
+    const handleApiReady = useCallback<WhiteboardEditorProps['onApiReady']>((api) => {
+        apiRef.current = api;
+        onApiReady(api);
+    }, [onApiReady]);
+
+    const syncScale = useCallback(() => {
+        const surface = surfaceRef.current;
+        if (!surface) return;
+        let scale = 1;
+        for (let element = surface.parentElement; element; element = element.parentElement) {
+            const zoom = getComputedStyle(element).zoom;
+            const value = parseFloat(zoom) / (zoom.endsWith('%') ? 100 : 1);
+            if (Number.isFinite(value) && value > 0) scale *= value;
+        }
+        // Excalidraw measures in viewport pixels. Keep its CSS pixels at
+        // the same scale, even when the surrounding IDE uses CSS zoom.
+        surface.style.zoom = String(1 / scale);
+    }, []);
+
+    useLayoutEffect(() => {
+        const surface = surfaceRef.current;
+        const parent = surface?.parentElement;
+        if (!surface || !parent) return;
+
+        let frame = 0;
+        const refreshScale = () => {
+            syncScale();
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => apiRef.current?.refresh());
+        };
+
+        const observer = new ResizeObserver(refreshScale);
+        observer.observe(parent);
+        window.addEventListener('resize', refreshScale);
+        document.addEventListener('fullscreenchange', refreshScale);
+        refreshScale();
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', refreshScale);
+            document.removeEventListener('fullscreenchange', refreshScale);
+            cancelAnimationFrame(frame);
+        };
+    }, [syncScale]);
+
+    const handlePointerDownCapture = useCallback(() => {
+        syncScale();
+        // A resize can move the canvas before its observer runs. Commit the
+        // current origin before Excalidraw handles the first drawing point.
+        flushSync(() => apiRef.current?.refresh());
+    }, [syncScale]);
+
     return (
-        <div className={`${styles.surface} h-full w-full relative bg-[#121212]`}>
+        <div ref={surfaceRef} onPointerDownCapture={handlePointerDownCapture} className={`${styles.surface} absolute inset-0 bg-[#121212]`}>
             <Excalidraw
-                excalidrawAPI={onApiReady}
+                excalidrawAPI={handleApiReady}
                 onChange={onChange}
                 initialData={{
                     ...initialData,
                     appState: {
-                        viewBackgroundColor: '#121212',
+                        viewBackgroundColor: '#ffffff',
                         currentItemStrokeColor: '#1e1e1e',
                         activeTool: { type: 'freedraw', lastActiveTool: null, customType: null, locked: false },
                         ...initialData?.appState,
