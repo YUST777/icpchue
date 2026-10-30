@@ -5,7 +5,7 @@ import DisciplineTracker from '@/components/dashboard/discipline/DisciplineTrack
 
 export default function DisciplinePage() {
     return (
-        <div className="min-h-screen bg-[#0B0B0C] text-white p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="space-y-6 animate-fade-in text-white">
             <DisciplineTracker isMentorView={false} />
         </div>
     );

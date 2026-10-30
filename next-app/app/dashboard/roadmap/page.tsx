@@ -63,32 +63,30 @@ export default function RoadmapPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-[#050505] p-4 md:p-8">
-                <div className="max-w-4xl mx-auto space-y-10">
-                    <div className="space-y-3">
-                        <Skeleton className="h-9 w-56 rounded-lg" />
-                        <Skeleton className="h-4 w-80 rounded" />
-                    </div>
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Skeleton className="h-10 w-10 rounded-full" />
-                                <Skeleton className="h-6 w-40 rounded-lg" />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pl-12">
-                                {[1, 2, 3].map(j => (
-                                    <Skeleton key={j} className="h-20 rounded-xl" />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+            <div className="space-y-10 max-w-4xl mx-auto py-4">
+                <div className="space-y-3">
+                    <Skeleton className="h-9 w-56 rounded-lg" />
+                    <Skeleton className="h-4 w-80 rounded" />
                 </div>
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <Skeleton className="h-6 w-40 rounded-lg" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pl-12">
+                            {[1, 2, 3].map(j => (
+                                <Skeleton key={j} className="h-20 rounded-xl" />
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8 relative overflow-hidden">
+        <div className="text-white relative overflow-hidden space-y-8 animate-fade-in pb-12">
             {/* Background Pattern */}
             <div className="absolute inset-0 z-0 opacity-20 pointer-events-none"
                 style={{
@@ -182,7 +180,7 @@ export default function RoadmapPage() {
                                                 />
 
                                                 <div className={cn(
-                                                    "relative h-full bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 transition-all duration-300 group-hover:border-[#E8C15A]/30 group-hover:-translate-y-1 shadow-xl",
+                                                    "relative h-full bg-[#121214] border border-white/5 rounded-2xl p-6 transition-all duration-300 group-hover:border-[#E8C15A]/30 group-hover:-translate-y-1 shadow-xl",
                                                     isCompleted ? "border-[#E8C15A]/20 shadow-[#E8C15A]/5" : ""
                                                 )}>
 

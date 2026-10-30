@@ -182,7 +182,7 @@ export default function MentorTraineesDirectoryPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B0B0C] text-white p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="space-y-6 animate-fade-in text-white pb-12">
             {/* 1. Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
                 <div>

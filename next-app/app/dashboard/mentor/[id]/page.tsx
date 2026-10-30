@@ -209,16 +209,16 @@ export default function TraineeDossierPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto">
-                <div className="h-44 bg-[#121214] border border-white/5 rounded-2xl animate-pulse" />
-                <div className="h-64 bg-[#121214] border border-white/5 rounded-2xl animate-pulse" />
+            <div className="space-y-3 animate-pulse">
+                <div className="h-44 bg-[#121214] border border-white/5 rounded-2xl" />
+                <div className="h-64 bg-[#121214] border border-white/5 rounded-2xl" />
             </div>
         );
     }
 
     if (!data || !data.profile) {
         return (
-            <div className="min-h-screen bg-[#0B0B0C] text-white p-4 md:p-8 flex flex-col items-center justify-center space-y-3">
+            <div className="p-8 flex flex-col items-center justify-center space-y-3 text-center">
                 <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
                     <AlertTriangle size={24} />
                 </div>
@@ -342,7 +342,7 @@ export default function TraineeDossierPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B0B0C] text-white p-3 md:p-6 space-y-3 max-w-7xl mx-auto animate-fade-in">
+        <div className="space-y-3 animate-fade-in text-white pb-12">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
             <button
                 onClick={() => (window.history.length > 1 ? router.back() : router.push('/dashboard/mentor'))}
