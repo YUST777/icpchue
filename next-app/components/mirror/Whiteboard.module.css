@@ -58,3 +58,46 @@
 .surface :global(.excalidraw.excalidraw--mobile .App-toolbar-container) {
   max-width: calc(100% - 1rem);
 }
+
+/* Keep the embedded whiteboard focused on the drawing tools. The mobile
+   utility rail and the secondary bottom island duplicate controls that are
+   already available from the main editor, so remove them from this compact
+   workspace. */
+.surface :global(.excalidraw .mobile-misc-tools-container),
+.surface :global(.excalidraw .App-bottom-bar) {
+  display: none !important;
+}
+
+/* Put the primary tool rail on the left and stack each tool vertically. */
+.surface :global(.excalidraw .App-top-bar) {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 0.75rem;
+  width: auto;
+  max-height: calc(100% - 1.5rem);
+  transform: translateY(-50%);
+  overflow: visible;
+  align-items: flex-start;
+}
+
+.surface :global(.excalidraw .App-top-bar > section) {
+  padding: 0;
+}
+
+.surface :global(.excalidraw .App-top-bar .App-toolbar-container) {
+  display: block;
+  width: 2.75rem;
+  max-width: 2.75rem;
+}
+
+.surface :global(.excalidraw .App-top-bar .App-toolbar) {
+  width: 2.75rem;
+}
+
+.surface :global(.excalidraw .App-top-bar .App-toolbar > .Stack_horizontal) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.125rem;
+}
