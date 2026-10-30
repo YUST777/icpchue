@@ -185,7 +185,7 @@ export default function TestCaseTab({
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 flex-1 min-h-0">
+                    <div className="flex flex-col md:grid md:grid-cols-2 gap-3 md:gap-4 flex-1 min-h-0">
                         <div className="flex flex-col min-h-0">
                             <label className="text-[10px] md:text-xs font-medium text-[#888] mb-1.5 md:mb-2 block uppercase tracking-wider">
                                 Input <span className="text-red-400">*</span>
@@ -194,7 +194,7 @@ export default function TestCaseTab({
                                 value={formInput}
                                 onChange={(e) => setFormInput(e.target.value)}
                                 placeholder="Enter test input..."
-                                className="w-full h-24 md:h-40 bg-[#252526] border border-white/10 rounded-lg p-2 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
+                                className="w-full h-28 md:h-40 bg-[#252526] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                         <div className="flex flex-col min-h-0">
@@ -205,7 +205,7 @@ export default function TestCaseTab({
                                 value={formOutput}
                                 onChange={(e) => setFormOutput(e.target.value)}
                                 placeholder="Enter expected output..."
-                                className="w-full h-24 md:h-40 bg-[#252526] border border-white/10 rounded-lg p-2 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
+                                className="w-full h-28 md:h-40 bg-[#252526] border border-white/10 rounded-lg p-2.5 md:p-3 text-xs md:text-sm font-mono text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#E8C15A]/50 resize-none scrollbar-thin scrollbar-thumb-white/10"
                             />
                         </div>
                     </div>
@@ -230,10 +230,9 @@ export default function TestCaseTab({
 
             {/* Selected Test Case Details */}
             {!showAddForm && editingIndex === null && testCases[selectedTestCase] && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 flex-1 min-h-0">
-                    {/* Input (Left on mobile, Col 1 on desktop) */}
-                    <div className="flex flex-col min-h-0">
-                        <div className="flex items-center justify-between mb-1 shrink-0">
+                <div className="flex flex-col md:grid md:grid-cols-3 gap-3 md:gap-3 flex-1 md:min-h-0">
+                    <div className="flex flex-col shrink-0 md:shrink md:flex-1 md:min-h-0">
+                        <div className="flex items-center justify-between mb-1.5 shrink-0">
                             <label className="text-[10px] md:text-xs font-semibold text-[#888] uppercase tracking-wider">Input</label>
                             {isCustomTestCase(selectedTestCase) && onUpdateTestCase && (
                                 <button
@@ -245,24 +244,22 @@ export default function TestCaseTab({
                                 </button>
                             )}
                         </div>
-                        <div className="bg-[#252526] rounded-lg p-2 sm:p-2.5 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-24 sm:h-28 md:h-full md:flex-1">
+                        <div className="bg-[#252526] rounded-lg p-2.5 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 min-h-[44px] max-h-[140px] md:max-h-none md:flex-1">
                             {testCases[selectedTestCase].input || <span className="italic text-[#555]">Empty input</span>}
                         </div>
                     </div>
-
-                    {/* Expected Output (Right on mobile, Col 2 on desktop) */}
-                    <div className="flex flex-col min-h-0">
-                        <div className="flex items-center justify-between mb-1 shrink-0">
+                    <div className="flex flex-col shrink-0 md:shrink md:flex-1 md:min-h-0">
+                        <div className="flex items-center justify-between mb-1.5 shrink-0">
                             <label className="text-[10px] md:text-xs font-semibold text-[#888] uppercase tracking-wider">Expected Output</label>
                         </div>
-                        <div className="bg-[#252526] rounded-lg p-2 sm:p-2.5 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-24 sm:h-28 md:h-full md:flex-1">
+                        <div className="bg-[#252526] rounded-lg p-2.5 border border-white/5 font-mono text-xs text-[#d4d4d4] whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 min-h-[44px] max-h-[140px] md:max-h-none md:flex-1">
                             {testCases[selectedTestCase].output || testCases[selectedTestCase].expectedOutput || <span className="italic text-[#555]">No expected output</span>}
                         </div>
                     </div>
 
-                    {/* Actual Output (Bottom on mobile spanning 2 cols, Col 3 on desktop) */}
-                    <div className="flex flex-col min-h-0 col-span-2 md:col-span-1">
-                        <div className="flex items-center justify-between mb-1 shrink-0">
+                    {/* Actual Output */}
+                    <div className="flex flex-col shrink-0 md:shrink md:flex-1 md:min-h-0">
+                        <div className="flex items-center justify-between mb-1.5 shrink-0">
                             <label className="text-[10px] md:text-xs font-semibold text-[#888] uppercase tracking-wider">Actual Output</label>
                             {result && result.results[selectedTestCase] && (
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${result.results[selectedTestCase].passed ? 'bg-[#E8C15A]/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
@@ -270,7 +267,7 @@ export default function TestCaseTab({
                                 </span>
                             )}
                         </div>
-                        <div className={`bg-[#252526] rounded-lg p-2 sm:p-2.5 border font-mono text-xs whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 h-20 sm:h-24 md:h-full md:flex-1 ${result && result.results[selectedTestCase]
+                        <div className={`bg-[#252526] rounded-lg p-2.5 border font-mono text-xs whitespace-pre-wrap leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 min-h-[44px] max-h-[140px] md:max-h-none md:flex-1 ${result && result.results[selectedTestCase]
                             ? result.results[selectedTestCase].passed
                                 ? 'border-[#E8C15A]/20 text-[#d4d4d4]'
                                 : 'border-red-500/20 text-red-300'

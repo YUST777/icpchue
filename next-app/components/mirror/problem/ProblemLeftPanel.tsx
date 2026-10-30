@@ -94,7 +94,7 @@ function ProblemLeftPanel({
         <div
             ref={leftPanelRef}
             id="onboarding-left-panel"
-            className="problem-panel flex flex-col bg-[#0B0B0C] border-r border-white/5 relative w-1/2 md:w-[var(--panel-width)] shrink-0 md:flex-none min-w-0 h-full overflow-hidden"
+            className={`problem-panel flex flex-col bg-[#0B0B0C] border-r border-white/5 relative ${mobileView === 'code' ? 'hidden md:flex md:w-0 md:flex-none' : 'flex w-full md:w-[var(--panel-width)] md:flex-none'} min-w-0 h-full overflow-hidden`}
             data-lenis-prevent="true"
             style={{
                 '--panel-width': `${lastWidth.current}%`,
