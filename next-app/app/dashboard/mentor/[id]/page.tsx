@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertTriangle, ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock, Circle, Search, BarChart3, ArrowLeft } from 'lucide-react';
 import { TraineeProfileCard } from '@/components/dashboard/mentor/TraineeProfileCard';
@@ -344,12 +345,12 @@ export default function TraineeDossierPage() {
     return (
         <div className="space-y-3 animate-fade-in text-white pb-12">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
-            <button
-                onClick={() => (window.history.length > 1 ? router.back() : router.push('/dashboard/mentor'))}
-                className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-1"
+            <Link
+                href="/dashboard/mentor"
+                className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-1 transition-colors"
             >
                 <ArrowLeft size={14} /> All trainees
-            </button>
+            </Link>
 
             <TraineeProfileCard 
                 profile={profile}

@@ -234,6 +234,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [transitionsEnabled, setTransitionsEnabled] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [starCount, setStarCount] = useState<number | null>(null);
+
+    // Fetch GitHub stars count
+    useEffect(() => {
+        fetch('/api/github/stars')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && typeof data.stars === 'number') {
+                    setStarCount(data.stars);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     // This is intentionally client-triggered: serverless functions may be
     // terminated as soon as /api/auth/me responds, so background work belongs
@@ -451,13 +464,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }, [pathname]);
 
     const handleBack = () => {
-        if (typeof window !== 'undefined' && window.history.state && window.history.state.idx > 0) {
-            router.back();
-            return;
-        }
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length <= 1) {
-            router.push('/');
+            router.push('/dashboard');
             return;
         }
         const parentPath = '/' + segments.slice(0, -1).join('/');
@@ -542,10 +551,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </Link>
                     <div className="flex items-center gap-3">
-                        <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Support ICPC HUE on GitHub" aria-label="Support ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-xs font-medium text-white/90 hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-95">
-                            <Star size={13} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
-                            <span>Support us</span>
-                        </a>
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
@@ -629,7 +634,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6">
+                                <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-between">
                                     <nav className="flex flex-col gap-6 pt-4">
                                         <NavItem
                                             icon={<Home size={32} />}
@@ -656,6 +661,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             />
                                         )}
                                     </nav>
+
+                                    <div className="pt-6 mt-auto">
+                                        <a
+                                            href="https://github.com/YUST777/icpchue"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-[0.98]"
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <Star size={16} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
+                                                <span className="text-sm font-semibold text-white/90">Support us</span>
+                                            </div>
+                                            {starCount !== null && (
+                                                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-white/10 text-[#E8C15A] border border-[#E8C15A]/20">
+                                                    ★ {starCount}
+                                                </span>
+                                            )}
+                                        </a>
+                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-white/10">
@@ -839,6 +863,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Support ICPC HUE on GitHub" aria-label="Support ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-xs font-medium text-white/90 hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-95">
                                 <Star size={13} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
                                 <span className="hidden sm:inline">Support us</span>
+                                {starCount !== null && (
+                                    <span className="text-[11px] font-mono text-white/50 pl-1 border-l border-white/10 ml-0.5">
+                                        {starCount}
+                                    </span>
+                                )}
                             </a>
                             <div className="relative">
                                 <button

@@ -415,7 +415,7 @@ export default function SheetDetailPage() {
                                     key={problem.id}
                                     href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
-                                        relative group rounded-xl p-4 border transition-all text-center
+                                        relative group rounded-xl pt-5 pb-3 px-2.5 sm:px-3 border transition-all text-center
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/50'
@@ -425,6 +425,23 @@ export default function SheetDetailPage() {
                                     `}
                                     onClick={(e) => !isAvailable && e.preventDefault()}
                                 >
+                                    {isAvailable && (
+                                        <div className="absolute top-1.5 left-2 flex items-center gap-1 text-[10px] text-white/45 group-hover:text-white/80 font-mono tracking-tight transition-colors">
+                                            <Users size={10} className="opacity-70" />
+                                            <span>{problem.solvedCount || 0}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="absolute top-1.5 right-2">
+                                        {!isAvailable ? (
+                                            <Lock size={12} className="text-[#444]" />
+                                        ) : isSolved ? (
+                                            <CheckCircle2 size={13} className="text-green-400" />
+                                        ) : isAttempted ? (
+                                            <XCircle size={13} className="text-red-400" />
+                                        ) : null}
+                                    </div>
+
                                     <div className={`
                                         text-2xl font-bold mb-1
                                         ${isAvailable
@@ -435,27 +452,12 @@ export default function SheetDetailPage() {
                                         {problem.letter}
                                     </div>
 
-                                    <div className="absolute top-2 right-2">
-                                        {!isAvailable ? (
-                                            <Lock size={12} className="text-[#444]" />
-                                        ) : isAttempted && !isSolved ? (
-                                            <XCircle size={14} className="text-red-400" />
-                                        ) : null}
-                                    </div>
-
                                     <div className={`
-                                        text-[10px] truncate mb-1
+                                        text-[10px] truncate
                                         ${isAvailable ? 'text-[#808080]' : 'text-[#333]'}
                                     `}>
                                         {problem.title}
                                     </div>
-
-                                    {isAvailable && (
-                                        <div className="flex items-center justify-center gap-1 mt-1 text-[9px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Users size={10} />
-                                            <span>{problem.solvedCount || 0}</span>
-                                        </div>
-                                    )}
                                 </Link>
                             );
                         })}
