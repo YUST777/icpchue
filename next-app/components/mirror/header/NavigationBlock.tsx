@@ -24,12 +24,12 @@ export function NavigationBlock({
     onShuffle,
 }: NavigationBlockProps) {
     return (
-        <div className="flex items-center rounded-md h-8 overflow-hidden ml-1 sm:ml-2">
+        <div className="flex items-center rounded-lg h-9 overflow-hidden ml-1 sm:ml-2 bg-[#1a1a1a] border border-white/5">
             <Tooltip content="Problem List" position="bottom">
                 {onOpenDrawer ? (
                     <button
                         onClick={onOpenDrawer}
-                        className="flex items-center gap-2 px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-sm whitespace-nowrap"
+                        className="flex items-center gap-2 px-2.5 sm:px-4 lg:px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
                     >
                         <ListVideo size={16} className="opacity-70" />
                         <span className="hidden lg:inline">Problem List</span>
@@ -37,7 +37,7 @@ export function NavigationBlock({
                 ) : (
                     <Link
                         href={navigationBaseUrl}
-                        className="flex items-center gap-2 px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-sm whitespace-nowrap"
+                        className="flex items-center gap-2 px-2.5 sm:px-4 lg:px-6 h-full text-white/80 hover:bg-[#282828] transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
                     >
                         <ListVideo size={16} className="opacity-70" />
                         <span className="hidden lg:inline">Problem List</span>
@@ -55,7 +55,7 @@ export function NavigationBlock({
                             ? `${navigationBaseUrl}/${prevId.trim()}`
                             : "#"
                     }
-                    className={`w-12 h-full flex items-center justify-center transition-colors ${
+                    className={`w-9 sm:w-10 lg:w-12 h-full flex items-center justify-center transition-colors ${
                         prevId
                             ? "text-white/60 hover:text-white hover:bg-[#282828]"
                             : "text-white/20 cursor-not-allowed pointer-events-none"
@@ -76,7 +76,7 @@ export function NavigationBlock({
                             ? `${navigationBaseUrl}/${nextId.trim()}`
                             : "#"
                     }
-                    className={`w-12 h-full flex items-center justify-center transition-colors ${
+                    className={`w-9 sm:w-10 lg:w-12 h-full flex items-center justify-center transition-colors ${
                         nextId
                             ? "text-white/60 hover:text-white hover:bg-[#282828]"
                             : "text-white/20 cursor-not-allowed pointer-events-none"
@@ -99,7 +99,7 @@ export function NavigationBlock({
                                     ? `${navigationBaseUrl}/${rid}`
                                     : "#";
                             })()}
-                            className="w-12 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-[#282828] transition-colors"
+                            className="w-9 sm:w-10 lg:w-12 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-[#282828] transition-colors"
                         >
                             <Shuffle size={14} />
                         </Link>

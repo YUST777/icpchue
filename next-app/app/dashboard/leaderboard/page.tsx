@@ -147,19 +147,19 @@ export default function LeaderboardPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-[#F2F2F2] flex items-center gap-3">
-                            <Trophy className="text-[#E8C15A]" size={28} />
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#F2F2F2] flex items-center gap-2.5 sm:gap-3">
+                            <Trophy className="text-[#E8C15A] shrink-0" size={26} />
                             Leaderboard
                         </h2>
-                        <p className="text-[#A0A0A0] mt-1 ml-10">
+                        <p className="text-[#A0A0A0] text-xs sm:text-sm mt-1 sm:ml-9">
                             Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams
                         </p>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="border-b border-white/10">
-                    <div className="flex gap-6">
+                <div className="border-b border-white/10 overflow-x-auto scrollbar-none">
+                    <div className="flex gap-4 sm:gap-6 min-w-max">
                         {([['level0', 'Level 0'], ['level1', 'Level 1']] as const).map(([key, label]) => (
                             <button
                                 key={key}
@@ -205,8 +205,8 @@ export default function LeaderboardPage() {
                             {/* Sheets Header - Mobile Responsive */}
                             <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
                                 <div className="col-span-1">#</div>
-                                <div className="col-span-2 sm:col-span-4">Username</div>
-                                <div className="col-span-3 sm:col-span-3">Solved</div>
+                                <div className="col-span-3 sm:col-span-4">Username</div>
+                                <div className="col-span-2 sm:col-span-3">Solved</div>
                                 <div className="hidden sm:block col-span-2">Accepted</div>
                                 <div className="hidden sm:block col-span-2">Submissions</div>
                             </div>
@@ -215,8 +215,8 @@ export default function LeaderboardPage() {
                                     {Array.from({length: 10}).map((_, i) => (
                                         <div key={i} className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 px-3 sm:px-4 h-[56px] items-center border-b border-white/[0.03]">
                                             <div className="col-span-1"><Skeleton className="h-5 w-5 rounded-full mx-auto" /></div>
-                                            <div className="col-span-2 sm:col-span-4"><Skeleton className="h-4 w-3/4 rounded" /></div>
-                                            <div className="col-span-3"><Skeleton className="h-5 w-10 rounded-full" /></div>
+                                            <div className="col-span-3 sm:col-span-4"><Skeleton className="h-4 w-3/4 rounded" /></div>
+                                            <div className="col-span-2 sm:col-span-3"><Skeleton className="h-5 w-10 rounded-full" /></div>
                                             <div className="hidden sm:block col-span-2"><Skeleton className="h-4 w-8 rounded" /></div>
                                             <div className="hidden sm:block col-span-2"><Skeleton className="h-4 w-8 rounded" /></div>
                                         </div>
@@ -277,7 +277,7 @@ export default function LeaderboardPage() {
                                                         <span className={`text-sm font-bold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
                                                     )}
                                                 </div>
-                                                <div className="col-span-2 sm:col-span-4 min-w-0 flex items-center gap-2">
+                                                <div className="col-span-3 sm:col-span-4 min-w-0 flex items-center gap-2">
                                                     {user.studentId ? (
                                                         <Link href={`/dashboard/profile/${user.studentId}`} className={`text-sm font-medium hover:text-[#E8C15A] truncate block transition-colors ${isMe ? 'text-[#E8C15A]' : 'text-[#F2F2F2]'}`}>{user.username}</Link>
                                                     ) : (
@@ -285,7 +285,7 @@ export default function LeaderboardPage() {
                                                     )}
                                                     {isMe && <YouBadge />}
                                                 </div>
-                                                <div className="col-span-3">
+                                                <div className="col-span-2 sm:col-span-3">
                                                     <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold ${getSolvedBadge(user.solvedCount)}`}>
                                                         {user.solvedCount}
                                                     </span>

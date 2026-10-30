@@ -10,7 +10,7 @@ import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
 import {
     LayoutDashboard, Trophy, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
-    ChevronRight, ChevronLeft, GraduationCap, Flame, Star
+    ChevronRight, ChevronLeft, GraduationCap, Flame, Star, Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePageTracking } from '@/hooks/usePageTracking';
@@ -120,7 +120,7 @@ function NotificationsDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="notification-dropdown absolute right-0 mt-2 w-[calc(100vw-32px)] sm:w-84 max-w-sm bg-[#111113] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+            className="notification-dropdown fixed left-4 right-4 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-84 max-w-sm mx-auto sm:mx-0 bg-[#111113] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
         >
             <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [transitionsEnabled, setTransitionsEnabled] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     const [starCount, setStarCount] = useState<number | null>(null);
 
     // Fetch GitHub stars count
@@ -550,15 +550,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             />
                         </div>
                     </Link>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className={`notification-trigger w-8 h-8 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
+                                aria-label="Notifications"
+                                className={`notification-trigger min-w-[38px] min-h-[38px] p-2 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
                             >
                                 <Bell size={20} />
                                 {unreadCount > 0 && (
-                                    <div className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
+                                    <div className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
                                         {unreadCount > 9 ? '9+' : unreadCount}
                                     </div>
                                 )}
@@ -574,8 +575,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 )}
                             </AnimatePresence>
                         </div>
-                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1 text-white/80 hover:text-white">
-                            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                            className="min-w-[40px] min-h-[40px] p-2 flex items-center justify-center text-white/80 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                        >
+                            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
                         </button>
                     </div>
                 </div>
@@ -634,30 +639,44 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-between">
-                                    <nav className="flex flex-col gap-6 pt-4">
+                                <div className="flex-1 overflow-y-auto p-5 sm:p-6 flex flex-col justify-between">
+                                    <nav className="flex flex-col gap-4 sm:gap-5 pt-2">
                                         <NavItem
-                                            icon={<Home size={32} />}
+                                            icon={<Home size={26} />}
                                             label="Home"
                                             active={pathname === '/'}
                                             onClick={() => { router.push('/'); setMobileMenuOpen(false); }}
-                                            className="text-lg font-medium"
+                                            className="text-base font-medium"
                                         />
                                         <NavItem
-                                            icon={<Flame size={32} />}
+                                            icon={<Award size={26} />}
+                                            label="Achievements"
+                                            active={activePage === 'Achievements'}
+                                            onClick={() => handleNav('/dashboard/achievements')}
+                                            className="text-base font-medium"
+                                        />
+                                        <NavItem
+                                            icon={<Flame size={26} />}
                                             label="Self Discipline"
                                             active={activePage === 'Self Discipline'}
                                             onClick={() => handleNav('/dashboard/discipline')}
-                                            className="text-lg font-medium"
+                                            className="text-base font-medium"
                                             badge="NEW"
+                                        />
+                                        <NavItem
+                                            icon={<Settings size={26} />}
+                                            label="Settings"
+                                            active={activePage === 'Settings'}
+                                            onClick={() => handleNav('/dashboard/settings')}
+                                            className="text-base font-medium"
                                         />
                                         {isMentor && (
                                             <NavItem
-                                                icon={<GraduationCap size={32} />}
+                                                icon={<GraduationCap size={26} />}
                                                 label="Mentor Panel"
                                                 active={activePage === 'Mentor Panel'}
                                                 onClick={() => handleNav('/dashboard/mentor')}
-                                                className="text-lg font-medium"
+                                                className="text-base font-medium"
                                             />
                                         )}
                                     </nav>

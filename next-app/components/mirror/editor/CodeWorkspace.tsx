@@ -256,6 +256,7 @@ export default function CodeWorkspace({
 
         const handleVerticalMove = (e: MouseEvent | TouchEvent) => {
             if (!isResizingVertical || !editorContainerRef.current) return;
+            if (e.cancelable) e.preventDefault();
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             animationFrameId = requestAnimationFrame(() => {

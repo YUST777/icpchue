@@ -262,7 +262,11 @@ export default function LevelOverviewPage() {
             {showCredits && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowCredits(false)}>
                     <div className="bg-[#181818] border border-white/10 p-6 rounded-2xl max-w-md w-full relative transform scale-100 transition-all shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <button className="absolute top-4 right-4 text-[#666] hover:text-white transition-colors" onClick={() => setShowCredits(false)}>
+                        <button
+                            aria-label="Close"
+                            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[#888] hover:text-white hover:bg-white/5 transition-colors"
+                            onClick={() => setShowCredits(false)}
+                        >
                             <X size={20} />
                         </button>
                         <div className="flex flex-col items-center text-center">

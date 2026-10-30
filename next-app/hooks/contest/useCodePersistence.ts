@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { TEMPLATES } from '@/lib/utils/codeTemplates';
 
 const DEFAULT_LANG = 'cpp';
-const DB_SAVE_DEBOUNCE = 3000; // save to DB every 3s of inactivity
+const DB_SAVE_DEBOUNCE = 1200; // Save to DB after 1.2s of inactivity
 
 interface UseCodePersistenceParams {
     contestId: string;
@@ -20,42 +20,66 @@ export function useCodePersistence({ contestId, problemId }: UseCodePersistenceP
     const [code, setCode] = useState(TEMPLATES[DEFAULT_LANG]);
     const [language, setLanguage] = useState(DEFAULT_LANG);
     const [isHydrated, setIsHydrated] = useState(false);
-    const dbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastSavedRef = useRef<string>('');
 
-    const getKeys = useCallback((lang: string) => {
-        const c = Array.isArray(contestId) ? contestId[0] : contestId;
-        const p = Array.isArray(problemId) ? problemId[0] : problemId;
+    const dbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSavedSigRef = useRef<string>('');
+    const hasUserEditedRef = useRef<boolean>(false);
+    const hasFetchedDbRef = useRef<boolean>(false);
+    const currentRef = useRef({ contestId, problemId, code, language });
+
+    // Keep ref updated synchronously for unmount/lifecycle flush
+    currentRef.current = { contestId, problemId, code, language };
+
+    const getKeys = useCallback((lang: string, cId = contestId, pId = problemId) => {
+        const c = Array.isArray(cId) ? cId[0] : cId;
+        const p = Array.isArray(pId) ? pId[0] : pId;
         return {
             codeKey: `verdict-code-${c}-${p}-${lang}`,
             langKey: `verdict-lang-${c}-${p}`,
         };
     }, [contestId, problemId]);
 
-    // Save to DB (non-blocking)
-    const saveToDb = useCallback((codeVal: string, lang: string) => {
-        if (!contestId || !problemId) return;
-        const sig = `${contestId}:${problemId}:${lang}:${codeVal}`;
-        if (sig === lastSavedRef.current) return;
-        lastSavedRef.current = sig;
+    // Direct flush to DB via keepalive fetch
+    const flushToDb = useCallback((cId: string, pId: string, codeVal: string, langVal: string) => {
+        if (!cId || !pId || !langVal) return;
+        const sig = `${cId}:${pId}:${langVal}:${codeVal}`;
+        if (sig === lastSavedSigRef.current) return;
+        lastSavedSigRef.current = sig;
 
-        fetch('/api/user/code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ contestId, problemId, language: lang, code: codeVal, activeLanguage: lang }),
-            keepalive: true,
-        }).catch(() => {});
-    }, [contestId, problemId]);
+        try {
+            fetch('/api/user/code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    contestId: cId,
+                    problemId: pId,
+                    language: langVal,
+                    code: codeVal,
+                    activeLanguage: langVal,
+                }),
+                keepalive: true,
+            }).catch(() => {});
+        } catch {
+            // Ignore offline/unload errors
+        }
+    }, []);
 
-    const scheduleSave = useCallback((codeVal: string, lang: string) => {
+    const scheduleSave = useCallback((codeVal: string, langVal: string) => {
         if (dbTimerRef.current) clearTimeout(dbTimerRef.current);
-        dbTimerRef.current = setTimeout(() => saveToDb(codeVal, lang), DB_SAVE_DEBOUNCE);
-    }, [saveToDb]);
+        dbTimerRef.current = setTimeout(() => {
+            flushToDb(contestId, problemId, codeVal, langVal);
+            dbTimerRef.current = null;
+        }, DB_SAVE_DEBOUNCE);
+    }, [contestId, problemId, flushToDb]);
 
-    // Hydrate: localStorage first (instant), then DB in background
+    // Initial Hydration: localStorage first (instant), then DB in background for cross-platform sync
     useEffect(() => {
         if (!contestId || !problemId) return;
+
+        let isCurrent = true;
+        hasUserEditedRef.current = false;
+        hasFetchedDbRef.current = false;
 
         // 1. Instant hydrate from localStorage
         const { langKey } = getKeys(DEFAULT_LANG);
@@ -63,99 +87,176 @@ export function useCodePersistence({ contestId, problemId }: UseCodePersistenceP
         const { codeKey } = getKeys(savedLang);
         const savedCode = localStorage.getItem(codeKey);
 
+        const initialCode = savedCode !== null ? savedCode : (TEMPLATES[savedLang] || '');
         setLanguage(savedLang);
-        setCode(savedCode || TEMPLATES[savedLang] || '');
+        setCode(initialCode);
         setIsHydrated(true);
 
-        // 2. Fetch from DB in background — override ONLY if user hasn't typed yet
-        const localCodeAtFetch = savedCode || '';
+        // Mark signature if loaded from local cache so we don't redundantly re-save unchanged template
+        if (savedCode === null) {
+            lastSavedSigRef.current = `${contestId}:${problemId}:${savedLang}:${initialCode}`;
+        }
+
+        // 2. Fetch from DB in background — cross-platform sync without race conditions
         fetch(`/api/user/code?contestId=${contestId}&problemId=${problemId}`, {
             credentials: 'include',
         })
-            .then(r => r.ok ? r.json() : null)
+            .then(r => (r.ok ? r.json() : null))
             .then(data => {
-                if (!data) return;
-                const dbLang = data.activeLanguage || savedLang;
-                const dbEntry = data.codeByLang?.[dbLang];
+                if (!isCurrent || !data) return;
+                hasFetchedDbRef.current = true;
 
-                if (dbEntry?.code && dbEntry.code !== localCodeAtFetch) {
-                    // Only override if the current code is still the same as what we loaded from localStorage
-                    // (i.e., user hasn't started typing yet)
-                    setCode(prev => {
-                        const template = TEMPLATES[savedLang] || '';
-                        if (prev === localCodeAtFetch || prev === template) {
-                            // User hasn't modified — safe to override with DB version
-                            const keys = getKeys(dbLang);
-                            localStorage.setItem(keys.codeKey, dbEntry.code);
-                            localStorage.setItem(keys.langKey, dbLang);
-                            setLanguage(dbLang);
-                            return dbEntry.code;
+                // Sync all languages from DB into localStorage so language switches have cross-platform code
+                if (data.codeByLang && typeof data.codeByLang === 'object') {
+                    for (const [l, entry] of Object.entries<any>(data.codeByLang)) {
+                        if (entry?.code !== undefined) {
+                            const keys = getKeys(l);
+                            // If local device didn't have code for this language, populate from DB
+                            if (!localStorage.getItem(keys.codeKey)) {
+                                localStorage.setItem(keys.codeKey, entry.code);
+                            }
                         }
-                        // User already typed — don't override
-                        return prev;
-                    });
-                } else if (!savedCode && data.activeLanguage) {
-                    setLanguage(data.activeLanguage);
+                    }
+                }
+
+                // If user has NOT typed yet on this device, sync active language and code from DB
+                if (!hasUserEditedRef.current) {
+                    const targetLang = data.activeLanguage || savedLang;
+                    const dbEntry = data.codeByLang?.[targetLang];
+
+                    if (dbEntry && typeof dbEntry.code === 'string') {
+                        const targetKeys = getKeys(targetLang);
+                        localStorage.setItem(targetKeys.codeKey, dbEntry.code);
+                        localStorage.setItem(targetKeys.langKey, targetLang);
+                        lastSavedSigRef.current = `${contestId}:${problemId}:${targetLang}:${dbEntry.code}`;
+                        setLanguage(targetLang);
+                        setCode(dbEntry.code);
+                    } else if (data.activeLanguage && data.activeLanguage !== savedLang) {
+                        setLanguage(data.activeLanguage);
+                        const targetKeys = getKeys(data.activeLanguage);
+                        const localLangCode = localStorage.getItem(targetKeys.codeKey);
+                        setCode(localLangCode !== null ? localLangCode : (TEMPLATES[data.activeLanguage] || ''));
+                    }
                 }
             })
-            .catch(() => {}); // DB fetch failed — localStorage is fine
+            .catch(() => {
+                // Offline or fetch failed — localStorage is active
+            });
+
+        return () => {
+            isCurrent = false;
+        };
     }, [contestId, problemId, getKeys]);
 
-    // Save to localStorage + schedule DB save on code changes
-    useEffect(() => {
-        if (!isHydrated || !contestId || !problemId) return;
+    // User-triggered code change
+    const handleSetCode = useCallback((newCode: string) => {
+        hasUserEditedRef.current = true;
+        setCode(newCode);
+
+        // Save immediately to localStorage
         const { codeKey } = getKeys(language);
-        localStorage.setItem(codeKey, code);
-        scheduleSave(code, language);
-    }, [code, language, contestId, problemId, isHydrated, getKeys, scheduleSave]);
+        try {
+            localStorage.setItem(codeKey, newCode);
+        } catch {}
 
-    // Save language to localStorage
-    useEffect(() => {
-        if (!isHydrated || !contestId || !problemId) return;
-        const { langKey } = getKeys(language);
-        localStorage.setItem(langKey, language);
-    }, [language, contestId, problemId, isHydrated, getKeys]);
+        // Schedule DB sync
+        scheduleSave(newCode, language);
+    }, [language, getKeys, scheduleSave]);
 
-    // Cleanup timer on unmount
+    // User-triggered language switch
+    const handleSetLanguage = useCallback((newLang: string) => {
+        if (newLang === language) return;
+        // Flush any pending save for current language before switching
+        if (dbTimerRef.current) {
+            clearTimeout(dbTimerRef.current);
+            dbTimerRef.current = null;
+            flushToDb(contestId, problemId, code, language);
+        }
+
+        const { codeKey, langKey } = getKeys(newLang);
+        try {
+            localStorage.setItem(langKey, newLang);
+        } catch {}
+
+        const savedCode = localStorage.getItem(codeKey);
+        const nextCode = savedCode !== null ? savedCode : (TEMPLATES[newLang] || '');
+        setLanguage(newLang);
+        setCode(nextCode);
+
+        // Also save activeLanguage preference to DB
+        fetch('/api/user/code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                contestId,
+                problemId,
+                language: newLang,
+                code: nextCode,
+                activeLanguage: newLang,
+            }),
+            keepalive: true,
+        }).catch(() => {});
+    }, [language, code, contestId, problemId, getKeys, flushToDb]);
+
+    // Flush on unmount (e.g. Next.js navigation between problems or back to sheet)
     useEffect(() => {
         return () => {
-            if (dbTimerRef.current) clearTimeout(dbTimerRef.current);
+            if (dbTimerRef.current) {
+                clearTimeout(dbTimerRef.current);
+                dbTimerRef.current = null;
+            }
+            if (hasUserEditedRef.current) {
+                const { contestId: c, problemId: p, code: cd, language: lg } = currentRef.current;
+                flushToDb(c, p, cd, lg);
+            }
         };
-    }, []);
+    }, [flushToDb]);
 
-    // Flush on page close via sendBeacon
+    // Flush on mobile app switch / tab close / visibility hidden
     useEffect(() => {
-        const handleUnload = () => {
-            if (dbTimerRef.current) clearTimeout(dbTimerRef.current);
-            if (contestId && problemId) {
+        const handleFlush = () => {
+            if (dbTimerRef.current) {
+                clearTimeout(dbTimerRef.current);
+                dbTimerRef.current = null;
+            }
+            if (hasUserEditedRef.current) {
+                const { contestId: c, problemId: p, code: cd, language: lg } = currentRef.current;
+                if (!c || !p) return;
                 try {
                     const blob = new Blob(
-                        [JSON.stringify({ contestId, problemId, language, code, activeLanguage: language })],
+                        [JSON.stringify({
+                            contestId: c,
+                            problemId: p,
+                            language: lg,
+                            code: cd,
+                            activeLanguage: lg,
+                        })],
                         { type: 'application/json' }
                     );
                     navigator.sendBeacon('/api/user/code', blob);
                 } catch {
-                    fetch('/api/user/code', {
-                        method: 'POST',
-                        body: JSON.stringify({ contestId, problemId, language, code, activeLanguage: language }),
-                        keepalive: true,
-                        headers: { 'Content-Type': 'application/json' },
-                    }).catch(() => {});
+                    flushToDb(c, p, cd, lg);
                 }
             }
         };
-        window.addEventListener('beforeunload', handleUnload);
-        return () => window.removeEventListener('beforeunload', handleUnload);
-    }, [contestId, problemId, language, code]);
 
-    // Language switch
-    const handleSetLanguage = useCallback((newLang: string) => {
-        if (newLang === language) return;
-        const { codeKey } = getKeys(newLang);
-        const savedCode = localStorage.getItem(codeKey);
-        setCode(savedCode || TEMPLATES[newLang] || '');
-        setLanguage(newLang);
-    }, [language, getKeys]);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                handleFlush();
+            }
+        };
 
-    return { code, setCode, language, setLanguage: handleSetLanguage };
+        window.addEventListener('beforeunload', handleFlush);
+        window.addEventListener('pagehide', handleFlush);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleFlush);
+            window.removeEventListener('pagehide', handleFlush);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [flushToDb]);
+
+    return { code, setCode: handleSetCode, language, setLanguage: handleSetLanguage };
 }

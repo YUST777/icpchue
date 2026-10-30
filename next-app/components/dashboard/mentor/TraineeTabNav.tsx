@@ -27,7 +27,7 @@ interface TraineeTabNavProps {
 
 export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTabNavProps) {
     return (
-        <div className="min-w-0 border-b border-white/[0.08] flex flex-wrap gap-1 bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="min-w-0 border-b border-white/[0.08] flex sm:flex-wrap overflow-x-auto scrollbar-none gap-1 bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;

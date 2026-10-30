@@ -105,8 +105,8 @@ export default function ProblemNotes({ contestId, problemIndex }: ProblemNotesPr
     return (
         <div className="flex flex-col h-full bg-[#121212] overflow-hidden">
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/5 bg-[#1a1a1a] shrink-0">
-                <div className="flex items-center gap-0.5">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/5 bg-[#1a1a1a] shrink-0 overflow-x-auto scrollbar-none">
+                <div className="flex items-center gap-0.5 shrink-0">
                     <ToolbarButton icon={<Type size={16} />} onClick={() => handleToolbarAction('h1')} label="Heading" />
                     <ToolbarButton icon={<Bold size={16} />} onClick={() => handleToolbarAction('bold')} label="Bold" />
                     <ToolbarButton icon={<Italic size={16} />} onClick={() => handleToolbarAction('italic')} label="Italic" />

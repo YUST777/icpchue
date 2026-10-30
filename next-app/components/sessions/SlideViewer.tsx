@@ -91,12 +91,12 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
             <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[#161618] border-t border-white/10">
                 <div className="flex items-center gap-1">
                     <button type="button" onClick={() => go(-1)} disabled={index === 1} aria-label="Previous slide"
-                        className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent">
+                        className="min-w-[36px] min-h-[36px] p-2 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                     <span className="text-xs text-white/60 tabular-nums min-w-[52px] text-center">{index} / {count}</span>
                     <button type="button" onClick={() => go(1)} disabled={index === count} aria-label="Next slide"
-                        className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent">
+                        className="min-w-[36px] min-h-[36px] p-2 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
                         <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
@@ -104,7 +104,7 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
                     <div className="h-full bg-[#E8C15A] transition-all" style={{ width: `${(index / count) * 100}%` }} />
                 </div>
                 <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-                    className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10">
+                    className="min-w-[36px] min-h-[36px] p-2 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                     {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
             </div>

@@ -66,7 +66,7 @@ export default function TestResultTab({ result }: TestResultTabProps) {
                             {r.passed ? <CheckCircle2 size={16} className="text-[#E8C15A]" /> : <XCircle size={16} className="text-red-500" />}
                             <span className="font-medium text-[#d4d4d4]">Test Case {r.testCase}</span>
                         </div>
-                        <div className="flex items-center gap-4 font-mono text-[#888]">
+                        <div className="flex items-center gap-2 sm:gap-4 font-mono text-[#888]">
                             <span>{r.time || '0ms'}</span>
                             <span>{r.memory || '0KB'}</span>
                             <span className={`font-bold w-12 text-right ${r.passed ? 'text-green-400' : 'text-red-400'}`}>

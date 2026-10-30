@@ -270,15 +270,15 @@ function LocalSubmissions({ submissions, loading, onViewCode, hoveredId, setHove
     if (loading) {
         return (
             <div className="flex flex-col space-y-1 p-1">
-                <div className="grid grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-3 py-2 border-b border-white/[0.03]">
+                <div className="grid grid-cols-[minmax(0,1fr)_56px_64px_16px] md:grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-3 md:px-4 py-2 border-b border-white/[0.03]">
                     <Skeleton className="h-3 w-16" />
                     <Skeleton className="h-3 w-12 ml-auto" />
                     <Skeleton className="h-3 w-12 ml-auto" />
-                    <Skeleton className="h-3 w-10 ml-auto" />
-                    <Skeleton className="h-3 w-12 ml-auto" />
+                    <Skeleton className="hidden md:block h-3 w-10 ml-auto" />
+                    <Skeleton className="hidden md:block h-3 w-12 ml-auto" />
                 </div>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-3 py-3 items-center">
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_56px_64px_16px] md:grid-cols-[1fr_80px_80px_72px_120px_28px] gap-2 px-3 md:px-4 py-3 items-center">
                         <Skeleton className="h-10 w-full rounded-lg bg-white/[0.02]" />
                     </div>
                 ))}

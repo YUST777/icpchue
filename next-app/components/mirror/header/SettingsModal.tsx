@@ -127,17 +127,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative w-[760px] h-[480px] max-w-[95vw] max-h-[90vh] bg-[#282828] rounded-2xl overflow-hidden flex shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/10"
+                        className="relative w-[760px] h-[540px] max-w-[95vw] max-h-[90vh] bg-[#282828] rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/10"
                     >
                         {/* Sidebar */}
-                        <div className="w-[180px] sm:w-[220px] bg-[#222222] border-r border-white/5 flex flex-col shrink-0">
-                            <div className="p-6 pb-2">
-                                <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                        <div className="w-full sm:w-[200px] md:w-[220px] bg-[#222222] border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col shrink-0">
+                            <div className="p-3 sm:p-6 sm:pb-2">
+                                <h2 className="text-xs sm:text-sm font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
                                     Settings
-                                    <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + S</span>
+                                    <span className="hidden sm:inline-block px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + S</span>
                                 </h2>
                             </div>
-                            <nav className="flex-1 px-3 py-4 space-y-1">
+                            <nav className="flex sm:flex-col px-3 py-2 sm:py-4 gap-1.5 sm:space-y-1 overflow-x-auto">
                                 {[
                                     { name: "Code Editor", icon: Code },
                                     { name: "Shortcuts", icon: Keyboard },
@@ -148,7 +148,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <button
                                             key={tab.name}
                                             onClick={() => setActiveTab(tab.name as Tab)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                                            className={`flex-1 sm:w-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-200 whitespace-nowrap ${
                                                 isActive
                                                     ? "bg-white/10 text-white font-medium shadow-sm"
                                                     : "text-white/50 hover:text-white hover:bg-white/5"

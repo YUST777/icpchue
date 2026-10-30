@@ -54,20 +54,22 @@ export function MobileViewToggle({
         <div className="flex md:hidden bg-[#1a1a1a] p-0.5 rounded-lg border border-white/10 shrink-0">
             <button
                 onClick={() => setMobileView("problem")}
-                className={`p-2 rounded-md transition-all ${
+                aria-label="View problem statement"
+                className={`min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-all text-xs font-semibold ${
                     mobileView === "problem"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-white/40 hover:text-white/60"
+                        ? "bg-[#2a2a2a] text-white shadow-sm border border-white/10"
+                        : "text-white/40 hover:text-white/60 active:bg-white/5"
                 }`}
             >
                 <FileText size={14} strokeWidth={2.5} />
             </button>
             <button
                 onClick={() => setMobileView("code")}
-                className={`p-2 rounded-md transition-all ${
+                aria-label="View code editor"
+                className={`min-w-[36px] h-8 px-2 flex items-center justify-center gap-1 rounded-md transition-all text-xs font-semibold ${
                     mobileView === "code"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-white/40 hover:text-white/60"
+                        ? "bg-[#2a2a2a] text-white shadow-sm border border-white/10"
+                        : "text-white/40 hover:text-white/60 active:bg-white/5"
                 }`}
             >
                 <Code size={14} strokeWidth={2.5} />

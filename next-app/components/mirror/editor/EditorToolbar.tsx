@@ -127,7 +127,7 @@ export default function EditorToolbar({
                     )}
                 </div>
 
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-2 sm:gap-3 md:gap-4 items-center">
                     <span className="hidden md:inline-flex">
                     <Tooltip content="Bookmark" position="bottom">
                         <Bookmark className='w-4 text-white/40 hover:text-white cursor-pointer transition-colors' />
@@ -161,27 +161,27 @@ export default function EditorToolbar({
                     </span>
 
                     {/* Phones: the header has no room for Run / Submit, so they live here. */}
-                    <div className="flex md:hidden items-center gap-1.5">
+                    <div className="flex md:hidden items-center gap-1.5 ml-1">
                         {onRunTests && (
                             <button
                                 type="button"
                                 onClick={onRunTests}
                                 disabled={submitting}
                                 aria-label="Run tests"
-                                className="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 text-xs font-semibold active:bg-white/10 disabled:opacity-50"
+                                className="h-8 px-2 sm:px-3 flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 text-xs font-semibold active:bg-white/10 disabled:opacity-50"
                             >
-                                <Play size={13} fill="currentColor" />
+                                <Play size={12} fill="currentColor" />
                                 Run
                             </button>
                         )}
                         <button
                             type="button"
-                            onClick={onSubmit}
+                            onClick={handleSubmitClick}
                             disabled={submitting}
                             aria-label="Submit to Codeforces"
-                            className="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-[#E8C15A] text-black text-xs font-bold active:bg-[#F0D06A] disabled:opacity-50"
+                            className="h-8 px-2.5 sm:px-3 flex items-center gap-1.5 rounded-lg bg-[#E8C15A] text-black text-xs font-bold active:bg-[#F0D06A] disabled:opacity-50"
                         >
-                            <CloudUpload size={14} />
+                            <CloudUpload size={13} />
                             Submit
                         </button>
                     </div>

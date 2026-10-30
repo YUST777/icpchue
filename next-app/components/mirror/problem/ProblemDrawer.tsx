@@ -334,15 +334,15 @@ export default function ProblemDrawer({
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="fixed left-0 top-0 bottom-0 w-[380px] max-w-[85vw] bg-[#0f0f0f] border-r border-white/8 z-[999] flex flex-col shadow-2xl"
+                        className="fixed left-0 top-0 bottom-0 w-[88vw] sm:w-[380px] max-w-[92vw] bg-[#0f0f0f] border-r border-white/8 z-[999] flex flex-col shadow-2xl"
                     >
                         {/* ─── Header ─── */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 shrink-0">
+                        <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-white/8 shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#E8C15A] animate-pulse" />
                                 <h2 className="text-sm font-semibold text-white/90 flex items-center gap-2">
                                     Problem List
-                                    <span className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + P</span>
+                                    <span className="hidden sm:inline-block px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/20">Alt + P</span>
                                 </h2>
                                 {sheet && (
                                     <span className="text-[10px] text-white/40 font-mono ml-1">
@@ -352,9 +352,10 @@ export default function ProblemDrawer({
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-1.5 text-white/40 hover:text-white hover:bg-white/5 rounded-md transition-all"
+                                aria-label="Close drawer"
+                                className="min-w-[36px] min-h-[36px] p-2 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all"
                             >
-                                <X size={16} />
+                                <X size={18} />
                             </button>
                         </div>
 
