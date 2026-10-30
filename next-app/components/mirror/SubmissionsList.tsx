@@ -217,14 +217,26 @@ export default function SubmissionsList({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex items-center gap-0 border-b border-white/[0.06] mb-1">
+            <div className="flex items-center gap-0 border-b border-white/[0.06] mb-1 relative">
                 <button onClick={() => setMode('local')} className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${mode === 'local' ? 'text-white' : 'text-[#666] hover:text-[#999]'}`}>
                     Your Submissions
-                    {mode === 'local' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]" />}
+                    {mode === 'local' && (
+                        <motion.div
+                            layoutId="submissions-tab-active-bar"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]"
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                    )}
                 </button>
                 <button onClick={() => setMode('global')} className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${mode === 'global' ? 'text-white' : 'text-[#666] hover:text-[#999]'}`}>
                     Global Feed
-                    {mode === 'global' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]" />}
+                    {mode === 'global' && (
+                        <motion.div
+                            layoutId="submissions-tab-active-bar"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E8C15A]"
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                        />
+                    )}
                 </button>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar">

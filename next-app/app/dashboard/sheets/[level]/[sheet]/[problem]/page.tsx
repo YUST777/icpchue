@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { OnMount } from '@monaco-editor/react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 // Subfolder components (Verdict structure)
 import { ProblemHeader, ProblemLeftPanel, ProblemDrawer } from '@/components/mirror/problem';
@@ -210,6 +211,13 @@ function MirrorUI({
         if (expanded !== isWhiteboardExpanded) toggleExpanded();
     }, [isWhiteboardExpanded, toggleExpanded]);
     const [mobileView, setMobileView] = useState<'problem' | 'code'>('problem');
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const updateMobile = () => setIsMobile(window.innerWidth < 768);
+        updateMobile();
+        window.addEventListener('resize', updateMobile);
+        return () => window.removeEventListener('resize', updateMobile);
+    }, []);
     const [isTestPanelVisible, setIsTestPanelVisible] = useState(false);
     const [testPanelActiveTab, setTestPanelActiveTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
 
@@ -614,78 +622,94 @@ function MirrorUI({
                 />
 
                 <div ref={containerRef} className="relative flex-1 flex overflow-hidden">
-                    <ProblemLeftPanel
-                        activeTab={activeTab}
-                        setActiveTab={trackedSetActiveTab}
-                        isWhiteboardExpanded={isWhiteboardExpanded}
-                        setIsWhiteboardExpanded={handleSetWhiteboardExpanded}
-                        cfData={cfData}
-                        submissions={submissions}
-                        submissionsLoading={submissionsLoading}
-                        statsLoading={statsLoading}
-                        stats={stats}
-                        cfStats={cfStats}
-                        contestId={contestId}
-                        problemId={problemId}
-                        whiteboardHeight={whiteboardHeight}
-                        handleWhiteboardResizeStart={handleWhiteboardResizeStart}
-                        analyzeComplexity={noopAnalyze}
-                        complexityLoading={false}
-                        leftPanelRef={leftPanelRef}
-                        lastWidth={lastWidth}
-                        mobileView={mobileView}
-                        cfHandle={cfHandle}
-                        handleLoading={handleLoading}
-                        onHandleSave={trackedOnHandleSave}
-                        onViewCode={trackedOnViewCode}
-                        sheetSlug={sheetSlug}
-                        levelSlug={levelSlug}
-                        urlType={urlType}
-                        groupId={groupId}
-                        showNotes={showNotes}
-                        setShowNotes={trackedSetShowNotes}
-                    />
-
-                    {/* Panel Resizer */}
-                    <div
-                        className="hidden md:block w-1 bg-white/5 hover:bg-[#E8C15A]/50 cursor-col-resize transition-colors relative group shrink-0"
-                        onMouseDown={handleMouseDown}
+                    <motion.div
+                        className="flex w-[200%] md:w-full h-full flex-row"
+                        animate={{
+                            x: isMobile ? (mobileView === 'problem' ? '0%' : '-50%') : '0%'
+                        }}
+                        transition={{
+                            type: 'spring',
+                            stiffness: 380,
+                            damping: 38
+                        }}
+                        style={{
+                            transform: isMobile ? undefined : 'none',
+                            willChange: 'transform',
+                        }}
                     >
-                        <div className="absolute inset-y-0 -left-1 -right-1" />
-                    </div>
+                        <ProblemLeftPanel
+                            activeTab={activeTab}
+                            setActiveTab={trackedSetActiveTab}
+                            isWhiteboardExpanded={isWhiteboardExpanded}
+                            setIsWhiteboardExpanded={handleSetWhiteboardExpanded}
+                            cfData={cfData}
+                            submissions={submissions}
+                            submissionsLoading={submissionsLoading}
+                            statsLoading={statsLoading}
+                            stats={stats}
+                            cfStats={cfStats}
+                            contestId={contestId}
+                            problemId={problemId}
+                            whiteboardHeight={whiteboardHeight}
+                            handleWhiteboardResizeStart={handleWhiteboardResizeStart}
+                            analyzeComplexity={noopAnalyze}
+                            complexityLoading={false}
+                            leftPanelRef={leftPanelRef}
+                            lastWidth={lastWidth}
+                            mobileView={mobileView}
+                            cfHandle={cfHandle}
+                            handleLoading={handleLoading}
+                            onHandleSave={trackedOnHandleSave}
+                            onViewCode={trackedOnViewCode}
+                            sheetSlug={sheetSlug}
+                            levelSlug={levelSlug}
+                            urlType={urlType}
+                            groupId={groupId}
+                            showNotes={showNotes}
+                            setShowNotes={trackedSetShowNotes}
+                        />
 
-                    {/* Confetti + chime + hype banner on a confirmed Accepted */}
-                    <AcceptedCelebration cfStatus={cfStatus} />
+                        {/* Panel Resizer */}
+                        <div
+                            className="hidden md:block w-1 bg-white/5 hover:bg-[#E8C15A]/50 cursor-col-resize transition-colors relative group shrink-0"
+                            onMouseDown={handleMouseDown}
+                        >
+                            <div className="absolute inset-y-0 -left-1 -right-1" />
+                        </div>
 
-                    <CodeWorkspace
-                        code={code}
-                        setCode={setCode}
-                        submitting={submitting}
-                        isRunningTests={testSubmitting}
-                        isSubmittingCF={cfSubmitting}
-                        onSubmit={trackedOnSubmit}
-                        onRunTests={trackedOnRunTests}
-                        handleEditorDidMount={handleEditorDidMount}
-                        isTestPanelVisible={isTestPanelVisible}
-                        setIsTestPanelVisible={setIsTestPanelVisible}
-                        testCases={testCases}
-                        result={result}
-                        cfStatus={cfStatus}
-                        mobileView={mobileView}
-                        language={language}
-                        setLanguage={trackedSetLanguage}
-                        contestId={contestId}
-                        problemId={problemId}
-                        urlType={urlType}
-                        groupId={groupId}
-                        testPanelActiveTab={testPanelActiveTab}
-                        setTestPanelActiveTab={setTestPanelActiveTab}
-                        onAddTestCase={handleAddTestCase}
-                        onDeleteTestCase={handleDeleteTestCase}
-                        onUpdateTestCase={handleUpdateTestCase}
-                        sampleTestCasesCount={sampleTestCasesCount}
-                        problemTitle={cfData.meta.title}
-                    />
+                        {/* Confetti + chime + hype banner on a confirmed Accepted */}
+                        <AcceptedCelebration cfStatus={cfStatus} />
+
+                        <CodeWorkspace
+                            code={code}
+                            setCode={setCode}
+                            submitting={submitting}
+                            isRunningTests={testSubmitting}
+                            isSubmittingCF={cfSubmitting}
+                            onSubmit={trackedOnSubmit}
+                            onRunTests={trackedOnRunTests}
+                            handleEditorDidMount={handleEditorDidMount}
+                            isTestPanelVisible={isTestPanelVisible}
+                            setIsTestPanelVisible={setIsTestPanelVisible}
+                            testCases={testCases}
+                            result={result}
+                            cfStatus={cfStatus}
+                            mobileView={mobileView}
+                            language={language}
+                            setLanguage={trackedSetLanguage}
+                            contestId={contestId}
+                            problemId={problemId}
+                            urlType={urlType}
+                            groupId={groupId}
+                            testPanelActiveTab={testPanelActiveTab}
+                            setTestPanelActiveTab={setTestPanelActiveTab}
+                            onAddTestCase={handleAddTestCase}
+                            onDeleteTestCase={handleDeleteTestCase}
+                            onUpdateTestCase={handleUpdateTestCase}
+                            sampleTestCasesCount={sampleTestCasesCount}
+                            problemTitle={cfData.meta.title}
+                        />
+                    </motion.div>
                 </div>
 
                 {/* Submission Detail Modal */}

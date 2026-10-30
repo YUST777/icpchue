@@ -1,5 +1,6 @@
 import { FileText, History, BarChart2, PenTool, PlayCircle } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { motion } from 'framer-motion';
 
 interface ProblemTabsProps {
     activeTab: 'description' | 'submissions' | 'analytics' | 'solution';
@@ -16,14 +17,14 @@ export default function ProblemTabs({
 }: ProblemTabsProps) {
     return (
         <div
-            className="flex border-b border-white/10 bg-[#1a1a1a] overflow-x-auto overflow-y-hidden scrollbar-hide shrink-0"
+            className="flex border-b border-white/10 bg-[#1a1a1a] overflow-x-auto overflow-y-hidden scrollbar-hide shrink-0 relative"
             data-lenis-prevent
             style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
         >
             <button
                 id="onboarding-tab-description"
                 onClick={() => setActiveTab('description')}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] ${activeTab === 'description' ? 'text-white border-b-2 border-[#E8C15A] bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] relative ${activeTab === 'description' ? 'text-white bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
             >
                 <Tooltip content="Problem Description" position="bottom">
                     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -31,12 +32,19 @@ export default function ProblemTabs({
                         <span className="whitespace-nowrap">Description</span>
                     </div>
                 </Tooltip>
+                {activeTab === 'description' && (
+                    <motion.div
+                        layoutId="problem-tabs-active-bar"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E8C15A]"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
             </button>
 
             <button
                 id="onboarding-tab-submissions"
                 onClick={() => setActiveTab('submissions')}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] ${activeTab === 'submissions' ? 'text-white border-b-2 border-[#E8C15A] bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] relative ${activeTab === 'submissions' ? 'text-white bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
             >
                 <Tooltip content="View Submissions" position="bottom">
                     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -44,12 +52,19 @@ export default function ProblemTabs({
                         <span className="whitespace-nowrap">Submissions</span>
                     </div>
                 </Tooltip>
+                {activeTab === 'submissions' && (
+                    <motion.div
+                        layoutId="problem-tabs-active-bar"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E8C15A]"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
             </button>
 
             <button
                 id="onboarding-tab-analytics"
                 onClick={() => setActiveTab('analytics')}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] ${activeTab === 'analytics' ? 'text-white border-b-2 border-[#E8C15A] bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] relative ${activeTab === 'analytics' ? 'text-white bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
             >
                 <Tooltip content="Problem Analytics" position="bottom">
                     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -57,12 +72,19 @@ export default function ProblemTabs({
                         <span className="whitespace-nowrap">Analytics</span>
                     </div>
                 </Tooltip>
+                {activeTab === 'analytics' && (
+                    <motion.div
+                        layoutId="problem-tabs-active-bar"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E8C15A]"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
             </button>
 
             <button
                 id="onboarding-tab-solution"
                 onClick={() => setActiveTab('solution')}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] ${activeTab === 'solution' ? 'text-white border-b-2 border-[#E8C15A] bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors touch-manipulation shrink-0 min-h-[44px] relative ${activeTab === 'solution' ? 'text-white bg-[#121212]' : 'text-[#666] active:text-[#A0A0A0]'}`}
             >
                 <Tooltip content="View Solution" position="bottom">
                     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -70,6 +92,13 @@ export default function ProblemTabs({
                         <span className="whitespace-nowrap">Solution</span>
                     </div>
                 </Tooltip>
+                {activeTab === 'solution' && (
+                    <motion.div
+                        layoutId="problem-tabs-active-bar"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E8C15A]"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                )}
             </button>
 
             <button

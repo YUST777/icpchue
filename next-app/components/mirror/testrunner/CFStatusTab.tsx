@@ -4,7 +4,6 @@ import {
     XCircle,
     Loader2,
     ExternalLink,
-    Send,
     AlertTriangle
 } from 'lucide-react';
 import { CFSubmissionStatus } from '../types';
@@ -103,12 +102,9 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
     const isPhone = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     if ((!cfStatus || cfStatus.status === 'idle') && !isExtensionInstalled && isPhone) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-[#888] gap-3 p-4 text-center">
-                <div className="w-14 h-14 rounded-full bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20">
-                    <Send size={24} />
-                </div>
-                <p className="text-base font-bold text-white">Submitting from your phone</p>
-                <p className="text-sm leading-relaxed max-w-xs">
+            <div className="flex flex-col items-center justify-center h-full text-[#888] gap-2 p-3 text-center">
+                <p className="text-sm font-bold text-white">Submitting from your phone</p>
+                <p className="text-xs leading-relaxed max-w-xs text-white/70">
                     Press <span className="text-white font-semibold">Submit</span>: your code is copied and Codeforces opens. Paste it there and submit.
                     Your verdict and code sync to ICPC HUE the next time you open it on a computer with Verdict Helper.
                 </p>
@@ -171,8 +167,8 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
         return (
             <div className="h-full flex flex-col space-y-4 p-4 bg-[#252526]/30 rounded-xl border border-white/5 animate-fade-in text-left">
                 <div className="flex items-center gap-3 text-[#E8C15A]">
-                    <div className="p-2 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                        <Send size={20} />
+                    <div className="p-2 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center">
+                        <img src="/icons/codeforces-favicon.png" alt="CF" className="w-5 h-5 shrink-0" />
                     </div>
                     <div>
                         <h3 className="font-bold text-sm text-white">Sync your Codeforces submissions</h3>
@@ -359,7 +355,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
                         ) : cfStatus.status === 'error' ? (
                             <XCircle size={18} />
                         ) : (
-                            <Send size={18} />
+                            <img src="/icons/codeforces-favicon.png" alt="CF" className="w-4 h-4 shrink-0" />
                         )}
                     </div>
                     <div className="flex-1">
