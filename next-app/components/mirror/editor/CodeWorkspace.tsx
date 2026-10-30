@@ -24,6 +24,7 @@ const GradiaExportModal = dynamic(() => import('../GradiaExportModal'), {
 const DEFAULT_PANEL_PERCENT = 45;
 const MAX_PANEL_PERCENT = 50;
 const SNAP_THRESHOLD = 5;
+const DRAG_START_PX = 6;
 const PANEL_TAB_BAR_HEIGHT = 42;
 
 interface CodeWorkspaceProps {
@@ -89,6 +90,7 @@ export default function CodeWorkspace({
     const [panelContentPercent, setPanelContentPercent] = useState(0);
     const panelPercentRef = useRef(0);
     panelPercentRef.current = panelContentPercent;
+    const dragRef = useRef({ startY: 0, startPercent: 0, moved: false });
     const panelAnimRef = useRef<{ stop: () => void } | null>(null);
     // Opens/closes the panel with a framer-motion tween instead of a CSS transition.
     const animatePanel = useCallback((to: number) => {
@@ -260,6 +262,8 @@ export default function CodeWorkspace({
     const handleGripMouseDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (e.cancelable) e.preventDefault();
         panelAnimRef.current?.stop();
+        const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        dragRef.current = { startY, startPercent: panelPercentRef.current, moved: false };
         setIsResizingVertical(true);
         document.body.style.cursor = 'row-resize';
         document.body.style.userSelect = 'none';
@@ -289,11 +293,16 @@ export default function CodeWorkspace({
                     clientY = (e as MouseEvent).clientY;
                 }
 
-                const containerRect = editorContainerRef.current.getBoundingClientRect();
-                const totalHeight = containerRect.height;
-                const distFromBottom = containerRect.bottom - clientY;
-                const tabBarFraction = (PANEL_TAB_BAR_HEIGHT / totalHeight) * 100;
-                let newPercent = ((distFromBottom / totalHeight) * 100) - tabBarFraction;
+                // A plain click must not move the panel: wait for a real drag first.
+                const drag = dragRef.current;
+                if (!drag.moved) {
+                    if (Math.abs(clientY - drag.startY) < DRAG_START_PX) return;
+                    drag.moved = true;
+                }
+
+                // Move relative to where the handle was grabbed, so there is no jump.
+                const totalHeight = editorContainerRef.current.getBoundingClientRect().height;
+                let newPercent = drag.startPercent + ((drag.startY - clientY) / totalHeight) * 100;
 
                 if (newPercent <= SNAP_THRESHOLD) {
                     newPercent = 0;
@@ -317,6 +326,7 @@ export default function CodeWorkspace({
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             // Persist final height and tell the parent whether the panel is open
+            if (!dragRef.current.moved) return;
             const final = panelPercentRef.current;
             setIsTestPanelVisible(final > 0);
             if (final > 0) {
