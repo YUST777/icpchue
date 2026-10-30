@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useFitZoom } from "@/hooks/useFitZoom";
 
 // Mirrors the real problem page block for block (ProblemHeader, ProblemTabs,
 // EditorToolbar, collapsed test panel) so nothing jumps when it swaps in.
@@ -10,6 +11,7 @@ const CODE_LINES = [52, 44, 0, 30, 58, 40, 0, 26, 8];
 const DEFAULT_PANEL_WIDTH = 50; // useResizableLayout default
 
 export default function MirrorSkeleton() {
+    const fitZoom = useFitZoom();
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
 
     // Same saved split as the real page, so the divider does not jump.
@@ -23,7 +25,12 @@ export default function MirrorSkeleton() {
     }, []);
 
     return (
-        <div className="fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col overflow-hidden" role="status" aria-label="Loading problem">
+        <div
+            className="mirror-ui fixed inset-0 bg-[#0B0B0C] text-[#DCDCDC] z-50 flex flex-col overflow-hidden"
+            style={{ zoom: fitZoom }}
+            role="status"
+            aria-label="Loading problem"
+        >
             {/* ProblemHeader: px-4 py-2 wrapper, h-12 sm:h-14 row */}
             <div className="border-b border-white/10 bg-[#121212] px-4 py-2 shrink-0">
                 <div className="h-12 sm:h-14 flex items-center justify-between px-3 sm:px-4 relative">

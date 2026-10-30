@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 
 // The problem page is designed for roughly this much space. Smaller windows
 // (laptops, 125%/150% Windows scaling) scale down so everything fits without
@@ -12,28 +12,27 @@ const MAX_ZOOM = 1;
 const MOBILE_BREAKPOINT = 768;
 const MOBILE_ZOOM = 1;
 
-function computeZoom(): number {
-    if (typeof window === 'undefined') return MOBILE_ZOOM;
+export function computeZoom(): number {
+    if (typeof window === 'undefined') return 0.85;
     const { innerWidth: w, innerHeight: h } = window;
     if (w < MOBILE_BREAKPOINT) return MOBILE_ZOOM;
     const fit = Math.min(w / DESIGN_WIDTH, h / DESIGN_HEIGHT);
     return Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, fit)) * 100) / 100;
 }
 
-/** CSS zoom that makes the IDE-style problem page fit the current window. */
-export function useFitZoom(): number {
-    const [zoom, setZoom] = useState(MOBILE_ZOOM);
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-    useEffect(() => {
-        let frame = 0;
+/** CSS zoom that makes the IDE-style problem page fit the current window without initial zoom flicker. */
+export function useFitZoom(): number {
+    const [zoom, setZoom] = useState<number>(() => computeZoom());
+
+    useIsomorphicLayoutEffect(() => {
         const update = () => {
-            cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(() => setZoom(computeZoom()));
+            setZoom(computeZoom());
         };
         update();
         window.addEventListener('resize', update);
         return () => {
-            cancelAnimationFrame(frame);
             window.removeEventListener('resize', update);
         };
     }, []);

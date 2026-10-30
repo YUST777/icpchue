@@ -11,7 +11,6 @@ import { ProblemHeader, ProblemLeftPanel, ProblemDrawer } from '@/components/mir
 import { CodeWorkspace } from '@/components/mirror/editor';
 import type { ActiveSheet } from '@/components/mirror/problem/ProblemDrawer';
 import ExtensionGate from '@/components/core/ExtensionGate';
-import { TestCasesLoader } from '@/components/common/TestCasesLoader';
 import MirrorSkeleton from '@/components/mirror/MirrorSkeleton';
 import dynamic from 'next/dynamic';
 
@@ -108,11 +107,7 @@ export default function ProblemPage() {
 
     // Initial loading state (first time entering any problem)
     if (loading && !meta) {
-        return (
-            <div className="fixed inset-0 bg-[#0B0B0C] flex flex-col items-center justify-center z-50 gap-6">
-                <TestCasesLoader />
-            </div>
-        );
+        return <MirrorSkeleton />;
     }
 
     // Error state (only if we don't have meta yet)
