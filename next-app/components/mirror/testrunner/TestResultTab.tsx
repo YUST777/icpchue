@@ -1,10 +1,12 @@
+'use client';
+
 import {
     CheckCircle2,
     XCircle,
     CloudUpload,
-    Loader2,
-    Terminal
+    Loader2
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { SubmissionResult } from '../types';
 import { getVerdictIcon, getVerdictShort } from './verdictUtils';
 
@@ -18,76 +20,34 @@ export default function TestResultTab({ result, isRunning, testCasesCount = 2 }:
     if (isRunning) {
         const count = Math.max(1, testCasesCount);
         return (
-            <div className="h-full flex flex-col space-y-2.5 animate-fade-in" role="status" aria-label="Evaluating code">
-                {/* Active Judging Header Banner */}
-                <div className="relative overflow-hidden rounded-xl border border-[#E8C15A]/30 bg-gradient-to-r from-[#E8C15A]/[0.08] via-[#E8C15A]/[0.03] to-transparent p-3">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-shimmer" />
-                    <div className="relative flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-[#E8C15A]/15 border border-[#E8C15A]/25 text-[#E8C15A] shadow-[0_0_15px_rgba(232,193,90,0.2)] shrink-0">
-                                <Loader2 size={20} className="animate-spin" />
-                            </div>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-sm md:text-base text-white tracking-wide">
-                                        Evaluating Solution
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#E8C15A] animate-ping" />
-                                        Judging
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-white/50 mt-0.5 font-mono truncate">
-                                    Testing against {count} {count === 1 ? 'test case' : 'test cases'}...
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Minimalist progress bar on desktop */}
-                        <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-                            <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">Local Judge</span>
-                            <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div className="h-full w-2/3 bg-gradient-to-r from-[#E8C15A] to-amber-300 rounded-full animate-pulse" />
-                            </div>
-                        </div>
-                    </div>
+            <motion.div
+                className="h-full flex flex-col gap-3"
+                role="status"
+                aria-label="Running tests"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+            >
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                    <Loader2 size={14} className="animate-spin text-[#E8C15A]" />
+                    <span>Running {count} {count === 1 ? 'test' : 'tests'}</span>
                 </div>
-
-                {/* Shimmering Test Case Skeletons */}
-                <div className="bg-[#252526] rounded-xl border border-white/5 overflow-hidden divide-y divide-white/5">
+                <div className="rounded-xl border border-white/5 bg-[#252526] overflow-hidden divide-y divide-white/5">
                     {Array.from({ length: count }).map((_, idx) => (
-                        <div key={idx} className="relative overflow-hidden flex items-center justify-between p-3 text-xs">
-                            <div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-shimmer"
-                                style={{ animationDelay: `${idx * 180}ms` }}
-                            />
-                            <div className="relative flex items-center gap-3">
-                                <div className="w-4 h-4 rounded-full border-2 border-white/15 border-t-[#E8C15A] animate-spin" />
-                                <div className="flex items-center gap-2">
-                                    <span className="font-medium text-[#d4d4d4]">Test Case {idx + 1}</span>
-                                    <span className="text-[10px] text-white/30 font-mono">running...</span>
-                                </div>
-                            </div>
-                            <div className="relative flex items-center gap-2 sm:gap-4 font-mono text-white/25">
-                                <div className="w-12 h-3.5 bg-white/[0.06] rounded animate-pulse" />
-                                <div className="w-12 h-3.5 bg-white/[0.06] rounded animate-pulse" />
-                                <div className="w-12 h-4 rounded bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center">
-                                    <span className="text-[9px] font-bold text-[#E8C15A]/70">WAIT</span>
-                                </div>
-                            </div>
-                        </div>
+                        <motion.div
+                            key={idx}
+                            className="relative overflow-hidden flex items-center justify-between px-3 py-3 text-xs"
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.06 * idx, duration: 0.25, ease: 'easeOut' }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent animate-shimmer" style={{ animationDelay: `${idx * 150}ms` }} />
+                            <span className="relative text-white/60">Test Case {idx + 1}</span>
+                            <div className="relative h-3 w-16 rounded bg-white/[0.06]" />
+                        </motion.div>
                     ))}
                 </div>
-
-                {/* Sandboxed notice footer */}
-                <div className="p-2.5 rounded-lg border border-white/5 bg-[#1f1f20]/50 flex items-center justify-between text-[11px] text-white/40">
-                    <div className="flex items-center gap-2">
-                        <Terminal size={13} className="text-[#E8C15A]" />
-                        <span>Compiling code and evaluating against testcase assertions</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-white/30 hidden sm:inline">sandboxed</span>
-                </div>
-            </div>
+            </motion.div>
         );
     }
 

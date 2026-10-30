@@ -6,6 +6,7 @@ import EditorToolbar from './EditorToolbar';
 import { SUPPORTED_LANGUAGES } from './EditorConstants';
 import { useEditorStore } from '@/hooks/contest/useEditorStore';
 import dynamic from 'next/dynamic';
+import { animate } from 'framer-motion';
 // Lazy-load clang-format WASM — only loaded when user actually formats
 let formatModule: { format: (code: string, filename: string, style: string) => string } | null = null;
 async function loadFormatter() {
@@ -21,7 +22,7 @@ const GradiaExportModal = dynamic(() => import('../GradiaExportModal'), {
 });
 
 const DEFAULT_PANEL_PERCENT = 45;
-const MAX_PANEL_PERCENT = 75;
+const MAX_PANEL_PERCENT = 50;
 const SNAP_THRESHOLD = 5;
 const PANEL_TAB_BAR_HEIGHT = 42;
 
@@ -86,7 +87,19 @@ export default function CodeWorkspace({
     const wrapperRef = useRef<HTMLDivElement>(null);
     const [isResizingVertical, setIsResizingVertical] = useState(false);
     const [panelContentPercent, setPanelContentPercent] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const panelPercentRef = useRef(0);
+    panelPercentRef.current = panelContentPercent;
+    const panelAnimRef = useRef<{ stop: () => void } | null>(null);
+    // Opens/closes the panel with a framer-motion tween instead of a CSS transition.
+    const animatePanel = useCallback((to: number) => {
+        panelAnimRef.current?.stop();
+        panelAnimRef.current = animate(panelPercentRef.current, to, {
+            duration: 0.32,
+            ease: [0.32, 0.72, 0, 1],
+            onUpdate: (v) => setPanelContentPercent(v),
+            onComplete: () => setPanelContentPercent(to),
+        });
+    }, []);
     const savedHeightRef = useRef(DEFAULT_PANEL_PERCENT);
     const [internalTab, setInternalTab] = useState<'testcase' | 'result' | 'codeforces'>('testcase');
     const [selectedTestCase, setSelectedTestCase] = useState(0);
@@ -137,16 +150,12 @@ export default function CodeWorkspace({
     // Sync: when parent sets isTestPanelVisible=true, expand the panel
     useEffect(() => {
         if (isTestPanelVisible && panelContentPercent === 0) {
-            setIsAnimating(true);
-            setPanelContentPercent(savedHeightRef.current);
-            setTimeout(() => setIsAnimating(false), 300);
+            animatePanel(savedHeightRef.current);
         } else if (!isTestPanelVisible && panelContentPercent > 0) {
             // Parent wants to close — collapse the panel
             savedHeightRef.current = panelContentPercent;
             localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
-            setIsAnimating(true);
-            setPanelContentPercent(0);
-            setTimeout(() => setIsAnimating(false), 300);
+            animatePanel(0);
         }
     }, [isTestPanelVisible]); // Only react to parent's intent, not our own state
 
@@ -154,23 +163,19 @@ export default function CodeWorkspace({
     const expandPanel = useCallback((tab?: 'testcase' | 'result' | 'codeforces') => {
         if (tab) setTestPanelTab(tab);
         if (panelContentPercent === 0) {
-            setIsAnimating(true);
-            setPanelContentPercent(savedHeightRef.current);
+            animatePanel(savedHeightRef.current);
             setIsTestPanelVisible(true);
-            setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [panelContentPercent, setTestPanelTab, setIsTestPanelVisible]);
+    }, [panelContentPercent, setTestPanelTab, setIsTestPanelVisible, animatePanel]);
 
     const collapsePanel = useCallback(() => {
         if (panelContentPercent > 0) {
             savedHeightRef.current = panelContentPercent;
             localStorage.setItem('icpchue-layout-test-height', panelContentPercent.toString());
-            setIsAnimating(true);
-            setPanelContentPercent(0);
+            animatePanel(0);
             setIsTestPanelVisible(false);
-            setTimeout(() => setIsAnimating(false), 300);
         }
-    }, [panelContentPercent, setIsTestPanelVisible]);
+    }, [panelContentPercent, setIsTestPanelVisible, animatePanel]);
 
     const togglePanel = useCallback(() => {
         if (panelContentPercent === 0) {
@@ -233,18 +238,20 @@ export default function CodeWorkspace({
         return () => { editorInstanceRef.current = null; };
     }, []);
 
-    // Auto-switch to result tab when result arrives
+    // Auto-switch to result tab only when a new result arrives, never because the panel was dragged
+    const lastResultRef = useRef(result);
     useEffect(() => {
-        if (result && panelContentPercent > 0) {
+        if (result && result !== lastResultRef.current) {
             setTestPanelTab('result');
         }
-    }, [result, panelContentPercent, setTestPanelTab]);
+        lastResultRef.current = result;
+    }, [result, setTestPanelTab]);
 
     // --- DRAG RESIZE LOGIC (live) ---
     const handleGripMouseDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (e.cancelable) e.preventDefault();
+        panelAnimRef.current?.stop();
         setIsResizingVertical(true);
-        setIsAnimating(false);
         document.body.style.cursor = 'row-resize';
         document.body.style.userSelect = 'none';
         
@@ -432,7 +439,7 @@ export default function CodeWorkspace({
                         ? `${PANEL_TAB_BAR_HEIGHT}px` 
                         : `calc(${panelContentPercent}% + ${PANEL_TAB_BAR_HEIGHT}px)`,
                     maxHeight: `${MAX_PANEL_PERCENT + 5}%`,
-                    transition: isAnimating && !isResizingVertical ? 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    transition: 'none',
                 }}
             >
                 {/* Grip Handle + Tab Bar (always visible) */}
@@ -478,13 +485,9 @@ export default function CodeWorkspace({
                             ) : (
                                 <Play size={14} />
                             )}
-                            {isRunningTests ? (
-                                <span className="text-[#E8C15A] font-semibold">Judging...</span>
-                            ) : (
-                                'Test Result'
-                            )}
+                            Test Result
                             {testPanelTab === 'result' && (
-                                <div className={`absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full ${isRunningTests ? 'animate-pulse' : ''}`} />
+                                <div className={`absolute bottom-0 left-2 right-2 h-[2px] bg-[#E8C15A] rounded-full`} />
                             )}
                         </button>
                         <button
@@ -528,7 +531,6 @@ export default function CodeWorkspace({
                     className="flex-1 min-h-0 overflow-hidden border-t border-white/[0.06]"
                     style={{
                         opacity: isCollapsed ? 0 : 1,
-                        transition: isAnimating ? 'opacity 0.2s ease' : 'none',
                     }}
                 >
                     {!isCollapsed && (
