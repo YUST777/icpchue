@@ -319,10 +319,9 @@ export default function SheetDetailPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: 16 }).map((_, i) => (
-                        <div key={i} className="rounded-xl p-4 border border-white/10 bg-[#121212] flex flex-col items-center">
-                            <Skeleton className="h-8 w-6 rounded mb-1" />
-                            <Skeleton className="h-[15px] w-4/5 rounded mb-1" />
-                            <div className="h-[14px] mt-1" />
+                        <div key={i} className="rounded-xl p-3 sm:p-4 border border-white/10 bg-[#121212] flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]">
+                            <Skeleton className="h-7 w-6 rounded mb-1.5" />
+                            <Skeleton className="h-3 w-4/5 rounded" />
                         </div>
                     ))}
                 </div>
@@ -415,7 +414,7 @@ export default function SheetDetailPage() {
                                     key={problem.id}
                                     href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
-                                        relative group rounded-xl p-4 border transition-all text-center
+                                        relative group rounded-xl p-3 sm:p-4 border transition-all text-center flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/15'
@@ -447,7 +446,7 @@ export default function SheetDetailPage() {
                                     )}
 
                                     <div className={`
-                                        text-2xl font-bold mb-1
+                                        text-2xl font-bold leading-none mb-1 transition-colors
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400'
@@ -461,7 +460,7 @@ export default function SheetDetailPage() {
                                     </div>
 
                                     <div className={`
-                                        text-[10px] truncate mb-1
+                                        w-full text-[10px] truncate leading-tight transition-colors
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400/70 group-hover:text-green-300'
@@ -473,9 +472,6 @@ export default function SheetDetailPage() {
                                     `} title={problem.title}>
                                         {problem.title}
                                     </div>
-
-                                    {/* Preserves the exact height & spacing of the old design */}
-                                    <div className="h-[14px] mt-1" />
                                 </Link>
                             );
                         })}
