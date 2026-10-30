@@ -159,6 +159,15 @@ export default function CodeWorkspace({
         }
     }, [isTestPanelVisible]); // Only react to parent's intent, not our own state
 
+    // Running tests must always reveal the panel, even if the parent still thinks it is open
+    // (dragging the handle to the bottom collapses it without telling the parent).
+    useEffect(() => {
+        if (isRunningTests && panelPercentRef.current === 0) {
+            animatePanel(savedHeightRef.current);
+            setIsTestPanelVisible(true);
+        }
+    }, [isRunningTests]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Expand/collapse helpers
     const expandPanel = useCallback((tab?: 'testcase' | 'result' | 'codeforces') => {
         if (tab) setTestPanelTab(tab);
@@ -307,14 +316,13 @@ export default function CodeWorkspace({
 
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            // Persist final height
-            setPanelContentPercent(prev => {
-                if (prev > 0) {
-                    savedHeightRef.current = prev;
-                    localStorage.setItem('icpchue-layout-test-height', prev.toString());
-                }
-                return prev;
-            });
+            // Persist final height and tell the parent whether the panel is open
+            const final = panelPercentRef.current;
+            setIsTestPanelVisible(final > 0);
+            if (final > 0) {
+                savedHeightRef.current = final;
+                localStorage.setItem('icpchue-layout-test-height', final.toString());
+            }
         };
 
         if (isResizingVertical) {
