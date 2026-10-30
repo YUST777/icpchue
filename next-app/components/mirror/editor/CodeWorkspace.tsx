@@ -55,6 +55,8 @@ interface CodeWorkspaceProps {
     onUpdateTestCase?: (index: number, testCase: Example) => void;
     sampleTestCasesCount?: number;
     problemTitle?: string;
+    urlType?: string;
+    groupId?: string;
 }
 
 export default function CodeWorkspace({
@@ -83,6 +85,8 @@ export default function CodeWorkspace({
     onUpdateTestCase,
     sampleTestCasesCount,
     problemTitle,
+    urlType,
+    groupId,
 }: Omit<CodeWorkspaceProps, 'testPanelHeight' | 'setTestPanelHeight'>) {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -577,6 +581,8 @@ export default function CodeWorkspace({
                                     cfStatus={cfStatus}
                                     contestId={contestId}
                                     problemId={problemId}
+                                    urlType={urlType}
+                                    groupId={groupId}
                                 />
                             )}
                         </div>

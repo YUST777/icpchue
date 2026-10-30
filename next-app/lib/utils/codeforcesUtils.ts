@@ -14,14 +14,14 @@ export function mapLanguageToExtension(lang: string): string {
 
 export function getSubmitUrl(contestId: string, problemId: string, urlType: string, groupId?: string): string {
     const safeContestId = Array.isArray(contestId) ? contestId[0] : contestId;
-    const safeProblemId = Array.isArray(problemId) ? problemId[0] : problemId;
+    const safeProblemId = (Array.isArray(problemId) ? problemId[0] : problemId).toUpperCase();
 
     if (urlType === 'gym') {
-        return `https://codeforces.com/gym/${safeContestId}/submit?problemIndex=${safeProblemId}`;
-    } else if (urlType === 'group' && groupId) {
-        return `https://codeforces.com/group/${groupId}/contest/${safeContestId}/submit?problemIndex=${safeProblemId}`;
+        return `https://codeforces.com/gym/${safeContestId}/submit?submittedProblemIndex=${safeProblemId}&problemIndex=${safeProblemId}`;
+    } else if ((urlType === 'group' || !!groupId) && groupId) {
+        return `https://codeforces.com/group/${groupId}/contest/${safeContestId}/submit?submittedProblemIndex=${safeProblemId}&problemIndex=${safeProblemId}`;
     }
-    return `https://codeforces.com/contest/${safeContestId}/submit?problemIndex=${safeProblemId}`;
+    return `https://codeforces.com/contest/${safeContestId}/submit?submittedProblemIndex=${safeProblemId}&problemIndex=${safeProblemId}`;
 }
 
 export function mapVerdict(v: string | null): string {

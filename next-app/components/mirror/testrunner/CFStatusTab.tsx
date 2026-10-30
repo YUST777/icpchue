@@ -9,14 +9,17 @@ import {
 } from 'lucide-react';
 import { CFSubmissionStatus } from '../types';
 import { getVerdictIcon, getCFStatusColor, getCFStatusBg } from './verdictUtils';
+import { getSubmitUrl } from '@/lib/utils/codeforcesUtils';
 
 interface CFStatusTabProps {
     cfStatus: CFSubmissionStatus | null;
     contestId?: string;
     problemId?: string;
+    urlType?: string;
+    groupId?: string;
 }
 
-export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatusTabProps) {
+export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, groupId }: CFStatusTabProps) {
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
     const [handleInput, setHandleInput] = useState('');
     // The handle was auto-resolved from the extension's active CF session,
@@ -109,6 +112,16 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                     Press <span className="text-white font-semibold">Submit</span>: your code is copied and Codeforces opens. Paste it there and submit.
                     Your verdict and code sync to ICPC HUE the next time you open it on a computer with Verdict Helper.
                 </p>
+                {contestId && problemId && (
+                    <a
+                        href={getSubmitUrl(contestId, problemId, urlType || 'contest', groupId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 flex items-center gap-1.5 px-3 py-1.5 bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 text-[#E8C15A] rounded-lg border border-[#E8C15A]/30 text-xs font-medium transition-colors"
+                    >
+                        Open Codeforces Directly <ExternalLink size={12} />
+                    </a>
+                )}
             </div>
         );
     }
@@ -248,7 +261,7 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                 {contestId && problemId && (
                     <div className="pt-2 flex items-center justify-between border-t border-white/5">
                         <a
-                            href={`https://codeforces.com/contest/${contestId}/submit?problemIndex=${problemId}`}
+                            href={getSubmitUrl(contestId, problemId, urlType || 'contest', groupId)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[10px] text-[#E8C15A] hover:underline transition-colors flex items-center gap-1"
@@ -265,7 +278,11 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
     // states are handled by the sync panel). This guard narrows the type for TS.
     if (!cfStatus) return null;
 
-    const contestBase = cfStatus.contestBaseUrl || `https://codeforces.com/contest/${contestId}`;
+    const contestBase = cfStatus.contestBaseUrl || (
+        (urlType === 'group' || !!groupId) && groupId
+            ? `https://codeforces.com/group/${groupId}/contest/${contestId}`
+            : `https://codeforces.com/contest/${contestId}`
+    );
     const statusColor = getCFStatusColor(cfStatus);
     const statusBg = getCFStatusBg(cfStatus);
 
@@ -378,6 +395,21 @@ export default function CFStatusTab({ cfStatus, contestId, problemId }: CFStatus
                             </div>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Direct Open Submit Button when submitted from mobile/no extension */}
+            {cfStatus.status === 'done' && cfStatus.verdict === 'Submitted' && contestId && problemId && (
+                <div className="pt-1">
+                    <a
+                        href={getSubmitUrl(contestId, problemId, urlType || 'contest', groupId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#E8C15A] hover:bg-[#F0D06A] text-black font-semibold rounded-lg transition-colors text-sm shadow-md"
+                    >
+                        Open Codeforces Submit Page
+                        <ExternalLink size={14} />
+                    </a>
                 </div>
             )}
 

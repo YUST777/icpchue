@@ -45,18 +45,6 @@ export default function EditorToolbar({
     const langButtonRef = useRef<HTMLButtonElement>(null);
     // The menu lives on <body> so the editor's own layers can never draw over it.
     const langRect = isLangOpen ? langButtonRef.current?.getBoundingClientRect() : undefined;
-    const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
-
-    useEffect(() => {
-        const checkExtension = () => {
-            const hasExtension = !!document.getElementById('verdict-extension-installed');
-            setIsExtensionInstalled(hasExtension);
-        };
-
-        checkExtension();
-        const timer = setTimeout(checkExtension, 500);
-        return () => clearTimeout(timer);
-    }, []);
 
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
@@ -89,11 +77,6 @@ export default function EditorToolbar({
     };
 
     const handleSubmitClick = () => {
-        if (!isExtensionInstalled) {
-            alert("The ICPC HUE Helper extension is required to submit code. Please install it from the Extension page.");
-            setIsTestPanelVisible(true);
-            return;
-        }
         onSubmit();
     };
 

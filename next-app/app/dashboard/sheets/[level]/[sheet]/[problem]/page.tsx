@@ -676,6 +676,8 @@ function MirrorUI({
                         setLanguage={trackedSetLanguage}
                         contestId={contestId}
                         problemId={problemId}
+                        urlType={urlType}
+                        groupId={groupId}
                         testPanelActiveTab={testPanelActiveTab}
                         setTestPanelActiveTab={setTestPanelActiveTab}
                         onAddTestCase={handleAddTestCase}

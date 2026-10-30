@@ -87,19 +87,53 @@ export function useCodeforcesSubmission({
                     language,
                 },
             }, window.location.origin);
-            navigator.clipboard?.writeText(code).catch(() => {});
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(code).catch(() => {
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = code;
+                        ta.style.position = 'fixed';
+                        ta.style.left = '-9999px';
+                        ta.style.top = '-9999px';
+                        document.body.appendChild(ta);
+                        ta.focus();
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    } catch {}
+                });
+            }
 
             // 2. Open the Codeforces submit page in a new tab
             const cfUrl = getSubmitUrl(contestId, problemId, urlType, groupId);
-            window.open(cfUrl, '_blank');
+            let win: Window | null = null;
+            try {
+                win = window.open(cfUrl, '_blank');
+            } catch {
+                win = null;
+            }
+            if (!win) {
+                // Popup blocker intercepted window.open on mobile; simulate link click
+                const a = document.createElement('a');
+                a.href = cfUrl;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
 
             // Without the extension (e.g. on a phone, where Chrome has no
             // extensions) nothing pastes or syncs automatically: say so.
             if (!document.getElementById('verdict-extension-installed')) {
+                const contestBaseUrl = (urlType === 'group' || !!groupId) && groupId
+                    ? `https://codeforces.com/group/${groupId}/contest/${contestId}`
+                    : `https://codeforces.com/contest/${contestId}`;
                 setCfStatus({
                     status: 'done',
                     verdict: 'Submitted',
-                    substatus: 'Your code is copied. Paste it in the Codeforces page that just opened and press Submit there. Your verdict syncs to ICPC HUE the next time you open it on a computer with Verdict Helper.',
+                    contestBaseUrl,
+                    substatus: 'Your code is copied to clipboard! Paste it into Codeforces to submit.',
                 });
             }
 
