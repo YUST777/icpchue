@@ -161,11 +161,11 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                 {/* Where they struggle */}
                 <div className="lg:col-span-7 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                             <AlertTriangle size={14} className="text-amber-400" /> Where they struggle
                         </h3>
-                        <button type="button" onClick={() => setShowAll((v) => !v)} className="text-[11px] text-white/50 hover:text-white">
+                        <button type="button" onClick={() => setShowAll((v) => !v)} className="min-h-11 px-2 text-[11px] text-white/50 hover:text-white sm:min-h-0 sm:px-0">
                             {showAll ? 'Only problem spots' : 'All problems'}
                         </button>
                     </div>
@@ -216,7 +216,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
                                     <span className="text-white/80 truncate">{t.key}{t.name ? ` · ${t.name}` : ''}</span>
                                     <span className="text-white tabular-nums font-semibold">{formatDuration(t.active)}</span>
                                 </div>
-                                <div className="text-[11px] text-white/40 mt-0.5 flex items-center gap-2">
+                                <div className="text-[11px] text-white/40 mt-0.5 flex flex-wrap items-center gap-2">
                                     <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-emerald-400" />{t.solved}</span>
                                     <span className="flex items-center gap-1"><XCircle size={10} className="text-red-400" />{t.unsolved}</span>
                                     {t.avgSolve != null && <span className="flex items-center gap-1"><Turtle size={10} />avg {formatDuration(t.avgSolve)}/solve</span>}
@@ -252,7 +252,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
                         ))}
                     </div>
                 )}
-                <div className="mt-3 flex items-center gap-3 text-[10px] text-white/40">
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-white/40">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#E8C15A]" />Active</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/25" />Idle (90s+ no input)</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/10" />Away (other tab)</span>

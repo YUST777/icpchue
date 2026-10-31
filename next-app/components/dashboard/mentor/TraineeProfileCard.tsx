@@ -72,36 +72,48 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
     const kpiMetrics = [
         {
             title: 'Problems Solved',
+            mobileTitle: 'Solved',
+            mobileSubtext: `${solvedPct}% solved`,
             value: solved.toString(),
             subtext: `${solvedPct}% of curriculum`,
             subtextColor: 'text-[#E8C15A]',
         },
         {
             title: 'Attempted',
+            mobileTitle: 'Attempted',
+            mobileSubtext: `${attemptedPct}% pending`,
             value: attempted.toString(),
             subtext: `${attemptedPct}% pending`,
             subtextColor: 'text-amber-400',
         },
         {
             title: 'Not Started',
+            mobileTitle: 'Remaining',
+            mobileSubtext: `${notStartedPct}% left`,
             value: notStarted.toString(),
             subtext: `${notStartedPct}% remaining`,
             subtextColor: 'text-white/40',
         },
         {
             title: 'Current Streak',
+            mobileTitle: 'Streak',
+            mobileSubtext: `Best ${maxStreak}d`,
             value: `${currentStreak}d`,
             subtext: `Best: ${maxStreak}d`,
             subtextColor: 'text-[#E8C15A]',
         },
         {
             title: 'Submissions',
+            mobileTitle: 'Submitted',
+            mobileSubtext: `7d: ${last7d}`,
             value: totalSubs.toString(),
             subtext: `7d: ${last7d}`,
             subtextColor: 'text-blue-400',
         },
         {
             title: 'Time Spent',
+            mobileTitle: 'Study time',
+            mobileSubtext: 'This season',
             value: timeSpent,
             subtext: 'This season',
             subtextColor: 'text-purple-400',
@@ -109,13 +121,13 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
     ];
 
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 md:p-5 shadow-[0_4px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-4">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3 sm:space-y-4">
             {/* Top Row: Identity Info & Navigation */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-1">
-                <div className="min-w-0">
+                <div className="w-full min-w-0 flex-1">
                     {/* Name & Primary Badges */}
                     <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
+                        <h1 className="w-full min-w-0 break-words !text-base sm:w-auto sm:!text-lg font-bold text-white !leading-snug tracking-tight">
                             {profile.name}
                         </h1>
                         <span className="font-mono text-[11px] text-white/50 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
@@ -125,7 +137,7 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
                             {yearLabel(profile.academic_level)}{profile.training_level != null ? ` · Training Lv ${profile.training_level}` : ''}
                         </span>
                         {profile.whatsapp_group && (
-                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+                            <span className="max-w-full break-words text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
                                 {profile.whatsapp_group}{profile.whatsapp_mentor_name ? ` · ${profile.whatsapp_mentor_name}` : ''}
                             </span>
                         )}
@@ -159,16 +171,16 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
 
                     {/* Secondary Contact & Faculty Details */}
                     <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-white/45 mt-1.5">
-                        <span className="truncate max-w-[160px] sm:max-w-[260px]">{profile.faculty}</span>
+                        <span className="max-w-full break-words sm:max-w-[260px] sm:truncate">{profile.faculty}</span>
                         {profile.codeforces_handle && (
                             <a
                                 href={`https://codeforces.com/profile/${profile.codeforces_handle}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-white/75 hover:text-white transition-colors font-medium"
+                                className="inline-flex min-w-0 max-w-full items-center gap-1 text-white/75 hover:text-white transition-colors font-medium [&>svg]:shrink-0"
                             >
                                 <SiCodeforces className="text-red-400" size={11} />
-                                <span>{profile.codeforces_handle}</span>
+                                <span className="truncate">{profile.codeforces_handle}</span>
                                 <ExternalLink size={9} className="text-white/30" />
                             </a>
                         )}
@@ -182,7 +194,7 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
                                 href={`https://t.me/${sanitizedTg}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                className="inline-flex min-w-0 max-w-full items-center gap-1 break-all text-blue-400 hover:text-blue-300 transition-colors [&>svg]:shrink-0"
                             >
                                 <Send size={10} /> @{sanitizedTg}
                             </a>
@@ -202,21 +214,23 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
             <div className="border-t border-white/[0.06]" />
 
             {/* Bottom Row: 6 KPI Metric Blocks (Clean Typographic Minimalist, No SVGs) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-2 min-[360px]:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
                 {kpiMetrics.map((card) => (
                     <div
                         key={card.title}
-                        className="bg-black/30 border border-white/[0.04] hover:border-white/[0.1] rounded-xl p-3 flex flex-col justify-between transition-all group"
+                        className="min-w-0 bg-black/30 border border-white/[0.04] hover:border-white/[0.1] rounded-xl p-2 sm:p-3 flex flex-col justify-between transition-all group"
                     >
-                        <span className="text-[10px] uppercase font-semibold tracking-wider text-white/40 truncate block mb-1">
-                            {card.title}
+                        <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide sm:tracking-wider text-white/40 truncate block mb-1">
+                            <span className="sm:hidden">{card.mobileTitle}</span>
+                            <span className="hidden sm:inline">{card.title}</span>
                         </span>
                         <div>
-                            <div className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                            <div className="break-words text-base sm:text-xl font-bold text-white tracking-tight">
                                 {card.value}
                             </div>
                             <div className={`text-[10px] font-mono ${card.subtextColor} mt-0.5 truncate`}>
-                                {card.subtext}
+                                <span className="sm:hidden">{card.mobileSubtext}</span>
+                                <span className="hidden sm:inline">{card.subtext}</span>
                             </div>
                         </div>
                     </div>

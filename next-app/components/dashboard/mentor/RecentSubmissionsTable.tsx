@@ -115,7 +115,7 @@ export function RecentSubmissionsTable({
     const modalContent = (
         <AnimatePresence>
             {activeSubModal && (
-                <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6">
+                <div className="mentor-ui fixed inset-0 !z-[99999] flex items-center justify-center p-3 sm:p-6">
                     {/* Fullscreen Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -123,16 +123,19 @@ export function RecentSubmissionsTable({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
                         onClick={() => setActiveSubModal(null)}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-lg"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-lg"
                     />
 
                     {/* Centered Modal Card */}
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Submission details"
                         initial={{ opacity: 0, scale: 0.96, y: 8 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: 8 }}
                         transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                        className="relative w-full max-w-2xl bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col z-10 my-auto max-h-[85vh]"
+                        className="relative w-full max-w-2xl bg-[#141416]/95 border border-white/[0.12] rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl flex flex-col z-10 my-auto max-h-[92dvh] sm:max-h-[85dvh]"
                     >
                         {/* Header */}
                         <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
@@ -141,7 +144,7 @@ export function RecentSubmissionsTable({
                                     <Terminal size={14} />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                                         <h3 className="text-sm font-semibold text-white tracking-tight truncate">
                                             {activeSubModal.problem}
                                         </h3>
@@ -155,8 +158,10 @@ export function RecentSubmissionsTable({
                             </div>
 
                             <button
+                                type="button"
+                                aria-label="Close submission details"
                                 onClick={() => setActiveSubModal(null)}
-                                className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
+                                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
                                 title="Close (Esc)"
                             >
                                 <X size={13} />
@@ -198,12 +203,12 @@ export function RecentSubmissionsTable({
                         </div>
 
                         {/* Source Code Container */}
-                        <div className="p-3.5 flex-1 flex flex-col bg-[#0A0A0C] min-h-[220px] max-h-[50vh] overflow-hidden">
+                        <div className="p-3.5 flex-1 flex flex-col bg-[#0A0A0C] min-h-0 sm:min-h-[220px] max-h-[55dvh] overflow-hidden">
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
                                 <span className="text-white/40 text-[10px] font-mono uppercase tracking-wider">Source Code</span>
                                 <button
                                     onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                    className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
+                                    className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
                                 >
                                     {copied ? <Check size={11} className="text-[#E8C15A]" /> : <Copy size={11} />}
                                     <span>{copied ? 'Copied' : 'Copy Code'}</span>
@@ -240,9 +245,9 @@ export function RecentSubmissionsTable({
     );
 
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.06]">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
                         <FileCode2 size={13} />
@@ -255,7 +260,34 @@ export function RecentSubmissionsTable({
             </div>
 
             {/* Submissions List */}
-            <div className="overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 overflow-x-auto">
+            <div className="space-y-2 sm:hidden">
+                {submissions.length === 0 ? (
+                    <p className="py-8 text-center text-white/35 text-xs font-mono">No submissions recorded yet.</p>
+                ) : submissions.map((sub, idx) => (
+                    <button
+                        key={sub.id || idx}
+                        type="button"
+                        onClick={() => setActiveSubModal(sub)}
+                        className="w-full min-w-0 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-left transition-colors active:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70"
+                    >
+                        <span className="block break-words text-xs font-semibold text-white/90">
+                            {sub.problem_index ? `${String(sub.problem_index).toUpperCase()}${sub.problem_title ? ` · ${sub.problem_title}` : ''}` : sub.problem}
+                        </span>
+                        <span className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            {getVerdictBadge(sub.verdict)}
+                            <span className="text-[10px] font-mono text-white/45">{formatDate(sub.submitted_at)}</span>
+                        </span>
+                        <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-mono text-white/50">
+                            {sub.sheet_info ? <span>{sub.sheet_info.level} / Sheet {sub.sheet_info.sheet_letter}</span> : sub.sheet_id ? <span>Sheet {sub.sheet_id}</span> : null}
+                            <span>{(sub.language || 'C++').split(' ')[0]}</span>
+                            {sub.time_ms != null && <span>{sub.time_ms}ms</span>}
+                            <span>Attempt #{sub.attempts || 1}</span>
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            <div className="hidden min-w-0 overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 overflow-x-auto sm:block">
                 <table className="w-full min-w-[480px] text-left border-collapse">
                     <thead className="sticky top-0 bg-[#121214] z-10">
                         <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium uppercase tracking-wider">
@@ -309,20 +341,21 @@ export function RecentSubmissionsTable({
                     </tbody>
                 </table>
 
-                {/* Load More Button */}
-                {hasMore && (
-                    <div className="p-3 text-center border-t border-white/[0.06]">
-                        <button
-                            onClick={onLoadMore}
-                            disabled={loadingMore}
-                            className="px-4 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white rounded-xl text-xs font-medium transition-all border border-white/[0.08] disabled:opacity-50"
-                        >
-                            {loadingMore ? 'Loading...' : 'Load Next 100 Submissions'}
-                        </button>
-                    </div>
-                )}
             </div>
 
+            {/* Load More Button */}
+            {hasMore && (
+                <div className="p-3 text-center border-t border-white/[0.06]">
+                    <button
+                        type="button"
+                        onClick={onLoadMore}
+                        disabled={loadingMore}
+                        className="min-h-11 w-full px-3 py-2 sm:min-h-0 sm:w-auto sm:px-4 sm:py-1.5 bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white rounded-xl text-xs font-medium transition-all border border-white/[0.08] disabled:opacity-50"
+                    >
+                        {loadingMore ? 'Loading...' : 'Load Next 100 Submissions'}
+                    </button>
+                </div>
+            )}
             {/* Portal to Body for True Fullscreen Overlay */}
             {mounted && createPortal(modalContent, document.body)}
         </div>

@@ -39,9 +39,9 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
     };
 
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/[0.06]">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
                         <BookOpen size={13} />
@@ -52,7 +52,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
             </div>
 
             {/* Hidden scrollbar container */}
-            <div className="overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 space-y-1.5">
+            <div className="min-w-0 sm:overflow-y-auto sm:max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 space-y-1.5">
                 {sheets.map((sheet, index) => {
                     const isExpanded = expandedSheetId === (sheet.id || index);
                     const solvedPct = Math.min(100, Math.round((sheet.solved / (sheet.total_problems || 1)) * 100));
@@ -64,9 +64,11 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                             className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-all"
                         >
                             {/* Sheet Summary Row */}
-                            <div 
+                            <button
+                                type="button"
+                                aria-expanded={isExpanded}
                                 onClick={() => toggleSheet(sheet.id || index)}
-                                className="px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors"
+                                className="w-full min-w-0 px-3 py-3 flex flex-col items-stretch gap-2.5 text-left sm:flex-row sm:items-center sm:justify-between sm:py-2.5 cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#E8C15A]/70"
                             >
                                 <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                     <div className="w-4 h-4 flex items-center justify-center text-white/40">
@@ -82,12 +84,12 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 shrink-0">
+                                <div className="flex items-center gap-3 sm:shrink-0">
                                     <div className="text-[11px] font-mono text-white/45">
                                         <strong className="text-[#E8C15A] font-semibold">{sheet.solved}</strong>
                                         <span>/{sheet.total_problems}</span>
                                     </div>
-                                    <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex">
+                                    <div className="min-w-0 flex-1 sm:flex-none sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex">
                                         {solvedPct > 0 && (
                                             <div style={{ width: `${solvedPct}%` }} className="h-full bg-[#E8C15A] rounded-l-full" />
                                         )}
@@ -99,7 +101,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                                         {solvedPct}%
                                     </span>
                                 </div>
-                            </div>
+                            </button>
 
                             {/* Dropdown Problems View with spring animation */}
                             <AnimatePresence>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Flame } from 'lucide-react';
 
@@ -18,9 +18,13 @@ interface HoveredDayInfo {
 export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
     const [hoveredDay, setHoveredDay] = useState<HoveredDayInfo | null>(null);
     const [mounted, setMounted] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setMounted(true);
+        if (window.matchMedia('(max-width: 639px)').matches && calendarRef.current) {
+            calendarRef.current.scrollLeft = calendarRef.current.scrollWidth;
+        }
     }, []);
 
     const { calendarGrid, totalSolves, monthLabels, activeDays } = useMemo(() => {
@@ -121,7 +125,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
     ) : null;
 
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col w-full">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col w-full">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between pb-3 mb-2 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2.5">
@@ -146,7 +150,7 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             </div>
 
             {/* Expansive Full-Width Heatmap Grid */}
-            <div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-2">
+            <div ref={calendarRef} role="region" aria-label="Yearly practice calendar, scroll to view all dates" tabIndex={0} onScroll={() => setHoveredDay(null)} className="min-w-0 w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70">
                 <div className="min-w-[720px] relative">
                     {/* Month labels along the top */}
                     <div className="flex text-[10px] text-white/40 font-mono mb-1 pl-6 justify-between pr-2">
@@ -192,7 +196,8 @@ export function ActivityHeatmap90Days({ data }: ActivityHeatmapProps) {
             </div>
 
             {/* Minimalist Legend */}
-            <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-white/40 font-mono">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-white/[0.06] text-[10px] text-white/40 font-mono sm:justify-end">
+                <span className="sm:hidden">Swipe for earlier activity</span>
                 <div className="flex items-center gap-1.5">
                     <span>Less</span>
                     <div className="w-2.5 h-2.5 rounded-xs bg-white/[0.03] border border-white/5" />

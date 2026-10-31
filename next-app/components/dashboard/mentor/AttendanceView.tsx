@@ -61,7 +61,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
                         </div>
 
                         <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Live session</span>
                                 <Pill ok={a.attended && present >= 50} partial={a.attended && present < 50}>{a.attended ? (present >= 50 ? 'Attended' : 'Joined briefly') : 'Did not attend'}</Pill>
                             </div>
@@ -80,7 +80,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
                         </div>
 
                         <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono flex items-center gap-1.5"><PlayCircle size={11} className="text-[#E8C15A]" />Recording on the site</span>
                                 <Pill ok={watched} partial={Boolean(w) && !watched}>{watched ? 'Watched' : w ? 'Opened only' : 'Not watched'}</Pill>
                             </div>

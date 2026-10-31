@@ -211,27 +211,27 @@ export default function TraineeDossierPage() {
 
     if (loading) {
         return (
-            <div className="space-y-4 max-w-7xl mx-auto" role="status" aria-label="Loading trainee dossier">
+            <div className="min-w-0 space-y-4 max-w-7xl mx-auto" role="status" aria-label="Loading trainee dossier">
                 {/* Back link */}
                 <Skeleton className="h-4 w-28 rounded" />
 
                 {/* TraineeProfileCard skeleton */}
                 <div className="bg-[#121214] border border-white/5 rounded-2xl p-5 md:p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
+                        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                             <Skeleton className="w-16 h-16 rounded-2xl shrink-0" />
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Skeleton className="h-6 w-44 rounded-lg" />
+                            <div className="min-w-0 flex-1 space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Skeleton className="h-6 w-36 max-w-full rounded-lg sm:w-44" />
                                     <Skeleton className="h-5 w-20 rounded-full" />
                                 </div>
                                 <Skeleton className="h-3.5 w-32 rounded" />
-                                <Skeleton className="h-3 w-48 rounded" />
+                                <Skeleton className="h-3 w-48 max-w-full rounded" />
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-3 min-w-[100px] text-center space-y-1">
+                                <div key={i} className="min-w-0 bg-white/[0.03] border border-white/5 rounded-xl p-2 sm:p-3 text-center space-y-1">
                                     <Skeleton className="h-6 w-12 mx-auto rounded" />
                                     <Skeleton className="h-3 w-16 mx-auto rounded" />
                                 </div>
@@ -388,11 +388,11 @@ export default function TraineeDossierPage() {
     };
 
     return (
-        <div className="space-y-3 animate-fade-in text-white pb-12">
+        <div className="min-w-0 w-full space-y-3 animate-fade-in text-white pb-12">
             {/* 1. Single Unified Profile & KPI Bento Widget */}
             <Link
                 href="/dashboard/mentor"
-                className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-1 transition-colors"
+                className="inline-flex min-h-11 items-center gap-1.5 text-xs text-white/50 hover:text-white px-1 py-2 transition-colors sm:min-h-0 sm:py-1"
             >
                 <ArrowLeft size={14} /> All trainees
             </Link>
@@ -404,7 +404,7 @@ export default function TraineeDossierPage() {
             />
 
             {/* 2. Navigation Tabs & Time Horizon Selector */}
-            <div className="flex flex-col xl:flex-row items-stretch xl:items-start justify-between gap-2">
+            <div className="sticky top-14 z-30 flex flex-col items-stretch justify-between gap-2 rounded-2xl bg-[#0B0B0C]/95 py-1 backdrop-blur-xl sm:static sm:z-auto sm:bg-transparent sm:py-0 sm:backdrop-blur-none xl:flex-row xl:items-start">
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={handleTabChange} 
@@ -412,8 +412,8 @@ export default function TraineeDossierPage() {
                 />
 
                 {/* Global Time Filter Pills */}
-                <div className="flex items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs self-end xl:self-auto shrink-0">
-                    <span className="text-[10px] text-white/40 uppercase font-mono px-2 flex items-center gap-1">
+                <div role="group" aria-label="Time range" className="flex w-full min-w-0 items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs sm:w-auto sm:self-end xl:self-auto shrink-0">
+                    <span className="hidden text-[10px] text-white/40 uppercase font-mono px-2 sm:flex items-center gap-1">
                         <Clock size={11} className="text-[#E8C15A]" /> Time:
                     </span>
                     {(['all', '24h', '7d', '30d', '90d'] as const).map((t) => {
@@ -423,8 +423,9 @@ export default function TraineeDossierPage() {
                             <button
                                 key={t}
                                 type="button"
+                                aria-pressed={isActive}
                                 onClick={() => setTimeHorizon(t)}
-                                className={`px-2.5 py-1 rounded-xl text-xs font-mono transition-all cursor-pointer ${
+                                className={`min-h-11 min-w-0 flex-1 px-1 py-2 rounded-xl text-xs font-mono transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 sm:min-h-8 sm:flex-none sm:px-2.5 sm:py-1 ${
                                     isActive
                                         ? 'text-[#E8C15A] bg-[#E8C15A]/15 border border-[#E8C15A]/30 font-semibold shadow-xs'
                                         : 'text-white/40 hover:text-white/80 border border-transparent'
@@ -447,10 +448,10 @@ export default function TraineeDossierPage() {
 
                     {/* Split: Sheet Progress Matrix + Recent Submissions */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                        <div className="lg:col-span-6">
+                        <div className="min-w-0 lg:col-span-6">
                             <SheetProgressBreakdown sheets={sheet_progress?.filter((s: any) => mainLevel == null || String(s.level_number ?? '') === mainLevel) || []} />
                         </div>
-                        <div className="lg:col-span-6">
+                        <div className="min-w-0 lg:col-span-6">
                             <RecentSubmissionsTable 
                                 submissions={filteredSubmissionsList.slice(0, 15)} 
                             />

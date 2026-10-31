@@ -136,7 +136,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
     ];
 
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
             {/* Header: Left Title & Right Verdict Filter Pill Selector */}
             <div className="flex flex-wrap items-center justify-between pb-3 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -157,9 +157,9 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                 </div>
 
                 {/* Right Corner: Export + Verdict Filter Pills */}
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
                 {trainee && <CodeExportPanel trainee={trainee} catalog={codeCatalog} />}
-                <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/[0.06]">
+                <div className="flex w-full min-w-0 items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/[0.06] sm:w-auto">
                     {filterButtons.map((btn) => {
                         const isActive = verdictFilter === btn.id;
                         return (
@@ -167,7 +167,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                                 key={btn.id}
                                 type="button"
                                 onClick={() => setVerdictFilter(btn.id)}
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
+                                className={`min-h-11 min-w-0 flex-1 px-1 py-2 sm:min-h-0 sm:flex-none sm:px-2 sm:py-0.5 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
                                     isActive
                                         ? 'text-[#E8C15A] bg-[#E8C15A]/15 border border-[#E8C15A]/30 font-semibold shadow-xs'
                                         : 'text-white/40 hover:text-white/80 border border-transparent'
@@ -182,9 +182,9 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
             </div>
 
             {/* 2-Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[420px]">
+            <div className="grid min-h-0 grid-cols-1 gap-3 lg:min-h-[420px] lg:grid-cols-12">
                 {/* Problems List (4 cols) */}
-                <div className="lg:col-span-4 bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5 flex flex-col space-y-2">
+                <div className="min-w-0 lg:col-span-4 bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5 flex flex-col space-y-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 w-3.5 h-3.5" />
                         <input
@@ -195,7 +195,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                         />
                     </div>
 
-                    <div className="space-y-1 overflow-y-auto max-h-[350px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
+                    <div className="space-y-1 overflow-y-auto max-h-[220px] sm:max-h-[350px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
                         {filteredCatalog.length === 0 ? (
                             <div className="text-center py-8 text-xs text-white/30 font-mono">
                                 No problems found for filter.
@@ -236,7 +236,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                 </div>
 
                 {/* Code Window (8 cols) */}
-                <div className="lg:col-span-8 bg-[#0A0A0C] border border-white/[0.06] rounded-xl p-3.5 flex flex-col justify-between shadow-inner">
+                <div className="min-w-0 min-h-[240px] lg:min-h-0 lg:col-span-8 bg-[#0A0A0C] border border-white/[0.06] rounded-xl p-3.5 flex flex-col justify-between shadow-inner">
                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/[0.06] text-xs">
                         <div className="flex items-center gap-2 truncate pr-2">
                             <span className="font-mono text-white/90 text-xs font-semibold truncate">
@@ -257,7 +257,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
 
                         <button
                             onClick={handleCopy}
-                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
+                            className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
                         >
                             {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
                             <span>{copied ? 'Copied' : 'Copy'}</span>

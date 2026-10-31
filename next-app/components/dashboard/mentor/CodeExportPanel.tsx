@@ -214,7 +214,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
             <button
                 type="button"
                 onClick={openPanel}
-                className={`${SMALL_BTN} px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-all text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                className={`${SMALL_BTN} h-11 sm:h-auto px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-all text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
             >
                 <Download size={12} />
                 <span>Export code</span>
@@ -222,13 +222,13 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
 
             {open && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-6"
+                    className="mentor-ui fixed inset-0 !z-[99999] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-6"
                     onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}
                     role="dialog"
                     aria-modal="true"
                     aria-label="Export trainee code"
                 >
-                    <div className="w-full sm:max-w-5xl max-h-[94vh] sm:max-h-[86vh] flex flex-col bg-[#0F0F11] border border-white/[0.09] rounded-t-3xl sm:rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden">
+                    <div className="w-full sm:max-w-5xl max-h-[94dvh] sm:max-h-[86dvh] flex flex-col bg-[#0F0F11] border border-white/[0.09] rounded-t-3xl sm:rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden">
                         {/* Header */}
                         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
                             <div className="w-10 h-10 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/20 text-[#E8C15A] flex items-center justify-center shrink-0">
@@ -245,7 +245,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 type="button"
                                 onClick={() => setOpen(false)}
                                 aria-label="Close"
-                                className={`${SMALL_BTN} w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/[0.07] active:scale-95 text-white/55 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                className={`${SMALL_BTN} w-11 h-11 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl hover:bg-white/[0.07] active:scale-95 text-white/55 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                             >
                                 <X size={16} />
                             </button>
@@ -385,7 +385,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06] bg-black/30 shrink-0">
+                        <div className="flex flex-col items-stretch gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4 border-t border-white/[0.06] bg-black/30 shrink-0">
                             <span className="text-xs truncate" aria-live="polite">
                                 {done ? (
                                     <span className="inline-flex items-center gap-1.5 text-[#E8C15A]">
@@ -401,7 +401,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 type="button"
                                 disabled={chosen.length === 0}
                                 onClick={doExport}
-                                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-all flex items-center gap-2 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F11]"
+                                className="min-h-11 w-full px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F11] sm:w-auto"
                             >
                                 <Download size={15} />
                                 Export

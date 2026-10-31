@@ -25,9 +25,9 @@ function formatWhen(iso: string): string {
 
 function Card({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
+        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/40 font-mono">
-                <Icon size={12} className="text-[#E8C15A]" /> {label}
+                <Icon size={12} className="shrink-0 text-[#E8C15A]" /> {label}
             </div>
             <div className="mt-1.5 text-xl font-bold text-white tabular-nums">{value}</div>
             {hint && <div className="text-[11px] text-white/40 mt-0.5">{hint}</div>}
@@ -69,7 +69,38 @@ export function SessionWatchView({ rows }: { rows: SessionWatchRow[] }) {
                 <Card icon={Clock} label="Time on pages" value={formatDuration(list.reduce((sum, s) => sum + (s.row?.page_seconds || 0), 0))} />
             </div>
 
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden">
+            <div className="space-y-3 sm:hidden">
+                {list.map(({ key, camp, number, title, hasVideo, row }) => (
+                    <article key={key} className="min-w-0 rounded-2xl border border-white/[0.08] bg-[#121214]/90 p-4">
+                        <h3 className="break-words text-xs font-semibold text-white/90">{number}. {title}</h3>
+                        <p className="mt-1 text-[10px] text-white/40">{camp}</p>
+                        {!row ? (
+                            <p className="mt-3 text-xs font-medium text-red-400/80">Not opened</p>
+                        ) : (
+                            <>
+                                <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+                                    <span className="text-white/45">Video coverage</span>
+                                    <span className="font-mono text-white/80">{hasVideo && row.coverage_pct !== null ? `${row.coverage_pct}%` : hasVideo ? 'Not played' : 'No video'}</span>
+                                </div>
+                                {hasVideo && row.coverage_pct !== null && (
+                                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                                        <div className={`h-full ${row.coverage_pct >= 80 ? 'bg-green-500' : row.coverage_pct >= 40 ? 'bg-[#E8C15A]' : 'bg-red-500'}`} style={{ width: `${row.coverage_pct}%` }} />
+                                    </div>
+                                )}
+                                <dl className="mt-3 grid grid-cols-2 gap-3 text-[11px]">
+                                    <div><dt className="text-white/40">Watched</dt><dd className="mt-1 text-white/80">{formatDuration(row.watched_seconds)}</dd></div>
+                                    <div><dt className="text-white/40">Furthest point</dt><dd className="mt-1 text-white/80">{row.duration_seconds ? `${formatDuration(row.max_position_seconds)} / ${formatDuration(row.duration_seconds)}` : '—'}</dd></div>
+                                    <div><dt className="text-white/40">Slides</dt><dd className="mt-1 text-white/80">{row.slides_seen || '—'}</dd></div>
+                                    <div><dt className="text-white/40">Plays</dt><dd className="mt-1 text-white/80">{row.plays}</dd></div>
+                                    <div className="col-span-2"><dt className="text-white/40">Last watched</dt><dd className="mt-1 text-white/80">{formatWhen(row.last_seen_at)}</dd></div>
+                                </dl>
+                            </>
+                        )}
+                    </article>
+                ))}
+            </div>
+
+            <div className="hidden min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden sm:block">
                 <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                         <thead>
