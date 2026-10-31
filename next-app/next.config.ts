@@ -114,47 +114,6 @@ const nextConfig: NextConfig = {
         ];
     },
 
-    async rewrites() {
-        const configuredRybbitHost = process.env.NEXT_PUBLIC_RYBBIT_HOST?.trim();
-        const rybbitHost = configuredRybbitHost
-            ? `${/^https?:\/\//i.test(configuredRybbitHost) ? '' : 'https://'}${configuredRybbitHost}`.replace(/\/+$/, '')
-            : undefined;
-
-        if (!rybbitHost) return [];
-
-        return [
-            // Keep Rybbit first-party so ad blockers are less likely to suppress
-            // the script and its advanced features.
-            {
-                source: '/analytics/script.js',
-                destination: `${rybbitHost}/api/script.js`,
-            },
-            {
-                source: '/analytics/replay.js',
-                destination: `${rybbitHost}/api/replay.js`,
-            },
-            {
-                source: '/analytics/metrics.js',
-                destination: `${rybbitHost}/api/metrics.js`,
-            },
-            {
-                source: '/analytics/track',
-                destination: `${rybbitHost}/api/track`,
-            },
-            {
-                source: '/analytics/identify',
-                destination: `${rybbitHost}/api/identify`,
-            },
-            {
-                source: '/analytics/session-replay/record/:siteId',
-                destination: `${rybbitHost}/api/session-replay/record/:siteId`,
-            },
-            {
-                source: '/analytics/site/tracking-config/:siteId',
-                destination: `${rybbitHost}/api/site/tracking-config/:siteId`,
-            },
-        ];
-    },
 };
 
 export default nextConfig;

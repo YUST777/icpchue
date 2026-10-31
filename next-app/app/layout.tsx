@@ -11,7 +11,7 @@ import { Analytics } from "@vercel/analytics/next";
 import ClientErrorReporter from "@/components/core/ClientErrorReporter";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import MicrosoftClarity from "@/components/core/MicrosoftClarity";
-import RybbitAnalytics from "@/components/core/RybbitAnalytics";
+import GoogleAnalytics from "@/components/core/GoogleAnalytics";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -277,7 +277,7 @@ export default async function RootLayout({
           <Analytics />
           <SpeedInsights />
           <MicrosoftClarity />
-          <RybbitAnalytics />
+          <GoogleAnalytics />
           {/* Cloudflare Web Analytics. DNS is not proxied through Cloudflare, so the
               beacon must be installed manually (automatic injection never runs). */}
           <Script
