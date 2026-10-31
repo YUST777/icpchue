@@ -194,17 +194,17 @@ export default function MentorTraineesDirectoryPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in text-white pb-12">
+        <div className="min-w-0 space-y-3 animate-fade-in text-white pb-12 lg:space-y-6">
             {/* 1. Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
+            <div className="flex min-w-0 flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/[0.08] pb-3 sm:gap-4 sm:pb-6">
                 <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3 mb-1">
+                        <div className="shrink-0 p-2 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20">
                             <Users size={20} />
                         </div>
-                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">Mentor Command Center</h1>
+                        <h1 className="min-w-0 !text-lg !leading-tight sm:!text-2xl font-bold tracking-tight text-white">Mentor Command Center</h1>
                     </div>
-                    <p className="text-xs text-white/50">
+                    <p className="sr-only sm:not-sr-only sm:text-xs sm:text-white/50">
                         Live analytics, individual curriculum tracking, and forensic code inspection.
                     </p>
                 </div>
@@ -212,7 +212,25 @@ export default function MentorTraineesDirectoryPage() {
 
             {/* Owners/instructors: pick a mentor to see the group they mentor */}
             {mentorGroups && mentorGroups.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
+                <div>
+                    <div className="relative lg:hidden">
+                        <label htmlFor="mentor-group" className="sr-only">Mentor group</label>
+                        <select
+                            id="mentor-group"
+                            value={mentorFilter}
+                            onChange={(event) => event.target.value ? setMentorFilter(event.target.value) : resetFilters()}
+                            className="min-h-11 w-full min-w-0 appearance-none rounded-xl border border-white/10 bg-[#121214] px-3 pr-10 text-base text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70"
+                        >
+                            <option value="">All trainees · All mentors</option>
+                            {mentorGroups.map((group) => (
+                                <option key={group.name} value={group.name} disabled={group.trainees === 0}>
+                                    {group.name}{group.mentorName ? ` · ${group.mentorName}` : ''} ({group.trainees})
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown size={16} aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/50" />
+                    </div>
+                    <div className="hidden flex-wrap items-center gap-2 lg:flex">
                     <button
                         type="button"
                         aria-pressed={!hasActiveFilters}
@@ -241,68 +259,77 @@ export default function MentorTraineesDirectoryPage() {
                             <span className="ml-1.5 text-white/40">{g.trainees}</span>
                         </button>
                     ))}
+                    </div>
                 </div>
             )}
 
             {/* 2. Top Summary KPI Cards */}
             {summary && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div 
+                <div className="grid grid-cols-4 !gap-2 lg:!gap-3">
+                    <button
+                        type="button"
+                        aria-pressed={statusFilter === 'all'}
                         onClick={() => setStatusFilter('all')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'all'
                                 ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white'
                                 : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-[10px] uppercase font-semibold text-white/40 block">Total Trainees</span>
-                        <span className="text-2xl font-bold text-white mt-1 block">{summary.total_trainees}</span>
-                        <span className="text-[11px] text-white/50 font-mono mt-0.5 block">All Cohorts</span>
-                    </div>
+                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-white/40 block"><span className="lg:hidden">Total</span><span className="hidden lg:inline">Total Trainees</span></span>
+                        <span className="text-xl lg:text-2xl font-bold text-white mt-1 block">{summary.total_trainees}</span>
+                        <span className="hidden lg:block text-[11px] text-white/50 font-mono mt-0.5">All Cohorts</span>
+                    </button>
 
-                    <div 
+                    <button
+                        type="button"
+                        aria-pressed={statusFilter === 'active'}
                         onClick={() => setStatusFilter('active')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'active'
                                 ? 'bg-emerald-500/10 border-emerald-500/30 text-white'
                                 : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-[10px] uppercase font-semibold text-emerald-400/80 block">Active & Steady</span>
-                        <span className="text-2xl font-bold text-emerald-400 mt-1 block">{summary.active_trainees}</span>
-                        <span className="text-[11px] text-emerald-400/60 font-mono mt-0.5 block">Active this week</span>
-                    </div>
+                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-emerald-400/80 block"><span className="lg:hidden">Active</span><span className="hidden lg:inline">Active & Steady</span></span>
+                        <span className="text-xl lg:text-2xl font-bold text-emerald-400 mt-1 block">{summary.active_trainees}</span>
+                        <span className="hidden lg:block text-[11px] text-emerald-400/60 font-mono mt-0.5">Active this week</span>
+                    </button>
 
-                    <div 
+                    <button
+                        type="button"
+                        aria-pressed={statusFilter === 'inactive'}
                         onClick={() => setStatusFilter('inactive')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'inactive'
                                 ? 'bg-amber-500/10 border-amber-500/30 text-white'
                                 : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-[10px] uppercase font-semibold text-amber-400/80 block">Inactive</span>
-                        <span className="text-2xl font-bold text-amber-400 mt-1 block">{summary.inactive_trainees}</span>
-                        <span className="text-[11px] text-amber-400/60 font-mono mt-0.5 block">&gt; 7 days absent</span>
-                    </div>
+                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-amber-400/80 block">Inactive</span>
+                        <span className="text-xl lg:text-2xl font-bold text-amber-400 mt-1 block">{summary.inactive_trainees}</span>
+                        <span className="hidden lg:block text-[11px] text-amber-400/60 font-mono mt-0.5">&gt; 7 days absent</span>
+                    </button>
 
-                    <div 
+                    <button
+                        type="button"
+                        aria-pressed={statusFilter === 'flagged'}
                         onClick={() => setStatusFilter('flagged')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'flagged'
                                 ? 'bg-red-500/10 border-red-500/30 text-white'
                                 : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-[10px] uppercase font-semibold text-red-400/80 block">Integrity Flags</span>
-                        <span className="text-2xl font-bold text-red-400 mt-1 block">{summary.flagged_trainees}</span>
-                        <span className="text-[11px] text-red-400/60 font-mono mt-0.5 block">Audit required</span>
-                    </div>
+                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-red-400/80 block"><span className="lg:hidden">Flags</span><span className="hidden lg:inline">Integrity Flags</span></span>
+                        <span className="text-xl lg:text-2xl font-bold text-[#F87171] mt-1 block">{summary.flagged_trainees}</span>
+                        <span className="hidden lg:block text-[11px] text-red-400/60 font-mono mt-0.5">Audit required</span>
+                    </button>
                 </div>
             )}
 
             {/* 3. Search & Filters Bar */}
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md backdrop-blur-xl">
+            <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2 sm:gap-3 shadow-md backdrop-blur-xl">
                 {/* Search */}
                 <div className="relative min-w-0 flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 w-4 h-4" />
@@ -311,8 +338,8 @@ export default function MentorTraineesDirectoryPage() {
                         aria-label="Search trainees"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search name, student ID, CF handle, or full email..."
-                        className="min-h-11 w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-9 pr-12 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors sm:min-h-10"
+                        placeholder="Search trainees..."
+                        className="min-h-11 w-full min-w-0 bg-[#0B0B0C] border border-white/10 rounded-xl pl-9 pr-12 py-2 text-base sm:text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors sm:min-h-10"
                     />
                     {filtersReady && search && (
                         <button
@@ -327,14 +354,14 @@ export default function MentorTraineesDirectoryPage() {
                 </div>
 
                 {/* Filter Controls */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid min-w-0 grid-cols-2 items-center !gap-2 lg:flex lg:flex-wrap">
                     {/* Level Filter */}
-                    <div className="relative">
+                    <div className="relative min-w-0">
                         <select
                             aria-label="Training level"
                             value={levelFilter}
                             onChange={(e) => setLevelFilter(e.target.value)}
-                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
+                            className="min-h-11 w-full min-w-0 max-w-full bg-[#0B0B0C] border border-white/10 text-white text-base sm:text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer sm:min-h-10"
                         >
                             <option value="all">All Levels</option>
                             <option value="Level 0">Level 0 (Intro)</option>
@@ -346,12 +373,12 @@ export default function MentorTraineesDirectoryPage() {
                     </div>
 
                     {/* Time Window Filter */}
-                    <div className="relative">
+                    <div className="relative min-w-0">
                         <select
                             aria-label="Activity time range"
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value)}
-                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
+                            className="min-h-11 w-full min-w-0 max-w-full bg-[#0B0B0C] border border-white/10 text-white text-base sm:text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer sm:min-h-10"
                         >
                             <option value="all">All Time</option>
                             <option value="24h">Active (Last 24h)</option>
@@ -366,12 +393,12 @@ export default function MentorTraineesDirectoryPage() {
                     </div>
 
                     {/* Sort By */}
-                    <div className="relative">
+                    <div className="relative col-span-2 min-w-0">
                         <select
                             aria-label="Sort trainees"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as any)}
-                            className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
+                            className="min-h-11 w-full min-w-0 max-w-full bg-[#0B0B0C] border border-white/10 text-white text-base sm:text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer sm:min-h-10"
                         >
                             <option value="solves_desc">Most Solved</option>
                             <option value="recent_active">Recently Active</option>
@@ -383,36 +410,42 @@ export default function MentorTraineesDirectoryPage() {
                     </div>
 
                     {/* View Switcher */}
-                    <div className="flex items-center bg-[#0B0B0C] p-0.5 rounded-xl border border-white/10 shrink-0">
+                    {filtersReady && (
+                    <div className="hidden lg:flex items-center bg-[#0B0B0C] p-0.5 rounded-xl border border-white/10 shrink-0">
                         <button
                             type="button"
+                            aria-label="Grid view"
+                            aria-pressed={viewMode === 'grid'}
                             onClick={() => setViewMode('grid')}
-                            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                            className={`min-h-10 min-w-10 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 viewMode === 'grid'
                                     ? 'bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shadow-xs'
                                     : 'text-white/40 hover:text-white/80 border border-transparent'
                             }`}
                             title="Grid View"
                         >
-                            <LayoutGrid size={13} />
+                            <LayoutGrid size={16} className="shrink-0" />
                         </button>
                         <button
                             type="button"
+                            aria-label="Table view"
+                            aria-pressed={viewMode === 'table'}
                             onClick={() => setViewMode('table')}
-                            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                            className={`min-h-10 min-w-10 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                                 viewMode === 'table'
                                     ? 'bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30 shadow-xs'
                                     : 'text-white/40 hover:text-white/80 border border-transparent'
                             }`}
                             title="Table View"
                         >
-                            <Table size={13} />
+                            <Table size={16} className="shrink-0" />
                         </button>
                     </div>
+                    )}
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+            <div className={`flex min-w-0 flex-wrap items-center justify-between gap-2 ${filtersReady && hasActiveFilters ? 'rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2' : 'px-1 py-1'}`}>
                 <div role="status" aria-live="polite" className="min-w-0 space-y-1 text-xs">
                     <p className="font-medium text-white/80">
                         {loading ? 'Loading trainees…' : hasActiveFilters
@@ -442,7 +475,7 @@ export default function MentorTraineesDirectoryPage() {
             )}
 
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] !gap-3 sm:!gap-4">
                     {[1, 2, 3, 4, 5, 6].map(i => (
                         <TraineeCardSkeleton key={i} />
                     ))}
@@ -453,19 +486,20 @@ export default function MentorTraineesDirectoryPage() {
                     <p className="text-base font-semibold text-white">No trainees found</p>
                     <p className="text-xs">Try adjusting your search query or status filter.</p>
                 </div>
-            ) : viewMode === 'grid' ? (
-                /* Grid View */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ) : (
+                <>
+                {/* Narrow screens always use cards, including with a saved desktop table view. */}
+                <div className={`grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] !gap-3 sm:!gap-4 ${viewMode === 'table' ? 'lg:hidden' : ''}`}>
                     {trainees.map((t) => (
                         <Link
                             key={t.id}
                             href={dossierHref(t)}
-                            className="bg-[#121214]/90 border border-white/[0.08] hover:border-[#E8C15A]/40 rounded-2xl p-5 transition-all duration-200 group flex flex-col justify-between hover:bg-white/[0.02] shadow-md hover:shadow-xl backdrop-blur-xl"
+                            className="min-w-0 bg-[#121214]/90 border border-white/[0.08] hover:border-[#E8C15A]/40 rounded-2xl p-3 sm:p-5 transition-all duration-200 group flex flex-col justify-between hover:bg-white/[0.02] shadow-md hover:shadow-xl backdrop-blur-xl"
                         >
                             <div>
                                 {/* Top Badges */}
-                                <div className="flex items-center justify-between gap-2 mb-3">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2 sm:mb-3">
+                                    <div className="flex min-w-0 items-center gap-1.5 flex-wrap">
                                         <span className="text-[11px] font-semibold text-[#E8C15A] px-2.5 py-0.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
                                             {yearLabel(t.academic_level)}{t.training_level != null ? ` · Lv ${t.training_level}` : ''}
                                         </span>
@@ -497,14 +531,14 @@ export default function MentorTraineesDirectoryPage() {
 
                                 {/* Identity */}
                                 <div>
-                                    <h3 className="text-base font-bold text-white group-hover:text-[#E8C15A] transition-colors truncate">
+                                    <h3 dir="auto" className="!text-base !leading-snug font-bold text-white group-hover:text-[#E8C15A] transition-colors break-words">
                                         {t.name}
                                     </h3>
-                                    <div className="flex items-center gap-2 text-xs text-white/50 font-mono mt-0.5">
-                                        <span>{t.student_id}</span>
+                                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/50 font-mono mt-1">
+                                        <span className="break-all">{t.student_id}</span>
                                         {t.codeforces_handle && (
-                                            <span className="flex items-center gap-1 text-white/60">
-                                                • <SiCodeforces className="text-red-400" size={10} /> {t.codeforces_handle}
+                                            <span className="flex min-w-0 max-w-full items-center gap-1 text-white/60">
+                                                <span aria-hidden="true">·</span><SiCodeforces className="shrink-0 text-[#F87171]" size={10} /><span className="truncate">{t.codeforces_handle}</span>
                                             </span>
                                         )}
                                     </div>
@@ -512,9 +546,9 @@ export default function MentorTraineesDirectoryPage() {
                                 </div>
 
                                 {/* Progress Bar */}
-                                <div className="mt-4 space-y-1.5">
-                                    <div className="flex justify-between text-xs font-mono">
-                                        <span className="text-white/50">Curriculum Progress</span>
+                                <div className="mt-3 sm:mt-4 space-y-1.5">
+                                    <div className="flex flex-wrap justify-between gap-x-2 gap-y-1 text-xs font-mono">
+                                        <span className="text-white/50"><span className="sm:hidden">Progress</span><span className="hidden sm:inline">Curriculum Progress</span></span>
                                         <span className="font-bold text-[#E8C15A]">{t.total_solved} Solved</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -527,7 +561,7 @@ export default function MentorTraineesDirectoryPage() {
                             </div>
 
                             {/* Card Footer */}
-                            <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-white/50">
+                            <div className="mt-3 pt-2 sm:mt-5 sm:pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
                                 <div className="flex items-center gap-1">
                                     <Clock size={11} />
                                     <span>Active {formatLastActive(t.last_active_at)}</span>
@@ -540,9 +574,8 @@ export default function MentorTraineesDirectoryPage() {
                         </Link>
                     ))}
                 </div>
-            ) : (
-                /* Table View */
-                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden shadow-md backdrop-blur-xl">
+                {viewMode === 'table' && (
+                <div className="hidden min-w-0 lg:block bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden shadow-md backdrop-blur-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>
@@ -635,15 +668,17 @@ export default function MentorTraineesDirectoryPage() {
                         </table>
                     </div>
                 </div>
+                )}
+                </>
             )}
 
             {!loading && totalPages > 1 && (
-                <nav aria-label="Trainee pages" className="flex items-center justify-center gap-3 text-xs text-white/60">
+                <nav aria-label="Trainee pages" className="flex flex-wrap items-center justify-center gap-3 text-xs text-white/60">
                     <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        className="px-3 py-1.5 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Previous</button>
-                    <span>Page {page} of {totalPages} · {totalItems} trainees</span>
+                        className="min-h-11 px-4 py-2 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Previous</button>
+                    <span className="order-first w-full text-center sm:order-none sm:w-auto">Page {page} of {totalPages} · {totalItems} trainees</span>
                     <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        className="px-3 py-1.5 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Next</button>
+                        className="min-h-11 px-4 py-2 rounded-lg border border-white/10 disabled:opacity-30 hover:border-[#E8C15A]/40">Next</button>
                 </nav>
             )}
         </div>
@@ -652,7 +687,7 @@ export default function MentorTraineesDirectoryPage() {
 
 function TraineeCardSkeleton() {
     return (
-        <div className="bg-[#121214] border border-white/5 rounded-2xl p-5 flex flex-col justify-between min-h-[192px]">
+        <div className="min-w-0 bg-[#121214] border border-white/5 rounded-2xl p-3 sm:p-5 flex flex-col justify-between min-h-[192px]">
             <div>
                 {/* Header: avatar + pills */}
                 <div className="flex items-center justify-between gap-3 mb-4">
@@ -678,7 +713,7 @@ function TraineeCardSkeleton() {
                 </div>
             </div>
             {/* Footer */}
-            <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between">
+            <div className="mt-3 pt-2 sm:mt-5 sm:pt-3 border-t border-white/5 flex items-center justify-between gap-2">
                 <Skeleton className="h-3 w-24 rounded" />
                 <Skeleton className="h-3 w-24 rounded" />
             </div>
