@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { yearLabel } from '@/lib/utils/levels';
-import { Search, Users, ShieldAlert, CheckCircle2, Clock, ArrowRight, LayoutGrid, Table, Flame, ChevronDown } from 'lucide-react';
+import { Search, Users, ShieldAlert, CheckCircle2, Clock, ArrowRight, LayoutGrid, Table, Flame, ChevronDown, X } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -97,6 +97,17 @@ export default function MentorTraineesDirectoryPage() {
     // Owners/instructors only: Mentor 1..7, to see one mentor's group.
     const [mentorGroups, setMentorGroups] = useState<{ name: string; mentorName: string | null; trainees: number }[] | null>(null);
     const [mentorFilter, setMentorFilter] = useState('');
+    const hasActiveFilters = Boolean(search.trim()) || levelFilter !== 'all' || statusFilter !== 'all' || timeRange !== 'all' || mentorFilter !== '';
+    const filtersReady = summary !== null || loadError !== null;
+
+    const resetFilters = () => {
+        setSearch('');
+        setLevelFilter('all');
+        setStatusFilter('all');
+        setTimeRange('all');
+        setMentorFilter('');
+        setPage(1);
+    };
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -120,7 +131,7 @@ export default function MentorTraineesDirectoryPage() {
         setLoading(true);
         try {
             const params = new URLSearchParams();
-            if (search) params.set('search', search);
+            if (search.trim()) params.set('search', search.trim());
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (statusFilter !== 'all') params.set('status', statusFilter);
             if (timeRange !== 'all') params.set('timeRange', timeRange);
@@ -203,9 +214,11 @@ export default function MentorTraineesDirectoryPage() {
             {mentorGroups && mentorGroups.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                     <button
-                        onClick={() => setMentorFilter('')}
+                        type="button"
+                        aria-pressed={!hasActiveFilters}
+                        onClick={resetFilters}
                         className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                            mentorFilter === ''
+                            !hasActiveFilters
                                 ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
                                 : 'bg-[#121214]/90 text-white/60 border-white/[0.08] hover:text-white'
                         }`}
@@ -291,15 +304,26 @@ export default function MentorTraineesDirectoryPage() {
             {/* 3. Search & Filters Bar */}
             <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md backdrop-blur-xl">
                 {/* Search */}
-                <div className="relative flex-1">
+                <div className="relative min-w-0 flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 w-4 h-4" />
                     <input
                         type="text"
+                        aria-label="Search trainees"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search name, student ID, CF handle, or full email..."
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors"
+                        className="min-h-11 w-full bg-[#0B0B0C] border border-white/10 rounded-xl pl-9 pr-12 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#E8C15A] transition-colors sm:min-h-10"
                     />
+                    {filtersReady && search && (
+                        <button
+                            type="button"
+                            aria-label="Clear search"
+                            onClick={() => { setSearch(''); setPage(1); }}
+                            className="absolute right-0 top-1/2 flex h-11 w-11 min-w-0 -translate-y-1/2 items-center justify-center rounded-lg text-white/50 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 sm:right-1 sm:h-9 sm:w-9"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Filter Controls */}
@@ -307,6 +331,7 @@ export default function MentorTraineesDirectoryPage() {
                     {/* Level Filter */}
                     <div className="relative">
                         <select
+                            aria-label="Training level"
                             value={levelFilter}
                             onChange={(e) => setLevelFilter(e.target.value)}
                             className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
@@ -323,6 +348,7 @@ export default function MentorTraineesDirectoryPage() {
                     {/* Time Window Filter */}
                     <div className="relative">
                         <select
+                            aria-label="Activity time range"
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value)}
                             className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
@@ -342,6 +368,7 @@ export default function MentorTraineesDirectoryPage() {
                     {/* Sort By */}
                     <div className="relative">
                         <select
+                            aria-label="Sort trainees"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as any)}
                             className="bg-[#0B0B0C] border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#E8C15A] cursor-pointer"
@@ -383,6 +410,30 @@ export default function MentorTraineesDirectoryPage() {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                <div role="status" aria-live="polite" className="min-w-0 space-y-1 text-xs">
+                    <p className="font-medium text-white/80">
+                        {loading ? 'Loading trainees…' : hasActiveFilters
+                            ? `${totalItems} matching trainee${totalItems === 1 ? '' : 's'}`
+                            : `${totalItems} trainees in the directory`}
+                    </p>
+                    {filtersReady && hasActiveFilters && (
+                        <p className="break-words text-white/45">
+                            Filters are active{search.trim() ? ` · Search: “${search.trim()}”` : ''}. Show all trainees to reset them.
+                        </p>
+                    )}
+                </div>
+                {filtersReady && hasActiveFilters && (
+                    <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="min-h-11 shrink-0 rounded-xl border border-[#E8C15A]/25 bg-[#E8C15A]/10 px-4 py-2 text-xs font-semibold text-[#E8C15A] transition-colors hover:bg-[#E8C15A]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70"
+                    >
+                        Show all trainees
+                    </button>
+                )}
             </div>
 
             {/* 4. Trainees List */}
