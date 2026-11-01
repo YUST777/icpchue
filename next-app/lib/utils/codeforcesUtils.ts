@@ -83,7 +83,7 @@ export function extensionErrorMessage(error: unknown): string | null {
     if (/context invalidated|receiving end does not exist/i.test(e)) {
         return 'Verdict Helper was just updated. Refresh this page (F5), then try again.';
     }
-    if (/NOT_LOGGED_IN/.test(e)) return 'You are not logged into Codeforces. Log in on codeforces.com, then try again.';
+    if (/NOT_LOGGED_IN/.test(e)) return 'Log in to Codeforces in this browser before syncing. If you do not have a Codeforces account, create one first. Your handle is detected automatically after login.';
     if (/CLOUDFLARE/.test(e)) return 'Codeforces is asking to verify you are human. Open codeforces.com in a tab, complete the check, then try again.';
     if (/COULD_NOT_OPEN_CODEFORCES_TAB|NO_CODEFORCES_TAB/.test(e)) return 'Could not reach Codeforces. Open codeforces.com in a tab, then try again.';
     if (/SUBMISSION_NOT_FOUND/.test(e)) return 'Codeforces did not find this submission on your account.';

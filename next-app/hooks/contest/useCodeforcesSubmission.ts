@@ -199,13 +199,13 @@ export function useCodeforcesSubmission({
 
                 if (!success) {
                     const messages: Record<string, string> = {
-                        NOT_LOGGED_IN: 'You are not logged into Codeforces. Please log in on codeforces.com, then try again.',
                         CLOUDFLARE_CHALLENGE: 'Codeforces is asking the extension to verify it\'s human. Open codeforces.com once in another tab, then try again.',
                         NO_SUBMISSIONS_TABLE: 'Could not read your Codeforces submissions. Make sure you can open the contest on Codeforces.',
                     };
                     setCfStatus({
                         status: 'error',
                         substatus: 'verify-pending',
+                        needsLogin: error === 'NOT_LOGGED_IN',
                         error: messages[error] || extensionErrorMessage(error) || error || 'The extension could not read your Codeforces submissions.'
                     });
                     setSubmitting(false);

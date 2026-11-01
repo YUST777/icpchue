@@ -20,24 +20,8 @@ interface CFStatusTabProps {
 
 export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, groupId }: CFStatusTabProps) {
     const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
-    const [handleInput, setHandleInput] = useState('');
-    // The handle was auto-resolved from the extension's active CF session,
-    // so the user doesn't have to type it (true one-click sync).
-    const [handleAutoResolved, setHandleAutoResolved] = useState(false);
-    // Lets the user reveal the manual handle field if auto-resolution failed
-    // or they want to override it.
-    const [showHandleField, setShowHandleField] = useState(false);
-
-    useEffect(() => {
-        try {
-            // When the extension is installed, the live Codeforces session is
-            // authoritative. Do not render a handle remembered from an older
-            // session while the extension is still checking logout state.
-            if (document.getElementById('verdict-extension-installed')) return;
-            const saved = localStorage.getItem('verdict-cf-handle');
-            if (saved) setHandleInput(saved);
-        } catch {}
-    }, []);
+    const [sessionHandle, setSessionHandle] = useState('');
+    const [sessionState, setSessionState] = useState<'checking' | 'ready' | 'signed-out' | 'unavailable'>('checking');
 
     useEffect(() => {
         // Fallback check in case the content script loads slightly late
@@ -52,45 +36,56 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
         return () => clearTimeout(timer);
     }, []);
 
-    // Ask the (unchanged) Verdict Helper extension for the handle of the
-    // currently logged-in Codeforces session. This makes the sync one-click:
-    // the user is already logged into CF (that's how they submitted), so we
-    // can resolve their handle without asking them to type it.
+    // The live browser session is authoritative; a saved handle cannot log in
+    // to Codeforces. Check again when returning from its login/register page.
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if (!isExtensionInstalled) return;
         if (!document.getElementById('verdict-extension-installed')) return;
 
-        let done = false;
+        let pending = false;
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        const updateSession = (handle: unknown) => {
+            pending = false;
+            clearTimeout(timeout);
+            const resolved = typeof handle === 'string' ? handle.trim() : '';
+            setSessionHandle(resolved);
+            setSessionState(resolved ? 'ready' : 'signed-out');
+            try {
+                if (resolved) localStorage.setItem('verdict-cf-handle', resolved);
+                else localStorage.removeItem('verdict-cf-handle');
+            } catch {}
+        };
         const handler = (event: MessageEvent) => {
             if (event.source !== window) return;
-            if (event.data?.type !== 'VERDICT_HANDLE_RESPONSE') return;
-            done = true;
-            window.removeEventListener('message', handler);
-            const resolved = event.data.handle;
-            if (resolved && typeof resolved === 'string') {
-                setHandleInput(resolved);
-                setHandleAutoResolved(true);
-                try { localStorage.setItem('verdict-cf-handle', resolved); } catch {}
-            } else {
-                // The extension verifies the live Codeforces session. Clear
-                // any previously remembered handle when that session is gone;
-                // otherwise a logout leaves the UI showing a stale account.
-                setHandleInput('');
-                setHandleAutoResolved(false);
-                try { localStorage.removeItem('verdict-cf-handle'); } catch {}
+            if (event.data?.type === 'VERDICT_HANDLE_RESPONSE') {
+                updateSession(event.data.handle);
+            } else if (event.data?.type === 'VERDICT_SUBMISSIONS_RESULT') {
+                if (event.data.error === 'NOT_LOGGED_IN') updateSession(null);
+                else if (event.data.success && event.data.handle) updateSession(event.data.handle);
             }
         };
+        const checkSession = () => {
+            if (pending || document.visibilityState === 'hidden') return;
+            pending = true;
+            setSessionState('checking');
+            timeout = setTimeout(() => {
+                pending = false;
+                setSessionHandle('');
+                setSessionState('unavailable');
+            }, 10000);
+            window.postMessage({ type: 'VERDICT_GET_HANDLE' }, window.location.origin);
+        };
         window.addEventListener('message', handler);
-        window.postMessage({ type: 'VERDICT_GET_HANDLE' }, '*');
-
-        const timeout = setTimeout(() => {
-            if (!done) window.removeEventListener('message', handler);
-        }, 10000);
+        window.addEventListener('focus', checkSession);
+        document.addEventListener('visibilitychange', checkSession);
+        checkSession();
         return () => {
             window.removeEventListener('message', handler);
+            window.removeEventListener('focus', checkSession);
+            document.removeEventListener('visibilitychange', checkSession);
             clearTimeout(timeout);
         };
-    }, []);
+    }, [isExtensionInstalled]);
 
     const isVerifyPending = cfStatus?.substatus === 'verify-pending';
     // Show the one-click sync panel both when idle (extension present) and when
@@ -153,17 +148,14 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
     if (showSyncPanel) {
         const verifying = cfStatus?.progress === 50;
         const hasError = cfStatus?.status === 'error';
-        // The extension resolves the user's handle from their live Codeforces
-        // session, so the button is always one-click. The manual handle field is
-        // only a fallback (no extension, or user wants to override).
-        const knownHandle = handleInput.trim();
+        const knownHandle = sessionHandle.trim();
+        const needsLogin = (sessionState === 'signed-out' && !hasError) || (cfStatus?.needsLogin && sessionState !== 'ready');
+        const checkingSession = sessionState === 'checking';
 
         const runVerify = async () => {
             const verifyFn = (window as any).__verdict_verify_cf;
             if (verifyFn) {
-                // Pass the known handle if we have one; the extension path
-                // ignores it and uses the session-resolved handle instead.
-                await verifyFn(knownHandle || undefined);
+                await verifyFn();
             }
         };
 
@@ -179,12 +171,32 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
                     </div>
                 </div>
 
+                {needsLogin ? (
+                    <div role="alert" className="space-y-3 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-sm leading-relaxed text-amber-100">
+                        <div className="flex items-start gap-2">
+                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                            <div className="min-w-0 space-y-1">
+                                <p className="font-semibold text-white">Log in to Codeforces to sync</p>
+                                <p className="text-xs text-amber-100/80">No signed-in Codeforces account was detected in this browser. Log in, or create an account first. Your handle will be detected automatically.</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <a href="https://codeforces.com/enter" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#E8C15A] px-3 py-2 text-xs font-semibold text-black hover:bg-[#F0D06A]">
+                                Log in to Codeforces <ExternalLink size={12} className="shrink-0" />
+                            </a>
+                            <a href="https://codeforces.com/register" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/5">
+                                Create Codeforces account <ExternalLink size={12} className="shrink-0" />
+                            </a>
+                        </div>
+                    </div>
+                ) : (
                 <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
                     <p><strong>1. Submit on Codeforces:</strong> Send your solution and wait for a final verdict.</p>
                     <p><strong>2. Sync here:</strong> Click below — the extension imports your full attempt history, shows the latest verdict, and marks the problem solved only when an AC is found.</p>
                 </div>
+                )}
 
-                {hasError && cfStatus?.error && (
+                {hasError && cfStatus?.error && !cfStatus.needsLogin && !needsLogin && (
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start gap-2 leading-relaxed">
                         <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                         <span>{cfStatus.error}</span>
@@ -200,60 +212,29 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
                     </a>
                 )}
 
-                {/* Manual handle field — only when the user chooses to override
-                    the session-resolved handle (or no extension is present). */}
-                {showHandleField && (
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-bold text-[#888] uppercase tracking-wider">Codeforces Handle</label>
-                        <input
-                            type="text"
-                            value={handleInput}
-                            onChange={(e) => {
-                                setHandleInput(e.target.value);
-                                try {
-                                    localStorage.setItem('verdict-cf-handle', e.target.value);
-                                } catch {}
-                            }}
-                            disabled={verifying}
-                            placeholder="Enter your CF handle (e.g. tourist)"
-                            className="bg-[#1a1a1a] border border-white/10 hover:border-white/20 focus:border-[#E8C15A]/50 rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none transition-colors"
-                        />
-                    </div>
-                )}
-
                 <button
                     onClick={runVerify}
-                    disabled={verifying}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-sm cursor-pointer"
+                    disabled={verifying || checkingSession}
+                    className="min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-sm cursor-pointer"
                 >
-                    {verifying ? (
+                    {verifying || checkingSession ? (
                         <>
-                            <Loader2 size={14} className="animate-spin" /> Checking your submissions...
+                            <Loader2 size={14} className="animate-spin" /> {verifying ? 'Checking your submissions...' : 'Checking Codeforces login...'}
                         </>
                     ) : (
                         <>
-                            <CheckCircle2 size={14} /> Check &amp; Sync attempts
+                            <CheckCircle2 size={14} /> {needsLogin ? "I’m logged in — check again" : 'Check & Sync attempts'}
                         </>
                     )}
                 </button>
 
-                {/* Resolved-handle hint + override toggle */}
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#888]">
-                    {knownHandle ? (
+                <div role="status" className="text-center text-xs text-[#888]">
+                    {checkingSession ? 'Checking your Codeforces login…' : knownHandle && !needsLogin ? (
                         <span>
-                            Checking as <span className="text-[#E8C15A] font-mono">{knownHandle}</span>
-                            {handleAutoResolved && ' (from your Codeforces session)'}
+                            Detected account: <span className="break-all text-[#E8C15A] font-mono">{knownHandle}</span>. To use another account, switch accounts on Codeforces.
                         </span>
                     ) : (
-                        <span>Using your active Codeforces session</span>
-                    )}
-                    {!verifying && !showHandleField && (
-                        <button
-                            onClick={() => setShowHandleField(true)}
-                            className="text-[#E8C15A] hover:underline cursor-pointer"
-                        >
-                            change
-                        </button>
+                        <span>{needsLogin ? 'Return here after logging in, then check again. No handle needs to be entered.' : 'Could not check your Codeforces login. Open Codeforces, then try syncing again.'}</span>
                     )}
                 </div>
 
