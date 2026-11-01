@@ -214,7 +214,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
             <button
                 type="button"
                 onClick={openPanel}
-                className={`${SMALL_BTN} h-11 sm:h-auto px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-all text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                className={`${SMALL_BTN} h-11 sm:h-auto px-2.5 py-1 rounded-lg bg-[#E8C15A]/10 hover:bg-[#E8C15A]/20 active:scale-95 text-[#E8C15A] transition-[color,background-color,border-color,opacity,transform] text-xs flex items-center gap-1.5 border border-[#E8C15A]/25 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
             >
                 <Download size={12} />
                 <span>Export code</span>
@@ -231,7 +231,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                     <div className="w-full sm:max-w-5xl max-h-[94dvh] sm:max-h-[86dvh] flex flex-col bg-[#0F0F11] border border-white/[0.09] rounded-t-3xl sm:rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden">
                         {/* Header */}
                         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
-                            <div className="w-10 h-10 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/20 text-[#E8C15A] flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl border text-white/60 flex items-center justify-center shrink-0">
                                 <Download size={18} />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -245,7 +245,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 type="button"
                                 onClick={() => setOpen(false)}
                                 aria-label="Close"
-                                className={`${SMALL_BTN} w-11 h-11 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl hover:bg-white/[0.07] active:scale-95 text-white/55 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                className={`${SMALL_BTN} w-11 h-11 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl hover:bg-white/[0.07] active:scale-95 text-white/55 hover:text-white transition-[color,background-color,border-color,opacity,transform] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                             >
                                 <X size={16} />
                             </button>
@@ -256,7 +256,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                             {/* Left: format, options, summary */}
                             <div className="p-5 space-y-6 lg:overflow-y-auto lg:border-r border-white/[0.06] [scrollbar-width:thin]">
                                 <section>
-                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40 mb-2.5">Format</h3>
+                                    <h3 className="text-[11px] font-mono text-white/40 mb-2.5">Format</h3>
                                     <div role="radiogroup" aria-label="Export format" className="space-y-2">
                                         {FORMATS.map((f) => (
                                             <label key={f.id} className="relative block cursor-pointer group">
@@ -271,14 +271,14 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                                     className="peer sr-only !min-h-0 !min-w-0"
                                                 />
                                                 <div
-                                                    className={`flex items-center gap-3 p-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-all group-hover:bg-white/[0.05] group-active:scale-[0.99] peer-focus-visible:ring-2 peer-focus-visible:ring-[#E8C15A]/70 peer-checked:border-[#E8C15A]/60 peer-checked:bg-[#E8C15A]/[0.08] ${format === f.id ? 'text-[#E8C15A]' : 'text-white/55'}`}
+                                                    className={`flex items-center gap-3 p-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-[color,background-color,border-color,opacity,transform] group-hover:bg-white/[0.05] group-active:scale-[0.99] peer-focus-visible:ring-2 peer-focus-visible:ring-[#E8C15A]/70 peer-checked:border-[#E8C15A]/60 peer-checked:bg-[#E8C15A]/[0.08] ${format === f.id ? 'text-[#E8C15A]' : 'text-white/55'}`}
                                                 >
                                                     <span className="shrink-0">{f.icon}</span>
                                                     <span className="min-w-0 flex-1">
                                                         <span className={`block text-[13px] font-semibold ${format === f.id ? 'text-white' : 'text-white/85'}`}>{f.title}</span>
                                                         <span className="block text-[11px] text-white/45 leading-snug">{f.sub}</span>
                                                     </span>
-                                                    {f.tag && <span className="text-[9px] font-mono uppercase tracking-wide text-[#E8C15A]/80 shrink-0">{f.tag}</span>}
+                                                    {f.tag && <span className="text-[9px] font-mono text-[#E8C15A]/80 shrink-0">{f.tag}</span>}
                                                     <span aria-hidden className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${format === f.id ? 'border-[#E8C15A]' : 'border-white/30'}`}>
                                                         {format === f.id && <span className="w-2 h-2 rounded-full bg-[#E8C15A]" />}
                                                     </span>
@@ -289,7 +289,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 </section>
 
                                 <section className="space-y-3.5">
-                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40">Options</h3>
+                                    <h3 className="text-[11px] font-mono text-white/40">Options</h3>
                                     <Switch on={includeMeta} onChange={setIncludeMeta} label="Verdict, attempts and date" />
                                     <Switch on={format === 'markdown' && lineNumbers} onChange={setLineNumbers} label="Line numbers (Markdown)" disabled={format !== 'markdown'} />
                                 </section>
@@ -311,14 +311,14 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                             {/* Right: problems fill the full height */}
                             <div className="p-5 flex flex-col min-h-0 min-w-0">
                                 <div className="flex items-center justify-between mb-3 shrink-0">
-                                    <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/40">Problems</h3>
+                                    <h3 className="text-[11px] font-mono text-white/40">Problems</h3>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setSelected(new Set());
                                             setDone('');
                                         }}
-                                        className={`${SMALL_BTN} text-xs text-white/50 hover:text-white px-2 py-1 rounded-md hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                        className={`${SMALL_BTN} text-xs text-white/50 hover:text-white px-2 py-1 rounded-md hover:bg-white/[0.06] active:scale-95 transition-[color,background-color,border-color,opacity,transform] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                                     >
                                         Clear
                                     </button>
@@ -329,7 +329,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                             key={q}
                                             type="button"
                                             onClick={() => quickPick(q)}
-                                            className={`${SMALL_BTN} px-3 py-1.5 rounded-full text-xs text-white/65 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] active:scale-95 border border-white/[0.08] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                            className={`${SMALL_BTN} px-3 py-1.5 rounded-full text-xs text-white/65 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] active:scale-95 border border-white/[0.08] transition-[color,background-color,border-color,opacity,transform] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                                         >
                                             {label} <span className="text-white/35 ml-1 tabular-nums">{counts[q]}</span>
                                         </button>
@@ -353,7 +353,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                                         onClick={() => toggleCollapse(g)}
                                                         aria-expanded={!isCollapsed}
                                                         aria-label={isCollapsed ? `Expand ${g}` : `Collapse ${g}`}
-                                                        className={`${SMALL_BTN} p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/[0.07] active:scale-90 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
+                                                        className={`${SMALL_BTN} p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/[0.07] active:scale-90 transition-[color,background-color,border-color,opacity,transform] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70`}
                                                     >
                                                         <ChevronDown size={15} className={`transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                                                     </button>
@@ -401,7 +401,7 @@ export function CodeExportPanel({ trainee, catalog }: Props) {
                                 type="button"
                                 disabled={chosen.length === 0}
                                 onClick={doExport}
-                                className="min-h-11 w-full px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F11] sm:w-auto"
+                                className="min-h-11 w-full px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#E8C15A] text-black hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-[color,background-color,border-color,opacity,transform] flex items-center justify-center gap-2 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F11] sm:w-auto"
                             >
                                 <Download size={15} />
                                 Export

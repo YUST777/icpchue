@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Radio, Calendar, ArrowRight, ThumbsUp, Heart, Flame } from 'lucide-react';
+import { Calendar, ArrowRight, ThumbsUp, Heart, Flame } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 const newsItems = [
     {
@@ -188,12 +189,7 @@ export default function NewsPage() {
 
             <div className="space-y-6 sm:space-y-8">
                 {/* Page Title */}
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                        <Radio className="text-[#E8C15A]" size={19} aria-hidden="true" />
-                    </div>
-                    <h2 className="text-2xl font-medium leading-tight text-[var(--color-text)]">Team News</h2>
-                </div>
+                <PageHeader title="Team news" subtitle="Updates, devlogs and announcements from the team." />
 
                 {/* Featured News Cards */}
                 <div className="space-y-4">
@@ -206,7 +202,7 @@ export default function NewsPage() {
                                             alt={featuredNews.title}
                                             fill
                                             sizes="(max-width: 768px) 100vw, 50vw"
-                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                            className="object-cover transition-transform duration-300"
                                         />
                                     </Link>
 

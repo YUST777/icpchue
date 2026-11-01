@@ -4,7 +4,7 @@ import { cdn } from '@/lib/cdn';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { X, ArrowRight, Flame, Trophy, GraduationCap, Code2, LayoutList } from 'lucide-react';
+import { X, ArrowRight, Flame, Award, GraduationCap, Code2, LayoutList } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -12,7 +12,7 @@ export const ACHIEVEMENTS_UPDATE_STORAGE_KEY = 'seen_achievements_v3_update';
 
 const CATEGORIES = [
     { name: 'Daily Streaks', icon: Flame, count: '×8' },
-    { name: 'Monthly Podium', icon: Trophy, count: '×5' },
+    { name: 'Monthly Podium', icon: Award, count: '×5' },
     { name: 'Level 0', icon: GraduationCap, count: '×10' },
     { name: 'Codeforces', icon: Code2, count: '×10' },
     { name: 'Board', icon: LayoutList, count: '×15' },
@@ -180,7 +180,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
 
                             {/* Header */}
                             <div className="px-5 pb-3 flex items-center justify-between border-b border-white/[0.08]">
-                                <h2 className="text-base font-bold text-white tracking-tight">
+                                <h2 className="text-base font-semibold text-white tracking-tight">
                                     Dev Log: 48 New Achievements
                                 </h2>
                                 <button
@@ -188,7 +188,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                     disabled={countdown > 0}
                                     onClick={countdown === 0 ? handleClose : undefined}
                                     aria-label={countdown > 0 ? `Wait ${countdown}s to close` : 'Close'}
-                                    className={`min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border transition-all ${
+                                    className={`min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border transition-[color,background-color,border-color,opacity,transform] ${
                                         countdown > 0
                                             ? 'bg-white/5 border-white/10 text-white/40 font-mono text-xs cursor-not-allowed select-none'
                                             : 'bg-white/5 hover:bg-white/10 border-white/15 text-white/70 hover:text-white cursor-pointer active:scale-95'
@@ -227,12 +227,12 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                                 className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]"
                                             >
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className="w-6 h-6 rounded-md bg-[#E8C15A]/10 border border-[#E8C15A]/25 flex items-center justify-center text-[#E8C15A] shrink-0">
+                                                    <div className="w-6 h-6 rounded-md border flex items-center justify-center text-white/60 shrink-0">
                                                         <Icon size={13} />
                                                     </div>
                                                     <span className="text-xs font-medium text-white/90">{name}</span>
                                                 </div>
-                                                <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 border border-[#E8C15A]/25 px-2 py-0.5 rounded-full">
+                                                <span className="text-[11px] font-mono font-semibold text-white/70 bg-white/[0.06] px-2 py-0.5 rounded-full">
                                                     {count}
                                                 </span>
                                             </div>
@@ -245,7 +245,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                     <Link
                                         href="/dashboard/achievements"
                                         onClick={handleClose}
-                                        className="w-full h-11 rounded-xl bg-[#E8C15A] hover:bg-[#d8b046] active:scale-[0.99] text-black font-bold text-sm flex items-center justify-center gap-2 shadow-[0_2px_12px_rgba(232,193,90,0.3)] transition-all"
+                                        className="w-full h-11 rounded-xl bg-[#E8C15A] hover:bg-[#d8b046] active:scale-[0.99] text-black font-semibold text-sm flex items-center justify-center gap-2 shadow-[0_2px_12px_rgba(232,193,90,0.3)] transition-[color,background-color,border-color,opacity,transform]"
                                     >
                                         <span>Explore Badges</span>
                                         <ArrowRight size={16} />
@@ -268,10 +268,10 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                             {/* Header */}
                             <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between bg-gradient-to-r from-white/[0.02] to-transparent">
                                 <div className="flex items-center gap-2.5">
-                                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#E8C15A] font-bold bg-[#E8C15A]/10 px-2 py-0.5 rounded border border-[#E8C15A]/25">
+                                    <span className="text-[10px] font-mono text-white/70 font-semibold bg-white/[0.06] px-2 py-0.5 rounded">
                                         Dev Log
                                     </span>
-                                    <h2 className="text-base font-bold text-white tracking-tight">
+                                    <h2 className="text-base font-semibold text-white tracking-tight">
                                         48 New Achievements System
                                     </h2>
                                 </div>
@@ -281,7 +281,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                     onClick={countdown === 0 ? handleClose : undefined}
                                     title={countdown > 0 ? `Wait ${countdown}s` : 'Close (Esc)'}
                                     aria-label={countdown > 0 ? `Wait ${countdown}s to close` : 'Close'}
-                                    className={`min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border transition-all ${
+                                    className={`min-w-[34px] h-8 px-2 flex items-center justify-center rounded-lg border transition-[color,background-color,border-color,opacity,transform] ${
                                         countdown > 0
                                             ? 'bg-white/5 border-white/10 text-white/40 font-mono text-xs cursor-not-allowed select-none'
                                             : 'bg-white/5 hover:bg-white/10 border-white/15 text-white/70 hover:text-white cursor-pointer active:scale-95'
@@ -320,15 +320,15 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                             {CATEGORIES.map(({ name, icon: Icon, count }) => (
                                                 <div
                                                     key={name}
-                                                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.025] border border-white/[0.06] hover:border-[#E8C15A]/30 hover:bg-white/[0.04] transition-all"
+                                                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.025] border border-white/[0.06] hover:border-[#E8C15A]/30 hover:bg-white/[0.04] transition-[color,background-color,border-color,opacity,transform]"
                                                 >
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 border border-[#E8C15A]/25 flex items-center justify-center text-[#E8C15A] shrink-0">
+                                                        <div className="w-6 h-6 rounded-lg border flex items-center justify-center text-white/60 shrink-0">
                                                             <Icon size={13} />
                                                         </div>
                                                         <span className="text-xs font-medium text-white/90">{name}</span>
                                                     </div>
-                                                    <span className="text-[11px] font-mono font-semibold text-[#E8C15A] bg-[#E8C15A]/10 border border-[#E8C15A]/25 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[11px] font-mono font-semibold text-white/70 bg-white/[0.06] px-2 py-0.5 rounded-full">
                                                         {count}
                                                     </span>
                                                 </div>
@@ -341,7 +341,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                         <Link
                                             href="/dashboard/achievements"
                                             onClick={handleClose}
-                                            className="w-full h-11 bg-[#E8C15A] hover:bg-[#d8b046] active:scale-[0.99] text-black font-bold text-xs rounded-xl shadow-[0_2px_12px_rgba(232,193,90,0.25)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                            className="w-full h-11 bg-[#E8C15A] hover:bg-[#d8b046] active:scale-[0.99] text-black font-semibold text-xs rounded-xl shadow-[0_2px_12px_rgba(232,193,90,0.25)] flex items-center justify-center gap-1.5 transition-[color,background-color,border-color,opacity,transform] cursor-pointer"
                                         >
                                             <span>Explore Badges</span>
                                             <ArrowRight size={14} />

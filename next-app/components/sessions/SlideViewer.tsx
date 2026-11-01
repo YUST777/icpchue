@@ -101,7 +101,7 @@ export default function SlideViewer({ basePath, count, title }: SlideViewerProps
                     </button>
                 </div>
                 <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden max-w-[240px]">
-                    <div className="h-full bg-[#E8C15A] transition-all" style={{ width: `${(index / count) * 100}%` }} />
+                    <div className="h-full bg-[#E8C15A] transition-[color,background-color,border-color,opacity,transform]" style={{ width: `${(index / count) * 100}%` }} />
                 </div>
                 <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
                     className="min-w-[36px] min-h-[36px] p-2 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">

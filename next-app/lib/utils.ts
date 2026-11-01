@@ -1,3 +1,4 @@
+import { formatDisplayName } from '@/lib/names';
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -11,5 +12,6 @@ export function getDisplayName(name?: string | null): string {
     if (name.includes('@')) {
         return name.split('@')[0];
     }
-    return name;
+    // English only, at most three names.
+    return formatDisplayName(name);
 }

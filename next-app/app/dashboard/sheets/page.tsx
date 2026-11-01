@@ -3,10 +3,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FileCode2, Info, X, ChevronRight } from 'lucide-react';
+import { Info, X, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithCache, getCachedData } from '@/lib/cache/api-cache';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function SheetsPage() {
     const router = useRouter();
@@ -87,45 +88,13 @@ export default function SheetsPage() {
     return (
         <>
             <div className="space-y-6 md:space-y-8 animate-fade-in">
-                {/* Phones get a one-line header; the big intro block is for larger screens */}
-                <div className="md:hidden flex items-center justify-between gap-3">
-                    <h1 className="text-xl font-bold text-[#F2F2F2]">Training Curriculum</h1>
-                    <button
-                        onClick={() => setShowCredits(true)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] hover:bg-[#E8C15A]/20 transition-colors text-xs font-bold"
-                    >
-                        <Info size={16} />
-                        <span>Credits</span>
-                    </button>
-                </div>
-
-                {/* Hero Section */}
-                <div className="ui-panel hidden p-6 md:block md:p-8">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-[#E8C15A]/10">
-                                <FileCode2 className="text-[#E8C15A]" size={28} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-medium text-[#F2F2F2] md:text-3xl">Training Curriculum</h1>
-                                <p className="text-[#A0A0A0] text-sm mt-1">Your Roadmap to Competitive Programming</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 self-start">
-                            <button
-                                onClick={() => setShowCredits(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] hover:bg-[#E8C15A]/20 transition-colors text-xs font-bold"
-                            >
-                                <Info size={16} />
-                                <span>CREDITS</span>
-                            </button>
-                        </div>
-                    </div>
-                    <p className="text-[#808080] text-sm leading-relaxed max-w-2xl">
-                        Access a comprehensive 3-level curriculum with 249+ problems designed to build your skills from the ground up.
-                        Write code, submit solutions, and get instant feedback to accelerate your learning.
-                    </p>
-                </div>
+                <PageHeader
+                    title="Training curriculum"
+                    subtitle="249+ problems across three levels. Write code, submit solutions and get instant feedback."
+                    action={<button onClick={() => setShowCredits(true)} className="self-start text-sm text-white/60 transition-colors hover:text-white md:self-auto">
+                                Credits
+                            </button>}
+                />
 
                 {/* Curriculum Levels */}
                 <div className="space-y-4">
@@ -174,7 +143,7 @@ export default function SheetsPage() {
                                                         {/* Progress Bar overlay */}
                                                         {progress[level.slug] && (
                                                             <div
-                                                                className="absolute bottom-0 left-0 h-0.5 bg-[#E8C15A] transition-all duration-700"
+                                                                className="absolute bottom-0 left-0 h-0.5 bg-[#E8C15A] transition-[color,background-color,border-color,opacity,transform] duration-700"
                                                                 style={{ width: `${(progress[level.slug].solved / Math.max(progress[level.slug].total, 1)) * 100}%` }}
                                                             />
                                                         )}
@@ -183,11 +152,11 @@ export default function SheetsPage() {
                                                         <div className="mt-2 flex justify-between px-1">
                                                             <div className="flex items-center gap-1">
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#E8C15A]"></div>
-                                                                <span className="text-[10px] text-[#666] font-bold">
+                                                                <span className="text-[10px] text-[#666] font-semibold">
                                                                     {progress[level.slug].solved} Solved
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[10px] text-[#444] font-bold">
+                                                            <span className="text-[10px] text-[#444] font-semibold">
                                                                 {Math.round((progress[level.slug].solved / Math.max(progress[level.slug].total, 1)) * 100)}%
                                                             </span>
                                                         </div>
@@ -258,10 +227,10 @@ export default function SheetsPage() {
                                 <X size={20} />
                             </button>
                             <div className="flex flex-col items-center text-center">
-                                <div className="w-12 h-12 bg-[#E8C15A]/10 rounded-full flex items-center justify-center text-[#E8C15A] mb-4">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white/60 mb-4">
                                     <Info size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Acknowledgement</h3>
+                                <h3 className="text-xl font-semibold text-white mb-2">Acknowledgement</h3>
                                 <p className="text-[#A0A0A0] text-sm leading-relaxed mb-4">
                                     These training sheets are based on the excellent curriculum provided by:
                                 </p>
@@ -269,7 +238,7 @@ export default function SheetsPage() {
                                     href="https://www.facebook.com/icpcassiutt/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-[#E8C15A] font-bold hover:underline bg-[#E8C15A]/10 px-4 py-2 rounded-lg transition-colors hover:bg-[#E8C15A]/20"
+                                    className="flex items-center gap-2 text-[#E8C15A] font-semibold hover:underline bg-[#E8C15A]/10 px-4 py-2 rounded-lg transition-colors hover:bg-[#E8C15A]/20"
                                 >
                                     ICPC Assiut University Community
                                 </a>

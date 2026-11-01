@@ -10,7 +10,7 @@ import CurrentSheetWidget from '@/components/dashboard/CurrentSheetWidget';
 import { UserProfile } from '@/lib/types';
 
 // Extracted Components
-import { LeaderboardWidget } from '@/components/dashboard/profile/LeaderboardWidget';
+import { LeaderboardWidget, type RankInfo } from '@/components/dashboard/profile/LeaderboardWidget';
 import { IdentityCard } from '@/components/dashboard/profile/IdentityCard';
 
 export default function ProfilePage() {
@@ -27,7 +27,7 @@ export default function ProfilePage() {
     const [uploadingPfp, setUploadingPfp] = useState(false);
     const [pfpError, setPfpError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [sheetsRank, setSheetsRank] = useState<number | null>(null);
+    const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
     const [rankLoading, setRankLoading] = useState(true);
 
     // Achievements hook for popup reveals
@@ -42,9 +42,25 @@ export default function ProfilePage() {
                         credentials: 'include'
                     }, 300);
                     if (!Array.isArray(lbData.leaderboard)) continue;
-                    const myEntryIndex = lbData.leaderboard.findIndex((u: { userId: number }) => u.userId === user?.id);
-                    if (myEntryIndex !== -1) {
-                        setSheetsRank(myEntryIndex + 1);
+                    type Entry = { userId: number; username: string; solvedCount: number; acceptedCount: number; totalSubmissions: number };
+                    const board: Entry[] = lbData.leaderboard;
+                    const i = board.findIndex(u => u.userId === user?.id);
+                    if (i !== -1) {
+                        const me = board[i];
+                        const rows = board.slice(Math.max(0, i - 1), i + 2).map((u, k) => {
+                            const rank = Math.max(0, i - 1) + k + 1;
+                            return { rank, username: u.username, solved: u.solvedCount, me: rank === i + 1 };
+                        });
+                        setRankInfo({
+                            rank: i + 1,
+                            total: board.length,
+                            level,
+                            solved: me.solvedCount,
+                            accepted: me.acceptedCount,
+                            submissions: me.totalSubmissions,
+                            toNext: i === 0 ? null : Math.max(1, board[i - 1].solvedCount - me.solvedCount + 1),
+                            neighbours: rows,
+                        });
                         break;
                     }
                 }
@@ -148,14 +164,16 @@ export default function ProfilePage() {
 
     return (
         <>
-            <div className="space-y-6 animate-fade-in">
-                <div className="flex flex-col gap-6">
-                    {/* Top Row: Identity + Status */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                        <div className="flex flex-col gap-6">
+            {/* Desktop: the whole profile fits one screen. The dashboard chrome takes 8rem (header plus page padding). */}
+            <div className="animate-fade-in">
+                <div className="flex flex-col gap-4 lg:h-[calc(100dvh-8rem)] lg:min-h-[440px]">
+                    <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
+                        <div className="flex min-h-0 flex-col gap-4 [&>div:last-child]:min-h-0 [&>div:last-child]:flex-1">
                             <IdentityCard
-                                user={user as { id?: number; email?: string; student_id?: string; role?: string } | undefined}
+                                user={user as { id?: number; email?: string; student_id?: string; role?: string; created_at?: string; createdAt?: string } | undefined}
                                 profile={profile}
+                                streak={stats.streak}
+                                maxStreak={stats.maxStreak}
                                 profilePicture={profilePicture}
                                 uploadingPfp={uploadingPfp}
                                 pfpError={pfpError}
@@ -163,11 +181,11 @@ export default function ProfilePage() {
                                 handlePfpUpload={handlePfpUpload}
                                 handleDeletePfp={handleDeletePfp}
                             />
-                            <CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} />
+                            <div className="flex flex-col"><CurrentSheetWidget sheet={stats.currentSheet} loading={statsLoading} /></div>
                         </div>
 
-                        <div className="flex flex-col gap-6">
-                            <LeaderboardWidget sheetsRank={sheetsRank} loading={rankLoading} />
+                        <div className="flex min-h-0 flex-col gap-4 [&>div:last-child]:min-h-0 [&>div:last-child]:flex-1">
+                            <div className="flex flex-col"><LeaderboardWidget info={rankInfo} loading={rankLoading} /></div>
                             <AchievementsWidget profile={profile as unknown as Record<string, unknown>} user={user || undefined} />
                         </div>
                     </div>

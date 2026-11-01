@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Check, ChevronDown, Code, Info, ExternalLink, Flame, Layers, Link2, Pencil, Share2, Target, Trophy, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import type { PublicProfile, PublicSheet } from '@/lib/profile/public-profile';
 import { getAchievementMeta } from '@/lib/achievements/catalog';
 import { RARITY_TEXT, holderShare, rarityFromShare, shareLabel, type Rarity } from '@/lib/achievements/rarity';
@@ -51,8 +51,8 @@ function getBadgeModel(id: string) {
 const ROLE_LABEL: Record<string, string> = { owner: 'Founder', instructor: 'Instructor', mentor: 'Mentor' };
 const SITE_URL = 'https://icpchue.com';
 
-const CARD = 'rounded-2xl border border-white/[0.08] bg-[#121214]/90 p-4 md:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]';
-const LABEL = 'text-[10px] font-mono uppercase tracking-wider text-white/40';
+const CARD = 'rounded-2xl border border-white/[0.08] bg-[#121214] p-4 md:p-5';
+const LABEL = 'text-[10px] font-mono text-white/40';
 
 export default function PublicProfileView({ profile }: { profile: PublicProfile }) {
     const name = getDisplayName(profile.name) || 'Member';
@@ -102,7 +102,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                     <div className="flex items-center gap-2 flex-wrap">
                         <h1 className="!text-2xl md:!text-[28px] !leading-tight font-semibold tracking-tight text-white break-words">{name}</h1>
                         {roleLabel && (
-                            <span className="rounded-md border border-[#E8C15A]/25 bg-[#E8C15A]/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-[#E8C15A]">{roleLabel}</span>
+                            <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-mono text-white/70">{roleLabel}</span>
                         )}
                     </div>
                     <div className="mt-1 text-sm font-mono text-white/40">@{profile.studentId}</div>
@@ -119,11 +119,10 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                 <div className="mt-auto flex gap-2">
                     <button type="button" onClick={share}
                         className="flex-1 inline-flex items-center justify-center gap-2 h-9 px-3 rounded-xl bg-[#E8C15A] text-xs font-semibold text-black hover:bg-[#d4ad45] transition-colors cursor-pointer">
-                        <Share2 size={13} /> Share profile
+                        Share profile
                     </button>
                     <button type="button" onClick={copyLink}
                         className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-white/10 bg-white/[0.04] text-xs text-white/80 hover:bg-white/[0.08] transition-colors cursor-pointer">
-                        {copied ? <Check size={13} className="text-emerald-400" /> : <Link2 size={13} />}
                         {copied ? 'Copied' : 'Copy link'}
                     </button>
                 </div>
@@ -131,7 +130,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
 
             {/* Solved */}
             <div className={`${CARD} flex flex-col justify-between gap-4`}>
-                <Label icon={<Target size={12} />}>Solved</Label>
+                <Label>Solved</Label>
                 <div>
                     <div className="text-3xl font-semibold text-white tabular-nums leading-none">{stats.solved}</div>
                     {totalProblems > 0 && (
@@ -147,7 +146,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
 
             {/* Streak */}
             <div className={`${CARD} flex flex-col justify-between gap-4`}>
-                <Label icon={<Flame size={12} />}>Streak</Label>
+                <Label>Streak</Label>
                 <div>
                     <div className="text-3xl font-semibold text-white tabular-nums leading-none">
                         {stats.currentStreak}<span className="ml-1 text-base text-white/35">days</span>
@@ -161,8 +160,8 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                 <a href={`https://codeforces.com/profile/${encodeURIComponent(codeforces.handle)}`} target="_blank" rel="noopener noreferrer"
                     className={`${CARD} col-span-2 group flex flex-col justify-between gap-4 hover:border-white/20 transition-colors`}>
                     <div className="flex items-center justify-between">
-                        <Label icon={<Code size={12} />}>Codeforces</Label>
-                        <ExternalLink size={13} className="text-white/25 group-hover:text-white/60 transition-colors" />
+                        <Label>Codeforces</Label>
+                        <span className="text-[11px] text-white/35 transition-colors group-hover:text-white/70">Open</span>
                     </div>
                     <div className="flex items-end justify-between gap-4">
                         <div className="min-w-0">
@@ -182,7 +181,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                 </a>
             ) : (
                 <div className={`${CARD} col-span-2 flex flex-col justify-between gap-4`}>
-                    <Label icon={<Code size={12} />}>Codeforces</Label>
+                    <Label>Codeforces</Label>
                     <div className="text-sm text-white/35">No Codeforces account linked.</div>
                 </div>
             )}
@@ -190,7 +189,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
             {/* Sheets */}
             <div className={`${CARD} col-span-2 md:col-span-4`}>
                 <div className="flex items-center justify-between gap-3 mb-4">
-                    <Label icon={<Layers size={12} />}>Sheets</Label>
+                    <Label>Sheets</Label>
                     {profile.sheets.length > 0 && (
                         <span className="text-[11px] text-white/40 tabular-nums">{stats.sheetsDone} of {stats.sheetsStarted} completed</span>
                     )}
@@ -215,8 +214,8 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
             {profile.achievements.length > 0 && (
                 <div className={`${CARD} col-span-2 md:col-span-4`}>
                     <div className="flex items-center justify-between mb-4">
-                        <Label icon={<Trophy size={12} />}>Achievements</Label>
-                        <span className="text-[11px] font-mono text-white/40">{profile.achievements.length} Unlocked · 3D Interactive</span>
+                        <Label>Achievements</Label>
+                        <span className="text-[11px] font-mono text-white/40">{profile.achievements.length} unlocked</span>
                     </div>
                     <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {profile.achievements.map(a => {
@@ -224,12 +223,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                             const share = holderShare(holderStats, a.id) ?? a.share ?? null;
                             const rarity: Rarity = share !== null ? rarityFromShare(share) : a.rarity;
                             return (
-                                <li key={a.id} title={a.description} className="relative rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-all group">
-                                    <button type="button" aria-label={`About ${a.name}`}
-                                        onClick={() => setOpenBadge({ id: a.id, modelPath: badgeModel.modelPath, title: a.name, unlocked: true, rarity, earnedAt: [a.earnedAt], serial: a.serial, factory: a.factory, scale: badgeModel.scale })}
-                                        className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 transition-all cursor-pointer">
-                                        <Info size={13} />
-                                    </button>
+                                <li key={a.id} title={a.description} className="relative rounded-xl border border-white/[0.08] bg-black/40 overflow-hidden flex flex-col hover:border-[#E8C15A]/40 transition-[color,background-color,border-color,opacity,transform] group">
                                     <div className="relative aspect-square w-full min-h-[140px]">
                                         <Badge3D
                                             modelPath={badgeModel.modelPath}
@@ -241,10 +235,13 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
                                         />
                                     </div>
                                     <div className="px-2.5 py-2 mt-auto border-t border-white/[0.06] bg-white/[0.02]">
-                                        <div className="text-xs font-medium text-white truncate" title={a.name}>{a.name}</div>
-                                        <div className={`text-[10px] font-mono uppercase tracking-wider mt-0.5 ${RARITY_TEXT[rarity]}`}>
+                                        <div className="truncate text-xs font-medium text-white" title={a.name}>{a.name}</div>
+                                        <div className={`text-[10px] font-mono mt-0.5 flex items-center justify-between gap-2 ${RARITY_TEXT[rarity]}`}>
+                                            <span className="min-w-0 truncate">
                                             {rarity}
                                             {share !== null && <span className="text-white/35 normal-case font-sans"> · {shareLabel(share)}</span>}
+                                            </span>
+                                            <button type="button" aria-label={`About ${a.name}`} onClick={() => setOpenBadge({ id: a.id, modelPath: badgeModel.modelPath, title: a.name, unlocked: true, rarity, earnedAt: [a.earnedAt], serial: a.serial, factory: a.factory, scale: badgeModel.scale })} className="shrink-0 cursor-pointer text-[11px] text-white/40 transition-colors hover:text-[#E8C15A]">Details</button>
                                         </div>
                                     </div>
                                 </li>
@@ -270,10 +267,10 @@ function cfColor(rating?: number) {
     return 'text-zinc-400';
 }
 
-function Label({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function Label({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
     return (
         <div className={`inline-flex items-center gap-1.5 ${LABEL}`}>
-            <span className="text-[#E8C15A]">{icon}</span>{children}
+            {icon && <span className="text-[#E8C15A]">{icon}</span>}{children}
         </div>
     );
 }
@@ -338,7 +335,7 @@ function Socials({ socials, isOwner, onSaved }: { socials: SocialLinks; isOwner:
                 <div className="flex justify-end">
                     <button type="button" onClick={save} disabled={saving}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#E8C15A] text-xs font-semibold text-black hover:bg-[#d4ad45] disabled:opacity-60 cursor-pointer">
-                        <Check size={12} /> {saving ? 'Saving…' : 'Save links'}
+                        {saving ? 'Saving…' : 'Save links'}
                     </button>
                 </div>
             </div>
@@ -352,7 +349,7 @@ function Socials({ socials, isOwner, onSaved }: { socials: SocialLinks; isOwner:
                 {isOwner && (
                     <button type="button" onClick={() => { setDraft(socials); setEditing(true); }}
                         className="inline-flex items-center gap-1 text-[11px] text-white/45 hover:text-[#E8C15A] cursor-pointer">
-                        <Pencil size={11} /> {shown.length ? 'Edit' : 'Add your links'}
+                        {shown.length ? 'Edit' : 'Add your links'}
                     </button>
                 )}
             </div>
@@ -361,7 +358,7 @@ function Socials({ socials, isOwner, onSaved }: { socials: SocialLinks; isOwner:
                     {shown.map(s => (
                         <a key={s.key} href={s.url(socials[s.key]!)} target="_blank" rel="noopener noreferrer me"
                             className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/[0.08] bg-white/[0.03] text-xs text-white/75 hover:text-white hover:border-[#E8C15A]/40 transition-colors">
-                            {s.label}<ExternalLink size={10} className="text-white/30" />
+                            {s.label}
                         </a>
                     ))}
                 </div>
@@ -381,7 +378,7 @@ function SheetRow({ sheet }: { sheet: PublicSheet }) {
         <li className="rounded-xl border border-white/[0.06] bg-black/20">
             <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer">
-                <span className="w-5 text-xs font-bold text-[#E8C15A]">{sheet.letter}</span>
+                <span className="w-5 text-xs font-semibold text-[#E8C15A]">{sheet.letter}</span>
                 <span className="flex-1 min-w-0">
                     <span className="flex items-baseline justify-between gap-3">
                         <span className="text-xs font-medium text-white truncate">{sheet.name}</span>
@@ -401,10 +398,10 @@ function SheetRow({ sheet }: { sheet: PublicSheet }) {
                             <li key={p.letter}>
                                 {p.url ? (
                                     <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${chip} hover:border-[#E8C15A]/40 hover:text-white transition-colors`}>
-                                        <span className="font-bold text-[#E8C15A]">{p.letter}</span> {p.title}
+                                        <span className="font-semibold text-[#E8C15A]">{p.letter}</span> {p.title}
                                     </a>
                                 ) : (
-                                    <span className={chip}><span className="font-bold text-[#E8C15A]">{p.letter}</span> {p.title}</span>
+                                    <span className={chip}><span className="font-semibold text-[#E8C15A]">{p.letter}</span> {p.title}</span>
                                 )}
                             </li>
                         );

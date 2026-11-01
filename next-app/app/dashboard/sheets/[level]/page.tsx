@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { FileCode2, ChevronRight, Info, X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithCache, getCachedData } from '@/lib/cache/api-cache';
@@ -136,43 +136,39 @@ export default function LevelOverviewPage() {
     return (
         <>
             <div className="space-y-8 animate-fade-in">
-                {/* Hero Section */}
-                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                {/* Level header: same block as a sheet page */}
+                <div className="bg-[#141414] rounded-2xl p-6 border border-white/10">
+                    <div className="flex items-start justify-between flex-wrap gap-4">
+                        <div className="min-w-0">
+                            <h1 className="text-2xl md:text-3xl font-semibold text-[#F2F2F2] mb-2">{level.name}</h1>
+                            <p className="text-[#808080] text-sm max-w-2xl">{level.description}</p>
+                            <p className="mt-3 flex items-center gap-3 font-mono text-xs text-white/40">
+                                <span>{level.durationWeeks} weeks · {sheets.length} sheets · {level.totalProblems} problems</span>
+                                <button type="button" onClick={() => setShowCredits(true)} className="cursor-pointer text-white/50 transition-colors hover:text-white">Credits</button>
+                            </p>
+                        </div>
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-[#E8C15A]/10">
-                                <FileCode2 className="text-[#E8C15A]" size={28} />
+                            <div className="text-center">
+                                <div className="text-2xl font-semibold text-[#E8C15A]">{levelProgress.totalSolved}</div>
+                                <div className="text-xs text-[#666]">Solved</div>
                             </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-[#F2F2F2]">{level.name}</h1>
-                                <p className="text-[#A0A0A0] text-sm mt-1">{level.durationWeeks} weeks • {sheets.length} Sheets • {level.totalProblems} Problems</p>
+                            <div className="w-px h-10 bg-white/10"></div>
+                            <div className="text-center">
+                                <div className="text-2xl font-semibold text-[#F2F2F2]">{levelProgress.totalProblems}</div>
+                                <div className="text-xs text-[#666]">Available</div>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setShowCredits(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] hover:bg-[#E8C15A]/20 transition-colors text-xs font-bold self-start"
-                        >
-                            <Info size={16} />
-                            <span>CREDITS</span>
-                        </button>
                     </div>
-                    <p className="text-[#808080] text-sm leading-relaxed max-w-2xl mb-5">
-                        {level.description}
-                    </p>
 
-                    {/* Main Level Progress Bar */}
                     {levelProgress.totalProblems > 0 && (
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-medium text-[#A0A0A0]">Overall Progress</span>
-                                <span className="text-xs font-bold text-[#E8C15A]">
-                                    {levelProgress.totalSolved}/{levelProgress.totalProblems} solved
-                                    <span className="text-[#666] ml-1">({levelProgress.percentage.toFixed(0)}%)</span>
-                                </span>
+                        <div className="mt-4">
+                            <div className="flex justify-between text-xs text-[#666] mb-1">
+                                <span>Progress</span>
+                                <span>{levelProgress.percentage.toFixed(0)}%</span>
                             </div>
-                            <div className="h-2.5 bg-[#0a0a0a] rounded-full overflow-hidden border border-white/5">
+                            <div className="w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-[#E8C15A] to-[#d4a843]"
+                                    className="h-full bg-[#E8C15A] rounded-full transition-[width] duration-500"
                                     style={{ width: `${levelProgress.percentage}%` }}
                                 />
                             </div>
@@ -182,7 +178,7 @@ export default function LevelOverviewPage() {
 
                 {/* Sheets Grid */}
                 <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-[#F2F2F2]">Training Sheets</h2>
+                    <h2 className="text-lg font-semibold text-[#F2F2F2]">Training sheets</h2>
 
                     {sheets.length === 0 ? (
                         <div className="text-center py-12 text-[#666]">
@@ -198,32 +194,23 @@ export default function LevelOverviewPage() {
                                     <Link
                                         key={sheet.id}
                                         href={`/dashboard/sheets/${levelSlug}/${sheet.slug}`}
-                                        className={`group rounded-xl border transition-all p-5 ${isComplete
+                                        className={`group rounded-xl border transition-[color,background-color,border-color,opacity,transform] p-5 ${isComplete
                                             ? 'bg-green-500/5 border-green-500/20 hover:border-green-500/40'
                                             : 'bg-[#121212] border-white/10 hover:border-[#E8C15A]/30 hover:bg-[#161616]'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between relative z-10">
                                             <div className="flex items-center gap-3 mb-3">
-                                                <div className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors border ${isComplete
-                                                    ? 'bg-green-500/15 border-green-500/30'
-                                                    : 'bg-[#E8C15A]/10 group-hover:bg-[#E8C15A]/20 border-[#E8C15A]/20'
-                                                    }`}>
-                                                    <span className={`font-bold text-lg ${isComplete ? 'text-green-400' : 'text-[#E8C15A]'}`}>
-                                                        {sheet.letter}
-                                                    </span>
-                                                </div>
                                                 <div>
-                                                    <h3 className={`font-bold transition-colors ${isComplete
+                                                    <h3 className={`font-semibold transition-colors ${isComplete
                                                         ? 'text-green-400'
                                                         : 'text-[#F2F2F2] group-hover:text-[#E8C15A]'
                                                         }`}>
                                                         Sheet {sheet.letter}: {sheet.name}
                                                     </h3>
-                                                    <p className="text-xs text-[#666]">{sheet.totalProblems} Problems</p>
+                                                    <p className="text-xs text-[#666]">{sheet.totalProblems} problems</p>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="text-[#444] group-hover:text-[#E8C15A] transition-colors" size={20} />
                                         </div>
                                         {sheet.description && (
                                             <p className="text-sm text-[#808080] line-clamp-2 relative z-10 mb-3">{sheet.description}</p>
@@ -235,16 +222,16 @@ export default function LevelOverviewPage() {
                                                 <span className="text-[10px] text-[#666]">
                                                     {sheet.solvedCount}/{sheet.totalProblems} solved
                                                 </span>
-                                                <span className={`text-[10px] font-bold ${isComplete ? 'text-green-400' : sheetPct > 0 ? 'text-[#E8C15A]' : 'text-[#444]'
+                                                <span className={`text-[10px] font-semibold ${isComplete ? 'text-green-400' : sheetPct > 0 ? 'text-[#E8C15A]' : 'text-[#444]'
                                                     }`}>
                                                     {sheetPct.toFixed(0)}%
                                                 </span>
                                             </div>
                                             <div className="h-1.5 bg-[#0a0a0a] rounded-full overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-1000 ease-out ${isComplete
-                                                        ? 'bg-gradient-to-r from-green-500 to-green-400'
-                                                        : 'bg-gradient-to-r from-[#E8C15A] to-[#d4a843]'
+                                                    className={`h-full rounded-full transition-[color,background-color,border-color,opacity,transform] duration-1000 ease-out ${isComplete
+                                                        ? 'bg-green-500'
+                                                        : 'bg-[#E8C15A]'
                                                         }`}
                                                     style={{ width: `${sheetPct}%` }}
                                                 />
@@ -261,7 +248,7 @@ export default function LevelOverviewPage() {
             {/* Credits Modal */}
             {showCredits && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowCredits(false)}>
-                    <div className="bg-[#181818] border border-white/10 p-6 rounded-2xl max-w-md w-full relative transform scale-100 transition-all shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#181818] border border-white/10 p-6 rounded-2xl max-w-md w-full relative transform scale-100 transition-[color,background-color,border-color,opacity,transform] shadow-2xl" onClick={e => e.stopPropagation()}>
                         <button
                             aria-label="Close"
                             className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[#888] hover:text-white hover:bg-white/5 transition-colors"
@@ -270,10 +257,10 @@ export default function LevelOverviewPage() {
                             <X size={20} />
                         </button>
                         <div className="flex flex-col items-center text-center">
-                            <div className="w-12 h-12 bg-[#E8C15A]/10 rounded-full flex items-center justify-center text-[#E8C15A] mb-4">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white/60 mb-4">
                                 <Info size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Acknowledgement</h3>
+                            <h3 className="text-xl font-semibold text-white mb-2">Acknowledgement</h3>
                             <p className="text-[#A0A0A0] text-sm leading-relaxed mb-4">
                                 These training sheets are based on the excellent curriculum provided by:
                             </p>
@@ -281,7 +268,7 @@ export default function LevelOverviewPage() {
                                 href="https://www.facebook.com/icpcassiutt/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-[#E8C15A] font-bold hover:underline bg-[#E8C15A]/10 px-4 py-2 rounded-lg transition-colors hover:bg-[#E8C15A]/20"
+                                className="flex items-center gap-2 text-[#E8C15A] font-semibold hover:underline bg-[#E8C15A]/10 px-4 py-2 rounded-lg transition-colors hover:bg-[#E8C15A]/20"
                             >
                                 ICPC Assiut University Community
                             </a>

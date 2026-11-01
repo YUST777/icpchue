@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
-import { ExternalLink, Trophy, Code } from 'lucide-react';
+import { ExternalLink, Code } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { addCacheBust } from '@/lib/cache/cache-version';
 import MonthlyPodium from '@/components/leaderboard/MonthlyPodium';
@@ -50,10 +50,11 @@ interface SheetUser {
 }
 
 import { fetchWithCache } from '@/lib/cache/api-cache';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 // Small "You" tag next to the signed-in user's name (hidden on phones, where the name column is narrow)
 const YouBadge = () => (
-    <span className="hidden sm:inline-flex shrink-0 items-center rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[10px] font-bold leading-none text-black">
+    <span className="hidden sm:inline-flex shrink-0 items-center rounded-full bg-[#E8C15A] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-black">
         You
     </span>
 );
@@ -144,17 +145,7 @@ export default function LeaderboardPage() {
 
             <div className="ui-compact space-y-6 animate-fade-in">
                 {/* Header Section */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h2 className="ui-page-title flex items-center gap-3">
-                            <Trophy className="shrink-0 text-[var(--color-accent)]" size={22} aria-hidden="true" />
-                            Leaderboard
-                        </h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--color-text-secondary)] md:ml-9">
-                            Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams
-                        </p>
-                    </div>
-                </div>
+                <PageHeader title="Leaderboard" subtitle="Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams" />
 
                 {/* Tabs */}
                 <div className="overflow-x-auto border-b border-[var(--color-line)] scrollbar-hide">
@@ -226,13 +217,13 @@ export default function LeaderboardPage() {
                                     <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-red-500/20">
                                         <Code className="text-red-500" size={32} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
+                                    <h3 className="text-lg font-semibold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
                                     <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
                                         {error}
                                     </p>
                                     <button
                                         onClick={() => window.location.reload()}
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
+                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-semibold rounded-lg hover:bg-[#D4AF37] transition-[color,background-color,border-color,opacity,transform] transform"
                                     >
                                         Retry
                                     </button>
@@ -242,13 +233,13 @@ export default function LeaderboardPage() {
                                     <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-white/5">
                                         <Code className="text-[#E8C15A]" size={32} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">No submissions yet</h3>
+                                    <h3 className="text-lg font-semibold text-[#F2F2F2] mb-2">No submissions yet</h3>
                                     <p className="text-sm text-[#A0A0A0] max-w-xs mx-auto mb-6">
                                         Be the first to solve a problem and claim your spot on the leaderboard!
                                     </p>
                                     <Link
                                         href="/dashboard/sheets"
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
+                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-semibold rounded-lg hover:bg-[#D4AF37] transition-[color,background-color,border-color,opacity,transform] transform"
                                     >
                                         Start Solving
                                     </Link>
@@ -273,7 +264,7 @@ export default function LeaderboardPage() {
                                                     {index < 3 ? (
                                                         <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
                                                     ) : (
-                                                        <span className={`text-sm font-bold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
+                                                        <span className={`text-sm font-semibold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
                                                     )}
                                                 </div>
                                                 <div className="col-span-3 sm:col-span-4 min-w-0 flex items-center gap-2">
@@ -323,26 +314,20 @@ export default function LeaderboardPage() {
                                 </div>
                             ) : error ? (
                                 <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-red-500/20">
-                                        <Trophy className="text-red-500" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
+                                    <h3 className="text-lg font-semibold text-[#F2F2F2] mb-2">Failed to load leaderboard</h3>
                                     <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
                                         {error}
                                     </p>
                                     <button
                                         onClick={() => window.location.reload()}
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105"
+                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-semibold rounded-lg hover:bg-[#D4AF37] transition-[color,background-color,border-color,opacity,transform] transform"
                                     >
                                         Retry
                                     </button>
                                 </div>
                             ) : cfLeaderboard.length === 0 ? (
                                 <div className="p-12 text-center flex flex-col items-center flex-1 justify-center">
-                                    <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4 border border-white/5">
-                                        <Trophy className="text-[#E8C15A]" size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-2">No rated users yet</h3>
+                                    <h3 className="text-lg font-semibold text-[#F2F2F2] mb-2">No rated users yet</h3>
                                     <p className="text-sm text-[#A0A0A0] max-w-md mx-auto mb-6">
                                         To appear on this leaderboard, you need to compete in a rated Codeforces contest.
                                         Your rating will be calculated after your first rated participation.
@@ -351,7 +336,7 @@ export default function LeaderboardPage() {
                                         href="https://codeforces.com/contests"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-all transform hover:scale-105 flex items-center gap-2"
+                                        className="px-6 py-2.5 bg-[#E8C15A] text-black font-semibold rounded-lg hover:bg-[#D4AF37] transition-[color,background-color,border-color,opacity,transform] transform flex items-center gap-2"
                                     >
                                         <ExternalLink size={16} />
                                         View Upcoming Contests
@@ -377,7 +362,7 @@ export default function LeaderboardPage() {
                                                     {index < 3 ? (
                                                         <MedalAnimation place={(index + 1) as 1 | 2 | 3} />
                                                     ) : (
-                                                        <span className={`text-sm font-bold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
+                                                        <span className={`text-sm font-semibold ${isMe ? 'text-[#E8C15A]' : 'text-[#666]'}`}>{index + 1}</span>
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
@@ -395,7 +380,7 @@ export default function LeaderboardPage() {
                                                     </div>
                                                     <p className="text-xs text-[#666] truncate hidden sm:block">{user.name}</p>
                                                 </div>
-                                                <div className={`text-sm font-bold text-right ${getRatingColor(user.rating)}`}>
+                                                <div className={`text-sm font-semibold text-right ${getRatingColor(user.rating)}`}>
                                                     {user.rating}
                                                 </div>
                                                 <div className="hidden sm:block text-sm text-[#A0A0A0] capitalize">{user.rank}</div>

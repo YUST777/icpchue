@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ExternalLink, ChevronRight, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 const CONTEST_URL = 'https://codeforces.com/group/lEfcMyt0UC/contest/728330';
 
@@ -10,7 +10,7 @@ export default function Level0Contest1Content() {
             {/* Minimalist Contest Card */}
             <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0f0f0f] border border-white/10">
                 <div className="space-y-1">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    <h2 className="text-xl sm:text-2xl font-semibold text-white">
                         Contest #1 &bull; Level 0 (2027)
                     </h2>
                     <p className="text-sm text-white/60 text-right" dir="rtl">
@@ -24,25 +24,24 @@ export default function Level0Contest1Content() {
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8C15A] hover:bg-[#d8b046] text-black text-sm font-semibold transition-colors shrink-0"
                 >
                     <span>Open Contest</span>
-                    <ExternalLink className="w-4 h-4" />
                 </a>
             </section>
 
             {/* How to Join Section with Desktop & Mobile Guides */}
             <section className="space-y-6 pt-4 border-t border-white/10">
                 <div className="space-y-2 text-right" dir="rtl">
-                    <h3 className="text-lg sm:text-xl font-bold text-white">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">
                         طريقة الانضمام والتسجيل في المسابقة
                     </h3>
                     <ul className="space-y-2 text-sm text-white/70 leading-relaxed">
                         <li className="flex items-start gap-2">
-                            <span className="text-[#E8C15A] font-bold shrink-0">1.</span>
+                            <span className="text-[#E8C15A] font-semibold shrink-0">1.</span>
                             <span>
                                 اطلب الانضمام للجروب أولاً من <span className="text-white font-medium" dir="ltr">Member management</span> واضغط <span className="text-[#E8C15A] font-medium" dir="ltr">Join</span>.
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-[#E8C15A] font-bold shrink-0">2.</span>
+                            <span className="text-[#E8C15A] font-semibold shrink-0">2.</span>
                             <span>
                                 بعد قبول الانضمام، ادخل على صفحة <span className="text-white font-medium" dir="ltr">Contests</span> واضغط <span className="text-[#E8C15A] font-medium" dir="ltr">Register</span> للدخول والتسجيل في المسابقة.
                             </span>
@@ -91,7 +90,7 @@ export default function Level0Contest1Content() {
             <section className="space-y-4 pt-6 border-t border-white/10">
                 <div className="flex items-center gap-2.5 text-white/80 justify-end" dir="rtl">
                     <BookOpen className="w-5 h-5 text-[#E8C15A]" />
-                    <h3 className="text-base sm:text-lg font-bold text-white">شيتات التدريب المرتبطة</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-white">شيتات التدريب المرتبطة</h3>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                     <Link
@@ -102,7 +101,6 @@ export default function Level0Contest1Content() {
                             <span className="font-semibold text-sm text-white group-hover:text-[#E8C15A] transition-colors">Sheet A &bull; Data Types & Conditions</span>
                             <span className="block text-xs text-white/40 mt-0.5">26 problems covering basic I/O and branching</span>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-[#E8C15A] transition-colors shrink-0" />
                     </Link>
                     <Link
                         href="/dashboard/sheets/level-0/sheet-b"
@@ -112,7 +110,6 @@ export default function Level0Contest1Content() {
                             <span className="font-semibold text-sm text-white group-hover:text-[#E8C15A] transition-colors">Sheet B &bull; Loops</span>
                             <span className="block text-xs text-white/40 mt-0.5">26 problems covering loops and iterations</span>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-[#E8C15A] transition-colors shrink-0" />
                     </Link>
                 </div>
             </section>

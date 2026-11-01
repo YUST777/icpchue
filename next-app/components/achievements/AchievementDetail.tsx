@@ -62,7 +62,7 @@ export default function AchievementDetail({ badge, onClose }: { badge: Achieveme
             : <Link href={howTo.href} onClick={onClose} className={cls}>{label}</Link>;
     })();
 
-    const field = 'text-[10px] font-mono uppercase tracking-[0.16em] text-white/35';
+    const field = 'text-[10px] font-mono tracking-[0.16em] text-white/35';
 
     return createPortal(
         <div className="fixed inset-0 z-[2147483000] bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6" onClick={onClose}>

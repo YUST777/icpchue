@@ -44,7 +44,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
 
     return (
         <div className="space-y-4">
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3">
                 <CalendarCheck size={18} className="text-[#E8C15A] shrink-0" />
                 <div>
                     <div className="text-sm font-semibold text-white">Followed {followedCount} of {rows.length} sessions</div>
@@ -54,7 +54,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
 
             <div className="grid gap-3 lg:grid-cols-2">
                 {rows.map(({ a, w, watchedMin, coverage, watched, present }) => (
-                    <div key={a.session_key} className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 space-y-4">
+                    <div key={a.session_key} className="bg-[#121214] border border-white/[0.08] rounded-2xl p-4 space-y-4">
                         <div>
                             <div className="text-sm font-semibold text-white">{a.label}</div>
                             <div className="text-[11px] text-white/40 mt-0.5">{day(a.held_on)}</div>
@@ -62,7 +62,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
 
                         <div className="space-y-1.5">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Live session</span>
+                                <span className="text-[10px] text-white/40 font-mono">Live session</span>
                                 <Pill ok={a.attended && present >= 50} partial={a.attended && present < 50}>{a.attended ? (present >= 50 ? 'Attended' : 'Joined briefly') : 'Did not attend'}</Pill>
                             </div>
                             {a.attended ? (
@@ -81,7 +81,7 @@ export function AttendanceView({ attendance, watch }: { attendance: AttendanceRo
 
                         <div className="space-y-1.5">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono flex items-center gap-1.5"><PlayCircle size={11} className="text-[#E8C15A]" />Recording on the site</span>
+                                <span className="text-[10px] text-white/40 font-mono flex items-center gap-1.5"><PlayCircle size={11} className="text-[#E8C15A]" />Recording on the site</span>
                                 <Pill ok={watched} partial={Boolean(w) && !watched}>{watched ? 'Watched' : w ? 'Opened only' : 'Not watched'}</Pill>
                             </div>
                             {w ? (

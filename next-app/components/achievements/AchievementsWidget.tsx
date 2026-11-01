@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, Lock } from 'lucide-react';
+import { ChevronRight, Lock, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAchievements } from '@/hooks/useAchievements';
 import { ACHIEVEMENT_META, isPodiumId } from '@/lib/achievements/catalog';
@@ -53,59 +54,86 @@ export default function AchievementsWidget(_props: AchievementsWidgetProps) {
     const progress = (count / total) * 100;
     const [showAll, setShowAll] = useState(false);
 
-    const rest = entries.slice(PREVIEW);
+    // Square tiles in as many rows as the card has room for.
+    const boxRef = useRef<HTMLDivElement>(null);
+    const [fit, setFit] = useState(PREVIEW);
+    useLayoutEffect(() => {
+        const el = boxRef.current;
+        if (!el) return;
+        const COLS = 6, GAP = 8;
+        const calc = () => {
+            const tile = (el.clientWidth - GAP * (COLS - 1)) / COLS;
+            if (tile <= 0) return;
+            setFit(Math.max(1, Math.floor((el.clientHeight + GAP) / (tile + GAP))) * COLS);
+        };
+        calc();
+        const ro = new ResizeObserver(calc);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
-    const tile = (e: Entry, size: string) => (
-        <li key={e.id} title={e.name} className={size}>
+    useEffect(() => {
+        if (!showAll) return;
+        const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') setShowAll(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [showAll]);
+
+    const tile = (e: Entry, aspect: string) => (
+        <li key={e.id} title={e.name}>
             <Link href="/dashboard/achievements"
-                className={`relative block aspect-square rounded-xl border overflow-hidden transition-transform hover:scale-105 ${e.unlocked ? 'border-[#E8C15A]/25 bg-gradient-to-br from-yellow-500/15 to-orange-500/5' : 'border-white/5 bg-[#131313]'}`}>
+                className={`relative block ${aspect} overflow-hidden rounded-xl border bg-white/[0.03] transition-colors ${e.unlocked ? 'border-white/[0.08] hover:border-[#E8C15A]/40' : 'border-white/[0.04]'}`}>
                 <Image src={e.imageSrc} alt={e.name} fill sizes="80px" className={`object-contain p-1.5 ${e.unlocked ? '' : 'grayscale opacity-30'}`} />
-                {!e.unlocked && <Lock className="absolute inset-0 m-auto w-3.5 h-3.5 text-white/60" />}
+                {!e.unlocked && <Lock className="absolute inset-0 m-auto h-3.5 w-3.5 text-white/60" />}
             </Link>
         </li>
     );
 
     return (
-        <div className="@container relative rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
-            <div className="bg-[#0f0f0f] rounded-[23px] p-5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                {/* One row when the card is wide (count | best badges | actions); stacked when it sits in a half-width column. */}
-                <div className="relative z-10 flex flex-col @2xl:flex-row @2xl:items-center gap-5 @2xl:gap-8">
-                    <div className="@2xl:w-64 shrink-0">
-                        <div className="flex items-baseline gap-2 mb-3">
-                            <span className="text-3xl font-bold text-white tracking-tight">{count}</span>
-                            <span className="text-gray-500 text-sm font-medium">/ {total} Unlocked</span>
-                        </div>
-                        <div className="relative w-full h-2.5 bg-[#1a1a1a] rounded-full overflow-hidden border border-white/5">
-                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
-                        </div>
-                    </div>
-
-                    <ul className="grid grid-cols-5 @2xl:flex gap-2 @2xl:gap-3 @2xl:flex-1 @2xl:justify-center">
-                        {entries.slice(0, PREVIEW).map(e => tile(e, '@2xl:w-16'))}
-                    </ul>
-
-                    <div className="flex flex-col @md:flex-row @2xl:flex-col gap-2 @2xl:w-56 shrink-0">
-                        {rest.length > 0 && (
-                            <button type="button" onClick={() => setShowAll(v => !v)}
-                                className="h-10 px-4 rounded-xl border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer @md:flex-1 @2xl:flex-none">
-                                {showAll ? 'Show less' : `Show all ${entries.length} badges`}
-                            </button>
-                        )}
-                        <Link href="/dashboard/achievements" className="h-10 px-4 rounded-xl bg-[#161616] border border-white/5 hover:bg-[#1a1a1a] hover:border-white/10 transition-all group/btn flex items-center justify-between @md:flex-1 @2xl:flex-none">
-                            <span className="text-xs font-bold text-white group-hover/btn:text-yellow-400 transition-colors">View All Badges</span>
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:text-yellow-500" />
-                        </Link>
-                    </div>
+        <div className="flex h-full flex-col rounded-2xl border border-white/5 bg-[#121212] p-4">
+            <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-semibold tracking-tight text-white">{count}</span>
+                    <span className="text-sm text-gray-500">/ {total} unlocked</span>
                 </div>
-
-                {showAll && (
-                    <ul className="relative z-10 grid grid-cols-6 @md:grid-cols-10 @2xl:grid-cols-14 gap-2 mt-5 pt-5 border-t border-white/5">
-                        {rest.map(e => tile(e, ''))}
-                    </ul>
-                )}
+                <Link href="/dashboard/achievements" className="flex items-center gap-1 text-xs font-semibold text-[#E8C15A] transition-colors hover:text-[#dcb651]">
+                    Open <ChevronRight size={12} />
+                </Link>
             </div>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.08]">
+                <div className="h-full bg-[#E8C15A]" style={{ width: `${progress}%` }} />
+            </div>
+
+            <div ref={boxRef} className="mt-3 min-h-[56px] flex-1 overflow-hidden">
+                <ul className="grid grid-cols-6 gap-2">
+                    {entries.slice(0, fit).map(e => tile(e, 'aspect-square'))}
+                </ul>
+            </div>
+
+            {entries.length > fit && (
+                <button type="button" onClick={() => setShowAll(true)}
+                    className="mt-3 h-9 w-full cursor-pointer rounded-lg border border-white/5 bg-white/[0.03] text-xs font-medium text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white">
+                    Show all {entries.length} badges
+                </button>
+            )}
+
+            {showAll && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="All badges"
+                    onClick={() => setShowAll(false)}>
+                    <div className="max-h-[85dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/10 bg-[#121212] p-5" onClick={ev => ev.stopPropagation()}>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-base font-medium text-white">All badges <span className="ml-2 font-mono text-xs text-white/50">{count} of {total}</span></h3>
+                            <button type="button" onClick={() => setShowAll(false)} aria-label="Close" className="cursor-pointer rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <ul className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                            {entries.map(e => tile(e, 'aspect-square'))}
+                        </ul>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

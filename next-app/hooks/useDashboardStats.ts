@@ -17,6 +17,7 @@ export interface CurrentSheet {
 
 export interface DashboardStats {
     streak: number;
+    maxStreak: number;
     totalSolved: number;
     activity: Record<string, number>;
     currentSheet: CurrentSheet | null;
@@ -41,6 +42,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     const { user } = useAuth();
     const [stats, setStats] = useState<DashboardStats>({
         streak: 0,
+        maxStreak: 0,
         totalSolved: 0,
         activity: {},
         currentSheet: null
@@ -55,6 +57,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
                 setStats({
                     streak: data.streak || 0,
+                    maxStreak: data.maxStreak || 0,
                     totalSolved: data.totalSolved || 0,
                     activity: data.consistencyMap || {},
                     currentSheet: data.currentSheet || null

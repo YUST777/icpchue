@@ -71,7 +71,7 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
 
                 {/* Label badge */}
                 {!compact && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-                    <span className="ui-card inline-block max-w-[200px] truncate whitespace-nowrap px-3 py-1 text-center text-xs font-medium text-[var(--color-text-secondary)]">
+                    <span className="ui-card block w-max max-w-[240px] px-3 py-1 text-center text-xs font-medium leading-snug text-[var(--color-text-secondary)]">
                         {label}
                     </span>
                 </div>}

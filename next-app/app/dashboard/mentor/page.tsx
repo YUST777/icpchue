@@ -6,6 +6,7 @@ import { yearLabel } from '@/lib/utils/levels';
 import { Search, Users, ShieldAlert, CheckCircle2, Clock, ArrowRight, LayoutGrid, Table, Flame, ChevronDown, X } from 'lucide-react';
 import { SiCodeforces } from 'react-icons/si';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 interface TraineeSummary {
     total_trainees: number;
@@ -196,19 +197,7 @@ export default function MentorTraineesDirectoryPage() {
     return (
         <div className="min-w-0 space-y-3 animate-fade-in text-white pb-12 lg:space-y-6">
             {/* 1. Header */}
-            <div className="flex min-w-0 flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/[0.08] pb-3 sm:gap-4 sm:pb-6">
-                <div>
-                    <div className="flex min-w-0 items-center gap-2 sm:gap-3 mb-1">
-                        <div className="shrink-0 p-2 rounded-xl bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20">
-                            <Users size={20} />
-                        </div>
-                        <h1 className="min-w-0 !text-lg !leading-tight sm:!text-2xl font-bold tracking-tight text-white">Mentor Command Center</h1>
-                    </div>
-                    <p className="sr-only sm:not-sr-only sm:text-xs sm:text-white/50">
-                        Live analytics, individual curriculum tracking, and forensic code inspection.
-                    </p>
-                </div>
-            </div>
+            <PageHeader title="Mentor command center" subtitle="Live analytics and individual curriculum tracking for your trainees." />
 
             {/* Owners/instructors: pick a mentor to see the group they mentor */}
             {mentorGroups && mentorGroups.length > 0 && (
@@ -238,7 +227,7 @@ export default function MentorTraineesDirectoryPage() {
                         className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                             !hasActiveFilters
                                 ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                : 'bg-[#121214]/90 text-white/60 border-white/[0.08] hover:text-white'
+                                : 'bg-[#121214] text-white/60 border-white/[0.08] hover:text-white'
                         }`}
                     >
                         All trainees
@@ -252,7 +241,7 @@ export default function MentorTraineesDirectoryPage() {
                             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
                                 mentorFilter === g.name
                                     ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                    : 'bg-[#121214]/90 text-white/60 border-white/[0.08] hover:text-white'
+                                    : 'bg-[#121214] text-white/60 border-white/[0.08] hover:text-white'
                             }`}
                         >
                             {g.name}{g.mentorName ? ` · ${g.mentorName}` : ''}
@@ -273,11 +262,11 @@ export default function MentorTraineesDirectoryPage() {
                         className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'all'
                                 ? 'bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white'
-                                : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
+                                : 'bg-[#121214] border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-white/40 block"><span className="lg:hidden">Total</span><span className="hidden lg:inline">Total Trainees</span></span>
-                        <span className="text-xl lg:text-2xl font-bold text-white mt-1 block">{summary.total_trainees}</span>
+                        <span className="text-xs lg:text-[10px] font-semibold text-white/40 block"><span className="lg:hidden">Total</span><span className="hidden lg:inline">Total Trainees</span></span>
+                        <span className="text-xl lg:text-2xl font-semibold text-white mt-1 block">{summary.total_trainees}</span>
                         <span className="hidden lg:block text-[11px] text-white/50 font-mono mt-0.5">All Cohorts</span>
                     </button>
 
@@ -288,11 +277,11 @@ export default function MentorTraineesDirectoryPage() {
                         className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'active'
                                 ? 'bg-emerald-500/10 border-emerald-500/30 text-white'
-                                : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
+                                : 'bg-[#121214] border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-emerald-400/80 block"><span className="lg:hidden">Active</span><span className="hidden lg:inline">Active & Steady</span></span>
-                        <span className="text-xl lg:text-2xl font-bold text-emerald-400 mt-1 block">{summary.active_trainees}</span>
+                        <span className="text-xs lg:text-[10px] font-semibold text-emerald-400/80 block"><span className="lg:hidden">Active</span><span className="hidden lg:inline">Active & Steady</span></span>
+                        <span className="text-xl lg:text-2xl font-semibold text-emerald-400 mt-1 block">{summary.active_trainees}</span>
                         <span className="hidden lg:block text-[11px] text-emerald-400/60 font-mono mt-0.5">Active this week</span>
                     </button>
 
@@ -303,11 +292,11 @@ export default function MentorTraineesDirectoryPage() {
                         className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'inactive'
                                 ? 'bg-amber-500/10 border-amber-500/30 text-white'
-                                : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
+                                : 'bg-[#121214] border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-amber-400/80 block">Inactive</span>
-                        <span className="text-xl lg:text-2xl font-bold text-amber-400 mt-1 block">{summary.inactive_trainees}</span>
+                        <span className="text-xs lg:text-[10px] font-semibold text-amber-400/80 block">Inactive</span>
+                        <span className="text-xl lg:text-2xl font-semibold text-amber-400 mt-1 block">{summary.inactive_trainees}</span>
                         <span className="hidden lg:block text-[11px] text-amber-400/60 font-mono mt-0.5">&gt; 7 days absent</span>
                     </button>
 
@@ -318,18 +307,18 @@ export default function MentorTraineesDirectoryPage() {
                         className={`min-w-0 p-2 lg:p-4 rounded-xl lg:rounded-2xl border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C15A]/70 ${
                             statusFilter === 'flagged'
                                 ? 'bg-red-500/10 border-red-500/30 text-white'
-                                : 'bg-[#121214]/90 border-white/[0.08] hover:bg-white/[0.03]'
+                                : 'bg-[#121214] border-white/[0.08] hover:bg-white/[0.03]'
                         }`}
                     >
-                        <span className="text-xs lg:text-[10px] uppercase font-semibold text-red-400/80 block"><span className="lg:hidden">Flags</span><span className="hidden lg:inline">Integrity Flags</span></span>
-                        <span className="text-xl lg:text-2xl font-bold text-[#F87171] mt-1 block">{summary.flagged_trainees}</span>
+                        <span className="text-xs lg:text-[10px] font-semibold text-red-400/80 block"><span className="lg:hidden">Flags</span><span className="hidden lg:inline">Integrity Flags</span></span>
+                        <span className="text-xl lg:text-2xl font-semibold text-[#F87171] mt-1 block">{summary.flagged_trainees}</span>
                         <span className="hidden lg:block text-[11px] text-red-400/60 font-mono mt-0.5">Audit required</span>
                     </button>
                 </div>
             )}
 
             {/* 3. Search & Filters Bar */}
-            <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2 sm:gap-3 shadow-md backdrop-blur-xl">
+            <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2 sm:gap-3 shadow-md">
                 {/* Search */}
                 <div className="relative min-w-0 flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 w-4 h-4" />
@@ -494,13 +483,13 @@ export default function MentorTraineesDirectoryPage() {
                         <Link
                             key={t.id}
                             href={dossierHref(t)}
-                            className="min-w-0 bg-[#121214]/90 border border-white/[0.08] hover:border-[#E8C15A]/40 rounded-2xl p-3 sm:p-5 transition-all duration-200 group flex flex-col justify-between hover:bg-white/[0.02] shadow-md hover:shadow-xl backdrop-blur-xl"
+                            className="min-w-0 bg-[#121214] border border-white/[0.08] hover:border-[#E8C15A]/40 rounded-2xl p-3 sm:p-5 transition-[color,background-color,border-color,opacity,transform] duration-200 group flex flex-col justify-between hover:bg-white/[0.02] shadow-md hover:shadow-xl"
                         >
                             <div>
                                 {/* Top Badges */}
                                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2 sm:mb-3">
                                     <div className="flex min-w-0 items-center gap-1.5 flex-wrap">
-                                        <span className="text-[11px] font-semibold text-[#E8C15A] px-2.5 py-0.5 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
+                                        <span className="text-[11px] font-semibold text-white/70 px-2.5 py-0.5 rounded-full bg-white/[0.06]">
                                             {yearLabel(t.academic_level)}{t.training_level != null ? ` · Lv ${t.training_level}` : ''}
                                         </span>
                                         {t.mentor_group && (
@@ -511,11 +500,11 @@ export default function MentorTraineesDirectoryPage() {
                                     </div>
 
                                     {t.integrity ? (
-                                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
+                                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
                                             <ShieldAlert size={11} /> {t.integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
                                         </span>
                                     ) : t.flags_count > 0 || t.is_shadow_banned ? (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                                             <ShieldAlert size={11} /> {t.flags_count ? `${t.flags_count} Flags` : 'Shadow Banned'}
                                         </span>
                                     ) : t.is_inactive ? (
@@ -523,7 +512,7 @@ export default function MentorTraineesDirectoryPage() {
                                             Inactive
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/20">
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-white/70 bg-white/[0.06] px-2 py-0.5 rounded-full">
                                             <CheckCircle2 size={10} /> Active
                                         </span>
                                     )}
@@ -531,7 +520,7 @@ export default function MentorTraineesDirectoryPage() {
 
                                 {/* Identity */}
                                 <div>
-                                    <h3 dir="auto" className="!text-base !leading-snug font-bold text-white group-hover:text-[#E8C15A] transition-colors break-words">
+                                    <h3 dir="auto" className="!text-base !leading-snug font-semibold text-white group-hover:text-[#E8C15A] transition-colors break-words">
                                         {t.name}
                                     </h3>
                                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/50 font-mono mt-1">
@@ -549,7 +538,7 @@ export default function MentorTraineesDirectoryPage() {
                                 <div className="mt-3 sm:mt-4 space-y-1.5">
                                     <div className="flex flex-wrap justify-between gap-x-2 gap-y-1 text-xs font-mono">
                                         <span className="text-white/50"><span className="sm:hidden">Progress</span><span className="hidden sm:inline">Curriculum Progress</span></span>
-                                        <span className="font-bold text-[#E8C15A]">{t.total_solved} Solved</span>
+                                        <span className="font-semibold text-[#E8C15A]">{t.total_solved} Solved</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                         <div 
@@ -575,11 +564,11 @@ export default function MentorTraineesDirectoryPage() {
                     ))}
                 </div>
                 {viewMode === 'table' && (
-                <div className="hidden min-w-0 lg:block bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden shadow-md backdrop-blur-xl">
+                <div className="hidden min-w-0 lg:block bg-[#121214] border border-white/[0.08] rounded-2xl overflow-hidden shadow-md">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr className="border-b border-white/[0.08] bg-white/[0.02] text-white/40 text-[10px] font-semibold uppercase tracking-wider">
+                                <tr className="border-b border-white/[0.08] bg-white/[0.02] text-white/40 text-[10px] font-semibold">
                                     <th className="py-3 px-4">Trainee</th>
                                     <th className="py-3 px-4">Level</th>
                                     <th className="py-3 px-4">Group</th>
@@ -598,7 +587,7 @@ export default function MentorTraineesDirectoryPage() {
                                         className="hover:bg-white/[0.02] transition-colors group"
                                     >
                                         <td className="py-3 px-4">
-                                            <div className="font-bold text-white group-hover:text-[#E8C15A] transition-colors">
+                                            <div className="font-semibold text-white group-hover:text-[#E8C15A] transition-colors">
                                                 {t.name}
                                             </div>
                                             <div className="text-[11px] font-mono text-white/40">{t.student_id}</div>
@@ -621,7 +610,7 @@ export default function MentorTraineesDirectoryPage() {
                                                 </span>
                                             ) : '-'}
                                         </td>
-                                        <td className="py-3 px-4 text-center font-mono font-bold text-[#E8C15A]">
+                                        <td className="py-3 px-4 text-center font-mono font-semibold text-[#E8C15A]">
                                             {t.total_solved}
                                         </td>
                                         <td className="py-3 px-4 text-center font-mono text-white/80">
@@ -636,11 +625,11 @@ export default function MentorTraineesDirectoryPage() {
                                         </td>
                                         <td className="py-3 px-4">
                                             {t.integrity ? (
-                                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
+                                                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${t.integrity === 'likely' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'}`}>
                                                     <ShieldAlert size={10} /> {t.integrity === 'likely' ? 'Likely cheated' : 'Suspicious code'}
                                                 </span>
                                             ) : t.flags_count > 0 || t.is_shadow_banned ? (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                                                     <ShieldAlert size={10} /> {t.flags_count ? `${t.flags_count} Flags` : 'Banned'}
                                                 </span>
                                             ) : t.is_inactive ? (
@@ -648,7 +637,7 @@ export default function MentorTraineesDirectoryPage() {
                                                     Inactive
                                                 </span>
                                             ) : (
-                                                <span className="text-[10px] text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/20">
+                                                <span className="text-[10px] text-white/70 bg-white/[0.06] px-2 py-0.5 rounded-full">
                                                     Active
                                                 </span>
                                             )}

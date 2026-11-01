@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Copy, Check, Settings, User, Shield, Loader2, Trophy, Code, Globe } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import BackfillCard from '@/components/settings/BackfillCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 type PrivacyToggleProps = {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
     label: string;
     description: string;
     field: string;
@@ -19,7 +19,6 @@ type PrivacyToggleProps = {
 };
 
 function PrivacyToggle({
-    icon: Icon,
     label,
     description,
     field,
@@ -30,12 +29,9 @@ function PrivacyToggle({
 }: PrivacyToggleProps) {
     return (
         <div className="flex items-center justify-between gap-4 py-3.5">
-            <div className="flex items-start gap-3">
-                <Icon size={18} className="mt-0.5 shrink-0 text-[#E8C15A]" aria-hidden="true" />
-                <div>
-                    <p className="text-sm leading-5 text-[var(--color-text)]">{label}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-[var(--color-text-muted)]">{description}</p>
-                </div>
+            <div>
+                <p className="text-sm leading-5 text-[var(--color-text)]">{label}</p>
+                <p className="mt-0.5 text-xs leading-5 text-[var(--color-text-muted)]">{description}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
                 {savingPrivacy === field && <Loader2 size={16} className="animate-spin text-[#E8C15A]" aria-label="Saving" />}
@@ -143,28 +139,23 @@ export default function SettingsPage() {
         <>
 
             <div className="w-full space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                        <Settings className="text-[#E8C15A]" size={19} aria-hidden="true" />
-                    </div>
-                    <h2 className="text-2xl font-medium leading-tight text-[var(--color-text)]">Settings</h2>
-                </div>
+                <PageHeader title="Settings" subtitle="Your public profile, privacy and Codeforces import." />
 
                 {/* Profile Sharing */}
                 <section className="ui-card p-4 sm:p-5">
-                    <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-[var(--color-text)]"><User size={19} className="text-[#E8C15A]" aria-hidden="true" />Profile sharing</h3>
+                    <h3 className="mb-3 text-lg font-medium text-[var(--color-text)]">Profile sharing</h3>
                     <p className="mb-4 text-sm leading-6 text-[var(--color-text-secondary)]">Share your public profile with others.</p>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <input type="text" readOnly value={profileUrl} aria-label="Public profile URL" className="ui-field min-w-0 flex-1 truncate" />
                         <button onClick={handleCopy} className="ui-button-primary w-full shrink-0 sm:w-auto">
-                            {copied ? <><Check size={16} aria-hidden="true" />Copied</> : <><Copy size={16} aria-hidden="true" />Copy</>}
+                            {copied ? 'Copied' : 'Copy'}
                         </button>
                     </div>
                 </section>
 
                 {/* Privacy Settings - 3 Toggles */}
                 <section className="ui-card p-4 sm:p-5">
-                    <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-[var(--color-text)]"><Shield size={19} className="text-[#E8C15A]" aria-hidden="true" />Privacy</h3>
+                    <h3 className="mb-3 text-lg font-medium text-[var(--color-text)]">Privacy</h3>
 
                     {loadingPrivacy ? (
                         <div className="space-y-4 py-2">
@@ -181,8 +172,7 @@ export default function SettingsPage() {
                     ) : (
                         <div className="divide-y divide-white/[0.06]">
                             <PrivacyToggle
-                                icon={Trophy}
-                                label="Codeforces Leaderboard"
+                                label="Codeforces leaderboard"
                                 description="Show on Codeforces rating leaderboard"
                                 field="showOnCfLeaderboard"
                                 value={showOnCfLeaderboard}
@@ -191,8 +181,7 @@ export default function SettingsPage() {
                                 onChange={handlePrivacyChange}
                             />
                             <PrivacyToggle
-                                icon={Code}
-                                label="Training Sheets Leaderboard"
+                                label="Training sheets leaderboard"
                                 description="Show on training sheets leaderboard"
                                 field="showOnSheetsLeaderboard"
                                 value={showOnSheetsLeaderboard}
@@ -201,8 +190,7 @@ export default function SettingsPage() {
                                 onChange={handlePrivacyChange}
                             />
                             <PrivacyToggle
-                                icon={Globe}
-                                label="Public Profile"
+                                label="Public profile"
                                 description="Allow others to view your profile page"
                                 field="showPublicProfile"
                                 value={showPublicProfile}

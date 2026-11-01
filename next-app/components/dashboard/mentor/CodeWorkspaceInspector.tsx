@@ -94,7 +94,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
 
         if (st === 'SOLVED' || v.includes('accepted') || v === 'ok' || v === 'ac') {
             return (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/15 px-1.5 py-0.5 rounded border border-[#E8C15A]/25">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-white/70 bg-white/[0.06] px-1.5 py-0.5 rounded">
                     <CheckCircle2 size={10} /> AC
                 </span>
             );
@@ -136,11 +136,11 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
     ];
 
     return (
-        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3">
+        <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-4 flex flex-col space-y-3">
             {/* Header: Left Title & Right Verdict Filter Pill Selector */}
             <div className="flex flex-wrap items-center justify-between pb-3 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center shrink-0">
+                    <div className="w-6 h-6 rounded-lg text-white/60 flex items-center justify-center shrink-0">
                         <Terminal size={13} />
                     </div>
                     <span className="text-xs font-semibold text-white/90 tracking-tight">
@@ -148,7 +148,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                     </span>
                     {activeEntry && (
                         <div className="hidden sm:flex items-center gap-1.5 truncate">
-                            <span className="text-[11px] font-mono text-[#E8C15A] font-semibold bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/20">
+                            <span className="text-[11px] font-mono text-white/70 font-semibold bg-white/[0.06] px-2 py-0.5 rounded-full">
                                 {activeEntry.display_label || `${activeEntry.contest_id} ${activeEntry.problem_id}`}
                             </span>
                             {getVerdictMiniBadge(activeEntry)}
@@ -167,7 +167,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                                 key={btn.id}
                                 type="button"
                                 onClick={() => setVerdictFilter(btn.id)}
-                                className={`min-h-11 min-w-0 flex-1 px-1 py-2 sm:min-h-0 sm:flex-none sm:px-2 sm:py-0.5 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
+                                className={`min-h-11 min-w-0 flex-1 px-1 py-2 sm:min-h-0 sm:flex-none sm:px-2 sm:py-0.5 rounded-md text-[11px] font-mono transition-[color,background-color,border-color,opacity,transform] cursor-pointer ${
                                     isActive
                                         ? 'text-[#E8C15A] bg-[#E8C15A]/15 border border-[#E8C15A]/30 font-semibold shadow-xs'
                                         : 'text-white/40 hover:text-white/80 border border-transparent'
@@ -208,7 +208,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
                                         key={item.key}
                                         type="button"
                                         onClick={() => setSelectedKey(item.key)}
-                                        className={`relative w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${
+                                        className={`relative w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-[color,background-color,border-color,opacity,transform] active:scale-[0.98] cursor-pointer ${
                                             isSelected
                                                 ? 'text-[#E8C15A] font-semibold bg-[#E8C15A]/10 border border-[#E8C15A]/25 shadow-xs'
                                                 : 'text-white/70 hover:text-white hover:bg-white/[0.03] border border-transparent'
@@ -257,7 +257,7 @@ export function CodeWorkspaceInspector({ codeCatalog = [], trainee }: CodeWorksp
 
                         <button
                             onClick={handleCopy}
-                            className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
+                            className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 text-white/70 hover:text-white transition-[color,background-color,border-color,opacity,transform] text-xs flex items-center gap-1.5 border border-white/[0.06] shrink-0 cursor-pointer"
                         >
                             {copied ? <Check size={12} className="text-[#E8C15A]" /> : <Copy size={12} />}
                             <span>{copied ? 'Copied' : 'Copy'}</span>

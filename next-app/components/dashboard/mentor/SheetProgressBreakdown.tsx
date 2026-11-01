@@ -39,11 +39,11 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
     };
 
     return (
-        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
+        <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-4 flex flex-col h-full">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-lg text-white/60 flex items-center justify-center">
                         <BookOpen size={13} />
                     </div>
                     <h2 className="text-xs font-semibold text-white/90 tracking-tight">Sheet Progress Matrix</h2>
@@ -61,7 +61,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                     return (
                         <div 
                             key={sheet.id || index} 
-                            className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-all"
+                            className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-[color,background-color,border-color,opacity,transform]"
                         >
                             {/* Sheet Summary Row */}
                             <button
@@ -79,7 +79,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                                         )}
                                     </div>
                                     <div className="truncate text-xs">
-                                        <span className="font-bold text-[#E8C15A] mr-2">{sheet.sheet_letter}</span>
+                                        <span className="font-semibold text-[#E8C15A] mr-2">{sheet.sheet_letter}</span>
                                         <span className="text-white/85 font-medium">{sheet.name.replace(/^Sheet #\d+\s*\((.*)\)$/, '$1')}</span>
                                     </div>
                                 </div>
@@ -121,7 +121,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                                                 return (
                                                     <div 
                                                         key={p.id}
-                                                        className={`px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between border transition-all ${
+                                                        className={`px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between border transition-[color,background-color,border-color,opacity,transform] ${
                                                             isSolved
                                                                 ? 'bg-[#E8C15A]/10 border-[#E8C15A]/25 text-white'
                                                                 : isAttempted
@@ -140,7 +140,7 @@ export function SheetProgressBreakdown({ sheets }: SheetProgressBreakdownProps) 
                                                             <span className="font-mono font-semibold text-[#E8C15A] text-xs">{p.problem_letter}.</span>
                                                             <span className="truncate text-xs font-medium">{p.title}</span>
                                                         </div>
-                                                        <span className={`text-[9px] font-mono uppercase shrink-0 ${
+                                                        <span className={`text-[9px] font-mono shrink-0 ${
                                                             isSolved ? 'text-[#E8C15A] font-semibold' : isAttempted ? 'text-amber-400 font-semibold' : 'text-white/30'
                                                         }`}>
                                                             {isSolved ? 'Solved' : isAttempted ? 'Attempted' : 'Left'}

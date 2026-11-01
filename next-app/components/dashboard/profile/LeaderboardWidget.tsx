@@ -1,58 +1,82 @@
 import Link from "next/link";
-import { Trophy, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 
+export interface RankRow { rank: number; username: string; solved: number; me: boolean }
+export interface RankInfo {
+    rank: number;
+    total: number;
+    level: number;
+    solved: number;
+    accepted: number;
+    submissions: number;
+    /** Solved problems needed to pass the person one place above, or null at #1. */
+    toNext: number | null;
+    neighbours: RankRow[];
+}
+
 interface LeaderboardWidgetProps {
-    sheetsRank: number | null;
+    info: RankInfo | null;
     loading?: boolean;
 }
 
-export function LeaderboardWidget({ sheetsRank, loading = false }: LeaderboardWidgetProps) {
-    return (
-        <div className="bg-[#121212] p-4 md:p-5 rounded-xl border border-white/5 flex-1 flex flex-col justify-center relative overflow-hidden group">
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#E8C15A]/5 rounded-full blur-[50px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-[#E8C15A]/10 transition-colors duration-500"></div>
+export function LeaderboardWidget({ info, loading = false }: LeaderboardWidgetProps) {
+    const topPercent = info ? Math.max(1, Math.ceil((info.rank / info.total) * 100)) : 0;
+    const acceptance = info && info.submissions > 0 ? Math.round((info.accepted / info.submissions) * 100) : null;
 
-            <div className="flex items-center justify-between gap-3 mb-3 relative z-10">
-                <div className="flex gap-3">
-                    <div className="p-2 md:p-3 bg-[#E8C15A]/10 rounded-lg text-[#E8C15A] shrink-0"><Trophy size={20} /></div>
-                    <div>
-                        <h4 className="font-bold text-[#F2F2F2] text-sm md:text-base">Global Rank</h4>
-                        <p className="text-xs text-[#A0A0A0]">Sheets Leaderboard</p>
-                    </div>
+    return (
+        <div className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex flex-col">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <h4 className="font-semibold text-[#F2F2F2] text-base">Rank</h4>
+                    <p className="text-xs text-[#A0A0A0]">{info ? `Level ${info.level} sheets leaderboard` : 'Sheets leaderboard'}</p>
                 </div>
-                <Link href="/dashboard/leaderboard" className="-my-3 py-3 pl-3 shrink-0 text-[#E8C15A] hover:text-[#dcb651] text-xs font-bold transition-colors flex items-center gap-1">
-                    View Full <ChevronRight size={12} />
+                <Link href="/dashboard/leaderboard" className="-my-3 py-3 pl-3 shrink-0 text-[#E8C15A] hover:text-[#dcb651] text-xs font-semibold transition-colors flex items-center gap-1">
+                    View full <ChevronRight size={12} />
                 </Link>
             </div>
 
-            <div className="space-y-2 relative z-10">
-                <div className="flex items-baseline gap-2">
-                    {loading ? (
-                        <>
-                            <Skeleton className="h-9 w-16 rounded-lg" />
-                            <Skeleton className="h-4 w-28 rounded" />
-                        </>
-                    ) : sheetsRank ? (
-                        <>
-                            <span className="text-4xl font-black text-white tracking-tight">#{sheetsRank}</span>
-                            <span className="text-sm text-[#666] font-medium">Current Position</span>
-                        </>
-                    ) : (
-                        <span className="text-sm text-[#666] italic">Not ranked yet</span>
-                    )}
+            {loading ? (
+                <div className="mt-4 space-y-3">
+                    <Skeleton className="h-14 w-32 rounded-lg" />
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-20 w-full rounded-lg" />
                 </div>
-                {loading ? (
-                    <Skeleton className="h-1.5 w-full rounded-full mt-2" />
-                ) : (
-                    <div className="w-full bg-[#1A1A1A] h-1.5 rounded-full overflow-hidden border border-white/5 mt-2">
-                        <div className="bg-gradient-to-r from-[#E8C15A] to-[#F2F2F2] h-full w-full opacity-50 animate-pulse"></div>
+            ) : !info ? (
+                <p className="mt-6 text-sm text-[#666]">Not ranked yet. Solve a problem to enter the board.</p>
+            ) : (
+                <>
+                    <div className="mt-3 flex items-end gap-3">
+                        <span className="font-mono text-5xl font-medium leading-none tabular-nums text-[#E8C15A]">#{info.rank}</span>
+                        <span className="pb-1 text-sm text-[#A0A0A0]">of {info.total} · top {topPercent}%</span>
                     </div>
-                )}
-                <p className="text-[10px] text-[#555] mt-2">
-                    Solve more problems to climb the ranks!
-                </p>
-            </div>
+
+                    <dl className="mt-4 grid grid-cols-3 border-y border-white/[0.06] py-3">
+                        <div>
+                            <dt className="text-xs text-white/50">Solved</dt>
+                            <dd className="mt-0.5 font-mono text-lg tabular-nums text-white">{info.solved}</dd>
+                        </div>
+                        <div className="border-l border-white/[0.06] pl-4">
+                            <dt className="text-xs text-white/50">Accepted</dt>
+                            <dd className="mt-0.5 font-mono text-lg tabular-nums text-white">{acceptance === null ? '—' : `${acceptance}%`}</dd>
+                        </div>
+                        <div className="border-l border-white/[0.06] pl-4">
+                            <dt className="text-xs text-white/50">{info.toNext === null ? 'Position' : `To #${info.rank - 1}`}</dt>
+                            <dd className="mt-0.5 font-mono text-lg tabular-nums text-white">{info.toNext === null ? 'First' : `+${info.toNext}`}</dd>
+                        </div>
+                    </dl>
+
+                    <ol className="mt-3 space-y-1 [@media(max-height:900px)]:hidden">
+                        {info.neighbours.map(r => (
+                            <li key={r.rank} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${r.me ? 'bg-white/[0.06] text-white' : 'text-white/60'}`}>
+                                <span className="w-8 font-mono text-xs tabular-nums text-white/40">#{r.rank}</span>
+                                <span className="min-w-0 flex-1 truncate">{r.me ? 'You' : r.username}</span>
+                                <span className="font-mono text-xs tabular-nums">{r.solved} solved</span>
+                            </li>
+                        ))}
+                    </ol>
+                </>
+            )}
         </div>
     );
 }

@@ -25,11 +25,11 @@ function formatWhen(iso: string): string {
 
 function Card({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
     return (
-        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/40 font-mono">
+        <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-3 sm:p-4">
+            <div className="flex items-center gap-2 text-[10px] text-white/40 font-mono">
                 <Icon size={12} className="shrink-0 text-[#E8C15A]" /> {label}
             </div>
-            <div className="mt-1.5 text-xl font-bold text-white tabular-nums">{value}</div>
+            <div className="mt-1.5 text-xl font-semibold text-white tabular-nums">{value}</div>
             {hint && <div className="text-[11px] text-white/40 mt-0.5">{hint}</div>}
         </div>
     );
@@ -71,7 +71,7 @@ export function SessionWatchView({ rows }: { rows: SessionWatchRow[] }) {
 
             <div className="space-y-3 sm:hidden">
                 {list.map(({ key, camp, number, title, hasVideo, row }) => (
-                    <article key={key} className="min-w-0 rounded-2xl border border-white/[0.08] bg-[#121214]/90 p-4">
+                    <article key={key} className="min-w-0 rounded-2xl border border-white/[0.08] bg-[#121214] p-4">
                         <h3 className="break-words text-xs font-semibold text-white/90">{number}. {title}</h3>
                         <p className="mt-1 text-[10px] text-white/40">{camp}</p>
                         {!row ? (
@@ -100,11 +100,11 @@ export function SessionWatchView({ rows }: { rows: SessionWatchRow[] }) {
                 ))}
             </div>
 
-            <div className="hidden min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl overflow-hidden sm:block">
+            <div className="hidden min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl overflow-hidden sm:block">
                 <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                         <thead>
-                            <tr className="text-left text-[10px] uppercase tracking-wider text-white/40 font-mono border-b border-white/[0.06]">
+                            <tr className="text-left text-[10px] text-white/40 font-mono border-b border-white/[0.06]">
                                 <th className="px-4 py-3 min-w-[220px]">Session</th>
                                 <th className="px-4 py-3">Watched</th>
                                 <th className="px-4 py-3 min-w-[140px]">Coverage</th>

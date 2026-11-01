@@ -4,9 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { CalendarClock, ChevronRight, Folder, Play } from 'lucide-react';
+import { CalendarClock, ChevronRight, Folder } from 'lucide-react';
 import { camps, CURRENT_SEASON, SEASONS, type Season } from '@/lib/sessionData';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 const SEASON_LABELS: Record<Season, string> = {
     '2027': 'Season 2027',
@@ -27,22 +28,10 @@ function SessionsContent() {
 
     return (
         <div className="font-sans text-white space-y-8 animate-fade-in pb-12">
-            {/* Hero Section */}
-            <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
-                <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 rounded-xl bg-[#E8C15A]/10">
-                        <Play className="text-[#E8C15A]" size={28} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-[#F2F2F2]">Training Sessions</h1>
-                        <p className="text-[#A0A0A0] text-sm mt-1">Exclusive Live & Recorded Training Camps</p>
-                    </div>
-                </div>
-                <p className="text-[#808080] text-sm leading-relaxed max-w-2xl">
-                    Explore our collection of specialized training sessions and camps.
-                    From seasonal workshops to advanced problem-solving intensives, access all materials in one place.
-                </p>
-            </div>
+            <PageHeader
+                title="Training sessions"
+                subtitle="Live and recorded training camps: seasonal workshops and problem-solving intensives, all in one place."
+            />
 
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -91,7 +80,7 @@ function SessionsContent() {
                                 href={`/dashboard/sessions/${group.slug}`}
                                 className="group"
                             >
-                                <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden h-full">
+                                <div className="relative group rounded-3xl p-[1px] bg-white/10 overflow-hidden h-full">
                                     <div className="bg-[#0f0f0f] rounded-[23px] relative overflow-hidden h-full flex flex-col">
                                         <div className="relative h-48 w-full overflow-hidden bg-[#1a1a1a]">
                                             {group.image && (
@@ -100,7 +89,7 @@ function SessionsContent() {
                                                     alt={group.title}
                                                     fill
                                                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                    className="object-cover opacity-50 group-hover:opacity-100 transition-all duration-700 scale-100 group-hover:scale-105"
+                                                    className="object-cover opacity-50 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,transform] duration-700 scale-100"
                                                 />
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/20 to-transparent flex items-center justify-center">
@@ -110,7 +99,7 @@ function SessionsContent() {
 
                                         <div className="relative z-10 p-5 pt-4 mt-auto">
                                             <div className="mb-3">
-                                                <h3 className="text-xl font-bold text-white group-hover:text-[#E8C15A] transition-colors">
+                                                <h3 className="text-xl font-semibold text-white group-hover:text-[#E8C15A] transition-colors">
                                                     {group.title}
                                                 </h3>
                                                 <p className="text-xs text-gray-400">
@@ -119,9 +108,9 @@ function SessionsContent() {
                                             </div>
                                             <p className="text-sm text-[#808080] line-clamp-2 mb-4">{group.description}</p>
 
-                                            <div className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 group-hover:border-white/10 transition-all">
+                                            <div className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 group-hover:border-white/10 transition-[color,background-color,border-color,opacity,transform]">
                                                 <div className="relative z-10 px-4 py-3 flex items-center justify-between">
-                                                    <span className="text-sm font-bold text-white/90 group-hover:text-[#E8C15A] transition-colors">
+                                                    <span className="text-sm font-semibold text-white/90 group-hover:text-[#E8C15A] transition-colors">
                                                         Open Folder
                                                     </span>
                                                     <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#E8C15A] transition-colors" />
@@ -141,7 +130,7 @@ function SessionsContent() {
 
 function CampCardSkeleton() {
     return (
-        <div className="rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden h-full">
+        <div className="rounded-3xl p-[1px] bg-white/10 overflow-hidden h-full">
             <div className="bg-[#0f0f0f] rounded-[23px] overflow-hidden h-full flex flex-col">
                 <Skeleton className="h-48 w-full rounded-none" />
                 <div className="p-5 pt-4 mt-auto">
@@ -161,7 +150,7 @@ function CampCardSkeleton() {
 function SessionsLoadingSkeleton() {
     return (
         <div className="font-sans text-white space-y-8 animate-fade-in pb-12" role="status" aria-label="Loading sessions">
-            <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
+            <div className="hidden md:block bg-[#141414] rounded-2xl p-6 md:p-8 border border-white/10">
                 <div className="flex items-center gap-4 mb-4">
                     <Skeleton className="w-12 h-12 rounded-xl" />
                     <div className="space-y-2">

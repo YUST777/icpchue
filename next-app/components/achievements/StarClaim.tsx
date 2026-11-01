@@ -37,7 +37,7 @@ export default function StarClaim({ onClaimed }: { onClaimed: () => void }) {
 
     return (
         <form onSubmit={claim} className="flex flex-col gap-2">
-            <label htmlFor="star-username" className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Your GitHub user name</label>
+            <label htmlFor="star-username" className="text-[10px] font-mono tracking-[0.16em] text-white/35">Your GitHub user name</label>
             <div className="flex gap-2">
                 <input id="star-username" value={username} onChange={e => setUsername(e.target.value)} maxLength={80}
                     placeholder="e.g. YUST777" autoCapitalize="none" autoCorrect="off" spellCheck={false}

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Presentation, Target, BookOpen, ExternalLink, ChevronRight } from 'lucide-react';
+
 import SlideViewer from '@/components/sessions/SlideViewer';
 
 /** Assignment: the first 16 problems of Level 0, Sheet A. */
@@ -34,18 +34,12 @@ export default function Level0Session1Content() {
     return (
         <div className="space-y-12 text-white/90">
             <section className="space-y-4">
-                <div className="flex items-center gap-3 text-[#E8C15A]">
-                    <Presentation className="w-6 h-6" />
-                    <h2 className="text-2xl sm:text-3xl font-bold">Session slides</h2>
-                </div>
+                <h2 className="text-2xl font-medium text-white">Session slides</h2>
                 <SlideViewer basePath="/sessions/2027/level0/session-01" count={21} title="Welcome to ICPC HUE" />
             </section>
 
             <section className="space-y-4 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#E8C15A]">
-                    <Target className="w-6 h-6" />
-                    <h2 className="text-2xl sm:text-3xl font-bold">Assignment</h2>
-                </div>
+                <h2 className="text-2xl font-medium text-white">Assignment</h2>
                 <p className="text-white/70">Solve the first 16 problems of <Link href="/dashboard/sheets/level-0/sheet-a" className="font-semibold text-[#E8C15A] hover:underline">Sheet A</Link> (A to P).</p>
                 <div className="grid sm:grid-cols-2 gap-2">
                     {ASSIGNMENT.map(([letter, title]) => (
@@ -54,19 +48,15 @@ export default function Level0Session1Content() {
                             href={`/dashboard/sheets/level-0/sheet-a/${letter}`}
                             className="group flex items-center gap-3 bg-[#121214] px-4 py-3 rounded-xl border border-white/10 hover:border-[#E8C15A]/40 transition-colors"
                         >
-                            <span className="w-8 h-8 shrink-0 rounded-lg bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center font-bold text-[#E8C15A]">{letter}</span>
+                            <span className="w-6 shrink-0 font-mono text-sm text-white/50">{letter}</span>
                             <span className="flex-1 text-sm font-medium text-white/85 group-hover:text-white">{title}</span>
-                            <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-[#E8C15A]" />
                         </Link>
                     ))}
                 </div>
             </section>
 
             <section className="space-y-4 pt-8 border-t border-white/10">
-                <div className="flex items-center gap-3 text-[#E8C15A]">
-                    <BookOpen className="w-6 h-6" />
-                    <h2 className="text-2xl sm:text-3xl font-bold">Want to study more?</h2>
-                </div>
+                <h2 className="text-2xl font-medium text-white">Want to study more?</h2>
                 {STUDY_MORE.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-[#121214] p-6 text-center text-sm text-white/50">
                         Extra reading and practice for this session will be added here soon.
@@ -77,10 +67,9 @@ export default function Level0Session1Content() {
                             <li key={item.url}>
                                 <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-4 bg-[#121214] p-4 rounded-xl border border-white/10 hover:border-white/20 transition-colors">
                                     <span>
-                                        <span className="font-bold text-white">{item.title}</span>
+                                        <span className="font-semibold text-white">{item.title}</span>
                                         {item.note && <span className="block text-xs text-white/50 mt-0.5">{item.note}</span>}
                                     </span>
-                                    <ExternalLink className="w-4 h-4 text-white/40 shrink-0" />
                                 </a>
                             </li>
                         ))}

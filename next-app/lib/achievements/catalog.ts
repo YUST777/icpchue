@@ -28,7 +28,6 @@ export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
     'disciplined-program': { name: 'Iron Discipline', desc: 'Logged every day of the 8-week program', imageSrc: `${IMG}badges/disciplined-program.webp`, tier: 'legendary' },
     comeback: { name: 'Comeback Kid', desc: 'Came back and solved again after a week away', imageSrc: `${IMG}badges/comeback.webp`, tier: 'common' },
     'ecpc-2026': { name: 'ECPC 2026', desc: 'Competed in the ECPC 2026 qualification with an ICPC HUE team', imageSrc: `${IMG}badges/ecpc-2026.webp`, tier: 'legendary' },
-    'level0-skills': { name: 'Programming Skills', desc: 'Solved 80% of the Level 0 topic sheets', imageSrc: `${IMG}badges/level0-skills.webp`, tier: 'legendary' },
     dev: { name: 'Dev', desc: 'Had a pull request merged into the icpchue.com repository', imageSrc: `${IMG}badges/dev.webp`, tier: 'rare' },
     mentor: { name: 'Mentor', desc: 'Guides trainees at ICPC HUE', imageSrc: `${IMG}badges/mentor.webp`, tier: 'legendary' },
 };
@@ -144,7 +143,6 @@ export function getAchievementHowTo(id: string): AchievementHowTo {
     const solvedBadge = SOLVED_BADGES.find(x => x.id === id);
     if (solvedBadge) return { how: `Solve ${solvedBadge.count} different problems on the training sheets. Every problem counts once, however many times you submit it.`, href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'ecpc-2026') return { how: 'Take part in the ECPC 2026 qualification as one of the ICPC HUE teams registered on the team page. Everyone on a registered team gets the red ACPC shirt.' };
-    if (id === 'level0-skills') return { how: 'Solve 80% of the problems in the seven Level 0 topic sheets (Data Types & Conditions through Recursion). The General Easy, Medium and Hard sheets do not count.', href: '/dashboard/sheets', cta: 'Open training sheets' };
     if (id === 'dev') return { how: 'Get a pull request merged into the icpchue.com repository on GitHub. Open an issue or a PR, and once it is merged the badge is added.', href: 'https://github.com/YUST777/icpchue', cta: 'Open the repository' };
     if (id === 'mentor') return { how: 'Given to the mentors who guide trainees at ICPC HUE.' };
     if (id === 'rank1-march-2026') return { how: 'Awarded for holding Rank 1 on the leaderboard in March 2026. That campaign has ended, so it is no longer available.' };

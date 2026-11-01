@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Lock, Info } from 'lucide-react';
+import { Lock, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const Badge3D = dynamic(() => import('@/components/3d/Badge3D'), { ssr: false });
@@ -54,18 +54,17 @@ function BadgeCard({
         <li
             id={`badge-${id}`}
             title={description}
-            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-all duration-500 ${
+            className={`relative rounded-xl border p-3 flex flex-col items-center text-center transition-[color,background-color,border-color,opacity,transform] duration-500 ${
                 isHighlighted
-                    ? 'border-[#E8C15A] shadow-[0_0_20px_rgba(232,193,90,0.35),0_0_8px_rgba(232,193,90,0.25)] scale-[1.02] bg-gradient-to-b from-[#1c1a13] to-[#151412] z-50'
+                    ? 'border-[#E8C15A] scale-[1.02] bg-gradient-to-b from-[#1c1a13] to-[#151412] z-50'
                     : unlocked
                     ? 'border-white/[0.1] bg-[#121214] z-0'
                     : 'border-white/[0.05] bg-white/[0.02] z-0'
             }`}
         >
             {isHighlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-50 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#E8C15A] to-[#d4af37] text-black text-[10px] font-black tracking-wider uppercase shadow-[0_2px_8px_rgba(232,193,90,0.35)] animate-bounce flex items-center gap-1.5 whitespace-nowrap">
-                    <span>✨</span>
-                    <span>Unlocked!</span>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-50 px-3 py-0.5 rounded-full bg-[#E8C15A] text-black text-[10px] font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                    <span>Unlocked</span>
                 </div>
             )}
             <button
@@ -73,7 +72,7 @@ function BadgeCard({
                 onClick={onOpen}
                 title="How to get this achievement"
                 aria-label={`How to get ${title}`}
-                className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 hover:bg-white/[0.1] transition-all cursor-pointer"
+                className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 hover:text-[#E8C15A] hover:border-[#E8C15A]/40 hover:bg-white/[0.1] transition-[color,background-color,border-color,opacity,transform] cursor-pointer"
             >
                 <Info size={14} />
             </button>
@@ -155,7 +154,6 @@ function AchievementsContent() {
     });
 
     const achievements = [
-        { group: 'Level 0 sheets', id: 'level0-skills', modelPath: '/3d/level0-skills.glb', title: ACHIEVEMENT_META['level0-skills'].name, description: ACHIEVEMENT_META['level0-skills'].desc, unlocked: earnedIds.has('level0-skills'), rarity: ACHIEVEMENT_META['level0-skills'].tier },
         { group: 'Milestones', id: 'welcome', modelPath: '/3d/WELCOME.glb', scale: 2, title: 'Welcome Badge', description: 'Awarded for joining ICPC HUE community', unlocked: true, rarity: 'common' as const },
         { group: 'Milestones', id: 'github-star', modelPath: '/3d/github-star.glb', scale: 2, spin: true, title: ACHIEVEMENT_META['github-star'].name, description: ACHIEVEMENT_META['github-star'].desc, unlocked: earnedIds.has('github-star'), rarity: ACHIEVEMENT_META['github-star'].tier },
         { group: 'Board', id: 'instructor', modelPath: '/3d/instructor.glb', scale: 2, title: 'Instructor', description: 'Become an ICPC HUE instructor', unlocked: isInstructorUnlocked, rarity: 'legendary' as const },
@@ -259,15 +257,14 @@ function AchievementsContent() {
             <div className="ui-compact animate-fade-in">
                 {/* Header with Progress */}
                 <div className="flex items-center gap-4 mb-6">
-                    <Trophy className="w-6 h-6 text-[#E8C15A]" />
                     <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                            <h1 className="text-xl md:text-2xl font-bold text-[#E8C15A] tracking-wide">MY ACHIEVEMENTS</h1>
+                            <h2 className="ui-page-title">My achievements</h2>
                             <span className="text-sm text-[#A0A0A0]">{unlockedCount} / {achievements.length} Unlocked</span>
                         </div>
                         <div className="w-full h-2.5 bg-[#1a1a1a] rounded-full overflow-hidden border border-white/5">
                             <div
-                                className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)] transition-all duration-1000 ease-out"
+                                className="h-full bg-[#E8C15A] transition-[color,background-color,border-color,opacity,transform] duration-1000 ease-out"
                                 style={{ width: `${animatedProgress}%` }}
                             ></div>
                         </div>
@@ -280,7 +277,7 @@ function AchievementsContent() {
                         const items = achievements.filter(a => a.group === group);
                         if (items.length === 0) return null;
                         return (
-                            <div key={group} className={`relative transition-all overflow-visible ${items.some(a => highlightedBadgeId === a.id) ? 'z-40' : 'z-0'}`}>
+                            <div key={group} className={`relative transition-[color,background-color,border-color,opacity,transform] overflow-visible ${items.some(a => highlightedBadgeId === a.id) ? 'z-40' : 'z-0'}`}>
                                 <div className="flex items-baseline justify-between mb-3">
                                     <h2 className="text-sm font-semibold text-white">{group}</h2>
                                     <span className="text-xs text-white/40 tabular-nums">{items.filter(a => a.unlocked).length}/{items.length}</span>
@@ -323,7 +320,6 @@ function AchievementsSkeleton() {
     return (
         <div className="ui-compact animate-fade-in" role="status" aria-label="Loading achievements">
             <div className="flex items-center gap-4 mb-6">
-                <Trophy className="w-6 h-6 text-[#E8C15A]" />
                 <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between mb-2">
                         <Skeleton className="h-6 w-44 rounded-lg" />

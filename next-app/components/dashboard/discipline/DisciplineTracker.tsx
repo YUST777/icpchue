@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Check, Lock, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 interface DisciplineLog {
     id?: number;
@@ -120,7 +121,7 @@ function ModalShell({ title, subtitle, onClose, children }: {
     children: React.ReactNode;
 }) {
     return (
-        <div className="fixed inset-0 z-[999999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="fixed inset-0 z-[999999] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
             <div role="dialog" aria-modal="true" aria-label={title}
                 className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#121214] p-5 sm:p-6 space-y-5"
                 onClick={e => e.stopPropagation()}>
@@ -138,7 +139,7 @@ function ModalShell({ title, subtitle, onClose, children }: {
                 <div className="flex justify-end">
                     <button type="button" onClick={onClose}
                         className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#E8C15A] hover:bg-[#d4ad45] text-black text-sm font-semibold transition-colors cursor-pointer">
-                        <Check size={14} /> Done
+                        Done
                     </button>
                 </div>
             </div>
@@ -357,21 +358,22 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
         <div className="ui-compact space-y-5">
             {/* ── Header ─────────────────────────────────── */}
             <div className="space-y-4">
-                <div>
-                    <h1 className="text-xl font-semibold text-white tracking-tight">
-                        {isMentorView ? `${traineeName || 'Trainee'}'s study log` : 'Study log'}
-                    </h1>
-                    <p className="text-sm text-white/45 mt-1 max-w-xl">
-                        {isMentorView
-                            ? 'Daily hours, what they covered, and where they studied. Leave feedback on any day.'
-                            : 'Log your hours, what you covered, and where you studied. Your mentor reads this and replies.'}
-                    </p>
-                </div>
+                {isMentorView ? (
+                    <div>
+                        <h1 className="text-xl font-semibold text-white tracking-tight">{`${traineeName || 'Trainee'}'s study log`}</h1>
+                        <p className="text-sm text-white/45 mt-1 max-w-xl">Daily hours, what they covered, and where they studied. Leave feedback on any day.</p>
+                    </div>
+                ) : (
+                    <PageHeader
+                        title="Study log"
+                        subtitle="Log your hours, what you covered, and where you studied. Your mentor reads this and replies."
+                    />
+                )}
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 rounded-2xl border border-white/[0.08] bg-[#121214] divide-x divide-y sm:divide-y-0 divide-white/[0.06]">
                     {stats.map(stat => (
                         <div key={stat.label} className="px-4 py-3">
-                            <div className="text-lg font-semibold text-[#E8C15A] tabular-nums">{stat.value}</div>
+                            <div className="font-mono text-lg tabular-nums text-white">{stat.value}</div>
                             <div className="text-xs text-white/40">{stat.label}</div>
                         </div>
                     ))}
@@ -380,7 +382,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                 <div className="flex gap-1 overflow-x-auto p-1.5 rounded-xl border border-white/10 bg-[#0B0B0C] w-fit max-w-full" role="tablist" aria-label="Week">
                     {(['all', ...Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1)] as const).map(w => (
                         <button key={w} role="tab" aria-selected={selectedWeek === w} onClick={() => handleSelectWeek(w)}
-                            className={`relative shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-[#E8C15A] text-black font-semibold' : w !== 'all' && w > currentWeek ? 'text-white/25 hover:text-white/60 hover:bg-white/[0.06]' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
+                            className={`relative shrink-0 px-3 h-8 rounded-lg text-sm transition-colors cursor-pointer ${selectedWeek === w ? 'bg-white/[0.1] text-white font-medium' : w !== 'all' && w > currentWeek ? 'text-white/25 hover:text-white/60 hover:bg-white/[0.06]' : 'text-white/50 hover:text-white hover:bg-white/[0.06]'}`}>
                             {w === 'all' ? 'All' : `Week ${w}`}
                             {w === currentWeek && selectedWeek !== w && (
                                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#E8C15A]" aria-label="This week" />
@@ -439,7 +441,7 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                             <section key={weekNum} className="rounded-2xl border border-white/[0.08] bg-[#121214] overflow-hidden">
                                 <div className="flex items-baseline justify-between gap-3 px-4 py-3 border-b border-white/[0.08] bg-black/20">
                                     <div className="flex items-baseline gap-3">
-                                        <h2 className="text-sm font-bold text-[#E8C15A]">Week {weekNum}</h2>
+                                        <h2 className="text-sm font-semibold text-[#E8C15A]">Week {weekNum}</h2>
                                         <span className="text-xs text-white/40">{range}</span>
                                     </div>
                                     <span className="text-xs text-white/50 tabular-nums">{Math.round(weekHours * 10) / 10}h</span>
@@ -472,7 +474,6 @@ export default function DisciplineTracker({ targetUserId, isMentorView = false, 
                                                     </div>
                                                     <div className="text-xs text-white/35 flex items-center gap-1.5">
                                                         {formatDayDate(dayDate)}
-                                                        {!isUnlocked && <Lock size={10} aria-label="Locked" />}
                                                     </div>
                                                     {sent && (
                                                         <div className="hidden md:block text-[11px] text-white/30 mt-1" title={new Date(log!.submitted_at!).toLocaleString()}>

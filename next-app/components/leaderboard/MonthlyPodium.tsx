@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Award, Trophy } from 'lucide-react';
+import { Award } from 'lucide-react';
 import PodiumRewards from '@/components/leaderboard/PodiumRewards';
 import { fetchWithCache } from '@/lib/cache/api-cache';
 import type { MonthlyPodium as Month, PodiumEntry } from '@/lib/leaderboard/monthly';
 
 const MEDAL = {
-    1: { height: 'h-16', block: 'bg-gradient-to-b from-[#F5D36B] to-[#B8892A] text-black', label: '1st' },
-    2: { height: 'h-11', block: 'bg-gradient-to-b from-[#E4E7EC] to-[#8E96A3] text-black', label: '2nd' },
-    3: { height: 'h-8', block: 'bg-gradient-to-b from-[#D99A6C] to-[#8A4F2A] text-black', label: '3rd' },
+    1: { height: 'h-16', block: 'bg-[#E8C15A] text-black', label: '1st' },
+    2: { height: 'h-11', block: 'bg-[#C4C9D1] text-black', label: '2nd' },
+    3: { height: 'h-8', block: 'bg-[#C48A5E] text-black', label: '3rd' },
 } as const;
 
 function Place({ entry }: { entry: PodiumEntry | undefined; }) {
@@ -23,7 +23,7 @@ function Place({ entry }: { entry: PodiumEntry | undefined; }) {
         <div className="flex-1 min-w-0 flex flex-col items-center justify-end text-center">
             <div className="text-xs font-medium text-white truncate max-w-full px-1">{name}</div>
             <div className="text-[11px] text-white/40 tabular-nums mb-1.5">{entry.solved} solved</div>
-            <div className={`${medal.height} w-full max-w-[110px] rounded-t-lg flex items-start justify-center pt-1.5 text-sm font-bold ${medal.block}`}>
+            <div className={`${medal.height} w-full max-w-[110px] rounded-t-lg flex items-start justify-center pt-1.5 text-sm font-semibold ${medal.block}`}>
                 {entry.rank}
             </div>
         </div>
@@ -60,7 +60,7 @@ export default function MonthlyPodium({ live }: { live?: { userId: number; usern
         <div className="rounded-xl border border-white/5 bg-[#121212] p-4">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Trophy size={15} className="text-[#E8C15A]" /> Monthly top 3
+                    Monthly top 3
                     {!current.complete && <span className="text-[11px] font-normal text-white/40">· so far</span>}
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">

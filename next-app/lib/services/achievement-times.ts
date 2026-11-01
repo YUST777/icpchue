@@ -23,7 +23,7 @@ export async function earnedTimes(userId: number): Promise<Map<string, Date>> {
     const out = new Map<string, Date>();
     const set = (id: string, t: Date | null | undefined) => { if (t && !Number.isNaN(t.getTime())) out.set(id, t); };
 
-    const [solves, sheets, skills, days, logs, user, seasons] = await Promise.all([
+    const [solves, sheets, days, logs, user, seasons] = await Promise.all([
         query(
             `SELECT MIN(solved_at) AS t FROM user_progress
              WHERE user_id = $1 AND status = 'SOLVED' AND solved_at IS NOT NULL
@@ -37,16 +37,6 @@ export async function earnedTimes(userId: number): Promise<Map<string, Date>> {
              FROM curriculum_sheets s
              JOIN curriculum_levels l ON l.id = s.level_id AND l.level_number = 0
              WHERE s.sheet_number BETWEEN 1 AND 7 AND s.total_problems > 0`, [userId]),
-        query(
-            `SELECT (SELECT COALESCE(SUM(s.total_problems), 0) FROM curriculum_sheets s
-                       JOIN curriculum_levels l ON l.id = s.level_id AND l.level_number = 0
-                      WHERE s.sheet_number BETWEEN 1 AND 7) AS total,
-                    (SELECT array_agg(t ORDER BY t) FROM (
-                        SELECT MIN(up.solved_at) AS t FROM user_progress up
-                        JOIN curriculum_sheets s2 ON s2.id::text = up.sheet_id
-                        JOIN curriculum_levels l2 ON l2.id = s2.level_id AND l2.level_number = 0
-                        WHERE up.user_id = $1 AND up.status = 'SOLVED' AND up.solved_at IS NOT NULL AND s2.sheet_number BETWEEN 1 AND 7
-                        GROUP BY up.sheet_id, up.problem_id) y) AS times`, [userId]),
         query('SELECT DISTINCT solve_date::text AS solve_date FROM daily_solves WHERE user_id = $1 ORDER BY 1', [userId]),
         query(
             `SELECT (week_number - 1) * 7 + day_number AS n, COALESCE(submitted_at, created_at, log_date::timestamptz) AS t
@@ -67,13 +57,6 @@ export async function earnedTimes(userId: number): Promise<Map<string, Date>> {
     for (const r of sheets.rows as { sheet_number: number; total_problems: number; times: Date[] | null }[]) {
         if (r.times && r.times.length >= r.total_problems) set(`sheet-${r.sheet_number}`, new Date(r.times[r.total_problems - 1]));
     }
-    const skillTotal = Number(skills.rows[0]?.total || 0);
-    const skillTimes: Date[] | null = skills.rows[0]?.times;
-    if (skillTotal > 0 && skillTimes) {
-        const need = Math.ceil(skillTotal * 0.8);
-        if (skillTimes.length >= need) set('level0-skills', new Date(skillTimes[need - 1]));
-    }
-
     const dates: Date[] = days.rows.map((r: { solve_date: string }) => new Date(`${String(r.solve_date).slice(0, 10)}T00:00:00Z`));
     for (const n of STREAK_TIERS) set(`streak-${n}`, (() => { const d = streakReached(dates, n); return d ? noon(d) : null; })());
     for (let i = 1; i < dates.length; i++) {

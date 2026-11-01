@@ -115,7 +115,7 @@ export default function ProblemPage() {
             <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center p-4">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-red-400 mb-2">Problem Not Found</h2>
+                    <h2 className="text-xl font-semibold text-red-400 mb-2">Problem Not Found</h2>
                     <p className="text-white/60 mb-6">{error || 'This problem is not part of the active curriculum.'}</p>
                     <Link href={`/dashboard/sheets/${levelSlug}/${sheetSlug}`} className="text-[#E8C15A] hover:underline">Return to Sheet</Link>
                 </div>
@@ -130,7 +130,7 @@ export default function ProblemPage() {
             <OnboardingTour delay={1500} />
             {isNavigating && (
                 <div className="fixed top-0 left-0 right-0 h-0.5 z-[100] bg-[#E8C15A]/20 overflow-hidden">
-                    <div className="h-full bg-[#E8C15A] animate-loader-progress shadow-[0_0_10px_#E8C15A]" />
+                    <div className="h-full bg-[#E8C15A] animate-loader-progress" />
                 </div>
             )}
             <MirrorUI
@@ -564,7 +564,7 @@ function MirrorUI({
             <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center p-4">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-red-400 mb-2">Mirror Failed</h2>
+                    <h2 className="text-xl font-semibold text-red-400 mb-2">Mirror Failed</h2>
                     <p className="text-white/60 mb-6">{error || 'Problem not found'}</p>
                     <Link href={navigationBaseUrl} className="text-[#E8C15A] hover:underline">Return to Sheet</Link>
                 </div>

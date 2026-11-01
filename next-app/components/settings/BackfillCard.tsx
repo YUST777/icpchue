@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, Zap, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { extensionErrorMessage } from '@/lib/utils/codeforcesUtils';
 
 interface SheetPlan {
@@ -191,90 +191,65 @@ export default function BackfillCard() {
     const running = phase === 'planning' || phase === 'running';
 
     return (
-        <div id="codeforces-backfill" className="relative bg-[#121212] rounded-xl border border-[#E8C15A]/30 p-5 md:p-6 shadow-[0_0_24px_rgba(232,193,90,0.08)]">
-            <div className="absolute -top-3 right-5 inline-flex items-center gap-1.5 rounded-full bg-[#E8C15A] px-2.5 py-1 text-[10px] font-black tracking-wider text-[#0B0B0C] shadow-[0_0_16px_rgba(232,193,90,0.45)]">
-                <Zap size={12} /> NEW
-            </div>
-            <h3 className="text-lg font-bold text-[#F2F2F2] mb-1 flex items-center gap-2">
-                <Zap size={20} className="text-[#E8C15A]" />
-                Accurate tries from Codeforces
-            </h3>
-            <p className="text-sm text-[#A0A0A0] mb-4">
-                New: automatically import your accepted and failed attempts so every
-                problem&apos;s tries count stays accurate. Only problems linked to
-                Codeforces are included; VJudge and other providers are skipped.
+        <section id="codeforces-backfill" className="ui-card p-4 sm:p-5">
+            <h3 className="mb-2 text-lg font-medium text-[var(--color-text)]">Import tries from Codeforces</h3>
+            <p className="mb-5 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
+                Imports your accepted and failed attempts so each problem&apos;s tries count is accurate.
+                Only problems linked to Codeforces are included. VJudge and other providers are skipped.
             </p>
 
             {!hasExtension ? (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-300 text-sm">
-                    <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-                    <div>
-                        <p className="font-semibold text-orange-200">Extension required</p>
-                        <p className="text-xs mt-0.5">
-                            Install the ICPC HUE Helper extension and make sure you&apos;re logged
-                            into Codeforces, then reload this page.
-                        </p>
-                        <a
-                            href="https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-block mt-2 text-xs font-semibold text-[#E8C15A] hover:underline"
-                        >
-                            Get the extension →
-                        </a>
-                    </div>
+                <div className="border-t border-white/[0.06] pt-4">
+                    <p className="text-sm text-[var(--color-text)]">Extension required</p>
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
+                        Install the ICPC HUE Helper extension and make sure you&apos;re logged into Codeforces, then reload this page.
+                    </p>
+                    <a
+                        href="https://chromewebstore.google.com/detail/verdict-helper/jeiffogppnpnefphgpglagmgbcnifnhj"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-block text-sm text-[#E8C15A] hover:underline"
+                    >
+                        Get the extension
+                    </a>
                 </div>
             ) : (
                 <>
                     <button
                         onClick={run}
                         disabled={running}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#E8C15A] hover:bg-[#D4AF37] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-bold rounded-lg transition-colors cursor-pointer"
+                        className="ui-button-primary w-full sm:w-auto disabled:opacity-50"
                     >
-                        {phase === 'planning' && (<><Loader2 size={18} className="animate-spin" /> Finding your sheets...</>)}
-                        {phase === 'running' && (<><Loader2 size={18} className="animate-spin" /> Syncing {progress.done}/{progress.total} sheets...</>)}
-                        {(phase === 'idle' || phase === 'error') && (<><Download size={18} /> Backfill my progress</>)}
-                        {phase === 'done' && (<><CheckCircle2 size={18} /> Run again</>)}
+                        {running && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+                        {phase === 'planning' && 'Finding your sheets'}
+                        {phase === 'running' && `Syncing ${progress.done} of ${progress.total} sheets`}
+                        {(phase === 'idle' || phase === 'error') && 'Import my progress'}
+                        {phase === 'done' && 'Run again'}
                     </button>
 
                     {running && (
                         <div className="mt-4 space-y-2">
-                            <div className="w-full bg-[#1A1A1A] rounded-full h-2 overflow-hidden">
-                                <div
-                                    className="h-full bg-[#E8C15A] rounded-full transition-all duration-300"
-                                    style={{ width: `${pct}%` }}
-                                />
+                            <div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.08]">
+                                <div className="h-full rounded-full bg-[#E8C15A] transition-[width] duration-300" style={{ width: `${pct}%` }} />
                             </div>
-                            <p className="text-xs text-[#888] truncate">
-                                {currentSheet ? <>Scanning <span className="text-[#E8C15A]">{currentSheet}</span>...</> : 'Preparing...'}
-                                {totalSolved > 0 && <span className="text-emerald-400"> · {totalSolved} marked solved</span>}
+                            <p className="truncate text-xs text-[var(--color-text-muted)]">
+                                {currentSheet ? `Scanning ${currentSheet}` : 'Preparing'}
+                                {totalSolved > 0 && ` · ${totalSolved} marked solved`}
                             </p>
                         </div>
                     )}
 
                     {phase === 'done' && (
-                        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">
-                            <CheckCircle2 size={18} className="shrink-0" />
+                        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
                             {totalAttempts > 0
-                                ? <span>Done — imported <strong>{totalAttempts}</strong> new attempt{totalAttempts !== 1 ? 's' : ''}{totalSolved > 0 && <> and marked <strong>{totalSolved}</strong> problem{totalSolved !== 1 ? 's' : ''} solved</>}.</span>
-                                : <span>Already up to date — no new attempts were added.</span>}
-                        </div>
+                                ? `Imported ${totalAttempts} new attempt${totalAttempts !== 1 ? 's' : ''}${totalSolved > 0 ? ` and marked ${totalSolved} problem${totalSolved !== 1 ? 's' : ''} solved` : ''}.`
+                                : 'Already up to date. No new attempts were added.'}
+                        </p>
                     )}
-                    {phase === 'done' && error && (
-                        <div className="mt-2 flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
-                            <AlertTriangle size={18} className="shrink-0" />
-                            {error}
-                        </div>
-                    )}
-
-                    {phase === 'error' && error && (
-                        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                            <AlertTriangle size={18} className="shrink-0" />
-                            {error}
-                        </div>
-                    )}
+                    {phase === 'done' && error && <p className="mt-2 text-sm text-amber-300">{error}</p>}
+                    {phase === 'error' && error && <p className="mt-4 text-sm text-red-400">{error}</p>}
                 </>
             )}
-        </div>
+        </section>
     );
 }

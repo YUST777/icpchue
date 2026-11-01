@@ -268,11 +268,11 @@ export default function TraineeDossierPage() {
                 <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
                     <AlertTriangle size={24} />
                 </div>
-                <h1 className="text-base font-bold text-white">{loadError ? 'Could not load dossier' : 'Trainee Not Found'}</h1>
+                <h1 className="text-base font-semibold text-white">{loadError ? 'Could not load dossier' : 'Trainee Not Found'}</h1>
                 <p className="text-xs text-white/50">{loadError || `No trainee records matched identifier: ${studentIdParam}`}</p>
                 <button
                     onClick={() => router.push('/dashboard/mentor')}
-                    className="px-3 py-1.5 rounded-lg bg-[#E8C15A] text-black font-semibold text-xs transition-all hover:bg-[#d4ad45]"
+                    className="px-3 py-1.5 rounded-lg bg-[#E8C15A] text-black font-semibold text-xs transition-[color,background-color,border-color,opacity,transform] hover:bg-[#d4ad45]"
                 >
                     Return to Trainees Directory
                 </button>
@@ -299,10 +299,10 @@ export default function TraineeDossierPage() {
 
         if (st === 'SOLVED') {
             return (
-                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white transition-all">
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-[#E8C15A]/10 border-[#E8C15A]/30 text-white transition-[color,background-color,border-color,opacity,transform]">
                     <div className="flex items-center gap-2 truncate pr-1">
                         <CheckCircle2 size={13} className="text-[#E8C15A] shrink-0" />
-                        <span className="font-bold text-[#E8C15A]">{prob.problem_letter}.</span>
+                        <span className="font-semibold text-[#E8C15A]">{prob.problem_letter}.</span>
                         <span className="truncate font-medium">{prob.title}</span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-[#E8C15A] shrink-0">
@@ -314,10 +314,10 @@ export default function TraineeDossierPage() {
 
         if (st === 'WRONG_ANSWER') {
             return (
-                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-red-500/10 border-red-500/30 text-white transition-all">
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-red-500/10 border-red-500/30 text-white transition-[color,background-color,border-color,opacity,transform]">
                     <div className="flex items-center gap-2 truncate pr-1">
                         <XCircle size={13} className="text-red-400 shrink-0" />
-                        <span className="font-bold text-red-400">{prob.problem_letter}.</span>
+                        <span className="font-semibold text-red-400">{prob.problem_letter}.</span>
                         <span className="truncate font-medium">{prob.title}</span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-red-400 shrink-0">
@@ -329,10 +329,10 @@ export default function TraineeDossierPage() {
 
         if (st === 'TIME_LIMIT') {
             return (
-                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/30 text-white transition-all">
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/30 text-white transition-[color,background-color,border-color,opacity,transform]">
                     <div className="flex items-center gap-2 truncate pr-1">
                         <Clock size={13} className="text-amber-400 shrink-0" />
-                        <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
+                        <span className="font-semibold text-amber-400">{prob.problem_letter}.</span>
                         <span className="truncate font-medium">{prob.title}</span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
@@ -344,10 +344,10 @@ export default function TraineeDossierPage() {
 
         if (st === 'MEMORY_LIMIT' || st === 'RUNTIME_ERROR') {
             return (
-                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-purple-500/10 border-purple-500/30 text-white transition-all">
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-purple-500/10 border-purple-500/30 text-white transition-[color,background-color,border-color,opacity,transform]">
                     <div className="flex items-center gap-2 truncate pr-1">
                         <AlertTriangle size={13} className="text-purple-400 shrink-0" />
-                        <span className="font-bold text-purple-400">{prob.problem_letter}.</span>
+                        <span className="font-semibold text-purple-400">{prob.problem_letter}.</span>
                         <span className="truncate font-medium">{prob.title}</span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-purple-300 shrink-0">
@@ -359,10 +359,10 @@ export default function TraineeDossierPage() {
 
         if (st === 'ATTEMPTED') {
             return (
-                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/25 text-white/90 transition-all">
+                <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-amber-500/10 border-amber-500/25 text-white/90 transition-[color,background-color,border-color,opacity,transform]">
                     <div className="flex items-center gap-2 truncate pr-1">
                         <Clock size={13} className="text-amber-400 shrink-0" />
-                        <span className="font-bold text-amber-400">{prob.problem_letter}.</span>
+                        <span className="font-semibold text-amber-400">{prob.problem_letter}.</span>
                         <span className="truncate font-medium">{prob.title}</span>
                     </div>
                     <span className="text-[10px] font-mono font-semibold text-amber-400 shrink-0">
@@ -374,10 +374,10 @@ export default function TraineeDossierPage() {
 
         // NOT_STARTED
         return (
-            <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-white/[0.015] border-white/5 text-white/40 transition-all">
+            <div className="p-2.5 rounded-xl text-xs flex items-center justify-between border bg-white/[0.015] border-white/5 text-white/40 transition-[color,background-color,border-color,opacity,transform]">
                 <div className="flex items-center gap-2 truncate pr-1">
                     <Circle size={11} className="text-white/20 shrink-0" />
-                    <span className="font-bold text-white/50">{prob.problem_letter}.</span>
+                    <span className="font-semibold text-white/50">{prob.problem_letter}.</span>
                     <span className="truncate font-medium">{prob.title}</span>
                 </div>
                 <span className="text-[10px] font-mono text-white/30 shrink-0">
@@ -404,7 +404,7 @@ export default function TraineeDossierPage() {
             />
 
             {/* 2. Navigation Tabs & Time Horizon Selector */}
-            <div className="sticky top-14 z-30 flex flex-col items-stretch justify-between gap-2 rounded-2xl bg-[#0B0B0C]/95 py-1 backdrop-blur-xl sm:static sm:z-auto sm:bg-transparent sm:py-0 sm:backdrop-blur-none xl:flex-row xl:items-start">
+            <div className="sticky top-14 z-30 flex flex-col items-stretch justify-between gap-2 rounded-2xl bg-[#0B0B0C]/95 py-1 sm:static sm:z-auto sm:bg-transparent sm:py-0 sm:backdrop-blur-none xl:flex-row xl:items-start">
                 <TraineeTabNav 
                     activeTab={activeTab} 
                     onChange={handleTabChange} 
@@ -412,8 +412,8 @@ export default function TraineeDossierPage() {
                 />
 
                 {/* Global Time Filter Pills */}
-                <div role="group" aria-label="Time range" className="flex w-full min-w-0 items-center gap-1 bg-[#121214]/90 border border-white/[0.08] p-1 rounded-2xl backdrop-blur-xl shadow-xs sm:w-auto sm:self-end xl:self-auto shrink-0">
-                    <span className="hidden text-[10px] text-white/40 uppercase font-mono px-2 sm:flex items-center gap-1">
+                <div role="group" aria-label="Time range" className="flex w-full min-w-0 items-center gap-1 bg-[#121214] border border-white/[0.08] p-1 rounded-2xl shadow-xs sm:w-auto sm:self-end xl:self-auto shrink-0">
+                    <span className="hidden text-[10px] text-white/40 font-mono px-2 sm:flex items-center gap-1">
                         <Clock size={11} className="text-[#E8C15A]" /> Time:
                     </span>
                     {(['all', '24h', '7d', '30d', '90d'] as const).map((t) => {
@@ -462,11 +462,11 @@ export default function TraineeDossierPage() {
 
             {/* Tab 2: Full Curriculum Progress Matrix with Minimalist Header & Level Pills */}
             {activeTab === 'progress' && (
-                <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+                <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-4 space-y-3">
                     {/* Minimalist Widget Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/[0.06]">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-lg text-white/60 flex items-center justify-center">
                                 <BarChart3 size={13} />
                             </div>
                             <h2 className="text-xs font-semibold text-white/90 tracking-tight">
@@ -484,7 +484,7 @@ export default function TraineeDossierPage() {
                                         <button
                                             key={lvl}
                                             onClick={() => setSelectedLevelId(lvl)}
-                                            className={`px-2 py-0.5 rounded-md text-[11px] transition-all ${
+                                            className={`px-2 py-0.5 rounded-md text-[11px] transition-[color,background-color,border-color,opacity,transform] ${
                                                 isActive
                                                     ? 'text-[#E8C15A] bg-[#E8C15A]/10 border border-[#E8C15A]/30 font-medium'
                                                     : 'text-white/40 hover:text-white/80 border border-transparent'
@@ -524,7 +524,7 @@ export default function TraineeDossierPage() {
                                 const attemptedPct = total > 0 ? Math.min(100, Math.max(0, Math.round((attempted / total) * 100))) : 0;
 
                                 return (
-                                    <div key={sheet.id || index} className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-all">
+                                    <div key={sheet.id || index} className="rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden transition-[color,background-color,border-color,opacity,transform]">
                                         {/* Sheet Header Row */}
                                         <div 
                                             onClick={() => toggleSheet(sheet.id || index)}
@@ -536,7 +536,7 @@ export default function TraineeDossierPage() {
                                                 ) : (
                                                     <ChevronRight size={14} className="text-white/40 shrink-0" />
                                                 )}
-                                                <span className="font-bold text-[#E8C15A] text-xs">{sheet.sheet_letter}</span>
+                                                <span className="font-semibold text-[#E8C15A] text-xs">{sheet.sheet_letter}</span>
                                                 <span className="text-white font-semibold text-xs truncate">{sheet.name}</span>
                                                 <span className="text-[10px] text-white/40 bg-white/5 px-1.5 py-0.2 rounded font-mono">
                                                     {sheet.level_name}
@@ -545,7 +545,7 @@ export default function TraineeDossierPage() {
 
                                             <div className="flex items-center gap-3 shrink-0">
                                                 <div className="text-xs text-white/60">
-                                                    <strong className="text-[#E8C15A] font-bold">{solved}</strong>
+                                                    <strong className="text-[#E8C15A] font-semibold">{solved}</strong>
                                                     <span>/{total} Solved</span>
                                                 </div>
                                                 <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden flex">
@@ -556,7 +556,7 @@ export default function TraineeDossierPage() {
                                                         <div style={{ width: `${attemptedPct}%` }} className="h-full bg-amber-400" />
                                                     )}
                                                 </div>
-                                                <span className="text-xs font-bold text-white w-8 text-right">
+                                                <span className="text-xs font-semibold text-white w-8 text-right">
                                                     {solvedPct}%
                                                 </span>
                                             </div>

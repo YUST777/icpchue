@@ -285,7 +285,7 @@ export default function SheetDetailPage() {
         // Same containers as the loaded page below, with grey bars in place of text.
         return (
             <div className="space-y-6" role="status" aria-label="Loading sheet">
-                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 border border-white/10">
+                <div className="bg-[#141414] rounded-2xl p-6 border border-white/10">
                     <div className="flex items-start justify-between flex-wrap gap-4">
                         <div>
                             <Skeleton className="h-8 md:h-9 w-48 rounded-lg mb-2" />
@@ -341,20 +341,20 @@ export default function SheetDetailPage() {
         <>
             <div className="space-y-6 animate-fade-in">
                 {/* Sheet Header */}
-                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 border border-white/10">
+                <div className="bg-[#141414] rounded-2xl p-6 border border-white/10">
                     <div className="flex items-start justify-between flex-wrap gap-4">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-[#F2F2F2] mb-2">{sheet.name}</h1>
+                            <h1 className="text-2xl md:text-3xl font-semibold text-[#F2F2F2] mb-2">{sheet.name}</h1>
                             <p className="text-[#808080] text-sm">{sheet.description}</p>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-[#E8C15A]">{solvedCount}</div>
+                                <div className="text-2xl font-semibold text-[#E8C15A]">{solvedCount}</div>
                                 <div className="text-xs text-[#666]">Solved</div>
                             </div>
                             <div className="w-px h-10 bg-white/10"></div>
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-[#F2F2F2]">{availableProblems.length}</div>
+                                <div className="text-2xl font-semibold text-[#F2F2F2]">{availableProblems.length}</div>
                                 <div className="text-xs text-[#666]">Available</div>
                             </div>
                         </div>
@@ -368,7 +368,7 @@ export default function SheetDetailPage() {
                         </div>
                         <div className="w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-[#E8C15A] to-[#CFA144] rounded-full transition-all duration-500"
+                                className="h-full bg-[#E8C15A] rounded-full transition-[color,background-color,border-color,opacity,transform] duration-500"
                                 style={{ width: `${(solvedCount / Math.max(availableProblems.length, 1)) * 100}%` }}
                             />
                         </div>
@@ -417,7 +417,7 @@ export default function SheetDetailPage() {
                                     key={problem.id}
                                     href={isAvailable ? `/dashboard/sheets/${levelSlug}/${sheetSlug}/${problem.letter.trim()}` : '#'}
                                     className={`
-                                        relative group rounded-xl p-3 sm:p-4 border transition-all text-center flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]
+                                        relative group rounded-xl p-3 sm:p-4 border transition-[color,background-color,border-color,opacity,transform] text-center flex flex-col items-center justify-center min-h-[96px] sm:min-h-[102px]
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/15'
@@ -449,7 +449,7 @@ export default function SheetDetailPage() {
                                     )}
 
                                     <div className={`
-                                        text-2xl font-bold leading-none mb-1 transition-colors
+                                        text-2xl font-semibold leading-none mb-1 transition-colors
                                         ${isAvailable
                                             ? isSolved
                                                 ? 'text-green-400'
@@ -503,8 +503,8 @@ export default function SheetDetailPage() {
                                         className="bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                                     >
                                         <option value="all">All Verdicts</option>
-                                        <option value="accepted">✓ Accepted</option>
-                                        <option value="wrong">✗ Wrong</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="wrong">Wrong</option>
                                     </select>
                                     <select
                                         value={problemFilter}
@@ -595,7 +595,7 @@ export default function SheetDetailPage() {
                             <>
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#1a1a1a]">
                                     <div>
-                                        <h3 className="text-xl font-bold text-white">
+                                        <h3 className="text-xl font-semibold text-white">
                                             {selectedSubmission.source === 'codeforces' ? 'CF' : 'Judge0'} Submission #{selectedSubmission.id}
                                         </h3>
                                         <div className="flex items-center gap-2 mt-1 text-sm text-[#888]">

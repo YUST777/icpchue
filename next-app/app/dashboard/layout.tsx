@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getDisplayName } from '@/lib/utils';
 import { SidebarLogo } from '@/components/dashboard/SidebarLogo';
 import {
-    LayoutDashboard, Trophy, Code, LogOut,
+    LayoutDashboard, ListOrdered, Code, LogOut,
     BookOpen, Bell, Home, Menu, X, Play, Settings, User,
     ChevronRight, ChevronLeft, GraduationCap, Flame, Star, Award
 } from 'lucide-react';
@@ -162,9 +162,9 @@ function NotificationsDropdown({
                             : 'hover:bg-white/[0.04]'
                     }`}
                 >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
                         !hasSeenUpdate
-                            ? 'bg-[#E8C15A]/20 border border-[#E8C15A]/35 text-[#E8C15A] shadow-[0_0_12px_rgba(232,193,90,0.25)]'
+                            ? 'bg-[#E8C15A]/20 border border-[#E8C15A]/35 text-[#E8C15A]'
                             : 'bg-white/5 border border-white/10 text-white/60'
                     }`}>
                         <Play size={17} fill="currentColor" className="ml-0.5" />
@@ -177,7 +177,7 @@ function NotificationsDropdown({
                                 3D Achievements
                             </h4>
                             {!hasSeenUpdate && (
-                                <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 bg-[#E8C15A]/20 text-[#E8C15A] border border-[#E8C15A]/30">
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0 bg-[#E8C15A]/20 text-[#E8C15A] border border-[#E8C15A]/30">
                                     NEW
                                 </span>
                             )}
@@ -215,13 +215,13 @@ function NotificationsDropdown({
                                             alt={badge?.meta.name || n.title}
                                             width={44}
                                             height={44}
-                                            className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform duration-200"
+                                            className="w-full h-full object-contain transition-transform duration-200"
                                             unoptimized
                                         />
                                     </div>
                                 ) : (
                                     <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center shrink-0 text-white/60">
-                                        {n.type === 'leaderboard' ? <Trophy size={16} /> : <Bell size={16} />}
+                                        {n.type === 'leaderboard' ? <ListOrdered size={16} /> : <Bell size={16} />}
                                     </div>
                                 )}
 
@@ -243,12 +243,12 @@ function NotificationsDropdown({
                                     {(!n.is_read || (isAchievement && badge?.meta.tier)) && (
                                         <div className="mt-1.5 flex items-center gap-2">
                                             {isAchievement && badge?.meta.tier && (
-                                                <span className="text-[9px] font-mono uppercase tracking-wider text-white/30">
+                                                <span className="text-[9px] font-mono text-white/30">
                                                     {badge.meta.tier}
                                                 </span>
                                             )}
                                             {!n.is_read && (
-                                                <span className="w-1.5 h-1.5 rounded-full bg-[#E8C15A] shadow-[0_0_6px_rgba(232,193,90,0.8)]" />
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#E8C15A]" />
                                             )}
                                         </div>
                                     )}
@@ -629,11 +629,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
                                 aria-label="Notifications"
-                                className={`notification-trigger min-w-[38px] min-h-[38px] p-2 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
+                                className={`notification-trigger min-w-[38px] min-h-[38px] p-2 flex items-center justify-center rounded-lg transition-[color,background-color,border-color,opacity,transform] ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
                             >
                                 <Bell size={20} />
                                 {totalUnreadCount > 0 && (
-                                    <div className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
+                                    <div className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-semibold text-white">
                                         {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                                     </div>
                                 )}
@@ -668,7 +668,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <MobileNavItem id="mobile-nav-profile" icon={<Code size={22} />} label="Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
                     <MobileNavItem id="mobile-nav-sessions" icon={<Play size={22} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
                     <MobileNavItem id="mobile-nav-sheets" icon={<BookOpen size={22} />} label="Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
-                    <MobileNavItem id="mobile-nav-leaderboard" icon={<Trophy size={22} />} label="Rank" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
+                    <MobileNavItem id="mobile-nav-leaderboard" icon={<ListOrdered size={22} />} label="Rank" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
                 </nav>
             )}
 
@@ -737,7 +737,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             active={activePage === 'Self Discipline'}
                                             onClick={() => handleNav('/dashboard/discipline')}
                                             className="text-base font-medium"
-                                            badge="NEW"
+                                           
                                         />
                                         <NavItem
                                             icon={<Settings size={26} />}
@@ -762,10 +762,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             href="https://github.com/YUST777/icpchue"
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="group flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-[0.98]"
+                                            className="group flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-[color,background-color,border-color,opacity,transform] active:scale-[0.98]"
                                         >
                                             <span className="text-sm font-semibold text-white/90">Support us</span>
-                                            <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-white/10 text-[#E8C15A] border border-[#E8C15A]/20">
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold px-2.5 py-1 rounded-md bg-white/10 text-[#E8C15A] border border-[#E8C15A]/20">
                                                 <Star size={13} className="text-[#E8C15A] fill-[#E8C15A]" />
                                                 <span>{starCount !== null ? starCount : ''}</span>
                                             </span>
@@ -775,7 +775,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                                 <div className="p-4 border-t border-white/10">
                                     <div className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-                                        <div className="w-8 h-8 rounded-full bg-[#E8C15A]/10 flex items-center justify-center overflow-hidden shrink-0">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden shrink-0">
                                             {user?.profile_picture ? (
                                                 <Image
                                                     src={user.profile_picture.startsWith('http') || user.profile_picture.startsWith('/')
@@ -792,12 +792,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-white truncate">{getDisplayName(profile?.name || user?.email)}</p>
+                                            <p className="text-xs font-semibold text-white truncate">{getDisplayName(profile?.name || user?.email)}</p>
                                             <p className="text-[10px] text-[#666] truncate">{user?.email}</p>
                                         </div>
                                         <button
                                             onClick={() => { logout(); router.push('/'); }}
-                                            className="p-2 text-[#A0A0A0] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                            className="p-2 text-[#A0A0A0] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-[color,background-color,border-color,opacity,transform]"
                                             title="Sign Out"
                                         >
                                             <LogOut size={18} />
@@ -842,8 +842,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <NavItem id="onboarding-nav-profile" collapsed={isSidebarCollapsed} icon={<Code size={20} />} label="My Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
                             <NavItem id="onboarding-nav-sessions" collapsed={isSidebarCollapsed} icon={<Play size={20} />} label="Sessions" active={activePage === 'Sessions'} onClick={() => handleNav('/dashboard/sessions')} />
                             <NavItem id="onboarding-nav-sheets" collapsed={isSidebarCollapsed} icon={<BookOpen size={20} />} label="Training Sheets" active={activePage === 'Training Sheets'} onClick={() => handleNav('/dashboard/sheets')} />
-                            <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<Trophy size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
-                            <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} badge="NEW" />
+                            <NavItem id="onboarding-nav-leaderboard" collapsed={isSidebarCollapsed} icon={<ListOrdered size={20} />} label="Leaderboard" active={activePage === 'Leaderboard'} onClick={() => handleNav('/dashboard/leaderboard')} />
+                            <NavItem id="onboarding-nav-discipline" collapsed={isSidebarCollapsed} icon={<Flame size={20} />} label="Self Discipline" active={activePage === 'Self Discipline'} onClick={() => handleNav('/dashboard/discipline')} />
                             {isMentor && (
                                 <NavItem id="onboarding-nav-mentor" collapsed={isSidebarCollapsed} icon={<GraduationCap size={20} />} label="Mentor Panel" active={activePage === 'Mentor Panel'} onClick={() => handleNav('/dashboard/mentor')} />
                             )}
@@ -852,7 +852,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                     <div className="p-2 border-t border-white/5 mt-auto">
                         <Link href="/" className={`flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-colors group ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                            <div className="w-8 h-8 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20 flex items-center justify-center overflow-hidden shrink-0">
+                            <div className="w-8 h-8 rounded-full border flex items-center justify-center overflow-hidden shrink-0">
                                 {user?.profile_picture ? (
                                     <Image
                                         src={user.profile_picture.startsWith('http') || user.profile_picture.startsWith('/')
@@ -871,7 +871,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             {!isSidebarCollapsed && (
                                 <>
                                     <div className="flex-1 min-w-0 text-left">
-                                        <p className="text-xs font-bold text-white truncate">{getDisplayName(profile?.name || user?.email)}</p>
+                                        <p className="text-xs font-semibold text-white truncate">{getDisplayName(profile?.name || user?.email)}</p>
                                         <p className="text-[10px] text-[#666] truncate group-hover:text-[#E8C15A] transition-colors">Back to Home</p>
                                     </div>
                                     <Home size={14} className="text-[#666] group-hover:text-white transition-colors" />
@@ -951,25 +951,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </nav>
 
                         <div className="flex items-center gap-2">
-                            <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Support ICPC HUE on GitHub" aria-label="Support ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-xs font-medium text-white/90 hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-all active:scale-95">
+                            <a href="https://github.com/YUST777/icpchue" target="_blank" rel="noopener noreferrer" title="Support ICPC HUE on GitHub" aria-label="Support ICPC HUE on GitHub" className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-xs font-medium text-white/90 hover:bg-[#E8C15A]/10 hover:border-[#E8C15A]/30 transition-[color,background-color,border-color,opacity,transform] active:scale-95">
                                 <span className="hidden sm:inline">Support us</span>
                                 {starCount !== null ? (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/70 pl-1.5 border-l border-white/15 ml-0.5">
-                                        <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform" />
+                                        <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] transition-transform" />
                                         <span>{starCount}</span>
                                     </span>
                                 ) : (
-                                    <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] group-hover:scale-110 transition-transform ml-0.5" />
+                                    <Star size={12} className="text-[#E8C15A] fill-[#E8C15A] transition-transform ml-0.5" />
                                 )}
                             </a>
                             <div className="relative">
                                 <button
                                     onClick={() => setShowNotifications(!showNotifications)}
-                                    className={`notification-trigger w-8 h-8 flex items-center justify-center rounded-lg transition-all ${showNotifications ? 'bg-[#E8C15A]/20 text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5'}`}
+                                    className={`notification-trigger w-8 h-8 flex items-center justify-center rounded-lg transition-[color,background-color,border-color,opacity,transform] ${showNotifications ? 'bg-[#E8C15A]/20 text-white/60' : 'text-[#A0A0A0] hover:text-white/60 hover:bg-white/5'}`}
                                 >
                                     <Bell size={18} />
                                     {totalUnreadCount > 0 && (
-                                        <div className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-black text-white">
+                                        <div className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 bg-red-600 rounded-full border border-[#0B0B0C] flex items-center justify-center text-[8px] font-semibold text-white">
                                             {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                                         </div>
                                     )}
@@ -987,10 +987,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     )}
                                 </AnimatePresence>
                             </div>
-                            <Link href="/dashboard/settings" className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5 rounded-lg transition-all">
+                            <Link href="/dashboard/settings" className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-[#E8C15A] hover:bg-white/5 rounded-lg transition-[color,background-color,border-color,opacity,transform]">
                                 <Settings size={18} />
                             </Link>
-                            <button onClick={() => { logout(); router.push('/'); }} className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-red-500 hover:bg-white/5 rounded-lg transition-all">
+                            <button onClick={() => { logout(); router.push('/'); }} className="w-8 h-8 flex items-center justify-center text-[#A0A0A0] hover:text-red-500 hover:bg-white/5 rounded-lg transition-[color,background-color,border-color,opacity,transform]">
                                 <LogOut size={18} />
                             </button>
                         </div>

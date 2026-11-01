@@ -123,7 +123,7 @@ export default function RoadmapPage() {
                                     {level.levelNumber}
                                 </div>
                                 <div>
-                                    <h2 className="text-3xl font-bold text-white tracking-tight">{level.title}</h2>
+                                    <h2 className="text-3xl font-semibold text-white tracking-tight">{level.title}</h2>
                                     <p className="text-neutral-500 text-sm mt-1">{level.description}</p>
                                 </div>
                             </div>
@@ -227,20 +227,20 @@ export default function RoadmapPage() {
                                                             <span className="text-xs font-medium text-neutral-400 group-hover:text-white transition-colors">
                                                                 Progress
                                                             </span>
-                                                            <span className="text-xs font-bold text-[#E8C15A]">
+                                                            <span className="text-xs font-semibold text-[#E8C15A]">
                                                                 {solved} / {total}
                                                             </span>
                                                         </div>
                                                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                                             <div
-                                                                className="h-full bg-gradient-to-r from-[#E8C15A] to-[#CFA144] rounded-full transition-all duration-1000 ease-out"
+                                                                className="h-full bg-[#E8C15A] rounded-full transition-[color,background-color,border-color,opacity,transform] duration-1000 ease-out"
                                                                 style={{ width: `${progress}%` }}
                                                             />
                                                         </div>
                                                     </div>
 
                                                     {/* Chevron on hover */}
-                                                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
+                                                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,transform] duration-300 transform group-hover:translate-x-1">
                                                         <ChevronRight className="text-[#E8C15A]" size={16} />
                                                     </div>
                                                 </div>

@@ -30,7 +30,7 @@ export function TraineeTabNav({ activeTab, onChange, flagsCount = 0 }: TraineeTa
     const CurrentIcon = currentTab.icon;
 
     return (
-        <nav aria-label="Trainee sections" className="w-full min-w-0 border-b border-white/[0.08] bg-[#121214]/90 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <nav aria-label="Trainee sections" className="w-full min-w-0 border-b border-white/[0.08] bg-[#121214] p-1.5 rounded-2xl">
             <div className="relative sm:hidden">
                 <CurrentIcon size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#E8C15A]" />
                 <select

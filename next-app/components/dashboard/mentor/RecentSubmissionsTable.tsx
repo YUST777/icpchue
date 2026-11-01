@@ -69,7 +69,7 @@ export function RecentSubmissionsTable({
         const lower = (verdict || '').toLowerCase();
         if (lower.includes('accepted') || lower === 'ac' || lower === 'ok') {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/25">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.06] text-white/70">
                     <CheckCircle2 size={10} /> Accepted
                 </span>
             );
@@ -140,7 +140,7 @@ export function RecentSubmissionsTable({
                         {/* Header */}
                         <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
                             <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                <div className="w-7 h-7 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center border border-[#E8C15A]/20 shrink-0">
+                                <div className="w-7 h-7 rounded-lg text-white/60 flex items-center justify-center border shrink-0">
                                     <Terminal size={14} />
                                 </div>
                                 <div className="min-w-0">
@@ -161,7 +161,7 @@ export function RecentSubmissionsTable({
                                 type="button"
                                 aria-label="Close submission details"
                                 onClick={() => setActiveSubModal(null)}
-                                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-all flex items-center justify-center border border-white/[0.08] shrink-0"
+                                className="w-11 h-11 sm:w-7 sm:h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/60 hover:text-white transition-[color,background-color,border-color,opacity,transform] flex items-center justify-center border border-white/[0.08] shrink-0"
                                 title="Close (Esc)"
                             >
                                 <X size={13} />
@@ -205,10 +205,10 @@ export function RecentSubmissionsTable({
                         {/* Source Code Container */}
                         <div className="p-3.5 flex-1 flex flex-col bg-[#0A0A0C] min-h-0 sm:min-h-[220px] max-h-[55dvh] overflow-hidden">
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06] text-xs">
-                                <span className="text-white/40 text-[10px] font-mono uppercase tracking-wider">Source Code</span>
+                                <span className="text-white/40 text-[10px] font-mono">Source Code</span>
                                 <button
                                     onClick={() => handleCopy(activeSubModal.source_code || '')}
-                                    className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-all text-xs flex items-center gap-1.5 border border-white/[0.08]"
+                                    className="min-h-11 px-2.5 py-1 sm:min-h-0 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-white/80 hover:text-white transition-[color,background-color,border-color,opacity,transform] text-xs flex items-center gap-1.5 border border-white/[0.08]"
                                 >
                                     {copied ? <Check size={11} className="text-[#E8C15A]" /> : <Copy size={11} />}
                                     <span>{copied ? 'Copied' : 'Copy Code'}</span>
@@ -245,11 +245,11 @@ export function RecentSubmissionsTable({
     );
 
     return (
-        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col h-full">
+        <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-4 flex flex-col h-full">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-[#E8C15A]/10 text-[#E8C15A] flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-lg text-white/60 flex items-center justify-center">
                         <FileCode2 size={13} />
                     </div>
                     <h2 className="text-xs font-semibold text-white/90 tracking-tight">Recent Submissions Feed</h2>
@@ -290,7 +290,7 @@ export function RecentSubmissionsTable({
             <div className="hidden min-w-0 overflow-y-auto max-h-[300px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1 overflow-x-auto sm:block">
                 <table className="w-full min-w-[480px] text-left border-collapse">
                     <thead className="sticky top-0 bg-[#121214] z-10">
-                        <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium uppercase tracking-wider">
+                        <tr className="text-white/40 border-b border-white/[0.06] text-[10px] font-medium">
                             <th className="pb-2.5 pl-1.5 font-medium">Problem</th>
                             <th className="pb-2.5 font-medium">When</th>
                             <th className="pb-2.5 text-center font-medium">Curriculum</th>
@@ -350,7 +350,7 @@ export function RecentSubmissionsTable({
                         type="button"
                         onClick={onLoadMore}
                         disabled={loadingMore}
-                        className="min-h-11 w-full px-3 py-2 sm:min-h-0 sm:w-auto sm:px-4 sm:py-1.5 bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white rounded-xl text-xs font-medium transition-all border border-white/[0.08] disabled:opacity-50"
+                        className="min-h-11 w-full px-3 py-2 sm:min-h-0 sm:w-auto sm:px-4 sm:py-1.5 bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-white/80 hover:text-white rounded-xl text-xs font-medium transition-[color,background-color,border-color,opacity,transform] border border-white/[0.08] disabled:opacity-50"
                     >
                         {loadingMore ? 'Loading...' : 'Load Next 100 Submissions'}
                     </button>

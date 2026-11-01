@@ -34,7 +34,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
                         alt="ICPC HUE Logo"
                         width={40}
                         height={40}
-                        className="w-10 h-10 transition-transform hover:scale-105"
+                        className="w-10 h-10 transition-transform"
                     />
                 </div>
             ) : (
@@ -46,12 +46,12 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
                             alt="ICPC HUE Logo"
                             width={40}
                             height={40}
-                            className="w-10 h-10 transition-transform group-hover:scale-105"
+                            className="w-10 h-10 transition-transform"
                         />
                     </div>
                     <div className="flex flex-col justify-center">
-                        <span className="text-white font-black text-xl leading-none tracking-tight group-hover:text-[#E8C15A] transition-colors whitespace-nowrap">ICPC HUE</span>
-                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] leading-none mt-1.5 group-hover:text-white/60 transition-colors whitespace-nowrap">Community</span>
+                        <span className="text-white font-semibold text-xl leading-none tracking-tight group-hover:text-[#E8C15A] transition-colors whitespace-nowrap">ICPC HUE</span>
+                        <span className="text-[10px] text-white/40 font-semibold tracking-[0.3em] leading-none mt-1.5 group-hover:text-white/60 transition-colors whitespace-nowrap">Community</span>
                     </div>
                 </Link>
             )}
@@ -65,7 +65,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute left-full ml-4 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap"
                     >
-                        <div className="relative bg-[#0B0B0C] border border-white/10 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex items-center gap-2">
+                        <div className="relative bg-[#0B0B0C] border border-white/10 text-white text-xs font-medium px-4 py-2.5 rounded-xl flex items-center gap-2">
                             {/* Arrow */}
                             <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#0B0B0C] border-l border-b border-white/10 rotate-45" />
 
@@ -74,8 +74,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
                                     <span className="text-[#E8C15A]">icpchue.com made by tg @yousefmsm1</span>
                                 ) : (
                                     <>
-                                        Where champions learn to code :)
-                                        <span className="text-[#E8C15A]">🏆</span>
+                                        Where champions learn to code
                                     </>
                                 )}
                             </span>

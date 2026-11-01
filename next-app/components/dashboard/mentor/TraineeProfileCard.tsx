@@ -121,19 +121,19 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
     ];
 
     return (
-        <div className="min-w-0 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-3 sm:p-4 md:p-5 shadow-[0_4px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl flex flex-col space-y-3 sm:space-y-4">
+        <div className="min-w-0 bg-[#121214] border border-white/[0.08] rounded-2xl p-3 sm:p-4 md:p-5 flex flex-col space-y-3 sm:space-y-4">
             {/* Top Row: Identity Info & Navigation */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-1">
                 <div className="w-full min-w-0 flex-1">
                     {/* Name & Primary Badges */}
                     <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="w-full min-w-0 break-words !text-base sm:w-auto sm:!text-lg font-bold text-white !leading-snug tracking-tight">
+                        <h1 className="w-full min-w-0 break-words !text-base sm:w-auto sm:!text-lg font-semibold text-white !leading-snug tracking-tight">
                             {profile.name}
                         </h1>
                         <span className="font-mono text-[11px] text-white/50 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
                             {profile.student_id}
                         </span>
-                        <span className="text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2.5 py-0.5 rounded-full border border-[#E8C15A]/25">
+                        <span className="text-[10px] font-semibold text-white/70 bg-white/[0.06] px-2.5 py-0.5 rounded-full">
                             {yearLabel(profile.academic_level)}{profile.training_level != null ? ` · Training Lv ${profile.training_level}` : ''}
                         </span>
                         {profile.whatsapp_group && (
@@ -163,7 +163,7 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
                                 <ShieldAlert size={10} /> {profile.cheating_flags ? `${profile.cheating_flags} Flags` : 'Shadow Banned'}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#E8C15A] bg-[#E8C15A]/10 px-2 py-0.5 rounded-full border border-[#E8C15A]/25">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-white/70 bg-white/[0.06] px-2 py-0.5 rounded-full">
                                 <CheckCircle2 size={10} /> Clean
                             </span>
                         )}
@@ -218,14 +218,14 @@ export function TraineeProfileCard({ profile, metrics = {}, integrity = null }: 
                 {kpiMetrics.map((card) => (
                     <div
                         key={card.title}
-                        className="min-w-0 bg-black/30 border border-white/[0.04] hover:border-white/[0.1] rounded-xl p-2 sm:p-3 flex flex-col justify-between transition-all group"
+                        className="min-w-0 bg-black/30 border border-white/[0.04] hover:border-white/[0.1] rounded-xl p-2 sm:p-3 flex flex-col justify-between transition-[color,background-color,border-color,opacity,transform] group"
                     >
-                        <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-wide sm:tracking-wider text-white/40 truncate block mb-1">
+                        <span className="text-[9px] sm:text-[10px] font-semibold sm:tracking-wider text-white/40 truncate block mb-1">
                             <span className="sm:hidden">{card.mobileTitle}</span>
                             <span className="hidden sm:inline">{card.title}</span>
                         </span>
                         <div>
-                            <div className="break-words text-base sm:text-xl font-bold text-white tracking-tight">
+                            <div className="break-words text-base sm:text-xl font-semibold text-white tracking-tight">
                                 {card.value}
                             </div>
                             <div className={`text-[10px] font-mono ${card.subtextColor} mt-0.5 truncate`}>

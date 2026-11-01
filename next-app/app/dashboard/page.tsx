@@ -37,7 +37,7 @@ export default function DashboardHome() {
 
             {/* Phone home: a greeting, one card with where you stopped, one big button */}
             <div className="md:hidden space-y-4">
-                <h1 className="text-2xl font-bold text-white leading-tight">
+                <h1 className="text-2xl font-semibold text-white leading-tight">
                     Hey {firstName}<span className="text-[#E8C15A]">.</span>
                 </h1>
                 {loading ? (
@@ -65,8 +65,8 @@ export default function DashboardHome() {
                                 {total > 0 && <p className="mt-1 text-sm text-white/60">{total - progress > 0 ? `${total - progress} left to solve` : 'Sheet complete'}</p>}
                             </div>
                         </div>
-                        <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#E8C15A] text-base font-bold text-black">
-                            Continue Solving
+                        <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#E8C15A] text-base font-semibold text-black">
+                            Continue solving
                             <ArrowRight size={18} />
                         </div>
                     </Link>

@@ -72,11 +72,11 @@ function SplitBar({ active, idle, away }: { active: number; idle: number; away: 
 
 function Card({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
     return (
-        <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/40 font-mono">
+        <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-4">
+            <div className="flex items-center gap-2 text-[10px] text-white/40 font-mono">
                 <Icon size={12} className="text-[#E8C15A]" /> {label}
             </div>
-            <div className="mt-1.5 text-xl font-bold text-white tabular-nums">{value}</div>
+            <div className="mt-1.5 text-xl font-semibold text-white tabular-nums">{value}</div>
             {hint && <div className="text-[11px] text-white/40 mt-0.5">{hint}</div>}
         </div>
     );
@@ -135,7 +135,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
 
     if (!problems.length) {
         return (
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-8 text-center">
+            <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-8 text-center">
                 <Timer size={28} className="mx-auto text-white/20 mb-2" />
                 <p className="text-sm font-semibold text-white">No timing data yet</p>
                 <p className="text-xs text-white/40 mt-1">Time is recorded from now on whenever this trainee opens a problem.</p>
@@ -160,7 +160,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                 {/* Where they struggle */}
-                <div className="lg:col-span-7 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
+                <div className="lg:col-span-7 bg-[#121214] border border-white/[0.08] rounded-2xl p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                             <AlertTriangle size={14} className="text-amber-400" /> Where they struggle
@@ -189,8 +189,8 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <div className="text-sm font-bold text-[#E8C15A] tabular-nums">{formatDuration(p.active_seconds)}</div>
-                                            <span className={`text-[10px] font-mono uppercase ${
+                                            <div className="text-sm font-semibold text-[#E8C15A] tabular-nums">{formatDuration(p.active_seconds)}</div>
+                                            <span className={`text-[10px] font-mono ${
                                                 reason === 'struggling' || reason === 'unsolved' ? 'text-red-400' : reason === 'slow' ? 'text-amber-400' : 'text-emerald-400'
                                             }`}>
                                                 {reason === 'struggling' ? 'Stuck' : reason === 'slow' ? 'Slow solve' : reason}
@@ -205,7 +205,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
                 </div>
 
                 {/* Weak topics */}
-                <div className="lg:col-span-5 bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
+                <div className="lg:col-span-5 bg-[#121214] border border-white/[0.08] rounded-2xl p-4">
                     <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
                         <Layers size={14} className="text-[#E8C15A]" /> Time by sheet
                     </h3>
@@ -229,7 +229,7 @@ export function ProblemTimeView({ problems, sessions, timeHorizon }: {
             </div>
 
             {/* Session timeline */}
-            <div className="bg-[#121214]/90 border border-white/[0.08] rounded-2xl p-4">
+            <div className="bg-[#121214] border border-white/[0.08] rounded-2xl p-4">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
                     <History size={14} className="text-[#E8C15A]" /> Sessions
                     <span className="text-[10px] font-mono text-white/40">{timeHorizon === 'all' ? 'latest 200' : timeHorizon}</span>

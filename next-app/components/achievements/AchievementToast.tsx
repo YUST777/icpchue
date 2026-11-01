@@ -107,18 +107,17 @@ function DigestCard({ achievements, onSeen }: { achievements: Achievement[]; onS
 
     const tier = TIER_STYLE[top.tier];
     return (
-        <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border border-white/[0.1] bg-[#121214]/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] ${leaving ? 'achievement-toast-out' : 'achievement-toast-in'}`}>
-            <div className={`absolute -left-10 -top-10 h-40 w-40 rounded-full blur-3xl opacity-50 ${tier.glow}`} aria-hidden />
+        <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border border-white/[0.1] bg-[#121214]/95 shadow-[0_12px_40px_rgba(0,0,0,0.6)] ${leaving ? 'achievement-toast-out' : 'achievement-toast-in'}`}>
             <div className="relative flex items-center gap-3 p-3 pr-9">
                 <div className="flex shrink-0 -space-x-4">
                     {metas.slice(0, 4).map((m, i) => (
                         <div key={m.imageSrc} className="relative h-12 w-12 sm:h-14 sm:w-14" style={{ zIndex: 10 - i }}>
-                            <Image src={m.imageSrc} alt="" fill sizes="56px" className="object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" />
+                            <Image src={m.imageSrc} alt="" fill sizes="56px" className="object-contain" />
                         </div>
                     ))}
                 </div>
                 <Link href="/dashboard/achievements" onClick={dismiss} className="min-w-0 flex-1">
-                    <div className={`text-[10px] font-mono uppercase tracking-[0.18em] ${tier.label}`}>Achievements unlocked</div>
+                    <div className={`text-[10px] font-mono tracking-[0.18em] ${tier.label}`}>Achievements unlocked</div>
                     <div className="mt-0.5 text-sm font-semibold text-white leading-tight">{achievements.length} new badges</div>
                     <div className="text-xs text-white/50 truncate">{metas.slice(0, 3).map(m => m.name).join(', ')}{metas.length > 3 ? ` +${metas.length - 3}` : ''}</div>
                 </Link>
@@ -154,15 +153,14 @@ function ToastCard({ achievement: current, onSeen }: { achievement: Achievement;
 
     return (
             <div
-                className={`pointer-events-auto relative overflow-hidden rounded-2xl border border-white/[0.1] bg-[#121214]/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] ${leaving ? 'achievement-toast-out' : 'achievement-toast-in'}`}>
-                <div className={`absolute -left-10 -top-10 h-40 w-40 rounded-full blur-3xl opacity-60 ${tier.glow}`} aria-hidden />
+                className={`pointer-events-auto relative overflow-hidden rounded-2xl border border-white/[0.1] bg-[#121214]/95 shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] ${leaving ? 'achievement-toast-out' : 'achievement-toast-in'}`}>
                 <div className="relative flex items-center gap-3 sm:gap-4 p-3 sm:p-3.5 pr-9 sm:pr-10">
                     <div className="relative h-[52px] w-[52px] sm:h-[72px] sm:w-[72px] shrink-0">
                         <div className="absolute inset-0 rounded-full blur-md achievement-badge-glow" style={{ background: `radial-gradient(circle, ${tier.ring}, transparent 70%)` }} aria-hidden />
-                        <Image src={meta.imageSrc} alt="" fill sizes="72px" className="object-contain achievement-badge-pop drop-shadow-[0_6px_14px_rgba(0,0,0,0.6)]" />
+                        <Image src={meta.imageSrc} alt="" fill sizes="72px" className="object-contain achievement-badge-pop" />
                     </div>
                     <Link href="/dashboard/profile" onClick={dismiss} className="min-w-0 flex-1">
-                        <div className={`text-[10px] font-mono uppercase tracking-[0.18em] ${tier.label}`}>Achievement unlocked</div>
+                        <div className={`text-[10px] font-mono tracking-[0.18em] ${tier.label}`}>Achievement unlocked</div>
                         <div className="mt-1 text-[15px] font-semibold text-white leading-tight truncate">{meta.name}</div>
                         <div className="mt-0.5 text-xs text-white/50 leading-snug line-clamp-1 sm:line-clamp-2">{meta.desc}</div>
                     </Link>

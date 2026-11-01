@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Info, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import Providers from '@/components/core/Providers';
 import { useAuth } from '@/contexts/AuthContext';
 import { camps } from '@/lib/sessionData';
@@ -75,7 +75,7 @@ function DashboardSessionContent() {
                     <Skeleton className="h-10 sm:h-12 w-3/4 max-w-xl rounded-xl mb-4" />
                     <Skeleton className="h-5 w-full max-w-2xl rounded" />
                 </div>
-                <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center relative">
+                <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center relative">
                     <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                         <Skeleton className="w-6 h-6 rounded-md" />
                     </div>
@@ -95,7 +95,7 @@ function DashboardSessionContent() {
     if (!camp || !session) {
         return (
             <div className="text-white p-8 flex flex-col items-center justify-center">
-                <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
+                <h1 className="text-2xl font-semibold mb-4">Session Not Found</h1>
                 <Link href="/dashboard/sessions" className="text-[#E8C15A] hover:underline">Return to Sessions</Link>
             </div>
         );
@@ -106,25 +106,20 @@ function DashboardSessionContent() {
     return (
         <SessionWatchProvider campSlug={camp.slug} sessionSlug={session.slug} videoId={ytId ?? undefined}>
         <div className="font-sans text-white space-y-8 animate-fade-in pb-16">
-            <div>
-                <span className="inline-block px-3 py-1 bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
-                    {session.tag || 'SESSION'}
-                </span>
-                <h1 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight">{session.title}</h1>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <p className="text-lg text-[#808080] max-w-2xl leading-relaxed">{session.description}</p>
-                    {viewCount !== null && (
-                        <div className="flex items-center gap-2 text-white/40 bg-white/5 px-3 py-1.5 rounded-full self-start sm:self-auto border border-white/5">
-                            <Eye size={16} />
-                            <span className="text-xs font-bold uppercase tracking-tighter">{viewCount} views</span>
-                        </div>
-                    )}
-                </div>
+            <div className="space-y-2">
+                <p className="font-mono text-xs text-white/50">
+                    {(session.tag || 'Session').charAt(0).toUpperCase() + (session.tag || 'Session').slice(1).toLowerCase()}
+                </p>
+                <PageHeader
+                    title={session.title}
+                    subtitle={session.description}
+                    action={viewCount !== null ? <span className="shrink-0 font-mono text-sm text-white/50">{viewCount} views</span> : undefined}
+                />
             </div>
 
             <div>
                 {session.videoId ? (
-                    <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                    <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden">
                         {ytId ? (
                             <TrackedYouTube videoId={ytId} title={session.title} fallbackSrc={getEmbedUrl(session.videoId)} />
                         ) : (
@@ -139,9 +134,9 @@ function DashboardSessionContent() {
                         )}
                     </div>
                 ) : (
-                    <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
+                    <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center">
                         <div className="text-center px-6">
-                            <p className="text-white/60 font-bold text-sm sm:text-base">الفيديو هيكون متاح قريب</p>
+                            <p className="text-white/60 font-semibold text-sm sm:text-base">الفيديو هيكون متاح قريب</p>
                             <p className="text-white/30 text-xs mt-1">Video coming soon</p>
                         </div>
                     </div>
@@ -149,21 +144,14 @@ function DashboardSessionContent() {
                 {session.videoId && (() => {
                     const direct = getDirectWatchUrl(session.videoId);
                     return (
-                        <div className="mt-4 px-2">
-                            <p className="text-[10px] text-white/30 flex items-center gap-2 font-bold uppercase tracking-wider">
-                                <Info className="w-4 h-4 text-[#E8C15A]/50" />
-                                If video doesn&apos;t load, <a href={direct.url} target="_blank" rel="noopener noreferrer" className="text-[#E8C15A] hover:underline">watch on {direct.platform}</a>
-                            </p>
-                        </div>
+                        <p className="mt-3 text-xs text-white/40">
+                            If the video doesn&apos;t load, <a href={direct.url} target="_blank" rel="noopener noreferrer" className="text-[#E8C15A] hover:underline">watch on {direct.platform}</a>
+                        </p>
                     );
                 })()}
             </div>
 
-            <div className="flex items-center gap-4 my-8">
-                <div className="h-px bg-white/5 flex-1"></div>
-                <span className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">Session Notes</span>
-                <div className="h-px bg-white/5 flex-1"></div>
-            </div>
+            <h2 className="border-t border-white/[0.06] pt-8 text-2xl font-medium text-white">Session notes</h2>
 
             <article className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-a:text-[#E8C15A] prose-strong:text-white prose-code:text-[#E8C15A] prose-pre:bg-[#121214] prose-pre:border prose-pre:border-white/10">
                 {session.content}
