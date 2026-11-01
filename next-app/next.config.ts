@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     serverExternalPackages: ['pg', 'sharp', 'canvas'],
     images: {
-        // Keep story images sharp on high-density screens while retaining
-        // Next's responsive resizing and lazy-loading behavior.
-        qualities: [75, 90],
+        // Public images are already small webp files; skip Vercel's resizing, which has its own quota.
+        unoptimized: true,
     },
     reactCompiler: true,
     experimental: {
