@@ -1,5 +1,6 @@
 'use client';
 
+import { cdn } from '@/lib/cdn';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -156,7 +157,7 @@ export default function TeamRegistration() {
             {/* Hero with video background */}
             <div className="relative w-full h-[30vh] min-h-[220px] overflow-hidden flex items-center justify-center">
                 <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-30">
-                    <source src="/videos/applynow.webm" type="video/webm" />
+                    <source src={cdn("/videos/applynow.webm")} type="video/webm" />
                 </video>
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-[#0A0A0A]" />
                 <div className="absolute top-6 left-6 sm:left-10 z-20">

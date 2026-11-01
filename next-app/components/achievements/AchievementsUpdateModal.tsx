@@ -1,5 +1,6 @@
 'use client';
 
+import { cdn } from '@/lib/cdn';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
@@ -203,7 +204,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                 <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-lg">
                                     <video
                                         ref={videoRef}
-                                        src="/videos/achievements_1080p.mp4"
+                                        src={cdn("/videos/achievements.webm")}
                                         poster="/videos/achievements_poster.webp"
                                         controls
                                         autoPlay
@@ -297,7 +298,7 @@ export default function AchievementsUpdateModal({ forceOpen = false }: { forceOp
                                     <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-2xl">
                                         <video
                                             ref={videoRef}
-                                            src="/videos/achievements_1080p.mp4"
+                                            src={cdn("/videos/achievements.webm")}
                                             poster="/videos/achievements_poster.webp"
                                             controls
                                             autoPlay

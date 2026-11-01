@@ -1,5 +1,6 @@
 'use client';
 
+import { cdn } from '@/lib/cdn';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/lib/utils/translations';
 
@@ -15,7 +16,7 @@ export default function Hero() {
                     } top-1/2 -translate-y-1/2 z-0 h-[min(720px,90vh)] w-[min(720px,90vw)] opacity-45`}
             >
                 <video autoPlay loop muted playsInline preload="none" className="w-full h-full object-contain">
-                    <source src="/videos/headervid.webm" type="video/webm" />
+                    <source src={cdn("/videos/headervid.webm")} type="video/webm" />
                 </video>
             </div>
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#0b0b0c_0%,rgb(11_11_12_/_0.82)_42%,rgb(11_11_12_/_0.22)_100%)]" />

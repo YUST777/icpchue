@@ -1,3 +1,4 @@
+import { cdn } from '@/lib/cdn';
 import * as THREE from 'three';
 import { GLTFLoader, DRACOLoader } from 'three-stdlib';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -58,7 +59,7 @@ function loadModelScene(url: string): Promise<THREE.Group> {
         }
         const loader = gltfLoader;
         pending = new Promise<THREE.Group>((resolve, reject) => {
-            loader.load(url, gltf => resolve(gltf.scene), undefined, reject);
+            loader.load(cdn(url), gltf => resolve(gltf.scene), undefined, reject);
         });
         pending.catch(() => models.delete(url));
         models.set(url, pending);

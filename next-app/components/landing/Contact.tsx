@@ -1,5 +1,6 @@
 'use client';
 
+import { cdn } from '@/lib/cdn';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,7 +15,7 @@ export default function Contact() {
             {/* Background Video */}
             <div className="absolute inset-0 z-0">
                 <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-20">
-                    <source src="/videos/applynow.webm" type="video/webm" />
+                    <source src={cdn("/videos/applynow.webm")} type="video/webm" />
                 </video>
                 <div className="absolute inset-0 bg-[#0b0b0c]/80" />
             </div>
