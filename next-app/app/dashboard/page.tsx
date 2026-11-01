@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function DashboardHome() {
     const { user, profile } = useAuth();
-    const { stats, loading, calendarWeeks, todayStr, totalSubmissions } = useDashboardStats();
+    const { stats, loading, calendarWeeks, todayStr } = useDashboardStats();
 
     // Dashboard tutorial force state for manual trigger
     const [forceShowTour, setForceShowTour] = useState(false);
@@ -41,7 +41,7 @@ export default function DashboardHome() {
                     Hey {firstName}<span className="text-[#E8C15A]">.</span>
                 </h1>
                 {loading ? (
-                    <div className="rounded-2xl border border-white/10 bg-[#121214] p-4">
+                    <div className="ui-card p-4">
                         <div className="flex items-center gap-4">
                             <Skeleton className="w-[92px] h-[92px] rounded-full shrink-0" />
                             <div className="min-w-0 flex-1 space-y-2">
@@ -55,7 +55,7 @@ export default function DashboardHome() {
                 ) : (
                     <Link
                         href={sheetHref}
-                        className="block rounded-2xl border border-white/10 bg-[#121214] p-4 active:bg-[#17171a]"
+                        className="ui-card block p-4 transition-colors hover:bg-[#202327] active:bg-[#202327]"
                     >
                         <div className="flex items-center gap-4">
                             <ProgressRing progress={progress} total={total} size={220} compact />
@@ -105,7 +105,6 @@ export default function DashboardHome() {
             {/* Activity Calendar */}
             <ActivityCalendar
                 weeks={calendarWeeks}
-                totalSubmissions={totalSubmissions}
                 todayStr={todayStr}
             />
 

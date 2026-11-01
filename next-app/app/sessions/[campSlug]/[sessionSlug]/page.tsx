@@ -60,13 +60,13 @@ function SessionContent() {
 
     return (
         <div className="min-h-screen bg-[#0B0B0C] text-white font-sans">
-            <div className="sticky top-0 z-50 bg-[#0B0B0C]/80 backdrop-blur-xl border-b border-white/10">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B0C]/95">
+                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
                     <Link href={`/sessions/${campSlug}`} className="flex items-center gap-2 text-white/70 hover:text-white transition">
                         <ArrowLeft className="w-5 h-5" />
                         <span className="hidden sm:inline">Back to {camp.title}</span>
                     </Link>
-                    <div className="font-bold text-lg">
+                    <div className="text-base font-medium sm:text-lg">
                         {/* <span className="text-white/50 mr-2">{camp.title}</span> */}
                         Session <span className="text-[#E8C15A]">{session.displayNumber || session.number}</span>
                     </div>
@@ -74,14 +74,14 @@ function SessionContent() {
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+            <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
                 <div className="mb-8 sm:mb-12">
-                    <span className="inline-block px-3 py-1 bg-[#E8C15A]/10 text-[#E8C15A] border border-[#E8C15A]/20 rounded-full text-xs font-bold uppercase tracking-wider mb-4">{session.tag}</span>
-                    <h1 className="text-3xl sm:text-5xl font-black mb-4">{session.title}</h1>
+                    <span className="mb-4 inline-block rounded-[8px] border border-[#E8C15A]/25 bg-[#E8C15A]/10 px-3 py-1 text-xs font-medium text-[#F0CE76]">{session.tag}</span>
+                    <h1 className="mb-4 text-3xl font-medium tracking-tight sm:text-5xl">{session.title}</h1>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <p className="text-lg text-white/60 max-w-2xl">{session.description}</p>
                         {viewCount !== null && (
-                            <div className="flex items-center gap-2 text-white/40 bg-white/5 px-3 py-1.5 rounded-full self-start sm:self-auto">
+                            <div className="flex items-center gap-2 self-start rounded-[8px] border border-white/10 bg-white/[0.04] px-3 py-1.5 text-white/45 sm:self-auto">
                                 <Eye size={16} />
                                 <span className="text-sm font-medium">{viewCount} views</span>
                             </div>
@@ -91,7 +91,7 @@ function SessionContent() {
 
                 <div className="mb-12 sm:mb-16">
                     {session.videoId ? (
-                        <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="aspect-video w-full overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b]">
                             <iframe
                                 src={getEmbedUrl(session.videoId)}
                                 width="100%"
@@ -102,7 +102,7 @@ function SessionContent() {
                             ></iframe>
                         </div>
                     ) : (
-                        <div className="aspect-video w-full bg-[#121214] rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
+                        <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b]">
                             <div className="text-center px-6">
                                 <p className="text-white/60 font-bold text-sm sm:text-base">الفيديو هيكون متاح قريب</p>
                                 <p className="text-white/30 text-xs mt-1">Video coming soon</p>
@@ -124,7 +124,7 @@ function SessionContent() {
 
                 <div className="flex items-center gap-4 mb-12">
                     <div className="h-px bg-white/10 flex-1"></div>
-                    <span className="text-white/30 text-sm font-mono uppercase tracking-widest">Session Notes</span>
+                    <span className="text-sm text-white/35">Session notes</span>
                     <div className="h-px bg-white/10 flex-1"></div>
                 </div>
 

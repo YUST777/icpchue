@@ -40,19 +40,19 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
             onClick={onClick}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 relative ${active ? 'bg-gradient-to-r from-[#E8C15A]/20 to-transparent text-[#E8C15A]' : 'text-[#A0A0A0] hover:text-[#F2F2F2] hover:bg-white/5'} ${collapsed ? 'justify-center' : ''} ${className}`}
+            className={`group relative flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors duration-150 ${active ? 'bg-[#E8C15A]/10 text-[#E8C15A]' : 'text-[#A0A0A0] hover:bg-white/5 hover:text-[#F2F2F2]'} ${collapsed ? 'justify-center' : ''} ${className}`}
         >
-            {active && <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#E8C15A] rounded-r-full shadow-[0_0_10px_#E8C15A] ${collapsed ? 'left-1' : ''}`}></div>}
-            <span className={`relative ${active ? 'text-[#E8C15A]' : 'group-hover:text-[#F2F2F2] transition-colors'}`}>
+            {active && <div className={`absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[#E8C15A] ${collapsed ? 'left-1' : ''}`}></div>}
+            <span className={`relative ${active ? 'text-[#E8C15A]' : 'transition-colors group-hover:text-[#F2F2F2]'}`}>
                 {icon}
                 {badge && (
-                    <span className="absolute -right-2.5 -top-1.5 inline-flex items-center rounded-full bg-[#E8C15A] px-1 py-px text-[7px] font-black leading-none text-[#0B0B0C] shadow-[0_0_8px_rgba(232,193,90,0.45)]">
+                    <span className="absolute -right-2.5 -top-1.5 inline-flex items-center rounded-[5px] border border-[#E8C15A]/40 bg-[#E8C15A] px-1 py-px text-[7px] font-medium leading-none text-[#0B0B0C]">
                         {badge}
                     </span>
                 )}
             </span>
 
-            {!collapsed && <span className="text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">{label}</span>}
+            {!collapsed && <span className="whitespace-nowrap overflow-hidden text-sm font-medium">{label}</span>}
 
             {/* Tooltip for minimized state */}
             <AnimatePresence>
@@ -62,7 +62,7 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -5, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute left-full ml-4 px-3 py-1.5 bg-[#171718] text-white text-xs font-semibold rounded-lg pointer-events-none whitespace-nowrap z-50 border border-white/10 shadow-xl"
+                        className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-[8px] border border-white/10 bg-[#202327] px-3 py-1.5 text-xs font-medium text-white"
                     >
                         {/* Arrow pointing left */}
                         <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-[#171718] border-l border-b border-white/10 rotate-45 transform"></div>
@@ -76,7 +76,7 @@ function NavItem({ icon, label, id, active = false, collapsed = false, onClick, 
 
 function MobileNavItem({ icon, label, id, active = false, onClick }: { icon: React.ReactNode; label: string; id?: string; active?: boolean; onClick: () => void }) {
     return (
-        <button id={id} onClick={onClick} className={`flex flex-col items-center justify-center gap-1.5 py-4 w-full transition-all duration-200 ${active ? 'text-[#E8C15A]' : 'text-[#666]'}`}>
+        <button id={id} onClick={onClick} className={`flex w-full flex-col items-center justify-center gap-1.5 py-3.5 transition-colors duration-150 ${active ? 'text-[#E8C15A]' : 'text-[#666]'}`}>
             {icon}
             <span className="text-xs font-medium text-center leading-none px-0.5">{label}</span>
         </button>
@@ -692,7 +692,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 initial={{ x: "100%" }}
                                 animate={{ x: 0 }}
                                 exit={{ x: "100%" }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                                 drag="x"
                                 dragConstraints={{ left: 0 }}
                                 dragElastic={{ left: 0, right: 0.2 }}
@@ -701,14 +701,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         setMobileMenuOpen(false);
                                     }
                                 }}
-                                className="md:hidden fixed top-0 right-0 bottom-0 z-[9999] w-72 bg-[#0B0B0C] border-l border-white/10 shadow-2xl flex flex-col touch-pan-y"
+                                className="md:hidden fixed bottom-0 right-0 top-0 z-[9999] flex w-72 touch-pan-y flex-col border-l border-white/10 bg-[#111214]"
                                 onClick={e => e.stopPropagation()}
                             >
-                                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                                    <span className="font-bold text-[#F2F2F2] text-2xl">Menu</span>
+                                <div className="flex items-center justify-between border-b border-white/10 p-5">
+                                    <span className="text-xl font-medium text-[#F2F2F2]">Menu</span>
                                     <button
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="p-2 text-white/60 hover:text-white transition-colors hover:bg-white/5 rounded-lg"
+                                        aria-label="Close menu"
+                                        className="rounded-[8px] p-2 text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                                     >
                                         <X size={32} />
                                     </button>
@@ -814,8 +815,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 < motion.aside
                     initial={false}
                     animate={{ width: isSidebarCollapsed ? 80 : 256 }}
-                    transition={transitionsEnabled ? { type: "spring", stiffness: 300, damping: 30 } : { duration: 0 }} // Disable transition initially
-                    className={`bg-[#0B0B0C] border-r border-white/10 flex flex-col shrink-0 fixed h-full z-50 hidden md:flex scrollbar-hide ${isSidebarCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}
+                    transition={transitionsEnabled ? { duration: 0.22, ease: [0.22, 1, 0.36, 1] } : { duration: 0 }}
+                    className={`fixed z-50 hidden h-full shrink-0 flex-col border-r border-white/10 bg-[#0f1012] md:flex scrollbar-hide ${isSidebarCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}
                 >
                     <div className="flex-1">
                         <div className={`p-6 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -835,7 +836,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             )}
                         </div>
 
-                        {!isSidebarCollapsed && <div className="px-4 py-2 text-xs font-semibold text-[#A0A0A0] uppercase tracking-wider">Training</div>}
+                        {!isSidebarCollapsed && <div className="px-4 py-2 text-xs font-medium text-[#85868a]">Training</div>}
                         <nav className="mt-2 space-y-1 px-2">
                             <NavItem id="onboarding-nav-dashboard" collapsed={isSidebarCollapsed} icon={<LayoutDashboard size={20} />} label="Dashboard" active={activePage === 'Dashboard'} onClick={() => handleNav('/dashboard')} />
                             <NavItem id="onboarding-nav-profile" collapsed={isSidebarCollapsed} icon={<Code size={20} />} label="My Profile" active={activePage === 'My Profile'} onClick={() => handleNav('/dashboard/profile')} />
@@ -886,13 +887,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             < motion.main
                 initial={false}
                 animate={{ marginLeft: isMobile || isProblemPage ? 0 : (isSidebarCollapsed ? 80 : 256) }}
-                transition={transitionsEnabled ? { type: "spring", stiffness: 300, damping: 30 } : { duration: 0 }} // Disable transition initially
+                transition={transitionsEnabled ? { duration: 0.22, ease: [0.22, 1, 0.36, 1] } : { duration: 0 }}
                 className={`${isProblemPage ? 'pt-0 pb-0' : 'pt-14 md:pt-0 pb-24 md:pb-0'} max-md:!ml-0 max-md:!w-full max-w-[100vw]`}
             >
                 {!isProblemPage && (
                     <header className="sticky top-0 z-40 w-full h-16 bg-[#0B0B0C] flex items-center justify-between px-4 md:px-8 hidden md:flex border-b border-white/[0.04]">
                         {/* Dynamic Breadcrumbs Layout */}
-                        <nav aria-label="Breadcrumbs" className="dashboard-breadcrumbs flex items-center gap-2 text-xs font-semibold tracking-wider text-[#A0A0A0] min-w-0 flex-nowrap overflow-x-auto scrollbar-none py-1">
+                        <nav aria-label="Breadcrumbs" className="dashboard-breadcrumbs flex min-w-0 flex-nowrap items-center gap-2 py-1 text-xs font-medium text-[#85868a]">
                             <button
                                 type="button"
                                 onClick={handleBack}
@@ -910,21 +911,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     // Map segments to readable labels
                                     let label = segment;
 
-                                    if (segment === 'dashboard') label = 'DASHBOARD';
-                                    else if (segment === 'sheets') label = 'SHEETS';
-                                    else if (segment === 'roadmap') label = 'ROADMAP';
-                                    else if (segment === 'profile') label = 'PROFILE';
-                                    else if (segment === 'leaderboard') label = 'LEADERBOARD';
-                                    else if (segment === 'sessions') label = 'SESSIONS';
-                                    else if (segment === 'news') label = 'NEWS';
-                                    else if (segment === 'admin') label = 'ADMIN';
-                                    else if (segment === 'discipline') label = 'SELF DISCIPLINE';
-                                    else if (segment.startsWith('level-')) label = `LEVEL ${segment.replace('level-', '')}`;
-                                    else if (segment.startsWith('level')) label = `LEVEL ${segment.replace('level', '')}`;
-                                    else if (segment.startsWith('sheet-')) label = `SHEET ${segment.replace('sheet-', '').toUpperCase()}`;
-                                    else if (segment.startsWith('week-')) label = `WEEK ${segment.replace('week-', '')}`;
+                                    if (segment === 'dashboard') label = 'Dashboard';
+                                    else if (segment === 'sheets') label = 'Sheets';
+                                    else if (segment === 'roadmap') label = 'Roadmap';
+                                    else if (segment === 'profile') label = 'Profile';
+                                    else if (segment === 'leaderboard') label = 'Leaderboard';
+                                    else if (segment === 'sessions') label = 'Sessions';
+                                    else if (segment === 'news') label = 'News';
+                                    else if (segment === 'admin') label = 'Admin';
+                                    else if (segment === 'discipline') label = 'Self discipline';
+                                    else if (segment.startsWith('level-')) label = `Level ${segment.replace('level-', '')}`;
+                                    else if (segment.startsWith('level')) label = `Level ${segment.replace('level', '')}`;
+                                    else if (segment.startsWith('sheet-')) label = `Sheet ${segment.replace('sheet-', '').toUpperCase()}`;
+                                    else if (segment.startsWith('week-')) label = `Week ${segment.replace('week-', '')}`;
                                     else if (segment.length > 24) label = '...';
-                                    else label = segment.toUpperCase().replace(/-/g, ' ');
+                                    else label = segment.replace(/-/g, ' ');
 
                                     const isLast = index === pathSegments.length - 1;
 
@@ -938,7 +939,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             ) : (
                                                 <Link
                                                     href={href}
-                                                    className="text-[#A0A0A0] hover:text-[#E8C15A] hover:drop-shadow-[0_0_8px_rgba(232,193,90,0.65)] transition-all shrink-0 no-underline"
+                                                    className="shrink-0 text-[#85868a] no-underline transition-colors hover:text-[#E8C15A]"
                                                 >
                                                     {label}
                                                 </Link>

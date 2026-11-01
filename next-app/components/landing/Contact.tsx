@@ -10,21 +10,21 @@ export default function Contact() {
     const t = translations[language].contact;
 
     return (
-        <section id="contact" className="relative py-20 bg-black text-center overflow-hidden">
+        <section id="contact" className="relative overflow-hidden bg-[#0b0b0c] py-20 text-center sm:py-28">
             {/* Background Video */}
             <div className="absolute inset-0 z-0">
                 <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-20">
                     <source src="/videos/applynow.webm" type="video/webm" />
                 </video>
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-[#0b0b0c]/80" />
             </div>
 
             <div className="max-w-4xl mx-auto px-4 relative z-10">
-                <h2 className="text-4xl sm:text-5xl font-black text-white mb-4">{t.ctaTitle}</h2>
-                <p className="text-lg text-white/70 mb-8">{t.ctaDescription}</p>
+                <h2 className="mb-4 text-3xl font-medium tracking-tight text-white sm:text-5xl">{t.ctaTitle}</h2>
+                <p className="mb-8 text-base leading-7 text-white/60 sm:text-lg">{t.ctaDescription}</p>
                 <Link
                     href="/apply"
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#E8C15A] to-[#F3D78A] text-black font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-[#E8C15A]/10"
+                    className="inline-flex items-center gap-2 rounded-[10px] bg-[#E8C15A] px-7 py-3.5 text-base font-medium text-[#17140c] transition-colors hover:bg-[#F0CE76] sm:text-lg"
                 >
                     {t.ctaButton} <ArrowRight className="h-5 w-5" />
                 </Link>

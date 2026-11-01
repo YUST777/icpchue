@@ -123,10 +123,9 @@ export default function LeaderboardPage() {
     };
 
     const getSolvedBadge = (count: number) => {
-        if (count >= 20) return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black';
-        if (count >= 10) return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-        if (count >= 5) return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
-        return 'bg-[#333] text-[#A0A0A0]';
+    if (count >= 20) return 'border border-[#E8C15A]/25 bg-[#E8C15A]/10 text-[#E8C15A]';
+    if (count >= 5) return 'border border-white/10 bg-white/[0.06] text-[#E4E4E7]';
+    return 'border border-white/[0.06] bg-[#202327] text-[#A1A1AA]';
     };
 
     // Position of the signed-in user in each list (-1 when they are not on it).
@@ -145,28 +144,28 @@ export default function LeaderboardPage() {
 
             <div className="ui-compact space-y-6 animate-fade-in">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#F2F2F2] flex items-center gap-2.5 sm:gap-3">
-                            <Trophy className="text-[#E8C15A] shrink-0" size={26} />
+                        <h2 className="ui-page-title flex items-center gap-3">
+                            <Trophy className="shrink-0 text-[var(--color-accent)]" size={22} aria-hidden="true" />
                             Leaderboard
                         </h2>
-                        <p className="text-[#A0A0A0] text-xs sm:text-sm mt-1 sm:ml-9">
+                        <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--color-text-secondary)] md:ml-9">
                             Level 0 is the newcomers and mentors; Level 1 is the ECPC qualification teams
                         </p>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="border-b border-white/10 overflow-x-auto scrollbar-none">
-                    <div className="flex gap-4 sm:gap-6 min-w-max">
+                <div className="overflow-x-auto border-b border-[var(--color-line)] scrollbar-hide">
+                    <div className="flex min-w-max gap-4 sm:gap-6">
                         {([['level0', 'Level 0'], ['level1', 'Level 1']] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => handleTabChange(key)}
-                                className={`pb-4 text-sm font-medium transition-all relative ${activeTab === key
-                                    ? 'text-[#E8C15A]'
-                                    : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
+                                className={`relative min-h-11 shrink-0 px-1 pt-2 pb-3 text-sm font-medium transition-colors ${activeTab === key
+                                    ? 'text-[var(--color-accent)]'
+                                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
                                     }`}
                             >
                                 <div className="flex items-center gap-2">
@@ -174,15 +173,15 @@ export default function LeaderboardPage() {
                                     {label}
                                 </div>
                                 {activeTab === key && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
+                                    <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-t-sm bg-[var(--color-accent)]" />
                                 )}
                             </button>
                         ))}
                         <button
                             onClick={() => setActiveTab('codeforces')}
-                            className={`pb-4 text-sm font-medium transition-all relative ${activeTab === 'codeforces'
-                                ? 'text-[#E8C15A]'
-                                : 'text-[#A0A0A0] hover:text-[#F2F2F2]'
+                            className={`relative min-h-11 shrink-0 px-1 pt-2 pb-3 text-sm font-medium transition-colors ${activeTab === 'codeforces'
+                                ? 'text-[var(--color-accent)]'
+                                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -190,7 +189,7 @@ export default function LeaderboardPage() {
                                 Codeforces Rating
                             </div>
                             {activeTab === 'codeforces' && (
-                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E8C15A] rounded-t-full shadow-[0_-2px_8px_rgba(232,193,90,0.3)]" />
+                                <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-t-sm bg-[var(--color-accent)]" />
                             )}
                         </button>
                     </div>
@@ -199,11 +198,11 @@ export default function LeaderboardPage() {
                 {activeTab === 'level0' && <MonthlyPodium live={sheetsLeaderboard} />}
 
                 {/* Leaderboard Table */}
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden h-[600px] flex flex-col">
+                <div className="ui-card flex h-[min(600px,calc(100dvh-240px))] min-h-[360px] flex-col overflow-hidden">
                     {activeTab !== 'codeforces' ? (
                         <>
                             {/* Sheets Header - Mobile Responsive */}
-                            <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
+                            <div className="z-10 grid shrink-0 grid-cols-6 gap-2 border-b border-[var(--color-line-subtle)] bg-[var(--color-surface)] p-3 text-xs text-[var(--color-text-secondary)] sm:grid-cols-12 sm:gap-4 sm:p-4">
                                 <div className="col-span-1">#</div>
                                 <div className="col-span-3 sm:col-span-4">Username</div>
                                 <div className="col-span-2 sm:col-span-3">Solved</div>
@@ -268,7 +267,7 @@ export default function LeaderboardPage() {
                                                 style={style}
                                                 key={user.userId}
                                                 aria-current={isMe ? 'true' : undefined}
-                                                className={`grid grid-cols-6 sm:grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 transition-colors items-center border-b border-white/5 last:border-0 ${isMe ? 'bg-[#E8C15A]/10 hover:bg-[#E8C15A]/15 shadow-[inset_3px_0_0_#E8C15A]' : 'hover:bg-white/5'}`}
+                                        className={`grid grid-cols-6 items-center gap-2 border-b border-[var(--color-line-subtle)] p-3 transition-colors last:border-0 sm:grid-cols-12 sm:gap-4 sm:p-4 ${isMe ? 'border-s-2 border-s-[var(--color-accent)] bg-[#E8C15A]/[0.06]' : 'hover:bg-white/[0.03]'}`}
                                             >
                                                 <div className="col-span-1 flex items-center justify-center">
                                                     {index < 3 ? (
@@ -286,7 +285,7 @@ export default function LeaderboardPage() {
                                                     {isMe && <YouBadge />}
                                                 </div>
                                                 <div className="col-span-2 sm:col-span-3">
-                                                    <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold ${getSolvedBadge(user.solvedCount)}`}>
+                                                    <span className={`inline-flex min-w-8 items-center justify-center rounded-md px-2 py-1 text-xs font-medium tabular-nums ${getSolvedBadge(user.solvedCount)}`}>
                                                         {user.solvedCount}
                                                     </span>
                                                 </div>
@@ -305,7 +304,7 @@ export default function LeaderboardPage() {
                     ) : (
                         <>
                             {/* CF Header */}
-                            <div className="grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 py-3 border-b border-white/5 text-xs text-[#666] uppercase tracking-wider bg-[#121212] z-10 shrink-0">
+                            <div className="z-10 grid shrink-0 grid-cols-[40px_1fr_70px] gap-2 border-b border-[var(--color-line-subtle)] bg-[var(--color-surface)] px-3 py-3 text-xs text-[var(--color-text-secondary)] sm:grid-cols-[40px_1fr_100px_120px] sm:px-4">
                                 <div>#</div>
                                 <div>Handle</div>
                                 <div className="text-right">Rating</div>
@@ -372,7 +371,7 @@ export default function LeaderboardPage() {
                                                 style={style}
                                                 key={user.handle}
                                                 aria-current={isMe ? 'true' : undefined}
-                                                className={`grid grid-cols-[40px_1fr_70px] sm:grid-cols-[40px_1fr_100px_120px] gap-2 px-3 sm:px-4 transition-colors items-center border-b border-white/5 last:border-0 ${isMe ? 'bg-[#E8C15A]/10 hover:bg-[#E8C15A]/15 shadow-[inset_3px_0_0_#E8C15A]' : 'hover:bg-white/5'}`}
+                                                className={`grid grid-cols-[40px_1fr_70px] items-center gap-2 border-b border-[var(--color-line-subtle)] px-3 transition-colors last:border-0 sm:grid-cols-[40px_1fr_100px_120px] sm:px-4 ${isMe ? 'border-s-2 border-s-[var(--color-accent)] bg-[#E8C15A]/[0.06]' : 'hover:bg-white/[0.03]'}`}
                                             >
                                                 <div className="flex items-center justify-center">
                                                     {index < 3 ? (

@@ -20,17 +20,14 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
         return () => clearTimeout(timer);
     }, [progress]);
 
-    const pct = total > 0 ? Math.min((animatedProgress / total) * 100, 100) : 0;
+    const pct = total > 0 ? Math.max(0, Math.min((animatedProgress / total) * 100, 100)) : 0;
     const r = (size / 2) - 22;
     const c = r * 2 * Math.PI;
     const offset = c - (pct / 100) * c;
     const center = size / 2;
 
     const content = (
-        <div className="relative self-center lg:self-auto max-w-full">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-[#E8C15A]/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
-
+        <div className="relative max-w-full self-center lg:self-auto">
             <div className={compact ? 'relative w-[92px] h-[92px]' : 'relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]'}>
                 <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
                     {/* Background circle */}
@@ -48,63 +45,43 @@ export function ProgressRing({ progress, total, label = 'Sheet', size = 220, hre
                         cy={center}
                         r={r}
                         fill="none"
-                        stroke={pct === 100 ? 'url(#ringGradComplete)' : 'url(#ringGrad)'}
+                        stroke={pct === 100 ? '#55B98A' : 'var(--color-accent)'}
                         strokeWidth="14"
                         strokeLinecap="round"
                         strokeDasharray={c}
                         strokeDashoffset={offset}
-                        className="transition-all duration-1000 ease-out"
+                        className="transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none"
                     />
-                    <defs>
-                        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#E8C15A" />
-                            <stop offset="100%" stopColor="#C9A227" />
-                        </linearGradient>
-                        <linearGradient id="ringGradComplete" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#22c55e" />
-                            <stop offset="100%" stopColor="#16a34a" />
-                        </linearGradient>
-                    </defs>
                 </svg>
 
                 {/* Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                     {total > 0 ? (
                         <>
-                            <span className={compact ? 'text-2xl font-bold text-white leading-none' : 'text-4xl sm:text-5xl font-bold text-white'}>{progress}</span>
-                            <span className={compact ? 'text-xs text-white/40 mt-0.5' : 'text-xs sm:text-sm text-white/40'}>of {total}</span>
+                            <span className={compact ? 'text-2xl font-medium leading-none text-[var(--color-text)] tabular-nums' : 'text-4xl font-medium text-[var(--color-text)] sm:text-5xl tabular-nums'}>{progress}</span>
+                            <span className={compact ? 'mt-0.5 text-xs text-[var(--color-text-muted)]' : 'text-xs text-[var(--color-text-muted)] sm:text-sm'}>of {total}</span>
                         </>
                     ) : (
                         <>
-                            <span className="text-3xl font-bold text-white/30">—</span>
-                            <span className="text-xs text-white/30">Start solving</span>
+                            <span className="text-3xl font-medium text-[var(--color-text-muted)]">—</span>
+                            <span className="text-xs text-[var(--color-text-secondary)]">Start solving</span>
                         </>
                     )}
                 </div>
 
                 {/* Label badge */}
                 {!compact && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 bg-[#1a1a1a] border border-[#E8C15A]/30 rounded-full text-[#E8C15A] text-xs font-medium whitespace-nowrap max-w-[200px] truncate inline-block text-center">
+                    <span className="ui-card inline-block max-w-[200px] truncate whitespace-nowrap px-3 py-1 text-center text-xs font-medium text-[var(--color-text-secondary)]">
                         {label}
                     </span>
                 </div>}
             </div>
-
-            <style jsx>{`
-                @keyframes pulseSlow {
-                    0%, 100% { opacity: 0.5; }
-                    50% { opacity: 0.3; }
-                }
-                .animate-pulse-slow {
-                    animation: pulseSlow 3s ease-in-out infinite;
-                }
-            `}</style>
         </div>
     );
 
     if (href) {
         return (
-            <Link href={href} className="hover:scale-105 transition-transform duration-300">
+            <Link href={href} aria-label={`${label}: ${progress} of ${total} problems solved`} className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-page)]">
                 {content}
             </Link>
         );

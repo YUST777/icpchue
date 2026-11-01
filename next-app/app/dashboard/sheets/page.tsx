@@ -100,14 +100,14 @@ export default function SheetsPage() {
                 </div>
 
                 {/* Hero Section */}
-                <div className="hidden md:block bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] rounded-2xl p-6 md:p-8 border border-white/10">
+                <div className="ui-panel hidden p-6 md:block md:p-8">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-[#E8C15A]/10">
                                 <FileCode2 className="text-[#E8C15A]" size={28} />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-[#F2F2F2]">Training Curriculum</h1>
+                                <h1 className="text-2xl font-medium text-[#F2F2F2] md:text-3xl">Training Curriculum</h1>
                                 <p className="text-[#A0A0A0] text-sm mt-1">Your Roadmap to Competitive Programming</p>
                             </div>
                         </div>
@@ -142,20 +142,20 @@ export default function SheetsPage() {
                                         href={`/dashboard/sheets/${level.slug}`}
                                         className="group"
                                     >
-                                        <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
-                                            <div className="bg-[#0f0f0f] rounded-[23px] relative overflow-hidden h-full flex flex-col">
+                                        <div className="group relative flex h-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b]">
+                                            <div className="relative flex h-full flex-col overflow-hidden">
                                                 <div className="relative h-32 md:h-48 w-full overflow-hidden">
                                                     <img
                                                         src={level.image}
                                                         alt={level.name}
-                                                        className="w-full h-full object-cover object-[center_0%] opacity-50 group-hover:opacity-100 transition-all duration-700 scale-100 group-hover:scale-105"
+                                                        className="h-full w-full object-cover object-[center_0%] opacity-60 transition-opacity duration-200 group-hover:opacity-75"
                                                     />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/20 to-transparent"></div>
+                                                    <div className="absolute inset-0 bg-black/25"></div>
                                                 </div>
 
                                                 <div className="relative z-10 p-5 pt-4 mt-auto">
                                                     <div className="mb-3">
-                                                        <h3 className="text-xl font-bold text-white group-hover:text-[#E8C15A] transition-colors">
+                                                        <h3 className="text-xl font-medium text-white transition-colors group-hover:text-[#E8C15A]">
                                                             {level.name}
                                                         </h3>
                                                         <p className="text-xs text-gray-400">
@@ -164,9 +164,9 @@ export default function SheetsPage() {
                                                     </div>
                                                     <p className="text-sm text-[#808080] line-clamp-2 mb-4">{level.description}</p>
 
-                                                    <div className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 group-hover:border-white/10 transition-all">
+                                                    <div className="relative w-full overflow-hidden rounded-[10px] border border-white/10 bg-[#202327] transition-colors group-hover:border-white/20">
                                                         <div className="relative z-10 px-4 py-3 flex items-center justify-between">
-                                                            <span className="text-sm font-bold text-white/90 group-hover:text-[#E8C15A] transition-colors">
+                                                            <span className="text-sm font-medium text-white/90 transition-colors group-hover:text-[#E8C15A]">
                                                                 Explore Level
                                                             </span>
                                                             <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#E8C15A] transition-colors" />
@@ -203,20 +203,20 @@ export default function SheetsPage() {
                                     href="/dashboard/roadmap"
                                     className="group"
                                 >
-                                    <div className="relative group rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
-                                        <div className="bg-[#0f0f0f] rounded-[23px] relative overflow-hidden h-full flex flex-col">
+                                    <div className="group relative flex h-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b]">
+                                        <div className="relative flex h-full flex-col overflow-hidden">
                                             <div className="relative h-48 w-full overflow-hidden">
                                                 <img
                                                     src="/images/lessons/levels/roadmap.webp"
                                                     alt="Roadmap"
-                                                    className="w-full h-full object-cover object-[center_0%] opacity-50 group-hover:opacity-100 transition-all duration-700 scale-100 group-hover:scale-105"
+                                                    className="h-full w-full object-cover object-[center_0%] opacity-60 transition-opacity duration-200 group-hover:opacity-75"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/20 to-transparent"></div>
+                                                <div className="absolute inset-0 bg-black/25"></div>
                                             </div>
 
                                             <div className="relative z-10 p-5 pt-4 mt-auto">
                                                 <div className="mb-3">
-                                                    <h3 className="text-xl font-bold text-white group-hover:text-[#E8C15A] transition-colors">
+                                                    <h3 className="text-xl font-medium text-white transition-colors group-hover:text-[#E8C15A]">
                                                         Visual Roadmap
                                                     </h3>
                                                     <p className="text-xs text-gray-400">
@@ -227,9 +227,9 @@ export default function SheetsPage() {
                                                     Visualize your progress and upcoming topics across all levels of the curriculum.
                                                 </p>
 
-                                                <div className="w-full relative overflow-hidden rounded-xl bg-[#161616] border border-white/5 group-hover:border-white/10 transition-all">
+                                                <div className="relative w-full overflow-hidden rounded-[10px] border border-white/10 bg-[#202327] transition-colors group-hover:border-white/20">
                                                     <div className="relative z-10 px-4 py-3 flex items-center justify-between">
-                                                        <span className="text-sm font-bold text-white/90 group-hover:text-[#E8C15A] transition-colors">
+                                                        <span className="text-sm font-medium text-white/90 transition-colors group-hover:text-[#E8C15A]">
                                                             Open Roadmap
                                                         </span>
                                                         <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#E8C15A] transition-colors" />
@@ -249,7 +249,7 @@ export default function SheetsPage() {
             {
                 showCredits && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowCredits(false)}>
-                        <div className="bg-[#181818] border border-white/10 p-6 rounded-2xl max-w-md w-full relative transform scale-100 transition-all shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="relative w-full max-w-md rounded-[14px] border border-white/10 bg-[#202327] p-6" onClick={e => e.stopPropagation()}>
                             <button
                                 aria-label="Close"
                                 className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[#888] hover:text-white hover:bg-white/5 transition-colors"
@@ -293,8 +293,8 @@ export default function SheetsPage() {
 /** Same frame as a level card (image, title, description, button) with grey bars inside. */
 function LevelCardSkeleton() {
     return (
-        <div className="rounded-3xl p-[1px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden">
-            <div className="bg-[#0f0f0f] rounded-[23px] overflow-hidden flex flex-col">
+            <div className="overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b]">
+            <div className="flex flex-col overflow-hidden">
                 <Skeleton className="h-48 w-full rounded-none" />
                 <div className="p-5 pt-4">
                     <div className="mb-3">

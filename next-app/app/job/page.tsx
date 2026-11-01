@@ -25,6 +25,43 @@ function cn(...c: (string | boolean | undefined)[]) {
 }
 
 type FormErrors = Record<string, string | undefined>;
+type TooltipCoords = { x: number; y: number };
+
+function LevelInfoButton({
+    showCurriculumModal,
+    onOpen,
+    onHover,
+    onLeave,
+}: {
+    showCurriculumModal: boolean;
+    onOpen: () => void;
+    onHover: (coords: TooltipCoords) => void;
+    onLeave: () => void;
+}) {
+    return (
+        <span className="inline-flex items-center align-middle">
+            <button
+                type="button"
+                onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onOpen();
+                }}
+                onMouseEnter={(event) => {
+                    if (showCurriculumModal || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    onHover({ x: rect.left + rect.width / 2, y: rect.top });
+                }}
+                onMouseLeave={onLeave}
+                aria-label="View curriculum levels breakdown"
+                title="View curriculum levels breakdown (Click to expand)"
+                className="text-[var(--color-text-muted)] hover:text-[#E8C15A] transition-colors cursor-pointer p-0 m-0 bg-transparent border-0 inline-flex min-h-11 min-w-11 items-center justify-center shrink-0 rounded-[var(--radius-control)]"
+            >
+                <HelpCircle size={13} className="shrink-0" />
+            </button>
+        </span>
+    );
+}
 
 const getCommitteeIcon = (id: string, className?: string) => {
     const cls = className || "text-[#E8C15A]";
@@ -116,41 +153,11 @@ export default function JobApplicationPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Compact styling for zoomed-out zero-scroll layout (text-sm on mobile prevents iOS Safari auto-zoom & enhances legibility)
-    const iB = 'w-full px-3.5 py-2.5 sm:py-2 bg-[#1A1A1E] border rounded-lg text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none focus:ring-1 transition-all';
+    // Shared controls retain readable text and comfortable touch targets at every width.
+    const iB = 'ui-field text-base sm:text-sm';
     const iN = 'border-white/10 focus:ring-[#E8C15A]/60 focus:border-[#E8C15A]/50';
     const iE = 'border-red-500/70 focus:ring-red-500/60';
-    const labelStyle = 'block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider mb-1.5 ml-0.5 leading-none';
-
-    const LevelInfoButton = () => (
-        <span className="inline-flex items-center align-middle">
-            <button
-                type="button"
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeCurriculumModal();
-                    setShowCurriculumModal(true);
-                }}
-                onMouseEnter={(e) => {
-                    if (showCurriculumModal) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setTooltipCoords({ x: rect.left + rect.width / 2, y: rect.top });
-                    setHoverCurriculum(true);
-                }}
-                onMouseLeave={() => {
-                    setHoverCurriculum(false);
-                    setTooltipCoords(null);
-                }}
-                aria-label="View curriculum levels breakdown"
-                title="View curriculum levels breakdown (Click to expand)"
-                className="text-white/40 hover:text-[#E8C15A] transition-colors cursor-pointer p-0 m-0 bg-transparent border-0 outline-none inline-flex items-center justify-center shrink-0 focus:outline-none"
-                style={{ width: '14px', height: '14px', minWidth: '14px', minHeight: '14px' }}
-            >
-                <HelpCircle size={13} className="shrink-0" />
-            </button>
-        </span>
-    );
+    const labelStyle = 'ui-label mb-1.5 ml-0.5 uppercase tracking-wider';
 
     // Normalize Eastern Arabic numerals (٠-٩) to ASCII numerals (0-9)
     const toAsciiDigits = (str: string) => {
@@ -320,9 +327,9 @@ export default function JobApplicationPage() {
     };
 
     if (!JOB_APPLICATIONS_OPEN) return (
-        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
-            <div dir="rtl" className="relative z-10 text-center max-w-md w-full bg-[#121214] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
-                <div className="w-14 h-14 mx-auto mb-4 bg-[#E8C15A]/10 border border-[#E8C15A]/20 rounded-full flex items-center justify-center">
+        <div className="min-h-screen w-full bg-[var(--color-page)] flex items-center justify-center px-4 sm:px-6">
+            <div dir="rtl" className="ui-card text-center max-w-md w-full p-6 sm:p-8">
+                <div className="w-14 h-14 mx-auto mb-4 bg-[#E8C15A]/10 border border-[#E8C15A]/20 rounded-[var(--radius-control)] flex items-center justify-center">
                     <Lock className="w-7 h-7 text-[#E8C15A]" />
                 </div>
 
@@ -330,13 +337,13 @@ export default function JobApplicationPage() {
                     التقديم مقفول حالياً
                 </h1>
 
-                <p className="text-white/70 text-xs sm:text-sm mb-6 leading-relaxed">
+                <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
                     شكراً لاهتمامك بالانضمام لفريق ICPC HUE. باب التقديم اتقفل، وهنعلن عن أي فرص جديدة على صفحاتنا.
                 </p>
 
                 <Link
                     href="/"
-                    className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white font-medium text-xs rounded-xl transition-all border border-white/5 cursor-pointer"
+                    className="ui-button-secondary w-full"
                 >
                     العودة للصفحة الرئيسية
                 </Link>
@@ -345,18 +352,10 @@ export default function JobApplicationPage() {
     );
 
     if (success) return (
-        <div className="min-h-screen w-full bg-[#0A0A0A] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
-            {/* Background Pharaoh Video - Desktop Only */}
-            <div className="hidden lg:block fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <video autoPlay muted loop playsInline className="w-full h-full object-cover object-center opacity-25 filter brightness-75">
-                    <source src="/videos/applynow.webm" type="video/webm" />
-                </video>
-                <div className="absolute inset-0 bg-black/80" />
-            </div>
-
+        <div className="min-h-screen w-full bg-[var(--color-page)] flex items-center justify-center px-4 sm:px-6">
             {/* Success Card */}
-            <div className="relative z-10 text-center max-w-md w-full bg-[#121214] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
-                <div className="w-14 h-14 mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center">
+            <div className="ui-card text-center max-w-md w-full p-6 sm:p-8">
+                <div className="w-14 h-14 mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20 rounded-[var(--radius-control)] flex items-center justify-center">
                     <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                 </div>
                 
@@ -364,7 +363,7 @@ export default function JobApplicationPage() {
                     تم تسجيل طلبك بنجاح!
                 </h1>
 
-                <p className="text-white/70 text-xs sm:text-sm mb-6 leading-relaxed">
+                <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
                     شكراً لتسجيلك، تقدر تنضم لجروب الواتساب لأي استفسار أو متابعة الخطوات الجاية.
                 </p>
 
@@ -373,7 +372,7 @@ export default function JobApplicationPage() {
                         href="https://chat.whatsapp.com/JreeORGikEY7J9I0UbcdOD?s=cl&p=a&ilr=4"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-3 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-black font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-[#25D366]/20 active:scale-[0.98] cursor-pointer group"
+                        className="w-full min-h-11 py-3 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-black font-semibold text-sm rounded-[var(--radius-control)] transition-colors flex items-center justify-center gap-2.5 cursor-pointer"
                     >
                         <svg className="w-4 h-4 sm:w-5 sm:h-5 fill-current" viewBox="0 0 24 24">
                             <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
@@ -383,7 +382,7 @@ export default function JobApplicationPage() {
 
                     <Link
                         href="/"
-                        className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white font-medium text-xs rounded-xl transition-all border border-white/5 cursor-pointer"
+                        className="ui-button-secondary w-full"
                     >
                         العودة للصفحة الرئيسية
                     </Link>
@@ -393,28 +392,7 @@ export default function JobApplicationPage() {
     );
 
     return (
-        <div dir="ltr" className="min-h-screen lg:h-screen overflow-x-hidden overflow-y-auto lg:overflow-hidden bg-[#0A0A0A] text-white flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
-            {/* Background Pharaoh Video - Desktop Only (Hidden on Mobile) */}
-            <div className="hidden lg:block fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover object-center opacity-30 filter brightness-90 contrast-110"
-                >
-                    <source src="/videos/applynow.webm" type="video/webm" />
-                </video>
-                {/* Gradient Overlays for Desktop */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/80 via-[#0A0A0A]/55 to-[#0A0A0A]/90" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,#0A0A0A_95%)]" />
-            </div>
-
-            {/* Ambient Background Glows */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-0 left-1/4 w-[400px] h-[250px] bg-[#E8C15A]/[0.04] rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 right-1/4 w-[400px] h-[250px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
-            </div>
+        <div dir="ltr" className="min-h-screen overflow-x-hidden bg-[var(--color-page)] text-[var(--color-text)] flex flex-col justify-between p-3 sm:p-5 lg:p-6 relative">
 
             {/* Top Compact Header */}
             <header className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.06] shrink-0">
@@ -426,30 +404,30 @@ export default function JobApplicationPage() {
                             width={38}
                             height={38}
                             priority
-                            className="w-[38px] h-[38px] object-contain drop-shadow-[0_2px_8px_rgba(232,193,90,0.25)]"
+                    className="w-[38px] h-[38px] object-contain"
                         />
                     </Link>
                     <div>
                         <h1 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
                             Join the Team <span className="text-[#E8C15A] font-black">2027</span>
                         </h1>
-                        <p className="text-[11px] text-white/40">Apply for a community role in ICPC HUE</p>
+                        <p className="text-sm text-[var(--color-text-muted)]">Apply for a community role in ICPC HUE</p>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content: 2 Balanced Columns — Fits on 1 Screen without Scrolling on Desktop */}
-            <main className="relative z-10 flex-1 py-2 lg:py-3 lg:overflow-hidden">
-                <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch lg:h-full">
+            {/* Main content adapts to the available width without compressing form controls. */}
+            <main className="relative z-10 flex-1 py-4 sm:py-6">
+                <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
                     
                     {/* LEFT COLUMN: Personal & Academic Info (5 Cols) */}
-                    <div className="lg:col-span-5 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col lg:justify-between min-w-0 max-w-full overflow-hidden">
+                    <div className="lg:col-span-5 ui-panel p-3.5 sm:p-5 flex flex-col lg:justify-between min-w-0 max-w-full overflow-hidden">
                         <div>
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5">
-                                <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
+                                <h2 className="text-sm font-semibold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
                                     <span>01.</span> Personal Information
                                 </h2>
-                                <span className="text-[9px] text-white/30">Required fields *</span>
+                                <span className="text-xs text-[var(--color-text-muted)]">Required fields *</span>
                             </div>
 
                             <div className="space-y-2.5">
@@ -468,7 +446,7 @@ export default function JobApplicationPage() {
                                         placeholder="Your full name"
                                         className={cn(iB, errors.name ? iE : iN)}
                                     />
-                                    {errors.name && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.name}</p>}
+                                    {errors.name && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.name}</p>}
                                 </div>
 
                                 {/* Horus ID */}
@@ -477,7 +455,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-[#1A1A1E] border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full min-h-12 bg-[var(--color-sidebar)] border rounded-[var(--radius-control)] overflow-hidden transition-colors focus-within:ring-1",
                                             errors.email ? iE : iN
                                         )}
                                     >
@@ -493,15 +471,15 @@ export default function JobApplicationPage() {
                                             value={email}
                                             onChange={e => handleEmail(e.target.value)}
                                             placeholder="8251835"
-                                            className="w-full bg-transparent px-3 py-2.5 sm:py-2 text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3.5 py-3 text-[var(--color-text)] text-base sm:text-sm placeholder-[var(--color-text-muted)] focus:outline-none text-left font-mono"
                                         />
 
                                         {/* Hardcoded @horus.edu.eg Suffix Badge on the Right */}
-                                        <div className="flex items-center px-2.5 py-2 bg-white/[0.04] border-l border-white/10 text-[#E8C15A]/80 text-xs font-mono shrink-0 select-none">
+                                        <div className="flex items-center px-2.5 py-2 bg-[var(--color-raised)] border-l border-[var(--color-line)] text-[#E8C15A]/80 text-sm font-mono shrink-0 select-none">
                                             @horus.edu.eg
                                         </div>
                                     </div>
-                                    {errors.email && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.email}</p>}
+                                    {errors.email && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.email}</p>}
                                 </div>
 
                                 {/* WhatsApp Phone */}
@@ -510,7 +488,7 @@ export default function JobApplicationPage() {
                                     <div
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-stretch w-full bg-[#1A1A1E] border rounded-lg overflow-hidden transition-all focus-within:ring-1",
+                                            "flex items-stretch w-full min-h-12 bg-[var(--color-sidebar)] border rounded-[var(--radius-control)] overflow-hidden transition-colors focus-within:ring-1",
                                             errors.phone ? iE : iN
                                         )}
                                     >
@@ -533,10 +511,10 @@ export default function JobApplicationPage() {
                                             onChange={e => handlePhone(e.target.value)}
                                             placeholder="01012345678"
                                             maxLength={11}
-                                            className="w-full bg-transparent px-3 py-2.5 sm:py-2 text-white text-sm sm:text-xs placeholder-white/40 focus:outline-none text-left font-mono"
+                                            className="w-full bg-transparent px-3.5 py-3 text-[var(--color-text)] text-base sm:text-sm placeholder-[var(--color-text-muted)] focus:outline-none text-left font-mono"
                                         />
                                     </div>
-                                    {errors.phone && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.phone}</p>}
+                                    {errors.phone && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.phone}</p>}
                                 </div>
 
                                 {/* Faculty & Academic Level (Combined Compact Row) */}
@@ -561,7 +539,7 @@ export default function JobApplicationPage() {
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                                             </div>
                                         </div>
-                                        {errors.faculty && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.faculty}</p>}
+                                        {errors.faculty && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.faculty}</p>}
                                     </div>
 
                                     <div className="min-w-0 w-full">
@@ -573,17 +551,17 @@ export default function JobApplicationPage() {
                                                     type="button"
                                                     onClick={() => { setAcademicLevel(l.value); setErrors(p => { const c = { ...p }; delete c.academicLevel; return c; }); }}
                                                     className={cn(
-                                                        'w-full py-2 rounded-lg cursor-pointer text-center text-xs font-bold transition-all border select-none',
+                                                        'w-full min-h-11 py-2 rounded-[var(--radius-control)] cursor-pointer text-center text-sm font-medium transition-colors border select-none',
                                                         academicLevel === l.value
                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30 font-extrabold'
-                                                            : 'bg-[#1A1A1E] border-white/10 text-white/60 hover:bg-white/[0.04]'
+                                                            : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                     )}
                                                 >
                                                     {l.label.replace('Level ', 'L')}
                                                 </button>
                                             ))}
                                         </div>
-                                        {errors.academicLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.academicLevel}</p>}
+                                        {errors.academicLevel && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.academicLevel}</p>}
                                     </div>
                                 </div>
 
@@ -605,22 +583,22 @@ export default function JobApplicationPage() {
                                         className={cn(iB, errors.nationalId ? iE : iN)}
                                         dir="ltr"
                                     />
-                                    {errors.nationalId && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.nationalId}</p>}
+                                    {errors.nationalId && <p className="text-red-400 text-xs mt-1 ml-0.5">{errors.nationalId}</p>}
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* RIGHT COLUMN: Committee Selection & Dynamic Questions (7 Cols) */}
-                    <div className="lg:col-span-7 bg-[#121214] border border-white/10 rounded-xl p-3.5 sm:p-5 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
+                    <div className="lg:col-span-7 ui-panel p-3.5 sm:p-5 flex flex-col justify-between min-w-0 max-w-full overflow-hidden">
                         
-                        <div className="flex-1 flex flex-col min-w-0 lg:overflow-hidden">
+                        <div className="flex-1 flex flex-col min-w-0">
                             {/* Section Header */}
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/5 shrink-0">
-                                <h2 className="text-xs font-bold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
+                                <h2 className="text-sm font-semibold uppercase tracking-wider text-[#E8C15A] flex items-center gap-1.5">
                                     <span>02.</span> Choose Your Committee(s)
                                 </h2>
-                                <span className="text-[9px] text-[#E8C15A] font-semibold">Select 1 or more</span>
+                                <span className="text-xs text-[#E8C15A] font-medium">Select 1 or more</span>
                             </div>
 
                             {/* Committee Cards */}
@@ -633,10 +611,10 @@ export default function JobApplicationPage() {
                                             type="button"
                                             onClick={() => toggleCommittee(c.id)}
                                             className={cn(
-                                                'relative p-2 sm:p-2.5 rounded-xl border text-left transition-all cursor-pointer group flex items-center justify-between gap-1.5 min-w-0',
+                                                'relative min-h-20 p-3 rounded-[var(--radius-control)] border text-left transition-colors cursor-pointer group flex items-center justify-between gap-1.5 min-w-0',
                                                 isActive
-                                                    ? 'bg-[#E8C15A]/15 border-[#E8C15A]/40 shadow-md shadow-[#E8C15A]/10'
-                                                    : 'bg-[#1A1A1E] border-white/10 hover:bg-white/[0.05] hover:border-white/20'
+                                                    ? 'bg-[#E8C15A]/10 border-[#E8C15A]/40'
+                                                    : 'bg-[var(--color-sidebar)] border-[var(--color-line)] hover:bg-[var(--color-raised)] hover:border-white/20'
                                             )}
                                         >
                                             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -644,10 +622,10 @@ export default function JobApplicationPage() {
                                                     {getCommitteeIcon(c.id)}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className={cn('text-xs font-bold leading-tight flex items-center gap-1.5', isActive ? 'text-[#E8C15A]' : 'text-white')}>
+                                                    <p className={cn('text-sm font-semibold leading-tight flex items-center gap-1.5', isActive ? 'text-[#E8C15A]' : 'text-white')}>
                                                         <span>{c.name}</span>
                                                     </p>
-                                                    <p className="text-[10px] text-white/50 truncate mt-0.5">
+                                                    <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mt-1">
                                                         {c.description}
                                                     </p>
                                                 </div>
@@ -661,11 +639,11 @@ export default function JobApplicationPage() {
                                     );
                                 })}
                             </div>
-                            {errors.committees && <p className="text-red-400 text-[9px] -mt-1 mb-2 ml-0.5">{errors.committees}</p>}
+                            {errors.committees && <p className="text-red-400 text-xs -mt-1 mb-2 ml-0.5">{errors.committees}</p>}
 
                             {/* Dynamic Details Panel: Tabs + Compact Fields with Inner Scroll */}
                             {selectedCommittees.length > 0 ? (
-                                <div className="flex-1 flex flex-col min-h-[160px] lg:min-h-0 bg-[#16161A] border border-white/10 rounded-xl p-3 lg:overflow-hidden">
+                                <div className="ui-card flex-1 flex flex-col min-h-[160px] p-4">
                                     {/* Tabs when multiple committees selected */}
                                     {selectedCommittees.length > 1 && (
                                         <div className={cn(
@@ -684,9 +662,9 @@ export default function JobApplicationPage() {
                                                         type="button"
                                                         onClick={() => setActiveTab(id)}
                                                         className={cn(
-                                                            'w-full py-2 px-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center',
+                                                            'w-full min-h-11 py-2 px-2.5 rounded-[var(--radius-control)] text-sm font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center',
                                                             isTabActive
-                                                                ? 'bg-[#E8C15A] text-black shadow-md shadow-[#E8C15A]/15 font-extrabold'
+                                                                ? 'bg-[#E8C15A] text-black'
                                                                 : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
                                                         )}
                                                     >
@@ -698,14 +676,14 @@ export default function JobApplicationPage() {
                                         </div>
                                     )}
 
-                                    {/* Inner Scrollable Panel — Page itself never scrolls on desktop */}
-                                    <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar text-xs max-h-[320px] lg:max-h-none">
+                                    {/* Role details flow naturally so controls stay readable on short screens. */}
+                                    <div className="space-y-4 text-sm">
 
                                         {/* TAB 1: MEDIA */}
                                         {currentTab === 'media' && (
                                             <div className="space-y-2">
                                                 <div>
-                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Your Skills <span className="text-red-400">*</span></label>
+                                                    <label className="block text-white/50 text-xs font-bold uppercase tracking-wider mb-1 ml-0.5">Your Skills <span className="text-red-400">*</span></label>
                                                     <div className="grid grid-cols-2 gap-1.5">
                                                         {mediaSkills.map(skill => {
                                                             const isSkillActive = selectedMediaSkills.includes(skill);
@@ -715,10 +693,10 @@ export default function JobApplicationPage() {
                                                                     type="button"
                                                                     onClick={() => toggleMediaSkill(skill)}
                                                                     className={cn(
-                                                                        'px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border text-left transition-all cursor-pointer leading-tight flex items-center',
+                                                                        'min-h-11 px-3 py-2 rounded-[var(--radius-control)] text-sm font-medium border text-left transition-all cursor-pointer leading-tight flex items-center',
                                                                         isSkillActive
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                            : 'bg-black/50 border-white/5 text-white/50 hover:bg-white/5'
+                                                                            : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                     )}
                                                                 >
                                                                     {skill.split(' (')[0]}
@@ -726,11 +704,11 @@ export default function JobApplicationPage() {
                                                             );
                                                         })}
                                                     </div>
-                                                    {errors.mediaSkills && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.mediaSkills}</p>}
+                                                    {errors.mediaSkills && <p className="text-red-400 text-xs mt-0.5 ml-0.5">{errors.mediaSkills}</p>}
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">
+                                                    <label className="block text-white/50 text-xs font-bold uppercase tracking-wider mb-1 ml-0.5">
                                                         Skill Experience (Already know it or ready to learn?)
                                                     </label>
                                                     <div className="grid grid-cols-2 gap-1.5">
@@ -743,10 +721,10 @@ export default function JobApplicationPage() {
                                                                 type="button"
                                                                 onClick={() => setSkillExperience(p => p === opt.id ? '' : opt.id)}
                                                                 className={cn(
-                                                                    'py-2 px-2.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer leading-tight flex items-center justify-center',
+                                                                    'min-h-11 py-2 px-3 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer leading-tight flex items-center justify-center',
                                                                     skillExperience === opt.id
                                                                         ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                        : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                 )}
                                                             >
                                                                 {opt.label}
@@ -756,7 +734,7 @@ export default function JobApplicationPage() {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1 ml-0.5">Own a camera or iPhone?</label>
+                                                    <label className="block text-white/50 text-xs font-bold uppercase tracking-wider mb-1 ml-0.5">Own a camera or iPhone?</label>
                                                     <div className="flex gap-1.5 max-w-[200px]">
                                                         {['yes', 'no'].map(opt => (
                                                             <button
@@ -764,10 +742,10 @@ export default function JobApplicationPage() {
                                                                 type="button"
                                                                 onClick={() => setHasCamera(opt)}
                                                                 className={cn(
-                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
+                                                                    'flex-1 min-h-11 py-2 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer',
                                                                     hasCamera === opt
                                                                         ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                        : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                 )}
                                                             >
                                                                 {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Camera size={11} /> Yes</span> : 'No'}
@@ -792,15 +770,20 @@ export default function JobApplicationPage() {
                                                             className={cn(iB, errors.codeforcesHandle ? iE : iN)}
                                                             dir="ltr"
                                                         />
-                                                        {errors.codeforcesHandle && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
+                                                        {errors.codeforcesHandle && <p className="text-red-400 text-xs mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
                                                     </div>
 
                                                     <div>
                                                         <div className="flex items-center gap-1.5 mb-1.5 ml-0.5">
-                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider leading-none">
+                                                            <label className="block text-white font-semibold text-xs uppercase tracking-wider leading-none">
                                                                 Mentoring Level <span className="text-red-400">*</span>
                                                             </label>
-                                                            <LevelInfoButton />
+                                                            <LevelInfoButton
+                                                                showCurriculumModal={showCurriculumModal}
+                                                                onOpen={() => { closeCurriculumModal(); setShowCurriculumModal(true); }}
+                                                                onHover={(coords) => { setTooltipCoords(coords); setHoverCurriculum(true); }}
+                                                                onLeave={() => { setHoverCurriculum(false); setTooltipCoords(null); }}
+                                                            />
                                                         </div>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
@@ -812,17 +795,17 @@ export default function JobApplicationPage() {
                                                                         setErrors(p => { const c = { ...p }; delete c.preferredMentorLevel; return c; });
                                                                     }}
                                                                     className={cn(
-                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center',
+                                                                        'flex-1 min-h-11 py-2 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer flex items-center justify-center',
                                                                         preferredMentorLevel === opt
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                            : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                     )}
                                                                 >
                                                                     {opt}
                                                                 </button>
                                                             ))}
                                                         </div>
-                                                        {errors.preferredMentorLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.preferredMentorLevel}</p>}
+                                                        {errors.preferredMentorLevel && <p className="text-red-400 text-xs mt-0.5 ml-0.5">{errors.preferredMentorLevel}</p>}
                                                     </div>
                                                 </div>
 
@@ -836,10 +819,10 @@ export default function JobApplicationPage() {
                                                                     type="button"
                                                                     onClick={() => setParticipatedEcpc(opt)}
                                                                     className={cn(
-                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                                                                        'flex-1 min-h-11 py-2 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer flex items-center justify-center gap-1.5',
                                                                         participatedEcpc === opt
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                            : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                     )}
                                                                 >
                                                                     {opt === 'yes' ? <><Trophy size={12} /> Yes</> : 'No'}
@@ -874,10 +857,10 @@ export default function JobApplicationPage() {
                                                                 type="button"
                                                                 onClick={() => setHasEcpcTshirt(opt)}
                                                                 className={cn(
-                                                                    'flex-1 py-1.5 rounded-lg text-center text-[10px] font-semibold border transition-all cursor-pointer',
+                                                                    'flex-1 min-h-11 py-2 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer',
                                                                     hasEcpcTshirt === opt
                                                                         ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                        : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                        : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                 )}
                                                             >
                                                                 {opt === 'yes' ? <span className="inline-flex items-center gap-1"><Shirt size={11} /> Yes</span> : 'No'}
@@ -913,15 +896,20 @@ export default function JobApplicationPage() {
                                                             className={cn(iB, errors.codeforcesHandle ? iE : iN)}
                                                             dir="ltr"
                                                         />
-                                                        {errors.codeforcesHandle && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
+                                                        {errors.codeforcesHandle && <p className="text-red-400 text-xs mt-0.5 ml-0.5">{errors.codeforcesHandle}</p>}
                                                     </div>
 
                                                     <div>
                                                         <div className="flex items-center gap-1.5 mb-1.5 ml-0.5">
-                                                            <label className="block text-white font-semibold text-xs sm:text-[11px] uppercase tracking-wider leading-none">
+                                                            <label className="block text-white font-semibold text-xs uppercase tracking-wider leading-none">
                                                                 Teaching Level <span className="text-red-400">*</span>
                                                             </label>
-                                                            <LevelInfoButton />
+                                                            <LevelInfoButton
+                                                                showCurriculumModal={showCurriculumModal}
+                                                                onOpen={() => { closeCurriculumModal(); setShowCurriculumModal(true); }}
+                                                                onHover={(coords) => { setTooltipCoords(coords); setHoverCurriculum(true); }}
+                                                                onLeave={() => { setHoverCurriculum(false); setTooltipCoords(null); }}
+                                                            />
                                                         </div>
                                                         <div className="flex gap-1.5">
                                                             {['Level 1', 'Level 2', 'Level 3'].map(opt => (
@@ -933,17 +921,17 @@ export default function JobApplicationPage() {
                                                                         setErrors(p => { const c = { ...p }; delete c.preferredTeachingLevel; return c; });
                                                                     }}
                                                                     className={cn(
-                                                                        'flex-1 py-2 rounded-lg text-center text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center',
+                                                                        'flex-1 min-h-11 py-2 rounded-[var(--radius-control)] text-center text-sm font-medium border transition-all cursor-pointer flex items-center justify-center',
                                                                         preferredTeachingLevel === opt
                                                                             ? 'bg-[#E8C15A]/15 text-[#E8C15A] border-[#E8C15A]/30'
-                                                                            : 'bg-black/50 border-white/5 text-white/40 hover:bg-white/5'
+                                                                            : 'bg-[var(--color-sidebar)] border-[var(--color-line)] text-[var(--color-text-secondary)] hover:bg-[var(--color-raised)]'
                                                                     )}
                                                                 >
                                                                     {opt}
                                                                 </button>
                                                             ))}
                                                         </div>
-                                                        {errors.preferredTeachingLevel && <p className="text-red-400 text-[9px] mt-0.5 ml-0.5">{errors.preferredTeachingLevel}</p>}
+                                                        {errors.preferredTeachingLevel && <p className="text-red-400 text-xs mt-0.5 ml-0.5">{errors.preferredTeachingLevel}</p>}
                                                     </div>
                                                 </div>
 
@@ -964,7 +952,7 @@ export default function JobApplicationPage() {
                                 </div>
                             ) : (
                                 <div className="flex-1 min-h-[140px] flex items-center justify-center border border-dashed border-white/5 rounded-xl text-center p-4">
-                                    <p className="text-white/20 text-xs">
+                                    <p className="text-[var(--color-text-muted)] text-sm">
                                         Select at least one committee above to view role details
                                     </p>
                                 </div>
@@ -974,14 +962,14 @@ export default function JobApplicationPage() {
                         {/* Submit Action & Error Message at Bottom of Right Column */}
                         <div className="pt-3 mt-3 border-t border-white/5 shrink-0 space-y-2">
                             {submitError && (
-                                <p className="text-red-400 text-[10px] font-bold text-center">{submitError}</p>
+                                <p className="text-red-400 text-sm font-medium text-center">{submitError}</p>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={loading}
                                 className={cn(
-                                    "w-full py-3 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#E8C15A]/10 active:scale-[0.99] cursor-pointer",
+                                    "ui-button-primary w-full cursor-pointer",
                                     loading ? "opacity-70 cursor-not-allowed" : "group"
                                 )}
                             >
@@ -1007,7 +995,7 @@ export default function JobApplicationPage() {
             {/* Hover Tooltip Floating Card */}
             {!showCurriculumModal && hoverCurriculum && tooltipCoords && (
                 <div
-                    className="fixed z-[90] p-2.5 bg-[#121214]/95 backdrop-blur-md border border-[#E8C15A]/40 rounded-xl shadow-2xl shadow-black/95 w-64 sm:w-72 animate-in fade-in zoom-in-95 duration-150 cursor-pointer"
+                    className="ui-panel fixed z-[90] p-3 w-64 sm:w-72 cursor-pointer"
                     onClick={(e) => {
                         e.stopPropagation();
                         closeCurriculumModal();
@@ -1023,12 +1011,12 @@ export default function JobApplicationPage() {
                             : 'auto',
                     }}
                 >
-                    <div className="text-[10px] font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
+                    <div className="text-xs font-bold text-[#E8C15A] mb-1.5 flex items-center justify-between">
                         <span className="flex items-center gap-1">
                             <HelpCircle size={11} className="text-[#E8C15A]" />
                             <span>Curriculum Roadmap</span>
                         </span>
-                        <span className="text-[8px] text-white/40 font-normal">Click to enlarge</span>
+                        <span className="text-xs text-white/40 font-normal">Click to enlarge</span>
                     </div>
                     <div className="relative w-full aspect-[683/920] max-h-56 overflow-hidden rounded-lg border border-white/10 bg-white">
                         <Image
@@ -1046,11 +1034,11 @@ export default function JobApplicationPage() {
             {/* Fullscreen/Dialog Curriculum Levels Modal */}
             {showCurriculumModal && (
                 <div 
-                    className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
+                    className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-3 sm:p-6"
                     onClick={closeCurriculumModal}
                 >
                     <div 
-                        className="relative bg-[#121214] border border-[#E8C15A]/40 rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(232,193,90,0.18)]"
+                        className="ui-panel relative max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Modal Header */}
@@ -1061,13 +1049,13 @@ export default function JobApplicationPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-xs sm:text-sm font-bold text-white leading-tight">Curriculum Levels Breakdown</h3>
-                                    <p className="text-[10px] text-white/50">Level 1, Level 2, and Level 3 Curriculum Topics</p>
+                                    <p className="text-xs text-white/50">Level 1, Level 2, and Level 3 Curriculum Topics</p>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={closeCurriculumModal}
-                                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                                className="w-11 h-11 rounded-[var(--radius-control)] bg-white/5 hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-sm font-medium transition-colors cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -1075,7 +1063,7 @@ export default function JobApplicationPage() {
 
                         {/* Modal Body: Scrollable Image */}
                         <div className="p-3 sm:p-4 overflow-y-auto max-h-[calc(92vh-70px)] flex justify-center bg-[#0D0D0F]">
-                            <div className="relative w-full max-w-md rounded-xl overflow-hidden border border-white/10 shadow-lg bg-white">
+                            <div className="relative w-full max-w-md rounded-[var(--radius-control)] overflow-hidden border border-[var(--color-line)] bg-white">
                                 <Image
                                     src="/images/curriculum_levels.png"
                                     alt="ICPC HUE Curriculum Roadmap (Level 1, 2, 3)"

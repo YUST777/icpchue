@@ -4,11 +4,11 @@ import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, Hexagon, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ResetPassword() {
     return (
-        <Suspense fallback={<div className="min-h-[100dvh] w-full bg-[#0A0A0A]" />}>
+        <Suspense fallback={<div className="min-h-[100dvh] w-full bg-[#0b0b0c]" />}>
             <ResetPasswordInner />
         </Suspense>
     );
@@ -77,14 +77,14 @@ function ResetPasswordInner() {
 
     if (linkState === 'invalid' || (!accessToken && !tokenHash)) {
         return (
-            <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex items-center justify-center px-8">
-                <div className="max-w-md w-full text-center">
-                    <AlertCircle className="w-16 h-16 text-red-400/80 mx-auto mb-6" />
-                    <h2 className="text-2xl font-bold text-white mb-3">Invalid Link</h2>
-                    <p className="text-white/40 text-sm mb-8">{linkError}</p>
+            <div dir="ltr" className="flex min-h-[100dvh] w-full items-center justify-center bg-[#0b0b0c] px-6">
+                <div className="w-full max-w-md text-center">
+                    <AlertCircle className="mx-auto mb-6 h-14 w-14 text-red-300/80" />
+                    <h2 className="mb-3 text-2xl font-medium text-white">Invalid link</h2>
+                    <p className="mb-8 text-sm leading-6 text-white/50">{linkError}</p>
                     <Link
                         href="/forgot-password"
-                        className="inline-flex items-center gap-2 px-8 py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all shadow-lg shadow-[#E8C15A]/10"
+                        className="inline-flex items-center gap-2 rounded-[10px] bg-[#E8C15A] px-8 py-4 text-sm font-semibold text-black transition-colors hover:bg-[#F0CE76]"
                     >
                         Request a new link
                         <ArrowRight size={18} />
@@ -137,11 +137,9 @@ function ResetPasswordInner() {
     };
 
     return (
-        <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex flex-row-reverse">
+        <div dir="ltr" className="flex min-h-[100dvh] w-full flex-row-reverse bg-[#0b0b0c]">
             {/* Right Side - Form */}
-            <div className="w-full lg:w-[40%] min-h-[100dvh] flex flex-col justify-center px-8 sm:px-16 lg:px-20 py-12 bg-[#0C0C0C] relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#E8C15A]/5 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="relative flex min-h-[100dvh] w-full flex-col justify-center bg-[#111214] px-6 py-10 sm:px-16 lg:w-[40%] lg:px-20 lg:py-12">
 
                 <div className="w-full max-w-[400px] mx-auto z-10">
                     <div className="mb-10 lg:hidden">
@@ -150,21 +148,21 @@ function ResetPasswordInner() {
                         </Link>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">New Password</h1>
-                    <p className="text-white/40 text-sm mb-8">Create a strong password for your account</p>
+                    <h1 className="mb-2 text-3xl font-medium tracking-tight text-white">New Password</h1>
+                    <p className="mb-8 text-sm text-white/50">Create a strong password for your account</p>
 
                     {status === 'success' ? (
                         <div className="space-y-6">
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6 text-center">
-                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mb-4">
+                            <div className="rounded-[10px] border border-emerald-400/25 bg-emerald-400/10 p-6 text-center">
+                                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
                                     <CheckCircle className="w-7 h-7" />
                                 </div>
-                                <h3 className="text-lg font-bold text-white mb-2">Password Updated</h3>
-                                <p className="text-white/50 text-sm">Redirecting to login...</p>
+                                <h3 className="mb-2 text-lg font-medium text-white">Password Updated</h3>
+                                <p className="text-sm text-white/55">Redirecting to login...</p>
                             </div>
                             <Link
                                 href="/login"
-                                className="w-full py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10"
+                                className="group flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#E8C15A] py-4 text-sm font-semibold text-black transition-colors hover:bg-[#F0CE76]"
                             >
                                 Sign In Now
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -173,25 +171,25 @@ function ResetPasswordInner() {
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-5">
                             {status === 'error' && (
-                                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm animate-shake">
+                                <div className="animate-shake rounded-[10px] border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-300">
                                     {message}
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">New Password</label>
+                                <label className="mb-2 ml-1 block text-xs font-medium text-white/60">New Password</label>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? 'text' : 'password'} autoComplete="new-password"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); if (status === 'error') setStatus('idle'); }}
                                         placeholder="Min 9 characters, 1 uppercase"
-                                        className="w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all pr-12 border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20"
+                                        className="w-full rounded-[10px] border border-white/10 bg-[#0b0b0c] px-4 py-3.5 pr-12 text-sm text-white placeholder-white/25 transition-colors focus:border-[#E8C15A]/50 focus:outline-none focus:ring-1 focus:ring-[#E8C15A]/30"
                                         required
                                         minLength={9}
                                         dir="ltr"
                                     />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+                                    <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/35 transition-colors hover:text-white/70">
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
@@ -209,18 +207,18 @@ function ResetPasswordInner() {
                             </div>
 
                             <div>
-                                <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Confirm Password</label>
+                                <label className="mb-2 ml-1 block text-xs font-medium text-white/60">Confirm Password</label>
                                 <div className="relative">
                                     <input
                                         type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password"
                                         value={confirmPassword}
                                         onChange={(e) => { setConfirmPassword(e.target.value); if (status === 'error') setStatus('idle'); }}
                                         placeholder="Re-enter your password"
-                                        className="w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all pr-12 border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20"
+                                        className="w-full rounded-[10px] border border-white/10 bg-[#0b0b0c] px-4 py-3.5 pr-12 text-sm text-white placeholder-white/25 transition-colors focus:border-[#E8C15A]/50 focus:outline-none focus:ring-1 focus:ring-[#E8C15A]/30"
                                         required
                                         dir="ltr"
                                     />
-                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+                                    <button type="button" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'} onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/35 transition-colors hover:text-white/70">
                                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
@@ -229,7 +227,7 @@ function ResetPasswordInner() {
                             <button
                                 type="submit"
                                 disabled={status === 'loading'}
-                                className="w-full py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
+                                className="group flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#E8C15A] py-4 text-sm font-semibold text-black transition-colors hover:bg-[#F0CE76] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : 'Reset Password'}
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -244,7 +242,7 @@ function ResetPasswordInner() {
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
-                        <Link href="/" className="text-[10px] uppercase font-bold tracking-widest text-white/10 hover:text-white/30 transition-colors">
+                        <Link href="/" className="text-xs text-white/35 transition-colors hover:text-white/70">
                             &larr; Back to Home
                         </Link>
                     </div>
@@ -252,30 +250,28 @@ function ResetPasswordInner() {
             </div>
 
             {/* Left Side - Branding */}
-            <div className="hidden lg:flex w-[60%] min-h-[100dvh] items-center justify-center bg-[#080808] border-r border-white/5 px-20 relative overflow-hidden">
+            <div className="relative hidden min-h-[100dvh] w-[60%] items-center justify-center overflow-hidden border-r border-white/10 bg-[#0b0b0c] px-20 lg:flex">
                 <div className="absolute top-8 left-8 z-20">
                     <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                        <Image src="/icons/icon-512.webp" alt="ICPC HUE" width={32} height={32} className="h-8 w-auto drop-shadow-2xl" />
+                        <Image src="/icons/icon-512.webp" alt="ICPC HUE" width={32} height={32} className="h-8 w-auto" />
                     </Link>
                 </div>
 
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(232,193,90,0.03),transparent_50%)]" />
-
                 <div className="max-w-xl relative">
-                    <Hexagon size={64} className="text-[#E8C15A]/10 absolute -top-12 -left-12 rotate-12" />
+                    <div className="mb-6 h-px w-16 bg-[#E8C15A]" />
 
-                    <blockquote className="text-4xl text-white/90 font-medium leading-tight mb-12 tracking-tight">
+                    <blockquote className="mb-12 text-3xl font-medium leading-tight tracking-tight text-white/90 xl:text-4xl">
                         &quot;A strong password is the first step to <span className="text-[#E8C15A] italic font-bold">securing your progress</span>. Choose wisely.&quot;
                     </blockquote>
 
                     <div className="space-y-0.5 ml-1">
-                        <h4 className="text-white/80 font-bold text-base tracking-tight">ICPC HUE Team</h4>
-                        <p className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">First ICPC Community at Horus University</p>
+                        <h4 className="text-base font-medium tracking-tight text-white/80">ICPC HUE Team</h4>
+                        <p className="text-xs text-white/35">First ICPC Community at Horus University</p>
                     </div>
                 </div>
 
                 <div className="absolute bottom-12 left-20 right-20 flex items-center justify-between">
-                    <p className="text-white/5 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 HORUS UNIVERSITY</p>
+                    <p className="text-xs text-white/25">© 2026 Horus University</p>
                 </div>
             </div>
 

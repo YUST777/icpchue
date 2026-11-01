@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Radio, Calendar, ArrowRight, ThumbsUp, Heart, Flame } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 
 const newsItems = [
@@ -49,19 +48,13 @@ const newsItems = [
 
 function getTypeColor(type: string) {
     switch (type.toLowerCase()) {
-        case 'training': return 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30';
-        case 'announcement': return 'bg-green-500/10 text-green-400 border-green-500/30';
-        case 'camp': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-        case 'recap': return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
-        case 'community': return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
-        case 'devlog': return 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/30';
-        default: return 'bg-white/10 text-white border-white/30';
+        case 'training':
+        case 'devlog': return 'bg-[#E8C15A]/10 text-[#E8C15A] border-[#E8C15A]/20';
+        default: return 'bg-white/[0.04] text-white/70 border-white/10';
     }
 }
 
 export default function NewsPage() {
-    const { profile, user } = useAuth();
-
     const dynamicNewsItems = newsItems;
 
     const featuredNewsItems = dynamicNewsItems.filter(n => n.featured);
@@ -193,61 +186,57 @@ export default function NewsPage() {
         <>
 
 
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-6 sm:space-y-8">
                 {/* Page Title */}
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[#E8C15A]/10">
-                        <Radio className="text-[#E8C15A]" size={22} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
+                        <Radio className="text-[#E8C15A]" size={19} aria-hidden="true" />
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-[#F2F2F2]">Team News</h2>
+                    <h2 className="text-2xl font-medium leading-tight text-[var(--color-text)]">Team News</h2>
                 </div>
 
                 {/* Featured News Cards */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {featuredNewsItems.map((featuredNews) => (
-                        <Link key={featuredNews.id} href={featuredNews.link || '#'} className="block group">
-                            <div className="relative bg-gradient-to-br from-[#1a1a1a] to-[#121212] rounded-2xl border border-white/10 overflow-hidden hover:border-[#E8C15A]/40 transition-all duration-300">
-                                <div className="grid md:grid-cols-2 gap-0">
+                            <article key={featuredNews.id} className="ui-card group grid overflow-hidden transition-colors duration-150 hover:border-white/20 md:grid-cols-2">
                                     {/* Image Side */}
-                                    <div className="relative w-full aspect-video md:h-auto overflow-hidden">
+                                    <Link href={featuredNews.link || '#'} aria-label={featuredNews.title} className="relative block aspect-video overflow-hidden bg-black/20 md:aspect-auto md:min-h-64">
                                         <Image
                                             src={featuredNews.image || ''}
                                             alt={featuredNews.title}
                                             fill
                                             sizes="(max-width: 768px) 100vw, 50vw"
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#121212]/80 md:hidden" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent md:hidden" />
-                                    </div>
+                                    </Link>
 
                                     {/* Content Side */}
-                                    <div className="p-6 md:p-8 flex flex-col justify-center">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full border ${getTypeColor(featuredNews.type)}`}>
+                                    <div className="flex min-w-0 flex-col justify-center p-4 sm:p-6">
+                                        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                                            <span className={`inline-flex min-h-7 items-center rounded-md border px-2.5 py-1 text-xs font-medium ${getTypeColor(featuredNews.type)}`}>
                                                 {featuredNews.type}
                                             </span>
-                                            <span className="flex items-center gap-1.5 text-xs text-[#666]">
-                                                <Calendar size={12} />
+                                            <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                                                <Calendar size={13} aria-hidden="true" />
                                                 {featuredNews.date}
                                             </span>
                                         </div>
 
-                                        <h3 className="text-xl md:text-2xl font-bold text-white mb-3 group-hover:text-[#E8C15A] transition-colors">
-                                            {featuredNews.title}
+                                        <h3 className="mb-2 text-xl font-medium leading-snug text-[var(--color-text)] transition-colors group-hover:text-[#E8C15A] sm:text-2xl">
+                                            <Link href={featuredNews.link || '#'}>{featuredNews.title}</Link>
                                         </h3>
 
-                                        <p className="text-sm md:text-base text-[#888] leading-relaxed mb-6">
+                                        <p className="mb-4 text-sm leading-6 text-[var(--color-text-secondary)]">
                                             {featuredNews.body}
                                         </p>
 
-                                        <div className="flex items-center gap-2 text-[#E8C15A] text-sm font-medium group-hover:gap-3 transition-all">
-                                            <span>Read More</span>
-                                            <ArrowRight size={16} />
-                                        </div>
+                                        <Link href={featuredNews.link || '#'} className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-[#E8C15A] transition-colors hover:text-[#F0CE76]">
+                                            <span>Read more</span>
+                                            <ArrowRight size={16} aria-hidden="true" />
+                                        </Link>
 
                                         {/* Reactions */}
-                                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                                        <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
                                             {(['like', 'heart', 'fire'] as const).map((type) => {
                                                 const Icon = type === 'like' ? ThumbsUp : type === 'heart' ? Heart : Flame;
                                                 const count = reactions[featuredNews.id]?.counts[type] || 0;
@@ -256,56 +245,57 @@ export default function NewsPage() {
                                                 return (
                                                     <button
                                                         key={type}
+                                                        type="button"
+                                                        aria-label={`${type} ${featuredNews.title}`}
+                                                        aria-pressed={isActive}
                                                         onClick={(e) => {
-                                                            e.preventDefault();
+                                                            e.stopPropagation();
                                                             handleReaction(featuredNews.id, type);
                                                         }}
-                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isActive
-                                                            ? 'bg-[#E8C15A]/20 text-[#E8C15A] border border-[#E8C15A]/40 scale-105'
-                                                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80 hover:scale-105'
+                                                        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isActive
+                                                            ? 'border-[#E8C15A]/30 bg-[#E8C15A]/10 text-[#E8C15A]'
+                                                            : 'border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.07] hover:text-white'
                                                             }`}
                                                     >
-                                                        <Icon size={14} className={isActive ? 'fill-current' : ''} />
+                                                        <Icon size={14} className={isActive ? 'fill-current' : ''} aria-hidden="true" />
                                                         {count > 0 && <span>{count}</span>}
                                                     </button>
                                                 );
                                             })}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </Link>
+                            </article>
                     ))}
                 </div>
 
                 {/* Other News Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {otherNews.map((news) => (
-                        <div
+                        <article
                             key={news.id}
-                            className="bg-[#121212] p-5 rounded-xl border border-white/5 hover:border-[#E8C15A]/30 transition-all group"
+                            className="ui-card group flex min-w-0 flex-col p-4 transition-colors duration-150 hover:border-white/20 sm:p-5"
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between mb-4">
-                                <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full border ${getTypeColor(news.type)}`}>
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <span className={`inline-flex min-h-7 items-center rounded-md border px-2.5 py-1 text-xs font-medium ${getTypeColor(news.type)}`}>
                                     {news.type}
                                 </span>
-                                <span className="flex items-center gap-1.5 text-xs text-[#555]">
-                                    <Calendar size={11} />
+                                <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                                    <Calendar size={13} aria-hidden="true" />
                                     {news.date}
                                 </span>
                             </div>
 
                             {/* Content */}
-                            <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#E8C15A] transition-colors">
+                            <h3 className="mb-2 text-lg font-medium leading-snug text-[var(--color-text)] transition-colors group-hover:text-[#E8C15A]">
                                 {news.title}
                             </h3>
-                            <p className="text-sm text-[#777] leading-relaxed mb-4">
+                            <p className="mb-4 text-sm leading-6 text-[var(--color-text-secondary)]">
                                 {news.body}
                             </p>
 
                             {/* Reactions */}
-                            <div className="flex items-center gap-2 pt-3 border-t border-white/5">
+                            <div className="mt-auto flex items-center gap-2 border-t border-white/[0.06] pt-3">
                                 {(['like', 'heart', 'fire'] as const).map((type) => {
                                     const Icon = type === 'like' ? ThumbsUp : type === 'heart' ? Heart : Flame;
                                     const count = reactions[news.id]?.counts[type] || 0;
@@ -314,30 +304,25 @@ export default function NewsPage() {
                                     return (
                                         <button
                                             key={type}
+                                            type="button"
+                                            aria-label={`${type} ${news.title}`}
+                                            aria-pressed={isActive}
                                             onClick={() => handleReaction(news.id, type)}
-                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${isActive
-                                                ? 'bg-[#E8C15A]/20 text-[#E8C15A] border border-[#E8C15A]/40 scale-105'
-                                                : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80 hover:scale-105'
+                                            className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isActive
+                                                ? 'border-[#E8C15A]/30 bg-[#E8C15A]/10 text-[#E8C15A]'
+                                                : 'border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.07] hover:text-white'
                                                 }`}
                                         >
-                                            <Icon size={12} className={isActive ? 'fill-current' : ''} />
+                                            <Icon size={14} className={isActive ? 'fill-current' : ''} aria-hidden="true" />
                                             {count > 0 && <span>{count}</span>}
                                         </button>
                                     );
                                 })}
                             </div>
-                        </div>
+                        </article>
                     ))}
                 </div>
             </div>
-
-            <style>{`
-                @keyframes fadeIn { 
-                    from { opacity: 0; transform: translateY(10px); } 
-                    to { opacity: 1; transform: translateY(0); } 
-                } 
-                .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-            `}</style>
         </>
     );
 }

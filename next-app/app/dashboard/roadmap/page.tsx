@@ -86,7 +86,7 @@ export default function RoadmapPage() {
     }
 
     return (
-        <div className="text-white relative overflow-hidden space-y-8 animate-fade-in pb-12">
+        <div className="relative space-y-8 overflow-hidden pb-12 text-white animate-fade-in">
             {/* Background Pattern */}
             <div className="absolute inset-0 z-0 opacity-20 pointer-events-none"
                 style={{
@@ -100,10 +100,8 @@ export default function RoadmapPage() {
 
                     {/* Header */}
                     <div className="mb-16">
-                        <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#E8C15A] via-[#FFF] to-[#E8C15A] animate-gradient-x">
-                                Curriculum Roadmap
-                            </span>
+                        <h1 className="mb-4 text-4xl font-medium tracking-tight text-white md:text-6xl">
+                            Curriculum Roadmap
                         </h1>
                         <p className="text-neutral-400 text-lg max-w-2xl font-light">
                             Your personalized path to competitive programming mastery. Track your progress, solve problems, and level up your skills.
@@ -121,7 +119,7 @@ export default function RoadmapPage() {
 
 
                             <div className="flex items-center gap-6 mb-10 relative z-10 -ml-8 md:ml-0">
-                                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#E8C15A] to-[#A07914] flex items-center justify-center shadow-lg shadow-[#E8C15A]/20 text-black font-black text-xl border border-[#FFE082]/50 shrink-0">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border border-[#E8C15A]/40 bg-[#E8C15A] text-xl font-medium text-black">
                                     {level.levelNumber}
                                 </div>
                                 <div>
@@ -174,14 +172,14 @@ export default function RoadmapPage() {
                                             >
                                                 <div
                                                     className={cn(
-                                                        "absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                                                        "pointer-events-none absolute inset-0 rounded-[14px] bg-white/[0.03] opacity-0 transition-opacity duration-150 group-hover:opacity-100",
                                                         isCompleted ? "from-[#E8C15A]/10" : ""
                                                     )}
                                                 />
 
                                                 <div className={cn(
-                                                    "relative h-full bg-[#121214] border border-white/5 rounded-2xl p-6 transition-all duration-300 group-hover:border-[#E8C15A]/30 group-hover:-translate-y-1 shadow-xl",
-                                                    isCompleted ? "border-[#E8C15A]/20 shadow-[#E8C15A]/5" : ""
+                                                    "relative h-full rounded-[14px] border border-white/10 bg-[#16181b] p-5 transition-colors duration-150 group-hover:border-[#E8C15A]/30 sm:p-6",
+                                                    isCompleted ? "border-[#E8C15A]/25" : ""
                                                 )}>
 
                                                     {/* Header: Week Capsule & Month/Sheet Badges */}
@@ -189,19 +187,19 @@ export default function RoadmapPage() {
                                                         <div className="flex items-center gap-2">
                                                             {/* Week Capsule */}
                                                             <div className={cn(
-                                                                "h-6 px-3 rounded-full border flex items-center gap-1.5 transition-colors text-[10px] font-bold tracking-wide",
+                                                                "flex h-6 items-center gap-1.5 rounded-[8px] border px-2.5 text-[10px] font-medium transition-colors",
                                                                 isCompleted
                                                                     ? "bg-[#E8C15A]/10 border-[#E8C15A]/30 text-[#E8C15A]"
                                                                     : "bg-white/5 border-white/10 text-neutral-400 group-hover:text-white group-hover:border-white/20"
                                                             )}>
-                                                                <span className="opacity-70">WEEK</span>
+                                                                <span className="opacity-70">Week</span>
                                                                 <span>{weekNum}</span>
                                                             </div>
 
                                                             {/* Sheet Capsule (Level 0 & 1) */}
                                                             {showSheetBadge && (
-                                                                <div className="h-6 px-3 rounded-full border border-white/10 bg-white/5 text-[#E8C15A] text-[10px] font-bold tracking-wide flex items-center gap-1.5">
-                                                                    <span className="opacity-70">SHEET</span>
+                                                                <div className="flex h-6 items-center gap-1.5 rounded-[8px] border border-white/10 bg-white/5 px-2.5 text-[10px] font-medium text-[#E8C15A]">
+                                                                    <span className="opacity-70">Sheet</span>
                                                                     <span>{sheetLabel}</span>
                                                                 </div>
                                                             )}
@@ -215,7 +213,7 @@ export default function RoadmapPage() {
 
                                                     {/* Title & Desc */}
                                                     <div className="mb-6">
-                                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#E8C15A] transition-colors leading-tight line-clamp-1">
+                                                        <h3 className="mb-2 line-clamp-1 text-lg font-medium leading-tight text-white transition-colors group-hover:text-[#E8C15A]">
                                                             {week.title}
                                                         </h3>
                                                         <p className="text-xs text-neutral-500 leading-relaxed line-clamp-2">

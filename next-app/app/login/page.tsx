@@ -8,7 +8,7 @@ import { useToasts } from '@/components/ui/toast';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Loader2, Hexagon, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import TutorialModal from '@/components/onboarding/TutorialModal';
 import { InfiniteGrid } from '@/components/InfiniteGrid';
@@ -156,7 +156,7 @@ export default function Login() {
 
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center bg-[#0b0b0c]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative w-16 h-16">
                         <Image src="/icons/icpchue.svg" alt="Loading" fill className="animate-pulse" />
@@ -168,14 +168,11 @@ export default function Login() {
     }
 
     return (
-        <div dir="ltr" className="min-h-[100dvh] w-full bg-[#0A0A0A] flex flex-row-reverse">
+        <div dir="ltr" className="flex min-h-[100dvh] w-full flex-row-reverse bg-[#0b0b0c]">
             <TutorialModal isOpen={showTutorial} onClose={handleTutorialClose} />
 
             {/* Right Side - Form */}
-            <div className="w-full lg:w-[40%] min-h-[100dvh] flex flex-col justify-center px-8 sm:px-16 lg:px-20 py-12 bg-[#0C0C0C] relative">
-                {/* Background Blobs */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#E8C15A]/5 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="relative flex min-h-[100dvh] w-full flex-col justify-center bg-[#111214] px-6 py-10 sm:px-16 lg:w-[40%] lg:px-20 lg:py-12">
 
                 <div className="w-full max-w-[400px] mx-auto z-10">
                     {/* Header */}
@@ -185,16 +182,15 @@ export default function Login() {
                         </Link>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Focus & Code</h1>
-                    <p className="text-white/40 text-sm mb-8">Sign in to the ICPC HUE portal</p>
+                    <h1 className="mb-2 text-3xl font-medium tracking-tight text-white">Focus &amp; Code</h1>
+                    <p className="mb-8 text-sm text-white/50">Sign in to the ICPC HUE portal</p>
 
                     {/* Codeforces Login */}
                     <button
                         onClick={handleCodeforcesLogin}
-                        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold hover:bg-white/10 hover:border-white/20 transition-all group overflow-hidden relative shadow-lg shadow-black/20"
+                        className="group relative flex w-full items-center justify-center gap-3 rounded-[10px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/[0.07]"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#E8C15A]/0 via-[#E8C15A]/5 to-[#E8C15A]/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                        <div className="relative w-5 h-5 group-hover:scale-110 transition-transform">
+                        <div className="relative h-5 w-5">
                             <Image
                                 src="/icons/Codeforces.colored.svg"
                                 alt="CF"
@@ -206,22 +202,22 @@ export default function Login() {
                     </button>
 
                     {/* Divider */}
-                    <div className="flex items-center gap-4 my-8">
-                        <div className="flex-1 h-px bg-white/5"></div>
-                        <span className="text-white/20 text-[10px] font-bold uppercase tracking-widest">or email login</span>
-                        <div className="flex-1 h-px bg-white/5"></div>
+                    <div className="my-8 flex items-center gap-4">
+                        <div className="h-px flex-1 bg-white/10"></div>
+                        <span className="text-xs text-white/35">or continue with email</span>
+                        <div className="h-px flex-1 bg-white/10"></div>
                     </div>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {submitError && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm animate-shake">
+                            <div className="animate-shake rounded-[10px] border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-300">
                                 {submitError}
                             </div>
                         )}
 
                         <div>
-                            <label className="block text-white/50 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Email or ID</label>
+                            <label className="mb-2 ml-1 block text-xs font-medium text-white/60">Email or ID</label>
                             <input
                                 type="text"
                                 value={email}
@@ -229,7 +225,7 @@ export default function Login() {
                                 onBlur={() => validateField('email', email)}
                                 inputMode="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                                 placeholder="Enter your email or Horus ID"
-                                className={`w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all ${errors.email ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20'
+                                className={`w-full rounded-[10px] border bg-[#0b0b0c] px-4 py-3.5 text-sm text-white placeholder-white/25 transition-colors focus:outline-none focus:ring-1 ${errors.email ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-[#E8C15A]/50 focus:ring-[#E8C15A]/30'
                                     }`}
                             />
                             {errors.email && <p role="alert" className="text-red-400 text-[10px] mt-1.5 ml-1">{errors.email}</p>}
@@ -237,8 +233,8 @@ export default function Login() {
 
                         <div>
                             <div className="flex items-center justify-between mb-2 ml-1">
-                                <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Password</label>
-                                <Link href="/forgot-password" className="text-[#E8C15A]/60 text-[10px] font-bold uppercase hover:text-[#E8C15A] transition-colors">
+                                <label className="text-xs font-medium text-white/60">Password</label>
+                                <Link href="/forgot-password" className="text-xs text-[#E8C15A]/75 transition-colors hover:text-[#E8C15A]">
                                     Forgot?
                                 </Link>
                             </div>
@@ -252,13 +248,14 @@ export default function Login() {
                                     }}
                                     onBlur={() => validateField('password', password)}
                                     placeholder="••••••••"
-                                    className={`w-full px-4 py-3.5 bg-black/40 border rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all pr-12 ${errors.password ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20'
+                                    className={`w-full rounded-[10px] border bg-[#0b0b0c] px-4 py-3.5 pr-12 text-sm text-white placeholder-white/25 transition-colors focus:outline-none focus:ring-1 ${errors.password ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-[#E8C15A]/50 focus:ring-[#E8C15A]/30'
                                         }`}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/35 transition-colors hover:text-white/70"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
@@ -269,7 +266,7 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 bg-[#E8C15A] hover:bg-[#D59928] text-black text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
+                            className="group flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#E8C15A] py-4 text-sm font-semibold text-black transition-colors hover:bg-[#F0CE76] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {loading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In Now'}
                             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -288,7 +285,7 @@ export default function Login() {
                         <button
                             type="button"
                             onClick={() => setShowTutorial(true)}
-                            className="text-[10px] font-bold text-[#E8C15A]/40 hover:text-[#E8C15A]/80 uppercase tracking-widest transition-colors"
+                            className="text-xs text-[#E8C15A]/65 transition-colors hover:text-[#E8C15A]"
                         >
                             Help: How to login?
                         </button>
@@ -300,7 +297,7 @@ export default function Login() {
                     </div>
 
                     <div className="mt-12 text-center lg:hidden">
-                        <Link href="/" className="inline-block py-3 text-xs uppercase font-bold tracking-widest text-white/50 hover:text-white/80 transition-colors">
+                        <Link href="/" className="inline-block py-3 text-xs text-white/50 transition-colors hover:text-white/80">
                             &larr; Back to Home
                         </Link>
                     </div>
@@ -308,38 +305,36 @@ export default function Login() {
             </div>
 
             {/* Left Side - Testimonial */}
-            <div className="hidden lg:flex w-[60%] min-h-[100dvh] items-center justify-center bg-[#080808] border-r border-white/5 px-20 relative overflow-hidden">
+            <div className="relative hidden min-h-[100dvh] w-[60%] items-center justify-center overflow-hidden border-r border-white/10 bg-[#0b0b0c] px-20 lg:flex">
                 {/* Infinite Grid Background */}
                 <InfiniteGrid />
 
                 {/* Logo in Top Left Corner of the Left Side */}
                 <div className="absolute top-8 left-8 z-20">
                     <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                        <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={40} height={40} className="w-10 h-10 drop-shadow-2xl" />
+                        <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={40} height={40} className="h-10 w-10" />
                     </Link>
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(232,193,90,0.03),transparent_50%)]" />
-
                 <div className="max-w-xl relative z-10">
-                    <Hexagon size={64} className="text-[#E8C15A]/10 absolute -top-12 -left-12 rotate-12" />
+                    <div className="mb-6 h-px w-16 bg-[#E8C15A]" />
 
                     {/* Quote */}
-                    <blockquote className="text-4xl text-white/90 font-medium leading-tight mb-12 tracking-tight">
+                    <blockquote className="mb-12 text-3xl font-medium leading-tight tracking-tight text-white/90 xl:text-4xl">
                         &quot;ICPC HUE is the bridge between <span className="text-[#E8C15A] italic">learning</span> and <span className="text-[#E8C15A] italic font-bold">mastery</span>. It&apos;s the platform I wish I had for my training.&quot;
                     </blockquote>
 
                     {/* Author Attribution */}
                     <div className="space-y-0.5 ml-1">
-                        <h4 className="text-white/80 font-bold text-base tracking-tight">Yousef Dev</h4>
-                        <p className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">Co-Founder, ICPC HUE</p>
+                        <h4 className="text-base font-medium tracking-tight text-white/80">Yousef Dev</h4>
+                        <p className="text-xs text-white/35">Co-Founder, ICPC HUE</p>
                     </div>
                 </div>
 
                 {/* Bottom Info */}
                 <div className="absolute bottom-12 left-20 right-20 flex items-center justify-between z-10">
-                    <p className="text-white/5 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 HORUS UNIVERSITY</p>
+                    <p className="text-xs text-white/25">© 2026 Horus University</p>
                 </div>
             </div>
 

@@ -1,1329 +1,152 @@
 @import "tailwindcss";
-/* Utility scan: components/, app/ and hooks/ are all scanned (ignore rules are anchored to the project root). */
+@import "./excalidraw.css";
 
-/* Explicit spin animation for loading spinners */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Skeleton shimmer sweep for UI matching */
-@keyframes skeleton-shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  animation: skeleton-shimmer 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
+/* ICPC HUE: focused, technical, welcoming. Shared chrome stays charcoal;
+   learning content carries the color. Unslop by @heydamir, CC BY 4.0. */
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* Bulletproof Global Scrollbar Suppression Across All Browsers */
-* {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-*::-webkit-scrollbar {
-  display: none !important;
-  width: 0px !important;
-  height: 0px !important;
-  background: transparent !important;
+  --font-sans: var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --color-page: #0b0b0c;
+  --color-sidebar: #0f1012;
+  --color-surface: #16181b;
+  --color-raised: #202327;
+  --color-line: rgb(255 255 255 / 0.1);
+  --color-line-subtle: rgb(255 255 255 / 0.06);
+  --color-text: #f0f0ed;
+  --color-text-secondary: #b2b2ae;
+  --color-text-muted: #85868a;
+  --color-accent: #e8c15a;
+  --color-accent-hover: #f0ce76;
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-panel: 18px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-drawer: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 160ms;
+  --duration-enter: 240ms;
 }
 
 html {
+  background: var(--color-page);
+  color-scheme: dark;
   font-family: var(--font-sans);
   font-feature-settings: "rlig" 1, "calt" 1;
-  background-color: #0B0B0C;
-  scrollbar-width: none !important;
+  -webkit-text-size-adjust: 100%;
 }
-
-html[dir="rtl"] {
-  font-family: 'Inter', 'Segoe UI', Tahoma, Arial, sans-serif;
-}
-
 body {
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--color-page);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0B0B0C;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  scrollbar-width: none !important;
 }
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+::selection { background: rgb(232 193 90 / 0.28); color: var(--color-text); }
 
-/* Ensure navbar fits on mobile */
-header {
-  max-width: 100vw;
-  box-sizing: border-box;
-}
-
-header>div {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Extra small screens (like Poco M3 Pro 5G) */
-@media (max-width: 360px) {
-  header {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-}
-
-/* RTL Support */
-[dir="rtl"] {
-  direction: rtl;
-}
-
-/* Preserve LTR for specific elements */
-[dir="rtl"] a[href^="tel:"],
-[dir="rtl"] a[href^="mailto:"],
-[dir="rtl"] input[type="email"],
-[dir="rtl"] input[type="tel"] {
-  direction: ltr;
-  text-align: left;
-}
-
-/* Fix stats and counter alignment - always LTR */
-[dir="rtl"] .counter-container {
-  direction: ltr;
-}
-
-/* Fix logo loop direction - always LTR */
-[dir="rtl"] .logoloop {
-  direction: ltr;
-}
-
-/* Fix form inputs */
-[dir="rtl"] input,
-[dir="rtl"] textarea,
-[dir="rtl"] select {
-  text-align: right;
-}
-
-[dir="rtl"] input[type="email"],
-[dir="rtl"] input[type="tel"],
-[dir="rtl"] input[type="url"] {
-  text-align: left;
-  direction: ltr;
-}
-
-/* Fix placeholder text alignment */
-[dir="rtl"] input::placeholder,
-[dir="rtl"] textarea::placeholder {
-  text-align: right;
-}
-
-[dir="rtl"] input[type="email"]::placeholder,
-[dir="rtl"] input[type="tel"]::placeholder {
-  text-align: left;
-}
-
-/* Ensure proper spacing in RTL */
-[dir="rtl"] .ml-auto {
-  margin-left: 0;
-  margin-right: auto;
-}
-
-[dir="rtl"] .mr-auto {
-  margin-right: 0;
-  margin-left: auto;
-}
-
-/* Hide Spline watermark */
-#spline-watermark,
-[id*="spline"] a[href*="spline.design"],
-canvas+div>a[href*="spline"],
-div[style*="position: absolute"][style*="bottom"]>a[href*="spline"] {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Bulletproof Breadcrumb Safety: strictly single-line, zero wrapping, pixel-perfect baseline */
-.dashboard-breadcrumbs {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  white-space: nowrap !important;
-  max-width: 100% !important;
-  line-height: 1 !important;
-}
-
-.dashboard-breadcrumbs > * {
-  flex-shrink: 0 !important;
-}
-
-.dashboard-breadcrumbs a,
-.dashboard-breadcrumbs span,
-.dashboard-breadcrumbs button {
-  display: inline-flex !important;
-  align-items: center !important;
-  line-height: 1 !important;
-  vertical-align: middle !important;
-  text-decoration: none !important;
-}
-
-.dashboard-breadcrumbs a:hover {
-  text-decoration: none !important;
-  color: #E8C15A !important;
-  filter: drop-shadow(0 0 8px rgba(232, 193, 90, 0.65)) !important;
-}
-
-/* Hide scrollbar utility */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-
-/* Custom Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(232, 193, 90, 0.1);
-  border-radius: 20px;
-}
-
-/* Spline canvas scaling - render at native 512x312 but display larger */
-.spline-canvas-scale {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.spline-canvas-scale canvas {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
-/* Drawer Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-  }
-
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideOutRight {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(100%);
-  }
-}
-
-/* ========================================
-   MOBILE OPTIMIZATIONS
-   ======================================== */
-
-/* Prevent horizontal scroll on all devices */
-* {
-  -webkit-tap-highlight-color: transparent;
-  box-sizing: border-box;
-}
-
-
-
-/* Prevent zoom on double tap (iOS) */
-* {
-  touch-action: manipulation;
-}
-
-/* Touch-friendly tap targets (minimum 44x44px).
-   Kept in the base layer so Tailwind sizing utilities (h-8, w-6, p-1.5 ...) win. Unlayered,
-   this stretched every small icon button, such as the X on dialogs, into an off-centre 44px box. */
+/* Defaults live in the base layer so local utilities always control tool density. */
 @layer base {
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
+  button, [role="button"] { touch-action: manipulation; }
+  button, a, input, select, textarea, [tabindex] {
+    &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
   }
+  button:disabled { cursor: not-allowed; }
 }
 
-/* Smooth scrolling for anchor links */
-html {
-  scroll-behavior: smooth;
+/* Use named surfaces and controls rather than selectors that match arbitrary
+   Tailwind classes. Editors, canvases and charts retain their own layout. */
+@layer components {
+  .ui-container { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: clamp(20px, 4vw, 32px); }
+  .ui-section { padding-block: clamp(48px, 6vw, 80px); }
+  .ui-card { border: 1px solid var(--color-line); border-radius: var(--radius-card); background: var(--color-surface); }
+  .ui-panel { border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-sidebar); }
+  .ui-eyebrow { color: var(--color-text-muted); font-size: 12px; line-height: 20px; font-weight: 500; letter-spacing: 0.02em; }
+  .ui-page-title { color: var(--color-text); font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 500; letter-spacing: -0.025em; text-wrap: balance; }
+  .ui-section-title { color: var(--color-text); font-size: clamp(28px, 3.5vw, 40px); line-height: 1.2; font-weight: 500; letter-spacing: -0.025em; text-wrap: balance; }
+  .ui-button-primary, .ui-button-secondary {
+    display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid transparent; border-radius: var(--radius-control); padding: 10px 20px;
+    font-size: 14px; line-height: 20px; font-weight: 500;
+    transition: color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+  }
+  .ui-button-primary { background: var(--color-accent); color: #17140c; }
+  .ui-button-primary:hover { background: var(--color-accent-hover); }
+  .ui-button-secondary { border-color: var(--color-line); background: var(--color-surface); color: var(--color-text); }
+  .ui-button-secondary:hover { background: var(--color-raised); border-color: rgb(255 255 255 / 0.18); }
+  .ui-field { width: 100%; min-height: 48px; padding: 12px 16px; border: 1px solid var(--color-line); border-radius: var(--radius-control); background: var(--color-sidebar); color: var(--color-text); font-size: 14px; line-height: 20px; transition: border-color var(--duration-fast) var(--ease-out); }
+  .ui-field::placeholder { color: var(--color-text-muted); }
+  .ui-field:focus { border-color: var(--color-accent); }
+  .ui-label { display: block; margin-bottom: 8px; color: var(--color-text-secondary); font-size: 13px; line-height: 20px; font-weight: 500; }
+  .session-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
 }
 
-/* Optimize font rendering on mobile */
-@media (max-width: 768px) {
-  body {
-    font-size: 16px;
-    /* Prevents iOS zoom on input focus */
-    -webkit-text-size-adjust: 100%;
-  }
+/* RTL support */
+[dir="rtl"] { direction: rtl; }
+[dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select { text-align: right; }
+[dir="rtl"] a[href^="tel:"], [dir="rtl"] a[href^="mailto:"],
+[dir="rtl"] input[type="email"], [dir="rtl"] input[type="tel"], [dir="rtl"] input[type="url"] { direction: ltr; text-align: left; }
+[dir="rtl"] input[type="email"]::placeholder, [dir="rtl"] input[type="tel"]::placeholder { text-align: left; }
+[dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
+[dir="rtl"] .counter-container, [dir="rtl"] .logoloop { direction: ltr; }
 
-  input,
-  select,
-  textarea {
-    font-size: 16px;
-    /* Prevents iOS zoom */
-  }
-}
+/* Scrollbars remain visible unless a carousel explicitly opts out. */
+* { scrollbar-width: thin; scrollbar-color: #3a3c40 var(--color-page); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-page); }
+::-webkit-scrollbar-thumb { border: 2px solid var(--color-page); border-radius: 6px; background: #3a3c40; }
+::-webkit-scrollbar-thumb:hover { background: #62646a; }
+.scrollbar-hide, .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { display: none; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { border: 0; background: rgb(255 255 255 / 0.16); }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(255 255 255 / 0.26); }
 
-/* Fix viewport height on mobile (iOS Safari) */
-@supports (min-height: 100dvh) {
-  .min-h-screen {
-    min-height: 100dvh;
-  }
-}
+/* One-line breadcrumbs do not alter sizing elsewhere. */
+.dashboard-breadcrumbs { display: flex; flex-wrap: nowrap; align-items: center; max-width: 100%; overflow-x: auto; white-space: nowrap; line-height: 1.25; }
+.dashboard-breadcrumbs > * { flex-shrink: 0; }
+.dashboard-breadcrumbs :is(a, span, button) { display: inline-flex; align-items: center; line-height: 1.25; text-decoration: none; }
+.dashboard-breadcrumbs a:hover { color: var(--color-accent); }
 
-/* Improve touch scrolling */
-.overflow-auto,
-.overflow-y-auto,
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
-}
+/* The IDE owns its geometry; no global button minimums, transforms or section
+   padding may change a canvas/editor's coordinate system. */
+@media (max-width: 767px) { .problem-panel { width: 100% !important; } }
+@media (min-width: 768px) { .problem-panel { width: var(--panel-width) !important; } }
 
-/* Optimize images for mobile */
-img {
-  max-width: 100%;
-  height: auto;
-}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.animate-spin { animation: spin 1s linear infinite; }
+@keyframes skeleton-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.animate-shimmer { animation: skeleton-shimmer 2s var(--ease-out) infinite; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slideOutRight { from { transform: translateX(0); } to { transform: translateX(100%); } }
 
-/* Video optimization for mobile */
-video {
-  max-width: 100%;
-  height: auto;
-}
+.spline-canvas-scale, .spline-canvas-scale canvas { width: 100% !important; height: 100% !important; }
+.spline-canvas-scale canvas { object-fit: cover !important; }
+#spline-watermark, [id*="spline"] a[href*="spline.design"], canvas + div > a[href*="spline"],
+.grecaptcha-badge, iframe[src*="recaptcha"], iframe[title*="reCAPTCHA"] { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+.story-progress-segment { position: relative; }
+.story-progress-segment::after { content: ""; position: absolute; inset: -12px 0; }
 
-/* Prevent text selection on buttons */
-button {
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* Mobile-specific spacing adjustments */
-@media (max-width: 640px) {
-
-  /* Reduce padding on small screens */
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  /* Optimize hero section for mobile */
-  section[class*="h-[90vh]"] {
-    min-height: 600px;
-    height: 100vh;
-    height: -webkit-fill-available;
-  }
-
-  /* Ensure buttons are touch-friendly */
-  @layer base {
-    button,
-    a[class*="button"],
-    a[class*="btn"] {
-      padding: 0.75rem 1.5rem;
-      min-height: 48px;
-    }
-  }
-
-  /* Optimize form inputs for mobile */
-  input,
-  select,
-  textarea {
-    padding: 0.875rem 1rem;
-    font-size: 16px;
-    border-radius: 0.5rem;
-  }
-
-  /* Reduce heading sizes on very small screens */
-  h1 {
-    font-size: clamp(1.75rem, 5vw, 3rem);
-    line-height: 1.2;
-  }
-
-  h2 {
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-    line-height: 1.3;
-  }
-
-  h3 {
-    font-size: clamp(1.25rem, 3vw, 2rem);
-    line-height: 1.4;
-  }
-
-  /* Optimize spacing between sections */
-  section {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  /* Even more compact for very small sections */
-  section.compact-mobile {
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-
-  /* Better text readability */
-  p {
-    font-size: 0.9375rem;
-    line-height: 1.6;
-  }
-}
-
-/* Tablet optimizations */
-@media (min-width: 641px) and (max-width: 1024px) {
-
-  /* Optimize grid layouts for tablets */
-  .grid-cols-1.md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-
-  /* Adjust spacing for tablets */
-  section {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-  }
-
-  /* Better button sizing on tablets */
-  @layer base {
-    button,
-    a[class*="button"] {
-      padding: 0.875rem 1.75rem;
-    }
-  }
-
-  /* Optimize text sizes for tablets */
-  h1 {
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-  }
-
-  h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-  }
-
-  /* Better form inputs on tablets */
-  input,
-  select,
-  textarea {
-    padding: 1rem 1.25rem;
-  }
-}
-
-/* Landscape mobile optimizations */
-@media (max-width: 896px) and (orientation: landscape) {
-
-  /* Reduce vertical spacing in landscape */
-  section {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  /* Optimize hero for landscape */
-  section[class*="h-[90vh]"] {
-    height: auto;
-    min-height: 500px;
-    padding-top: 5rem;
-    padding-bottom: 2rem;
-  }
-
-  /* Adjust navbar for landscape */
-  header {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
-  /* Smaller text in landscape mode */
-  h1 {
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-  }
-
-  h2 {
-    font-size: clamp(1.25rem, 3vw, 2rem);
-  }
-}
-
-/* iPhone SE (375px) and smaller */
-@media (max-width: 375px) {
-
-  /* Further reduce spacing */
-  .px-4 {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-
-  /* Smaller text on tiny screens */
-  .text-3xl {
-    font-size: 1.5rem;
-    line-height: 1.3;
-  }
-
-  .text-4xl {
-    font-size: 1.875rem;
-    line-height: 1.2;
-  }
-
-  .text-5xl {
-    font-size: 2.25rem;
-    line-height: 1.1;
-  }
-
-  /* Compact buttons on small screens */
-  @layer base {
-    button,
-    a[class*="button"] {
-      padding: 0.625rem 1.25rem;
-      font-size: 0.875rem;
-    }
-  }
-
-  /* Reduce gaps in grids */
-  .grid {
-    gap: 0.75rem;
-  }
-}
-
-/* Large phones (iPhone Pro Max, etc.) */
-@media (min-width: 428px) and (max-width: 640px) {
-
-  /* Optimize for larger phones */
-  .text-3xl {
-    font-size: 2rem;
-    line-height: 1.3;
-  }
-
-  .text-4xl {
-    font-size: 2.5rem;
-    line-height: 1.2;
-  }
-
-  .text-5xl {
-    font-size: 3rem;
-    line-height: 1.1;
-  }
-
-  /* Better spacing on larger phones */
-  section {
-    padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
-  }
-}
-
-/* Fix for notched devices (iPhone X and newer) */
+@supports (min-height: 100dvh) { .min-h-screen { min-height: 100dvh; } }
 @supports (padding: max(0px)) {
-  body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  header {
-    padding-top: env(safe-area-inset-top);
-  }
+  .safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
+  .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .safe-left { padding-left: max(1rem, env(safe-area-inset-left)); }
+  .safe-right { padding-right: max(1rem, env(safe-area-inset-right)); }
+}
+/* Prevent iOS field zoom without resizing Monaco's hidden editing textarea. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(.mirror-ui *),
+  select:not(.mirror-ui *), textarea:not(.mirror-ui *) { font-size: 16px; }
 }
 
-/* Optimize animations for mobile (reduce motion if preferred) */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* Improve performance on mobile */
-@media (max-width: 768px) {
-
-  /* Reduce blur effects on mobile for better performance */
-  .backdrop-blur-xl {
-    backdrop-filter: blur(12px);
-  }
-
-  .backdrop-blur-sm {
-    backdrop-filter: blur(4px);
-  }
-
-  /* Optimize shadows */
-  .shadow-2xl {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  }
-}
-
-/* Fix sticky positioning on iOS */
-@supports (-webkit-overflow-scrolling: touch) {
-  .sticky {
-    position: -webkit-sticky;
-    position: sticky;
-  }
-}
-
-/* Optimize drawer for mobile */
-@media (max-width: 768px) {
-
-  /* Make drawer full width on mobile */
-  .fixed.right-0.w-80 {
-    width: 100% !important;
-    max-width: 320px;
-  }
-}
-
-/* Improve button press feedback on mobile */
-button:active,
-a:active {
-  transform: scale(0.98);
-  transition: transform 0.1s;
-}
-
-/* Optimize loading screen for mobile */
-@media (max-width: 640px) {
-  .loading-screen {
-    padding: 1rem;
-  }
-}
-
-/* Fix z-index stacking on mobile */
-@media (max-width: 768px) {
-  header {
-    z-index: 9999;
-  }
-
-  .fixed {
-    z-index: 9998;
-  }
-}
-
-/* Optimize counter component for mobile */
-@media (max-width: 640px) {
-  .counter-digit {
-    font-size: 1.5rem !important;
-  }
-}
-
-/* Improve form accessibility on mobile */
-@media (max-width: 640px) {
-  label {
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-  }
-
-  input:focus,
-  select:focus,
-  textarea:focus {
-    outline: 2px solid #E8C15A;
-    outline-offset: 2px;
-  }
-}
-
-/* Optimize video backgrounds for mobile */
-@media (max-width: 768px) {
-  video {
-    object-fit: cover;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Reduce video opacity on mobile for better text readability */
-  video[class*="opacity-"] {
-    opacity: 0.15 !important;
-  }
-}
-
-/* Fix floating button positioning on mobile */
-@media (max-width: 640px) {
-
-  .fixed.bottom-8.right-8,
-  .absolute.bottom-8.right-8 {
-    bottom: 1rem;
-    right: 1rem;
-  }
-
-  /* Ensure floating buttons don't overlap with content */
-  .animate-bounce {
-    animation-duration: 2s;
-  }
-}
-
-/* Ultra compact showcase section for mobile */
-@media (max-width: 768px) {
-
-  /* Extremely compact scroll height on mobile */
-  .showcase-section>div {
-    height: 60vh !important;
-  }
-
-  /* Tiny showcase images on mobile */
-  .showcase-section .h-\[18vh\] {
-    height: 16vh !important;
-    min-height: 140px !important;
-    max-height: 180px !important;
-  }
-
-  /* Minimal showcase padding on mobile */
-  .showcase-section .sticky {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
-    min-height: 65vh !important;
-  }
-
-  /* Tiny text in showcase on mobile */
-  .showcase-section h3 {
-    font-size: 0.7rem !important;
-    line-height: 1.2 !important;
-  }
-
-  .showcase-section p {
-    font-size: 0.6rem !important;
-    line-height: 1.25 !important;
-    margin-top: 0 !important;
-  }
-
-  /* Minimal gaps in showcase */
-  .showcase-section .space-y-1,
-  .showcase-section .space-y-1\.5,
-  .showcase-section .space-y-2,
-  .showcase-section .space-y-3,
-  .showcase-section .space-y-4 {
-    gap: 0.15rem !important;
-  }
-
-  /* Extremely compact container */
-  .showcase-section .max-w-6xl {
-    gap: 0.375rem !important;
-  }
-
-  /* Hide all descriptions on mobile */
-  .showcase-section p:not(.uppercase) {
-    display: none !important;
-  }
-
-  /* Smaller section title */
-  .showcase-section p.uppercase {
-    font-size: 0.55rem !important;
-    margin-bottom: 0.25rem !important;
-  }
-}
-
-
-
-/* Improve network section cards on mobile */
-@media (max-width: 640px) {
-
-  /* Stack network cards on mobile */
-  .grid-cols-2.md\:grid-cols-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-
-  /* Reduce padding in cards */
-  .rounded-xl.p-4 {
-    padding: 0.875rem;
-  }
-}
-
-/* Optimize logo section for mobile */
-@media (max-width: 640px) {
-  .logoloop {
-    height: 32px !important;
-    min-height: 32px !important;
-  }
-
-  .logoloop img {
-    height: 20px !important;
-    max-height: 20px !important;
-  }
-
-  .logoloop__list {
-    gap: 2rem !important;
-  }
-
-  .logoloop__item {
-    flex-shrink: 0;
-  }
-
-  /* Reduce logo section padding on mobile */
-  section:has(.logoloop) {
-    padding-top: 1.5rem !important;
-    padding-bottom: 1.5rem !important;
-  }
-}
-
-/* Fix modal/drawer backdrop on mobile */
-@media (max-width: 768px) {
-  .fixed.inset-0.bg-black\/60 {
-    backdrop-filter: blur(4px);
-  }
-}
-
-/* Improve touch targets for navigation */
-@media (max-width: 768px) {
-  nav a {
-    padding: 0.75rem 0;
-    display: block;
-  }
-}
-
-/* Optimize sticker peel for mobile */
-@media (max-width: 640px) {
-  .sticker-peel {
-    width: 60px !important;
-    height: 60px !important;
-  }
-}
-
-/* Fix application form on mobile */
-@media (max-width: 640px) {
-  form .grid-cols-1.sm\:grid-cols-2 {
-    grid-template-columns: 1fr;
-  }
-
-  form button[type="submit"] {
-    padding: 1rem;
-    font-size: 1rem;
-  }
-
-  /* Brighten form page on mobile */
-  .min-h-screen.bg-black input,
-  .min-h-screen.bg-black select,
-  .min-h-screen.bg-black textarea {
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
-    color: white !important;
-  }
-
-  .min-h-screen.bg-black input::placeholder,
-  .min-h-screen.bg-black textarea::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-  }
-
-  .min-h-screen.bg-black label {
-    color: white !important;
-  }
-
-  .min-h-screen.bg-black h1,
-  .min-h-screen.bg-black p {
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  }
-
-  /* Form styling is handled by parent card - no extra styling needed */
-}
-
-/* Improve error message visibility on mobile */
-@media (max-width: 640px) {
-  .text-red-400 {
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-  }
-}
-
-/* Optimize contact section CTA on mobile */
-@media (max-width: 640px) {
-  #contact h2 {
-    font-size: 1.875rem;
-    line-height: 1.2;
-  }
-
-  #contact a {
-    padding: 1rem 2rem;
-    font-size: 1rem;
-  }
-}
-
-/* Performance: Reduce animations on low-end devices */
-@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
-  .transition-all {
-    transition-duration: 200ms;
-  }
-
-  .duration-700 {
-    transition-duration: 400ms;
-  }
-}
-
-/* Fix horizontal overflow issues */
-.overflow-hidden {
-  overflow: hidden;
-}
-
-/* Ensure all sections are mobile-friendly without clipping visible overlays or cards */
-section:not(.overflow-visible):not(.ui-compact section) {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-.ui-compact section,
-section.overflow-visible {
-  overflow: visible !important;
-}
-
-/* Improve readability on mobile */
-@media (max-width: 640px) {
-  p {
-    line-height: 1.6;
-  }
-
-  .leading-relaxed {
-    line-height: 1.75;
-  }
-}
-
-/* ========================================
-   ANDROID-SPECIFIC OPTIMIZATIONS
-   ======================================== */
-
-/* Fix Android Chrome address bar issues */
-@supports (-webkit-appearance: none) {
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: calc(100vh - env(safe-area-inset-bottom));
-  }
-}
-
-/* Android font rendering */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-  body {
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-  }
-}
-
-/* Fix Android input zoom */
-@media (max-width: 768px) {
-
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="number"],
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-
-/* Android Chrome pull-to-refresh fix */
-body {
-  overscroll-behavior-y: contain;
-}
-
-/* Better touch feedback on Android */
-@media (hover: none) and (pointer: coarse) {
-
-  button:active,
-  a:active {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* ========================================
-   iOS-SPECIFIC OPTIMIZATIONS
-   ======================================== */
-
-/* Fix iOS Safari bottom bar */
-@supports (-webkit-touch-callout: none) {
-
-  .h-screen,
-  .min-h-screen {
-    height: -webkit-fill-available;
-    min-height: -webkit-fill-available;
-  }
-}
-
-/* iOS momentum scrolling */
-.overflow-auto,
-.overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Fix iOS input shadows */
-input,
-textarea,
-select {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-/* iOS safe area for notched devices */
-@supports (padding: max(0px)) {
-  .safe-top {
-    padding-top: max(1rem, env(safe-area-inset-top));
-  }
-
-  .safe-bottom {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  .safe-left {
-    padding-left: max(1rem, env(safe-area-inset-left));
-  }
-
-  .safe-right {
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
-}
-
-/* ========================================
-   TABLET-SPECIFIC OPTIMIZATIONS
-   ======================================== */
-
-/* iPad and Android tablets in portrait */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
-
-  /* Optimize layout for tablet portrait */
-  .container {
-    max-width: 90%;
-  }
-
-  /* Better grid spacing */
-  .grid {
-    gap: 2rem;
-  }
-
-  /* Larger touch targets */
-  @layer base {
-    button,
-    a[class*="button"] {
-      min-height: 52px;
-      padding: 1rem 2rem;
-    }
-  }
-}
-
-/* iPad and Android tablets in landscape */
-@media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
-
-  /* Optimize for tablet landscape */
-  section {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-  }
-
-  /* Better use of horizontal space */
-  .grid-cols-1.md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .grid-cols-1.md\:grid-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-/* ========================================
-   CROSS-DEVICE TOUCH OPTIMIZATIONS
-   ======================================== */
-
-/* Improve tap targets across all touch devices */
-@media (hover: none) and (pointer: coarse) {
-
-  /* Minimum tap target size (base layer: utilities override it) */
-  @layer base {
-    a,
-    button,
-    input,
-    select,
-    textarea,
-    [role="button"],
-    [onclick] {
-      min-height: 44px;
-      min-width: 44px;
-    }
-  }
-
-  /* Better spacing for touch */
-  nav a {
-    padding: 1rem 0.5rem;
-  }
-
-  /* Larger form controls */
-  input,
-  select,
-  textarea {
-    min-height: 48px;
-    padding: 1rem;
-  }
-
-  /* Better button spacing */
-  @layer base {
-    button:not(.ui-compact *) {
-      padding: 0.875rem 1.75rem;
-    }
-  }
-}
-
-/* Prevent text selection on interactive elements */
-button,
-a,
-[role="button"] {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-}
-
-/* Smooth scrolling for all devices */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
-/* ========================================
-   PERFORMANCE OPTIMIZATIONS FOR MOBILE
-   ======================================== */
-
-/* Hardware acceleration for animations */
-.transition,
-.transform,
-[class*="animate-"] {
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Optimize images for mobile */
-@media (max-width: 768px) {
-  img {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
-}
-
-/* Reduce motion for better performance */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ========================================
-   ACCESSIBILITY IMPROVEMENTS
-   ======================================== */
-
-/* Better focus indicators for keyboard navigation */
-@media (hover: hover) and (pointer: fine) {
-  *:focus-visible {
-    outline: 2px solid #E8C15A;
-    outline-offset: 2px;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-
-  button,
-  a {
-    border: 2px solid currentColor;
-  }
-}
-
-/* Dark mode optimizations (already dark, but for consistency) */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #0B0B0C;
-    color: #ffffff;
-  }
-}
-
-/* Hide reCAPTCHA badge - completely invisible */
-.grecaptcha-badge {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  display: none !important;
-  position: absolute !important;
-  left: -9999px !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* Additional selectors to catch all reCAPTCHA badge variations */
-iframe[src*="recaptcha"],
-iframe[title*="reCAPTCHA"],
-.grecaptcha-badge-holder {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* ========================================
-   APPLICATION FORM MOBILE OPTIMIZATIONS
-   ======================================== */
-
-/* Ensure form is mobile-friendly */
-@media (max-width: 640px) {
-
-  /* Compact form on mobile */
-  .space-y-5>*+* {
-    margin-top: 1rem !important;
-  }
-
-  /* Better input sizing on mobile */
-  input[type="text"],
-  input[type="tel"],
-  select {
-    font-size: 16px !important;
-    /* Prevents iOS zoom */
-    min-height: 48px;
-  }
-
-  /* Compact labels on mobile */
-  label {
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-  }
-
-  /* Better button sizing on mobile */
-  @layer base {
-    button {
-      min-height: 48px;
-      font-size: 0.875rem;
-    }
-  }
-
-  /* Compact progress bar on mobile */
-  .rounded-2xl {
-    border-radius: 1rem;
-  }
-
-  /* Better error message visibility */
-  .text-red-400 {
-    font-size: 0.8125rem;
-  }
-
-  /* Compact helper text */
-  .text-xs {
-    font-size: 0.75rem;
-  }
-}
-
-/* Extra small screens (iPhone SE, etc.) */
-@media (max-width: 375px) {
-
-  /* Even more compact on tiny screens */
-  .px-4 {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-
-  /* Smaller step circles */
-  .w-10 {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
-  /* Compact text */
-  .text-xl {
-    font-size: 1.125rem;
-  }
-
-  .text-2xl {
-    font-size: 1.25rem;
-  }
-}
-
-/* Tablet optimizations */
-@media (min-width: 641px) and (max-width: 1024px) {
-
-  /* Better spacing on tablets */
-  .space-y-5>*+* {
-    margin-top: 1.25rem !important;
-  }
-
-  /* Larger touch targets on tablets */
-  @layer base {
-    button {
-      min-height: 52px;
-    }
-  }
-
-  input[type="text"],
-  input[type="tel"],
-  select {
-    min-height: 52px;
-  }
-}
-
-/* Landscape mobile optimizations */
-@media (max-width: 896px) and (orientation: landscape) {
-
-  /* Reduce vertical spacing in landscape */
-  .py-8 {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .mb-8 {
-    margin-bottom: 1rem;
-  }
-
-  /* Compact form in landscape */
-  .space-y-5>*+* {
-    margin-top: 0.75rem !important;
-  }
-}
-
-/* ========================================
-   PROBLEM MIRROR UI OVERRIDES
-   Reset aggressive global touch-target sizing
-   within the IDE-like problem page
-   ======================================== */
-/* Reset aggressive global sizing rules inside the mirror/problem IDE */
+/* Tool surfaces own their geometry. These scoped exceptions keep the shared
+   mobile touch rules and landing-page section defaults from resizing editors,
+   canvases, or compact dashboard controls. */
 .mirror-ui input,
 .mirror-ui select,
 .mirror-ui textarea {
@@ -1331,112 +154,67 @@ iframe[title*="reCAPTCHA"],
   min-width: 0 !important;
 }
 
-/* The global touch-target rules (44px minimums, tablet button padding) are
-   unlayered, so they beat Tailwind utilities and inflate the IDE's toolbar,
-   tabs and icon buttons. revert-layer hands control back to the component's
-   own Tailwind classes. Real touch devices keep their rule below. */
-/* @monaco-editor/react wraps the editor in a <section>, and global landing-
-   page rules style every section: 4rem vertical padding on 768-1366px screens
-   (an empty band above line 1) and max-width: 100vw with overflow-x hidden.
-   vw ignores the page's CSS zoom, so the editor was clipped short on the
-   right. Hand these back to the component inside the IDE. */
 .mirror-ui section {
-  padding-top: revert-layer;
-  padding-bottom: revert-layer;
+  padding-block: revert-layer;
   max-width: revert-layer;
   overflow-x: revert-layer;
 }
 
-@media (hover: hover), (pointer: fine) {
-  .mirror-ui :is(button, a, [role="button"]) {
-    min-height: revert-layer;
-    min-width: revert-layer;
-    padding: revert-layer;
-  }
+.mirror-ui :is(button, a, [role="button"]),
+.mentor-ui :is(button, a, [role="button"]) {
+  min-height: revert-layer;
+  min-width: revert-layer;
+  padding: revert-layer;
+}
+
+.mirror-ui :is(button, a[class*="button"], a[class*="btn"], input, select, textarea),
+.mentor-ui :is(button, a[class*="button"], a[class*="btn"], input, select, textarea) {
+  padding: revert-layer;
+  min-height: revert-layer;
+  min-width: revert-layer;
 }
 
 @media (max-width: 640px) {
-
-  .mirror-ui input,
-  .mirror-ui select,
-  .mirror-ui textarea {
+  .mirror-ui :is(input, select, textarea) {
     padding: initial;
     min-height: 0 !important;
     font-size: 14px !important;
     border-radius: initial;
   }
-
-  .mirror-ui label {
-    font-size: inherit;
-    margin-bottom: initial;
-  }
-
-  .mirror-ui h1,
-  .mirror-ui h2,
-  .mirror-ui h3 {
-    font-size: inherit;
-    line-height: inherit;
-  }
-
-  .mirror-ui p {
-    font-size: inherit;
-    line-height: inherit;
-  }
 }
 
 @media (hover: none) and (pointer: coarse) {
-
-  .mirror-ui input,
-  .mirror-ui select,
-  .mirror-ui textarea {
+  .mirror-ui :is(input, select, textarea) {
     min-height: 0 !important;
     min-width: 0 !important;
   }
 }
 
-/* Problem left panel: full width on mobile, custom width on desktop */
-@media (max-width: 767px) {
-  .problem-panel {
-    width: 100% !important;
-  }
+.ui-compact :is(button, a, input, select, textarea, [role="button"], [onclick]) {
+  min-height: 0;
+  min-width: 0;
 }
 
-@media (min-width: 768px) {
-  .problem-panel {
-    width: var(--panel-width) !important;
-  }
+.ui-compact section {
+  padding-block: 0;
+  overflow: visible !important;
 }
 
-/* ========================================
-   CUSTOM SCROLLBAR
-   ======================================== */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+.ui-compact :is(input, select, textarea):focus-visible {
+  outline: 2px solid rgb(232 193 90 / 0.6);
+  outline-offset: 2px;
 }
 
-::-webkit-scrollbar-track {
-  background: #050505;
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
+.ui-compact :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid rgb(232 193 90 / 0.6);
+  outline-offset: 2px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 5px;
-  border: 2px solid #050505;
-  transition: background-color 0.3s;
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: #E8C15A;
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #333 #050505;
-}
-@import "./excalidraw.css";
 
 /* Bundled editor fonts (SIL OFL) so the editor font setting works on any device. */
 @font-face {
@@ -1456,53 +234,6 @@ iframe[title*="reCAPTCHA"],
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
-/* The problem page (IDE) sizes its own controls. The generic mobile rules above
-   (button padding 14px 28px, min-height 48px, input padding) are unlayered, so they
-   beat Tailwind utilities and inflated its icon buttons until the header ran off the
-   screen; they also padded Monaco's hidden input. Hand those back to the component
-   classes inside .mirror-ui (font-size stays: 16px keeps iOS from zooming inputs). */
-.mirror-ui button,
-.mirror-ui a[class*="button"],
-.mirror-ui a[class*="btn"],
-.mirror-ui input,
-.mirror-ui select,
-.mirror-ui textarea,
-.mentor-ui button,
-.mentor-ui a[class*="button"],
-.mentor-ui a[class*="btn"],
-.mentor-ui input,
-.mentor-ui select,
-.mentor-ui textarea {
-  padding: revert-layer;
-  min-height: revert-layer;
-  min-width: revert-layer;
-}
-
-
-/* App screens (dashboard tools) size their own controls. The site-wide rules
-   above (44px tap targets, section padding, focus outlines) are for the
-   marketing pages and would blow up small buttons and inputs here. */
-.ui-compact :is(button, a, input, select, textarea, [role="button"], [onclick]) {
-  min-height: 0;
-  min-width: 0;
-}
-
-.ui-compact section {
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: visible !important;
-}
-
-.ui-compact :is(input, select, textarea):focus,
-.ui-compact :is(input, select, textarea):focus-visible {
-  outline: none;
-}
-
-.ui-compact :is(button, a, [role="button"]):focus-visible {
-  outline: 2px solid rgb(232 193 90 / 0.6);
-  outline-offset: 2px;
-}
-
 /* Achievement unlock toast */
 @keyframes achievement-toast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: none; } }
 @keyframes achievement-toast-out { to { opacity: 0; transform: translateY(12px) scale(0.97); } }
@@ -1520,72 +251,4 @@ iframe[title*="reCAPTCHA"],
 .achievement-toast-timer { animation-name: achievement-toast-timer; animation-timing-function: linear; animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) {
   .achievement-toast-in, .achievement-badge-pop, .achievement-badge-glow { animation: none; }
-}
-
-/* Icon-only buttons (a lone SVG, e.g. the X on dialogs) hug their icon and keep it centred,
-   instead of inheriting the 44-52px marketing tap-target minimums. Base layer: Tailwind
-   utilities such as h-10 w-10 or min-w-* still win. */
-@layer base {
-  button:has(> svg:only-child) {
-    min-width: 0;
-    min-height: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-/* Mobile rules.
-   1. iOS Safari zooms the page into any field under 16px and leaves it zoomed, so on phones every
-      text field is 16px whatever its desktop size.
-   2. The thin progress segments on the apply stories keep their look but get a taller tap area. */
-@media (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-.story-progress-segment {
-  position: relative;
-}
-.story-progress-segment::after {
-  content: "";
-  position: absolute;
-  inset: -12px 0;
-}
-
-/* Phone legibility. Captions of 9 to 11px and very dim greys (text-white/10 to /40, #444 to #666)
-   are unreadable outdoors and fail contrast, so phones get 12px minimum text and brighter greys.
-   Hover colours are untouched. */
-@media (max-width: 767px) {
-  .text-\[9px\],
-  .text-\[10px\],
-  .text-\[11px\] {
-    font-size: 12px !important;
-  }
-  .text-white\/10,
-  .text-white\/20,
-  .text-white\/25,
-  .text-white\/30 {
-    color: rgb(255 255 255 / 0.5) !important;
-  }
-  .text-white\/40 {
-    color: rgb(255 255 255 / 0.62) !important;
-  }
-  .text-\[\#666\],
-  .text-\[\#555\],
-  .text-\[\#444\] {
-    color: #8e8e93 !important;
-  }
-}
-
-/* Press feedback on touch screens: a quick dim, never a size change, so nothing jumps. */
-@media (hover: none) and (pointer: coarse) {
-  a:active,
-  button:not(:disabled):active,
-  [role="button"]:active {
-    opacity: 0.78;
-    transition: opacity 80ms ease-out;
-  }
 }

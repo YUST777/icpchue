@@ -11,12 +11,12 @@ export default function Footer() {
     const t = translations[language].footer;
 
     return (
-        <footer className="border-t border-white/10 bg-black pt-16 pb-8">
-            <div className="mx-auto max-w-7xl px-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <footer className="border-t border-white/10 bg-[#0b0b0c] pb-8 pt-14">
+            <div className="mx-auto max-w-7xl px-5 sm:px-8">
+                <div className="mb-12 grid grid-cols-2 gap-8 md:grid-cols-4">
                     <div className="col-span-2 md:col-span-1 text-center md:text-left">
-                        <h3 className="text-white font-bold text-lg mb-4">ICPC HUE</h3>
-                        <p className="text-white/60 text-sm leading-relaxed mb-6">
+                        <h3 className="mb-4 text-lg font-medium text-white">ICPC HUE</h3>
+                        <p className="mb-6 text-sm leading-6 text-white/55">
                             The premier competitive programming community at Horus University.
                         </p>
                         {/* Social Links */}
@@ -28,7 +28,7 @@ export default function Footer() {
                     </div>
 
                     <div className="text-center md:text-left">
-                        <h4 className="text-white font-bold mb-4">Platform</h4>
+                        <h4 className="mb-4 text-sm font-medium text-white">Platform</h4>
                         <ul className="space-y-2 text-sm text-white/60">
                             <li><Link href="/" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Home</Link></li>
                             <li><Link href="/sessions" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Sessions</Link></li>
@@ -37,7 +37,7 @@ export default function Footer() {
                     </div>
 
                     <div className="text-center md:text-left">
-                        <h4 className="text-white font-bold mb-4">Resources</h4>
+                        <h4 className="mb-4 text-sm font-medium text-white">Resources</h4>
                         <ul className="space-y-2 text-sm text-white/60">
                             <li><Link href="/devlog" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Development Log</Link></li>
                             <li><Link href="/apply" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Apply Now</Link></li>
@@ -46,7 +46,7 @@ export default function Footer() {
                     </div>
 
                     <div className="text-center md:text-left">
-                        <h4 className="text-white font-bold mb-4">Legal</h4>
+                        <h4 className="mb-4 text-sm font-medium text-white">Legal</h4>
                         <ul className="space-y-2 text-sm text-white/60">
                             <li><Link href="/security.txt" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Security</Link></li>
                             <li><Link href="/privacy" className="inline-block py-2.5 hover:text-[#E8C15A] transition-colors">Privacy Policy</Link></li>

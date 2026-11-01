@@ -38,7 +38,7 @@ export default function Showcase() {
         };
 
         return (
-            <section className="relative bg-[#050505] text-white py-8 sm:py-12 px-0">
+            <section className="relative bg-[#050505] px-0 py-8 text-white sm:py-12">
                 <div className="mx-auto max-w-[100vw] overflow-hidden">
                     <p className="text-[10px] xs:text-xs uppercase tracking-[0.3em] text-white/40 mb-6 text-center px-4">
                         {t.sectionTitle}
@@ -51,7 +51,7 @@ export default function Showcase() {
                         {slides.map((slide) => (
                             <div key={slide.tag} className="relative flex-shrink-0 w-[85vw] snap-center first:pl-2 last:pr-6">
                                 <div className="space-y-3">
-                                    <div className="relative inline-block w-full rounded-xl bg-white/5 border border-white/10 overflow-hidden shadow-lg">
+                                    <div className="relative inline-block w-full overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
                                         <Image
                                             src={slide.image}
                                             alt={slide.tag}
@@ -59,14 +59,12 @@ export default function Showcase() {
                                             height={500}
                                             className="w-full h-auto object-contain block"
                                         />
-                                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                                            <p className="text-[10px] tracking-[0.2em] text-[#E8C15A] font-bold uppercase mb-1">
-                                                {slide.tag}
-                                            </p>
-                                            <h3 className="text-lg font-bold text-white leading-tight">{slide.title}</h3>
-                                        </div>
                                     </div>
-                                    <p className="px-1 text-xs text-white/70 leading-relaxed line-clamp-3">{slide.description}</p>
+                                    <div className="space-y-1 px-1">
+                                        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#E8C15A]">{slide.tag}</p>
+                                        <h3 className="text-lg font-medium leading-tight text-white">{slide.title}</h3>
+                                        <p className="line-clamp-3 text-xs leading-relaxed text-white/65">{slide.description}</p>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -75,7 +73,7 @@ export default function Showcase() {
                         {slides.map((_, idx) => (
                             <div
                                 key={idx}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeIndex ? 'w-6 bg-[#E8C15A]' : 'w-1.5 bg-white/20'
+                                className={`h-1.5 rounded-full transition-colors duration-200 ${idx === activeIndex ? 'w-6 bg-[#E8C15A]' : 'w-1.5 bg-white/20'
                                     }`}
                             />
                         ))}
@@ -87,9 +85,9 @@ export default function Showcase() {
 
     // Desktop View
     return (
-        <section className="relative bg-[#050505] text-white py-16 px-8">
+        <section className="relative bg-[#050505] px-8 py-16 text-white">
             <div className="max-w-6xl mx-auto grid grid-cols-2 gap-12 items-center min-h-[60vh]">
-                <div className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center">
+                <div className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
                     <Image
                         src={slides[activeIndex].image}
                         alt="Showcase"
@@ -102,15 +100,15 @@ export default function Showcase() {
                     <p className="text-xs uppercase tracking-[0.4em] text-white/40">{t.sectionTitle}</p>
                     <div className="space-y-4">
                         {slides.map((slide, index) => (
-                            <button key={index} onClick={() => setActiveIndex(index)} className="text-left w-full group">
+                            <button key={index} onClick={() => setActiveIndex(index)} className="group w-full text-left">
                                 <div
-                                    className={`p-4 rounded-xl transition-all ${index === activeIndex ? 'bg-white/10' : 'hover:bg-white/5'
+                                    className={`rounded-xl border p-4 transition-colors ${index === activeIndex ? 'border-white/10 bg-white/[0.06]' : 'border-transparent hover:border-white/10 hover:bg-white/[0.03]'
                                         }`}
                                 >
-                                    <h3 className={`text-xl font-bold ${index === activeIndex ? 'text-white' : 'text-white/40'}`}>
+                                    <h3 className={`text-xl font-medium ${index === activeIndex ? 'text-white' : 'text-white/45'}`}>
                                         {slide.title}
                                     </h3>
-                                    {index === activeIndex && <p className="mt-2 text-sm text-white/70">{slide.description}</p>}
+                                    {index === activeIndex && <p className="mt-2 text-sm leading-6 text-white/65">{slide.description}</p>}
                                 </div>
                             </button>
                         ))}

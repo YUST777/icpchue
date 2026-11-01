@@ -7,6 +7,54 @@ import { Copy, Check, Settings, User, Shield, Loader2, Trophy, Code, Globe } fro
 import { Skeleton } from '@/components/ui/Skeleton';
 import BackfillCard from '@/components/settings/BackfillCard';
 
+type PrivacyToggleProps = {
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    label: string;
+    description: string;
+    field: string;
+    value: boolean;
+    savingPrivacy: string | null;
+    loadingPrivacy: boolean;
+    onChange: (field: string, value: boolean) => void;
+};
+
+function PrivacyToggle({
+    icon: Icon,
+    label,
+    description,
+    field,
+    value,
+    savingPrivacy,
+    loadingPrivacy,
+    onChange,
+}: PrivacyToggleProps) {
+    return (
+        <div className="flex items-center justify-between gap-4 py-3.5">
+            <div className="flex items-start gap-3">
+                <Icon size={18} className="mt-0.5 shrink-0 text-[#E8C15A]" aria-hidden="true" />
+                <div>
+                    <p className="text-sm leading-5 text-[var(--color-text)]">{label}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-[var(--color-text-muted)]">{description}</p>
+                </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+                {savingPrivacy === field && <Loader2 size={16} className="animate-spin text-[#E8C15A]" aria-label="Saving" />}
+                <label className="relative inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center">
+                    <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(e) => onChange(field, e.target.checked)}
+                        disabled={savingPrivacy !== null || loadingPrivacy}
+                        aria-label={label}
+                        className="sr-only peer"
+                    />
+                    <span className="relative block h-6 w-11 rounded-full border border-white/10 bg-white/[0.12] transition-colors peer-checked:border-[#E8C15A]/50 peer-checked:bg-[#E8C15A] peer-focus-visible:ring-2 peer-focus-visible:ring-[#E8C15A]/60 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--color-surface)] peer-disabled:opacity-50 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:content-[''] peer-checked:after:translate-x-5" />
+                </label>
+            </div>
+        </div>
+    );
+}
+
 export default function SettingsPage() {
     const { user, logout } = useAuth();
     const router = useRouter();
@@ -91,64 +139,32 @@ export default function SettingsPage() {
         }
     };
 
-    const PrivacyToggle = ({
-        icon: Icon,
-        label,
-        description,
-        field,
-        value
-    }: {
-        icon: React.ComponentType<{ size?: number; className?: string }>;
-        label: string;
-        description: string;
-        field: string;
-        value: boolean;
-    }) => (
-        <div className="flex items-center justify-between py-3">
-            <div className="flex items-start gap-3">
-                <Icon size={18} className="text-[#E8C15A] mt-0.5" />
-                <div>
-                    <p className="text-sm text-[#F2F2F2]">{label}</p>
-                    <p className="text-xs text-[#666]">{description}</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-                {savingPrivacy === field && <Loader2 size={16} className="animate-spin text-[#E8C15A]" />}
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(e) => handlePrivacyChange(field, e.target.checked)}
-                        disabled={savingPrivacy !== null || loadingPrivacy}
-                        className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E8C15A] peer-disabled:opacity-50"></div>
-                </label>
-            </div>
-        </div>
-    );
-
     return (
         <>
 
-            <div className="space-y-6 animate-fade-in w-full">
-                <div className="flex items-center gap-3"><Settings className="text-[#E8C15A]" size={24} /><h2 className="text-xl md:text-2xl font-bold text-[#F2F2F2]">Settings</h2></div>
-
-                {/* Profile Sharing */}
-                <div className="bg-[#121212] rounded-xl border border-white/5 p-5 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-4 flex items-center gap-2"><User size={20} className="text-[#E8C15A]" />Profile Sharing</h3>
-                    <p className="text-sm text-[#A0A0A0] mb-4">Share your public profile with others.</p>
-                    <div className="flex items-center gap-2">
-                        <input type="text" readOnly value={profileUrl} className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-[#A0A0A0] truncate" />
-                        <button onClick={handleCopy} className="px-4 py-2.5 bg-[#E8C15A] text-black font-bold rounded-lg hover:bg-[#D4AF37] transition-colors flex items-center gap-2">
-                            {copied ? <><Check size={16} />Copied</> : <><Copy size={16} />Copy</>}
-                        </button>
+            <div className="w-full space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
+                        <Settings className="text-[#E8C15A]" size={19} aria-hidden="true" />
                     </div>
+                    <h2 className="text-2xl font-medium leading-tight text-[var(--color-text)]">Settings</h2>
                 </div>
 
+                {/* Profile Sharing */}
+                <section className="ui-card p-4 sm:p-5">
+                    <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-[var(--color-text)]"><User size={19} className="text-[#E8C15A]" aria-hidden="true" />Profile sharing</h3>
+                    <p className="mb-4 text-sm leading-6 text-[var(--color-text-secondary)]">Share your public profile with others.</p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input type="text" readOnly value={profileUrl} aria-label="Public profile URL" className="ui-field min-w-0 flex-1 truncate" />
+                        <button onClick={handleCopy} className="ui-button-primary w-full shrink-0 sm:w-auto">
+                            {copied ? <><Check size={16} aria-hidden="true" />Copied</> : <><Copy size={16} aria-hidden="true" />Copy</>}
+                        </button>
+                    </div>
+                </section>
+
                 {/* Privacy Settings - 3 Toggles */}
-                <div className="bg-[#121212] rounded-xl border border-white/5 p-5 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F2F2F2] mb-4 flex items-center gap-2"><Shield size={20} className="text-[#E8C15A]" />Privacy</h3>
+                <section className="ui-card p-4 sm:p-5">
+                    <h3 className="mb-3 flex items-center gap-2 text-lg font-medium text-[var(--color-text)]"><Shield size={19} className="text-[#E8C15A]" aria-hidden="true" />Privacy</h3>
 
                     {loadingPrivacy ? (
                         <div className="space-y-4 py-2">
@@ -163,13 +179,16 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="divide-y divide-white/5">
+                        <div className="divide-y divide-white/[0.06]">
                             <PrivacyToggle
                                 icon={Trophy}
                                 label="Codeforces Leaderboard"
                                 description="Show on Codeforces rating leaderboard"
                                 field="showOnCfLeaderboard"
                                 value={showOnCfLeaderboard}
+                                savingPrivacy={savingPrivacy}
+                                loadingPrivacy={loadingPrivacy}
+                                onChange={handlePrivacyChange}
                             />
                             <PrivacyToggle
                                 icon={Code}
@@ -177,6 +196,9 @@ export default function SettingsPage() {
                                 description="Show on training sheets leaderboard"
                                 field="showOnSheetsLeaderboard"
                                 value={showOnSheetsLeaderboard}
+                                savingPrivacy={savingPrivacy}
+                                loadingPrivacy={loadingPrivacy}
+                                onChange={handlePrivacyChange}
                             />
                             <PrivacyToggle
                                 icon={Globe}
@@ -184,23 +206,26 @@ export default function SettingsPage() {
                                 description="Allow others to view your profile page"
                                 field="showPublicProfile"
                                 value={showPublicProfile}
+                                savingPrivacy={savingPrivacy}
+                                loadingPrivacy={loadingPrivacy}
+                                onChange={handlePrivacyChange}
                             />
                         </div>
                     )}
 
 
-                </div>
+                </section>
 
                 {/* Backfill from Codeforces */}
                 <BackfillCard />
 
                 {/* Logout Button */}
-                <div className="bg-[#121212] rounded-xl border border-white/5 p-5 md:p-6">
-                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 font-bold rounded-lg transition-colors">
+                <section className="ui-card p-4 sm:p-5">
+                    <button onClick={handleLogout} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-400/25 bg-red-400/[0.08] px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-400/[0.14]">
                         Logout
                     </button>
-                </div>
-            </div><style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }`}</style>
+                </section>
+            </div>
         </>
     );
 }

@@ -17,19 +17,19 @@ export default function Services() {
     ];
 
     return (
-        <section id="services" className="relative py-12 sm:py-20 bg-gradient-to-b from-black to-[#0b0b0b] overflow-hidden">
-            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <div className="mb-6 sm:mb-12 text-center md:text-left">
-                    <p className="text-xs uppercase tracking-[0.4em] text-white/40 mb-2">{t.sectionTag}</p>
-                    <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white">{t.title}</h2>
-                    <p className="mt-3 text-sm sm:text-lg text-white/70 max-w-2xl">{t.description}</p>
+        <section id="services" className="relative overflow-hidden bg-[#0b0b0c] py-16 sm:py-24">
+            <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
+                <div className="mb-10 max-w-2xl md:mb-14">
+                    <p className="mb-3 text-xs font-medium tracking-wide text-white/50">{t.sectionTag}</p>
+                    <h2 className="text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">{t.title}</h2>
+                    <p className="mt-4 text-base leading-7 text-white/60 sm:text-lg">{t.description}</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     {t.solutions.map((sol, i) => (
                         <Link
                             href={sol.link || '#'}
                             key={i}
-                            className="group relative rounded-2xl border border-white/10 bg-[#050505] overflow-hidden hover:border-white/20 hover:-translate-y-1 transition-all block"
+                            className="group relative block overflow-hidden rounded-[14px] border border-white/10 bg-[#16181b] transition-colors hover:border-white/20"
                         >
                             <div className="h-48 sm:h-64 overflow-hidden relative">
                                 <Image
@@ -39,12 +39,12 @@ export default function Services() {
                                     sizes="(max-width: 768px) 100vw, 50vw"
                                     className="object-cover group-hover:scale-110 transition-transform duration-700"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                             </div>
-                            <div className="p-6">
-                                <h3 className="text-xl font-bold text-white mb-2">{sol.title}</h3>
-                                <p className="text-sm text-white/70 mb-4">{sol.desc}</p>
-                                <span className="inline-flex items-center gap-2 text-sm text-[#E8C15A] group-hover:text-white transition-colors">
+                            <div className="p-5 sm:p-6">
+                                <h3 className="mb-2 text-lg font-medium text-white sm:text-xl">{sol.title}</h3>
+                                <p className="mb-5 text-sm leading-6 text-white/60">{sol.desc}</p>
+                                <span className="inline-flex items-center gap-2 text-sm font-medium text-[#E8C15A] transition-colors group-hover:text-[#F0CE76]">
                                     {t.learnMore} <ArrowRight className="h-4 w-4" />
                                 </span>
                             </div>

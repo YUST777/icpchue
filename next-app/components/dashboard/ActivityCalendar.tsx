@@ -6,28 +6,27 @@ import type { CalendarDay } from '@/hooks/useDashboardStats';
 
 interface ActivityCalendarProps {
     weeks: CalendarDay[][];
-    totalSubmissions: number;
     todayStr: string;
 }
 
-export function ActivityCalendar({ weeks, totalSubmissions, todayStr }: ActivityCalendarProps) {
+export function ActivityCalendar({ weeks, todayStr }: ActivityCalendarProps) {
     const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
     const submissionsInView = weeks.reduce((total, week) => total + week.reduce((weekTotal, day) => weekTotal + day.count, 0), 0);
 
     return (
-        <div className="bg-[#0d0d0d] rounded-2xl border border-white/5 p-4 md:p-5 w-full max-w-full">
+        <div className="ui-card w-full max-w-full p-4 md:p-5">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 md:mb-4 gap-2 sm:gap-0 relative z-10">
-                <span className="text-sm font-medium text-white">
+                <span className="text-sm font-medium text-[var(--color-text)]">
                     {submissionsInView} submissions in the last 3 months
                 </span>
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-white/40">
+                <div className="hidden items-center gap-2 text-xs text-[var(--color-text-secondary)] sm:flex">
                     <span>Less</span>
                     {[0.1, 0.3, 0.5, 0.7, 1].map((o, i) => (
                         <div
                             key={i}
-                            className="w-2.5 h-2.5 rounded-sm"
+                            className="h-3 w-3 rounded-sm"
                             style={{ backgroundColor: `rgba(232,193,90,${o})` }}
                         />
                     ))}
@@ -36,10 +35,10 @@ export function ActivityCalendar({ weeks, totalSubmissions, todayStr }: Activity
             </div>
 
             {/* Calendar Grid */}
-            <div className="overflow-x-auto pb-4 pt-4 w-full scrollbar-hide">
-                <div className="flex gap-1 min-w-fit px-1">
+            <div className="w-full overflow-x-auto py-3 scrollbar-hide" role="region" aria-label="Submission activity for the last three months" tabIndex={0}>
+                <div className="flex min-w-fit gap-1 px-1">
                     {/* Day labels */}
-                    <div className="flex flex-col gap-1 mr-2 text-[10px] text-white/30 sticky left-0 bg-[#0d0d0d] z-20 pr-2">
+                    <div className="sticky left-0 z-20 mr-2 flex flex-col gap-1 bg-[var(--color-surface)] pr-2 text-xs text-[var(--color-text-muted)]">
                         <div className="h-2.5"></div>
                         <div className="h-2.5 flex items-center">Mon</div>
                         <div className="h-2.5"></div>
@@ -75,8 +74,9 @@ export function ActivityCalendar({ weeks, totalSubmissions, todayStr }: Activity
                                         onMouseLeave={() => setHoveredDate(null)}
                                     >
                                         <div
-                                            className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:scale-125 
-                                                ${isToday ? 'ring-1 ring-[#E8C15A]' : ''} 
+                                            aria-label={`${submissionLabel} on ${displayDate}${isToday ? ', today' : ''}`}
+                                            title={`${submissionLabel} on ${displayDate}${isToday ? ' (today)' : ''}`}
+                                            className={`h-3 w-3 rounded-sm transition-colors ${isToday ? 'ring-1 ring-[var(--color-accent)]' : ''}
                                                 ${isSheetDrop ? 'bg-red-500' : ''}
                                             `}
                                             style={!isSheetDrop ? { backgroundColor: `rgba(232,193,90,${opacity})` } : undefined}
@@ -91,15 +91,15 @@ export function ActivityCalendar({ weeks, totalSubmissions, todayStr }: Activity
                                                     transition={{ duration: 0.15, ease: "easeOut" }}
                                                     className={`absolute ${isTopRow ? 'top-full mt-2' : 'bottom-full mb-2'} left-1/2 -translate-x-1/2 z-[100] pointer-events-none`}
                                                 >
-                                                    <div className={`px-3 py-2 rounded-lg border shadow-2xl whitespace-nowrap flex flex-col items-center ${isSheetDrop ? 'bg-red-950/90 border-red-500/30' : 'bg-[#171718] border-white/10 shadow-black/50'}`}>
-                                                        <span className={`text-xs font-semibold ${isSheetDrop ? 'text-red-400' : 'text-[#E8C15A]'}`}>
+                                                    <div className={`flex flex-col items-center whitespace-nowrap rounded-lg border px-3 py-2 ${isSheetDrop ? 'border-red-500/30 bg-red-950/90' : 'border-white/10 bg-[var(--color-raised)]'}`}>
+                                                        <span className={`text-xs font-medium ${isSheetDrop ? 'text-red-300' : 'text-[var(--color-text)]'}`}>
                                                             {isSheetDrop ? specialLabel : submissionLabel}
                                                         </span>
                                                         {!isSheetDrop || count > 0 ? (
-                                                            <span className="text-[10px] text-white/50">{displayDate}</span>
+                                                            <span className="text-xs text-[var(--color-text-secondary)]">{displayDate}</span>
                                                         ) : null}
                                                         {isSheetDrop && count > 0 && (
-                                                            <span className="text-[10px] text-white/50">{count} submissions</span>
+                                                            <span className="text-xs text-[var(--color-text-secondary)]">{count} submissions</span>
                                                         )}
 
                                                         {/* Arrow */}

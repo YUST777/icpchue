@@ -16,20 +16,20 @@ export function HeroSection({
 }: HeroSectionProps) {
     return (
         <div className="flex-1">
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-3">
+            <p className="ui-eyebrow mb-3">
                 Welcome back
             </p>
-            <h1 className="text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-white leading-tight mb-2 break-words max-w-full">
+            <h1 className="mb-2 max-w-full break-words text-3xl font-medium leading-tight text-[var(--color-text)] md:text-4xl">
                 Hey {firstName},<br />
-                <span className="text-[#E8C15A]">let&apos;s code.</span>
+                <span className="text-[var(--color-accent)]">let&apos;s code.</span>
             </h1>
-            <p className="text-white/50 mb-6">{tagline}</p>
+            <p className="mb-6 max-w-xl text-sm leading-6 text-[var(--color-text-secondary)]">{tagline}</p>
             <Link
                 href={sheetHref}
-                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#E8C15A] hover:bg-[#D4AF37] text-black font-bold rounded-xl transition-all hover:shadow-[0_0_20px_rgba(232,193,90,0.3)] hover:gap-3"
+                className="ui-button-primary w-full sm:w-auto"
             >
                 Continue Solving
-                <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight size={18} aria-hidden="true" />
             </Link>
         </div>
     );

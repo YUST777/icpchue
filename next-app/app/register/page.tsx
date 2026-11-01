@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Loader2, Hexagon, ArrowRight, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowRight, Mail } from 'lucide-react';
 import { z } from 'zod';
 
 import { facultyOptions, levelOptions } from '@/app/register/constants';
@@ -335,13 +335,13 @@ export default function Register() {
 
     const strength = getStrength(password);
 
-    const inputBase = 'w-full px-3 sm:px-3.5 py-2 sm:py-2.5 bg-black/40 border rounded-xl text-white text-xs sm:text-sm placeholder-white/20 focus:outline-none focus:ring-1 transition-all';
-    const inputNormal = 'border-white/5 focus:ring-[#E8C15A]/50 focus:border-[#E8C15A]/20';
+    const inputBase = 'w-full rounded-[10px] border bg-[#0b0b0c] px-3 py-2.5 text-xs text-white placeholder-white/25 transition-colors focus:outline-none focus:ring-1 sm:px-3.5 sm:text-sm';
+    const inputNormal = 'border-white/10 focus:border-[#E8C15A]/50 focus:ring-[#E8C15A]/30';
     const inputError = 'border-red-500/50 focus:ring-red-500/50';
 
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center bg-[#0b0b0c]">
                 <div className="relative w-16 h-16">
                     <Image src="/icons/icpchue.svg" alt="Loading" fill className="animate-pulse" priority />
                 </div>
@@ -357,18 +357,16 @@ export default function Register() {
     ];
 
     return (
-        <div dir="ltr" className="h-[100dvh] w-full bg-[#0A0A0A] flex flex-row-reverse overflow-hidden">
+        <div dir="ltr" className="flex h-[100dvh] w-full flex-row-reverse overflow-hidden bg-[#0b0b0c]">
             {/* Right Side - Form */}
-            <div className="w-full lg:w-[45%] h-[100dvh] flex flex-col justify-center px-5 sm:px-10 lg:px-12 xl:px-16 py-3 sm:py-4 bg-[#0C0C0C] relative overflow-y-auto lg:overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#E8C15A]/5 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="relative flex h-[100dvh] w-full flex-col justify-center overflow-y-auto bg-[#111214] px-5 py-3 sm:px-10 sm:py-4 lg:w-[45%] lg:overflow-hidden lg:px-12 xl:px-16">
 
                 <div className="w-full max-w-[440px] mx-auto z-10 flex flex-col justify-center my-auto">
                     <div className="flex items-center justify-between mb-2.5 sm:mb-3.5">
                         <Link href="/" aria-label="ICPC HUE home" className="inline-flex shrink-0 items-center hover:opacity-80 transition-opacity">
                             <Image src="/icons/icpchue.svg" alt="ICPC HUE" width={26} height={26} className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 object-contain" priority />
                         </Link>
-                        <Link href="/" className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.14em] text-white/35 hover:text-[#E8C15A] transition-colors">
+                        <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-white/45 transition-colors hover:text-[#E8C15A]">
                             <span aria-hidden="true">&larr;</span> Back to home
                         </Link>
                     </div>
@@ -381,10 +379,10 @@ export default function Register() {
                     </div>
 
                     <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
-                        <h1 className="whitespace-nowrap text-[16px] sm:text-[19px] font-bold leading-tight text-white tracking-tight">
+                        <h1 className="whitespace-nowrap text-[16px] font-medium leading-tight tracking-tight text-white sm:text-[19px]">
                             {stepTitles[step - 1]}
                         </h1>
-                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-white/25">Step 0{step}/03</span>
+                        <span className="shrink-0 text-[10px] font-medium text-white/35">Step 0{step} of 3</span>
                     </div>
                     {stepSubtitles[step - 1] && (
                         <p className="text-white/40 text-[11px] sm:text-xs mb-2.5 sm:mb-3 line-clamp-1">
@@ -394,7 +392,7 @@ export default function Register() {
 
                     <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
                         {submitError && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 text-red-400 text-xs animate-shake">
+                            <div className="animate-shake rounded-[10px] border border-red-400/25 bg-red-400/10 p-2.5 text-xs text-red-300">
                                 {submitError}
                             </div>
                         )}
@@ -619,7 +617,7 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={loading || (step === 2 && otp.length !== 6)}
-                            className="w-full py-2.5 sm:py-3 mt-2 sm:mt-3 bg-[#E8C15A] hover:bg-[#D59928] text-black text-xs sm:text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group shadow-lg shadow-[#E8C15A]/10 active:scale-[0.98]"
+                            className="group mt-2 flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#E8C15A] py-2.5 text-xs font-semibold text-black transition-colors hover:bg-[#F0CE76] disabled:cursor-not-allowed disabled:opacity-50 sm:mt-3 sm:py-3 sm:text-sm"
                         >
                             {loading ? <Loader2 className="animate-spin" size={18} /> : (
                                 step === 1 ? 'Send Verification Code' : step === 2 ? 'Verify Email' : 'Submit Application'
@@ -640,22 +638,21 @@ export default function Register() {
             </div>
 
             {/* Left Side - Branding */}
-            <div className="hidden lg:flex w-[55%] h-[100dvh] items-center justify-center bg-[#080808] border-r border-white/5 px-12 xl:px-20 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(232,193,90,0.05),transparent_50%)]" />
+            <div className="relative hidden h-[100dvh] w-[55%] items-center justify-center overflow-hidden border-r border-white/10 bg-[#0b0b0c] px-12 lg:flex xl:px-20">
 
                 <div className="max-w-xl relative">
-                    <Hexagon size={64} className="text-[#E8C15A]/10 absolute -top-12 -left-12 rotate-12" />
-                    <blockquote className="text-3xl xl:text-4xl text-white/90 font-medium leading-tight mb-8 tracking-tight">
+                    <div className="mb-6 h-px w-16 bg-[#E8C15A]" />
+                    <blockquote className="mb-8 text-3xl font-medium leading-tight tracking-tight text-white/90 xl:text-4xl">
                         &quot;Master algorithms, solve real challenges, and build your future in tech with <span className="text-[#E8C15A] italic font-bold">ICPC HUE</span>.&quot;
                     </blockquote>
                     <div className="space-y-0.5 ml-1">
-                        <h4 className="text-white/80 font-bold text-base tracking-tight">One Application, One Community</h4>
-                        <p className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">Horus University</p>
+                        <h4 className="text-base font-medium tracking-tight text-white/80">One application, one community</h4>
+                        <p className="text-xs text-white/35">Horus University</p>
                     </div>
                 </div>
 
                 <div className="absolute bottom-8 left-12 right-12 xl:left-20 xl:right-20 flex items-center justify-between">
-                    <p className="text-white/5 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 HORUS UNIVERSITY</p>
+                    <p className="text-xs text-white/25">© 2026 Horus University</p>
                 </div>
             </div>
 
