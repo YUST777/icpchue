@@ -4,7 +4,9 @@ import {
     XCircle,
     Loader2,
     ExternalLink,
-    AlertTriangle
+    AlertTriangle,
+    LogIn,
+    RefreshCw
 } from 'lucide-react';
 import { CFSubmissionStatus } from '../types';
 import { getVerdictIcon, getCFStatusColor, getCFStatusBg } from './verdictUtils';
@@ -151,6 +153,23 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
         const knownHandle = sessionHandle.trim();
         const needsLogin = (sessionState === 'signed-out' && !hasError) || (cfStatus?.needsLogin && sessionState !== 'ready');
         const checkingSession = sessionState === 'checking';
+        const busy = verifying || checkingSession;
+        const visibleError = hasError && !cfStatus?.needsLogin && !needsLogin ? cfStatus?.error : undefined;
+        const needsCfLink = hasError && cfStatus?.needsCfLink;
+        const title = needsLogin ? 'Log in to Codeforces'
+            : verifying ? 'Syncing submissions'
+                : checkingSession ? 'Connecting to Codeforces'
+                    : sessionState === 'unavailable' ? 'Check your Codeforces connection'
+                        : visibleError ? 'Sync needs attention'
+                            : 'Codeforces sync';
+        const description = needsLogin
+            ? 'Sign in to sync attempts and accepted solutions. Your handle is detected automatically.'
+            : verifying ? 'Checking your attempts and saving the latest verdict.'
+                : checkingSession ? 'Detecting your signed-in account automatically.'
+                    : sessionState === 'unavailable' ? 'Open Codeforces in this browser, then try again.'
+                        : visibleError || 'After a final verdict on Codeforces, sync your attempts here. Accepted solutions mark the problem solved.';
+        const secondaryActionClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md px-1 text-xs text-white/50 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8C15A] disabled:cursor-wait disabled:opacity-50';
+        const primaryActionClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[#E8C15A] px-3 text-xs font-semibold text-black transition-colors hover:bg-[#F0D06A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8C15A] disabled:cursor-wait disabled:opacity-50';
 
         const runVerify = async () => {
             const verifyFn = (window as any).__verdict_verify_cf;
@@ -160,96 +179,55 @@ export default function CFStatusTab({ cfStatus, contestId, problemId, urlType, g
         };
 
         return (
-            <div className="h-full flex flex-col space-y-4 p-4 bg-[#252526]/30 rounded-xl border border-white/5 animate-fade-in text-left">
-                <div className="flex items-center gap-3 text-[#E8C15A]">
-                    <div className="p-2 rounded-full bg-[#E8C15A]/10 border border-[#E8C15A]/20">
-                        <span className="text-[10px] font-black tracking-tight">CF</span>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-sm text-white">Sync your Codeforces submissions</h3>
-                        <p className="text-[10px] text-[#888]">Record every attempt and mark the problem solved when an AC is found</p>
-                    </div>
+            <div className="flex w-full min-w-0 max-w-2xl shrink-0 items-start gap-3 py-1 text-left">
+                <div className="mt-0.5 shrink-0 text-white/40" aria-hidden="true">
+                    {busy ? <Loader2 size={18} className="animate-spin" />
+                        : needsLogin ? <LogIn size={18} />
+                            : visibleError || sessionState === 'unavailable' ? <AlertTriangle size={18} className="text-[#E8C15A]" />
+                                : <CheckCircle2 size={18} />}
                 </div>
-
-                {needsLogin ? (
-                    <div role="alert" className="space-y-3 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-sm leading-relaxed text-amber-100">
-                        <div className="flex items-start gap-2">
-                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
-                            <div className="min-w-0 space-y-1">
-                                <p className="font-semibold text-white">Log in to Codeforces to sync</p>
-                                <p className="text-xs text-amber-100/80">No signed-in Codeforces account was detected in this browser. Log in, or create an account first. Your handle will be detected automatically.</p>
-                            </div>
+                <div className="min-w-0 flex-1">
+                    <div role={needsLogin || visibleError ? 'alert' : 'status'} className="space-y-1">
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                            <h3 className="!text-sm !leading-5 font-semibold text-white">{title}</h3>
+                            {knownHandle && !needsLogin && !busy && (
+                                <span className="min-w-0 break-all text-xs text-white/45" title="Detected from your Codeforces session. Switch accounts on Codeforces to change it.">
+                                    as <span className="font-mono text-white/65">{knownHandle}</span>
+                                </span>
+                            )}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <a href="https://codeforces.com/enter" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#E8C15A] px-3 py-2 text-xs font-semibold text-black hover:bg-[#F0D06A]">
-                                Log in to Codeforces <ExternalLink size={12} className="shrink-0" />
-                            </a>
-                            <a href="https://codeforces.com/register" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/5">
-                                Create Codeforces account <ExternalLink size={12} className="shrink-0" />
-                            </a>
-                        </div>
+                        <p className={`max-w-lg !text-xs !leading-relaxed ${visibleError ? 'text-[#E8C15A]/90' : 'text-white/50'}`}>{description}</p>
                     </div>
-                ) : (
-                <div className="text-[11px] text-[#b8b8b8] bg-white/5 p-3 rounded-lg leading-relaxed space-y-2">
-                    <p><strong>1. Submit on Codeforces:</strong> Send your solution and wait for a final verdict.</p>
-                    <p><strong>2. Sync here:</strong> Click below — the extension imports your full attempt history, shows the latest verdict, and marks the problem solved only when an AC is found.</p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {needsLogin ? (
+                            <>
+                                <a href="https://codeforces.com/enter" target="_blank" rel="noopener noreferrer" aria-label="Log in to Codeforces" className={primaryActionClass}>
+                                    Log in <ExternalLink size={12} className="shrink-0" />
+                                </a>
+                                <a href="https://codeforces.com/register" target="_blank" rel="noopener noreferrer" aria-label="Create Codeforces account" className={secondaryActionClass}>
+                                    Create account
+                                </a>
+                                <button type="button" onClick={runVerify} disabled={busy} aria-label="Recheck Codeforces login" className={secondaryActionClass}>
+                                    <RefreshCw size={12} className={busy ? 'shrink-0 animate-spin' : 'shrink-0'} /> Check again
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {needsCfLink && <a href="/api/auth/codeforces/login" className={primaryActionClass}>Link Codeforces account</a>}
+                                <button type="button" onClick={runVerify} disabled={busy} className={needsCfLink ? secondaryActionClass : primaryActionClass}>
+                                    {busy ? <Loader2 size={13} className="shrink-0 animate-spin" /> : <RefreshCw size={13} className="shrink-0" />}
+                                    {verifying ? 'Syncing…' : checkingSession ? 'Checking login…' : visibleError || sessionState === 'unavailable' ? 'Try again' : 'Sync submissions'}
+                                </button>
+                                {contestId && problemId && (
+                                    <a href={getSubmitUrl(contestId, problemId, urlType || 'contest', groupId)} target="_blank" rel="noopener noreferrer" className={secondaryActionClass}>
+                                        Open submit page <ExternalLink size={12} className="shrink-0" />
+                                    </a>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
-                )}
-
-                {hasError && cfStatus?.error && !cfStatus.needsLogin && !needsLogin && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start gap-2 leading-relaxed">
-                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                        <span>{cfStatus.error}</span>
-                    </div>
-                )}
-
-                {hasError && cfStatus?.needsCfLink && (
-                    <a
-                        href="/api/auth/codeforces/login"
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-white/10 border border-white/15 text-xs font-bold text-white hover:bg-white/15 transition-colors"
-                    >
-                        Link Codeforces account
-                    </a>
-                )}
-
-                <button
-                    onClick={runVerify}
-                    disabled={verifying || checkingSession}
-                    className="min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#E8C15A] hover:bg-[#F0D06A] disabled:bg-[#E8C15A]/20 disabled:text-[#666] text-black font-semibold rounded-lg transition-colors text-sm cursor-pointer"
-                >
-                    {verifying || checkingSession ? (
-                        <>
-                            <Loader2 size={14} className="animate-spin" /> {verifying ? 'Checking your submissions...' : 'Checking Codeforces login...'}
-                        </>
-                    ) : (
-                        <>
-                            <CheckCircle2 size={14} /> {needsLogin ? "I’m logged in — check again" : 'Check & Sync attempts'}
-                        </>
-                    )}
-                </button>
-
-                <div role="status" className="text-center text-xs text-[#888]">
-                    {checkingSession ? 'Checking your Codeforces login…' : knownHandle && !needsLogin ? (
-                        <span>
-                            Detected account: <span className="break-all text-[#E8C15A] font-mono">{knownHandle}</span>. To use another account, switch accounts on Codeforces.
-                        </span>
-                    ) : (
-                        <span>{needsLogin ? 'Return here after logging in, then check again. No handle needs to be entered.' : 'Could not check your Codeforces login. Open Codeforces, then try syncing again.'}</span>
-                    )}
-                </div>
-
-                {contestId && problemId && (
-                    <div className="pt-2 flex items-center justify-between border-t border-white/5">
-                        <a
-                            href={getSubmitUrl(contestId, problemId, urlType || 'contest', groupId)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-[#E8C15A] hover:underline transition-colors flex items-center gap-1"
-                        >
-                            Open Codeforces Submit Page Again <ExternalLink size={10} />
-                        </a>
-                    </div>
-                )}
             </div>
         );
     }
