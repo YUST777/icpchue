@@ -107,7 +107,7 @@ export const camps: Camp[] = [
                 desc: 'What an array is, memory layout, initialization and built-in functions, frequency arrays for fast counting in O(N + M), 2D grids (matrices), and common beginner traps.',
                 description: 'Master 1D and 2D arrays in C++. We cover memory layout, direct indexing, built-in functions (sort, reverse, accumulate), the frequency array technique for fast counting, 2D matrix traversal, and critical traps to avoid.',
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session04.webp',
-                videoId: 'VjrR4NgervE',
+                videoId: 'RhO1RuZH9oc',
                 content: <Level0Session4Content />
             },
         ],
