@@ -8,6 +8,7 @@ import { getDisplayName } from '@/lib/utils';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { HeroSection } from '@/components/dashboard/HeroSection';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
+import { AssignmentsWidget } from '@/components/dashboard/AssignmentsWidget';
 import { ActivityCalendar } from '@/components/dashboard/ActivityCalendar';
 import DashboardOnboardingTour from '@/components/onboarding/DashboardOnboardingTour';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -101,6 +102,8 @@ export default function DashboardHome() {
                     />
                 )}
             </div>
+
+            <AssignmentsWidget />
 
             {/* Activity Calendar */}
             <ActivityCalendar
