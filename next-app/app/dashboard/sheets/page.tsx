@@ -91,10 +91,9 @@ export default function SheetsPage() {
                 <PageHeader
                     title="Training curriculum"
                     subtitle="249+ problems across three levels. Write code, submit solutions and get instant feedback."
-                    action={<div className="flex items-center gap-5 self-start text-sm md:self-auto">
-                                <Link href="/dashboard/assignments" className="font-medium text-[#E8C15A] hover:underline">My assignments</Link>
-                                <button onClick={() => setShowCredits(true)} className="text-white/60 transition-colors hover:text-white">Credits</button>
-                            </div>}
+                    action={<button onClick={() => setShowCredits(true)} className="self-start text-sm text-white/60 transition-colors hover:text-white md:self-auto">
+                                Credits
+                            </button>}
                 />
 
                 {/* Curriculum Levels */}
