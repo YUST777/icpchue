@@ -9,6 +9,7 @@ import { FullRevisionContent, ExamTrainingContent } from './content/sessions/Pro
 import Level0Session1Content from './content/sessions/season2027/Level0Session1Content';
 import Level0Session2Content from './content/sessions/season2027/Level0Session2Content';
 import Level0Contest1Content from './content/sessions/season2027/Level0Contest1Content';
+import Level0Session4Content from './content/sessions/season2027/Level0Session4Content';
 
 // --- Data Definitions ---
 
@@ -94,6 +95,20 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session03.webp',
                 videoId: 'zuNtjjPQaik',
                 content: <Level0Contest1Content />
+            },
+            {
+                id: 104,
+                campSlug: 'level0-2027',
+                number: '4',
+                displayNumber: '04',
+                slug: 'arrays',
+                tag: 'Data Structures',
+                title: 'Arrays & Frequency Arrays in C++',
+                desc: 'What an array is, memory layout, initialization and built-in functions, frequency arrays for fast counting in O(N + M), 2D grids (matrices), and common beginner traps.',
+                description: 'Master 1D and 2D arrays in C++. We cover memory layout, direct indexing, built-in functions (sort, reverse, accumulate), the frequency array technique for fast counting, 2D matrix traversal, and critical traps to avoid.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session04.webp',
+                videoId: 'VjrR4NgervE',
+                content: <Level0Session4Content />
             },
         ],
     },
