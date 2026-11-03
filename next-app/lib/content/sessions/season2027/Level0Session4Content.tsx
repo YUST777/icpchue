@@ -19,26 +19,6 @@ const REQUIRED_ASSIGNMENT = [
     ['V', 'Frequency Array'],
 ] as const;
 
-/** Optional extra practice: Remaining problems of Sheet C (Arrays). */
-const BONUS_PRACTICE = [
-    ['I', 'Smallest Pair'],
-    ['J', 'Lucky Array'],
-    ['K', 'Sum Digits'],
-    ['L', 'Max Subarray'],
-    ['M', 'Replace MinMax'],
-    ['N', 'Check Code'],
-    ['O', 'Fibonacci'],
-    ['P', 'Minimize Number'],
-    ['Q', 'Count Subarrays'],
-    ['R', 'Permutation with arrays'],
-    ['S', 'Search In Matrix'],
-    ['U', 'Is B a subsequence of A'],
-    ['W', 'Mirror Array'],
-    ['X', '8 Neighbors'],
-    ['Y', 'Range sum query'],
-    ['Z', 'Binary Search'],
-] as const;
-
 /** Problems solved live in the session with direct Codeforces links. */
 const LIVE_PROBLEMS = [
     {
@@ -194,28 +174,6 @@ export default function Level0Session4Content() {
                             >
                                 <span className="w-6 shrink-0 font-mono text-sm font-bold text-[#E8C15A]">{letter}</span>
                                 <span className="flex-1 text-sm font-medium text-white/85 group-hover:text-white">{title}</span>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-3 pt-6 border-t border-white/10">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <span>Bonus & Extra Practice</span>
-                        <span className="text-xs font-normal text-white/50">Remaining problems (16 problems)</span>
-                    </h3>
-                    <p className="text-xs text-white/60">
-                        Finished the required problems? Push further with the rest of Sheet C:
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                        {BONUS_PRACTICE.map(([letter, title]) => (
-                            <Link
-                                key={letter}
-                                href={`/dashboard/sheets/level-0/sheet-c/${letter}`}
-                                className="group flex items-center gap-3 bg-[#121214] px-4 py-3 rounded-xl border border-white/5 hover:border-white/20 transition-colors opacity-80 hover:opacity-100"
-                            >
-                                <span className="w-6 shrink-0 font-mono text-sm text-white/40">{letter}</span>
-                                <span className="flex-1 text-sm font-medium text-white/70 group-hover:text-white">{title}</span>
                             </Link>
                         ))}
                     </div>
