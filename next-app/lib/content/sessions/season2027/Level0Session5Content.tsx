@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Presentation, ExternalLink, AlertTriangle, Code2, Type, Wrench, Calendar, Clock } from 'lucide-react';
+import { Presentation, ExternalLink, Code2, Clock } from 'lucide-react';
 
 import SlideViewer from '@/components/sessions/SlideViewer';
 
@@ -69,92 +69,6 @@ export default function Level0Session5Content() {
                     count={SLIDE_COUNT}
                     title="Session 05: Strings & Functions"
                 />
-            </section>
-
-            {/* Core Concepts Breakdown */}
-            <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
-                {/* Strings Card */}
-                <div className="p-5 rounded-2xl bg-[#121214] border border-white/10 space-y-4">
-                    <div className="flex items-center gap-2 text-[#E8C15A]">
-                        <Type className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold text-white">Strings in C++</h3>
-                    </div>
-                    <ul className="space-y-2.5 text-xs text-white/80 leading-relaxed">
-                        <li>
-                            <strong className="text-white">Array of Characters:</strong> A string is indexed like an array (<code className="text-[#E8C15A]">s[0]</code> to <code className="text-[#E8C15A]">s[s.size() - 1]</code>). Each element is a <code className="text-[#E8C15A]">char</code> in single quotes.
-                        </li>
-                        <li>
-                            <strong className="text-white">Reading with getline:</strong> <code className="text-[#E8C15A]">cin &gt;&gt;</code> stops at spaces. Use <code className="text-[#E8C15A]">getline(cin, line)</code> to read full lines with spaces. Always call <code className="text-[#E8C15A]">cin.ignore()</code> after <code className="text-[#E8C15A]">cin &gt;&gt;</code> to consume the trailing newline!
-                        </li>
-                        <li>
-                            <strong className="text-white">Built-in Methods:</strong> <code className="text-[#E8C15A]">s.size()</code>, <code className="text-[#E8C15A]">s.substr(pos, len)</code>, <code className="text-[#E8C15A]">s.find(str)</code>, <code className="text-[#E8C15A]">s.insert(pos, str)</code>, <code className="text-[#E8C15A]">s.erase(pos, len)</code>, <code className="text-[#E8C15A]">s.push_back(ch)</code>, <code className="text-[#E8C15A]">s.pop_back()</code>.
-                        </li>
-                        <li>
-                            <strong className="text-white">Algorithms:</strong> <code className="text-[#E8C15A]">sort(s.begin(), s.end())</code> sorts characters; <code className="text-[#E8C15A]">reverse(s.begin(), s.end())</code> flips the string.
-                        </li>
-                        <li>
-                            <strong className="text-white">Concatenation:</strong> Join strings with <code className="text-[#E8C15A]">+</code> and <code className="text-[#E8C15A]">+=</code>. At least one operand must be a string variable (not two string literals directly).
-                        </li>
-                    </ul>
-                </div>
-
-                {/* Functions Card */}
-                <div className="p-5 rounded-2xl bg-[#121214] border border-white/10 space-y-4">
-                    <div className="flex items-center gap-2 text-[#E8C15A]">
-                        <Wrench className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold text-white">Functions in C++</h3>
-                    </div>
-                    <ul className="space-y-2.5 text-xs text-white/80 leading-relaxed">
-                        <li>
-                            <strong className="text-white">Why Functions?</strong> Write logic once, call it from anywhere. Avoid copy-paste errors and make code clean and testable.
-                        </li>
-                        <li>
-                            <strong className="text-white">Syntax:</strong> <code className="text-[#E8C15A]">return_type name(parameters) &#123; return value; &#125;</code>. Use <code className="text-[#E8C15A]">void</code> when nothing is returned.
-                        </li>
-                        <li>
-                            <strong className="text-white">Pass by Value vs Reference:</strong> <code className="text-[#E8C15A]">void add(int x)</code> gets a copy. <code className="text-[#E8C15A]">void add(int &amp;x)</code> gets a reference to the original variable so changes stick!
-                        </li>
-                        <li>
-                            <strong className="text-white">Passing Arrays:</strong> Arrays decay to pointers (<code className="text-[#E8C15A]">int a[], int n</code>) and are modified in place without needing <code className="text-[#E8C15A]">&amp;</code>. Always pass array size <code className="text-[#E8C15A]">n</code>!
-                        </li>
-                        <li>
-                            <strong className="text-white">Multiple Return Values:</strong> Return a <code className="text-[#E8C15A]">vector&lt;int&gt;&#123;mn, mx&#125;</code> or <code className="text-[#E8C15A]">pair</code> to return multiple results easily.
-                        </li>
-                        <li>
-                            <strong className="text-white">Overloading:</strong> You can define functions with the same name as long as their parameter types or counts differ.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            {/* Critical Traps Callout */}
-            <section className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
-                <div className="flex items-center gap-2 text-amber-400 font-medium text-sm">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>Watch Out for These Classic Traps:</span>
-                </div>
-                <div className="grid sm:grid-cols-3 gap-4 text-xs text-white/75">
-                    <div className="space-y-1">
-                        <span className="font-semibold text-white">1. The cin &gt;&gt; Newline Trap:</span>
-                        <p>
-                            <code className="text-[#E8C15A]">cin &gt;&gt; n</code> leaves the <code className="text-[#E8C15A]">\n</code> in the input stream.
-                            If followed by <code className="text-[#E8C15A]">getline()</code> without <code className="text-[#E8C15A]">cin.ignore()</code>, it reads an empty line!
-                        </p>
-                    </div>
-                    <div className="space-y-1">
-                        <span className="font-semibold text-white">2. Forgetting &amp; in Functions:</span>
-                        <p>
-                            If your function modifies a variable (like <code className="text-[#E8C15A]">swap(a, b)</code>) and you forget <code className="text-[#E8C15A]">&amp;</code>, it changes a local copy and the caller sees no change.
-                        </p>
-                    </div>
-                    <div className="space-y-1">
-                        <span className="font-semibold text-white">3. Checking find() Result:</span>
-                        <p>
-                            If a substring is not found, <code className="text-[#E8C15A]">s.find()</code> returns <code className="text-[#E8C15A]">string::npos</code> (not -1).
-                            Always compare: <code className="text-[#E8C15A]">if (pos != string::npos)</code>.
-                        </p>
-                    </div>
-                </div>
             </section>
 
             {/* Assignment Section (التاسك) */}
