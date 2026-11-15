@@ -1,28 +1,26 @@
 import Link from 'next/link';
-import { Presentation, ExternalLink, AlertTriangle, Code2, Type, Wrench } from 'lucide-react';
+import { Presentation, ExternalLink, AlertTriangle, Code2, Type, Wrench, Calendar, Clock } from 'lucide-react';
 
 import SlideViewer from '@/components/sessions/SlideViewer';
 
 const SLIDE_COUNT = 24;
 
-/** Key problems from Sheet D (Strings) for practice. */
-const STRINGS_PRACTICE = [
+/** Assignment: Sheet D (Strings) - From A to J (10 problems). */
+const SHEET_D_ASSIGNMENT = [
     ['A', 'Create A New String'],
     ['B', "Let's use Getline"],
     ['C', 'Compare'],
     ['D', 'Strings'],
     ['E', 'Count'],
     ['F', 'Way Too Long Words'],
+    ['G', 'Conversion'],
+    ['H', 'Good or Bad'],
     ['I', 'Palindrome'],
     ['J', 'Count Letters'],
-    ['L', 'String Functions'],
-    ['P', 'Count Words'],
-    ['Q', 'Reverse Words'],
-    ['V', 'Replace Word'],
 ] as const;
 
-/** Key problems from Sheet E (Functions) for practice. */
-const FUNCTIONS_PRACTICE = [
+/** Assignment: Sheet E (Functions) - From A to J (10 problems). */
+const SHEET_E_ASSIGNMENT = [
     ['A', 'Add'],
     ['B', 'Print'],
     ['C', 'Wonderful Number'],
@@ -31,8 +29,8 @@ const FUNCTIONS_PRACTICE = [
     ['F', 'Equation'],
     ['G', 'Max and MIN'],
     ['H', 'N Times'],
+    ['I', 'Swapping With Matrix'],
     ['J', 'Average'],
-    ['L', 'New Array'],
 ] as const;
 
 /** Extra study materials for trainees. */
@@ -159,19 +157,37 @@ export default function Level0Session5Content() {
                 </div>
             </section>
 
-            {/* Practice Sheets Section */}
+            {/* Assignment Section (التاسك) */}
             <section className="space-y-6 pt-8 border-t border-white/10">
-                <div className="space-y-1">
-                    <h2 className="text-2xl font-medium text-white flex items-center gap-2">
-                        <Code2 className="w-6 h-6 text-[#E8C15A]" />
-                        <span>Practice & Assignments</span>
-                    </h2>
-                    <p className="text-sm text-white/70">
-                        Practice solving string manipulation and functional programming problems on Codeforces:
-                    </p>
+                {/* Header & Deadline Banner */}
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-[#161618] via-[#1a1813] to-[#161618] border border-[#E8C15A]/30 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <Code2 className="w-6 h-6 text-[#E8C15A]" />
+                                <h2 className="text-2xl font-bold text-white tracking-wide">التاسك &bull; Assignment</h2>
+                            </div>
+                            <p className="text-xs text-white/60">
+                                حل المسائل المطلوبة من Sheet D و Sheet E على Codeforces قبل انتهاء الموعد النهائي.
+                            </p>
+                        </div>
+
+                        {/* Deadline Pill */}
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#E8C15A]/10 border border-[#E8C15A]/30 text-right self-start sm:self-auto shrink-0">
+                            <Clock className="w-5 h-5 text-[#E8C15A] shrink-0" />
+                            <div>
+                                <div className="text-[11px] font-mono uppercase text-[#E8C15A] font-bold">
+                                    Deadline: 21 Nov at 16:00:00
+                                </div>
+                                <div className="text-xs text-white/80" dir="rtl">
+                                    الموعد النهائي: 21 نوفمبر الساعة 4:00 عصراً
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Sheet D: Strings */}
+                {/* Sheet D: Strings (From A to J) */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -179,6 +195,9 @@ export default function Level0Session5Content() {
                             <Link href="/dashboard/sheets/level-0/sheet-d" className="text-[#E8C15A] hover:underline">
                                 Strings
                             </Link>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30">
+                                From A to J (10 problems)
+                            </span>
                         </h3>
                         <Link
                             href="/dashboard/sheets/level-0/sheet-d"
@@ -189,7 +208,7 @@ export default function Level0Session5Content() {
                         </Link>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-2">
-                        {STRINGS_PRACTICE.map(([letter, title]) => (
+                        {SHEET_D_ASSIGNMENT.map(([letter, title]) => (
                             <Link
                                 key={letter}
                                 href={`/dashboard/sheets/level-0/sheet-d/${letter}`}
@@ -202,7 +221,7 @@ export default function Level0Session5Content() {
                     </div>
                 </div>
 
-                {/* Sheet E: Functions */}
+                {/* Sheet E: Functions (From A to J) */}
                 <div className="space-y-3 pt-6 border-t border-white/10">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -210,6 +229,9 @@ export default function Level0Session5Content() {
                             <Link href="/dashboard/sheets/level-0/sheet-e" className="text-[#E8C15A] hover:underline">
                                 Functions
                             </Link>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8C15A]/15 text-[#E8C15A] border border-[#E8C15A]/30">
+                                From A to J (10 problems)
+                            </span>
                         </h3>
                         <Link
                             href="/dashboard/sheets/level-0/sheet-e"
@@ -220,7 +242,7 @@ export default function Level0Session5Content() {
                         </Link>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-2">
-                        {FUNCTIONS_PRACTICE.map(([letter, title]) => (
+                        {SHEET_E_ASSIGNMENT.map(([letter, title]) => (
                             <Link
                                 key={letter}
                                 href={`/dashboard/sheets/level-0/sheet-e/${letter}`}
