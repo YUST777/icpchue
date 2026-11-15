@@ -10,6 +10,7 @@ import Level0Session1Content from './content/sessions/season2027/Level0Session1C
 import Level0Session2Content from './content/sessions/season2027/Level0Session2Content';
 import Level0Contest1Content from './content/sessions/season2027/Level0Contest1Content';
 import Level0Session4Content from './content/sessions/season2027/Level0Session4Content';
+import Level0Session5Content from './content/sessions/season2027/Level0Session5Content';
 
 // --- Data Definitions ---
 
@@ -109,6 +110,20 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session04.webp',
                 videoId: 'RhO1RuZH9oc',
                 content: <Level0Session4Content />
+            },
+            {
+                id: 105,
+                campSlug: 'level0-2027',
+                number: '5',
+                displayNumber: '05',
+                slug: 'strings-and-functions',
+                tag: 'Strings & Functions',
+                title: 'Strings & Functions in C++',
+                desc: 'Text as character arrays, reading with getline and cin.ignore, built-in string methods and concatenation, writing reusable functions, pass by value vs reference, passing arrays, and overloading.',
+                description: 'Master strings and functions in C++. Learn how strings connect to arrays, handle line reading and stream ignores, use built-in algorithms (sort, reverse, find, substr), design modular user-defined functions, master pass-by-reference (&), and return multiple values using vectors.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session05.webp',
+                videoId: 'b-JcRuuuAPE',
+                content: <Level0Session5Content />
             },
         ],
     },
