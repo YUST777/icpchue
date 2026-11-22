@@ -11,6 +11,7 @@ import Level0Session2Content from './content/sessions/season2027/Level0Session2C
 import Level0Contest1Content from './content/sessions/season2027/Level0Contest1Content';
 import Level0Session4Content from './content/sessions/season2027/Level0Session4Content';
 import Level0Session5Content from './content/sessions/season2027/Level0Session5Content';
+import Level0Session6Content from './content/sessions/season2027/Level0Session6Content';
 
 // --- Data Definitions ---
 
@@ -124,6 +125,20 @@ export const camps: Camp[] = [
                 thumbnail: '/images/lessons/levels_camp/level0-2027/session05.webp',
                 videoId: 'b-JcRuuuAPE',
                 content: <Level0Session5Content />
+            },
+            {
+                id: 106,
+                campSlug: 'level0-2027',
+                number: '6',
+                displayNumber: '06',
+                slug: 'complexity-and-adhoc',
+                tag: 'Complexity & Ad-hoc',
+                title: 'Time Complexity & Ad-hoc Techniques',
+                desc: 'Functions output game, avoiding TLE with prefix sums for O(1) range queries, difference arrays for O(1) range updates, and solving Array Manipulation & Karen and Coffee.',
+                description: 'Master time complexity and essential ad-hoc techniques. Practice tracing functions, build prefix sum arrays for O(1) range sum queries, use difference arrays for O(1) range updates, and combine both to solve Karen & Coffee (CF 816B) and Array Manipulation.',
+                thumbnail: '/images/lessons/levels_camp/level0-2027/session06.webp',
+                videoId: 'npkFBEMhgOs',
+                content: <Level0Session6Content />
             },
         ],
     },
