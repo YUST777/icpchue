@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Presentation, ExternalLink, Code2 } from 'lucide-react';
+import { Presentation, Code2 } from 'lucide-react';
 
 import SlideViewer from '@/components/sessions/SlideViewer';
 
@@ -25,21 +25,6 @@ const SHEET_C_REMAINING = [
     ['Z', 'Binary Search'],
 ] as const;
 
-const PRACTICE_PROBLEMS = [
-    {
-        platform: 'HackerRank',
-        title: 'Array Manipulation',
-        url: 'https://www.hackerrank.com/challenges/crush',
-        note: 'Classic difference array range-update problem.',
-    },
-    {
-        platform: 'Codeforces 816B',
-        title: 'Karen and Coffee',
-        url: 'https://codeforces.com/problemset/problem/816/B',
-        note: 'Difference array + prefix sum combined (1200).',
-    },
-];
-
 export default function Level0Session6Content() {
     return (
         <div className="space-y-12 text-white/90">
@@ -62,34 +47,6 @@ export default function Level0Session6Content() {
                     count={SLIDE_COUNT}
                     title="Session 06: Time Complexity & Ad-hoc"
                 />
-            </section>
-
-            {/* Problems Discussed */}
-            <section className="space-y-4 pt-6 border-t border-white/10">
-                <div className="flex items-center gap-2">
-                    <Code2 className="w-5 h-5 text-[#E8C15A]" />
-                    <h2 className="text-xl font-medium text-white">Problems Covered</h2>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                    {PRACTICE_PROBLEMS.map((prob) => (
-                        <a
-                            key={prob.url}
-                            href={prob.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-[#E8C15A]/40 transition-colors flex items-start justify-between gap-3 group"
-                        >
-                            <div className="space-y-1">
-                                <div className="text-[11px] font-mono uppercase text-[#E8C15A]">{prob.platform}</div>
-                                <div className="text-sm font-medium text-white group-hover:text-[#E8C15A] transition-colors">
-                                    {prob.title}
-                                </div>
-                                <div className="text-xs text-white/60">{prob.note}</div>
-                            </div>
-                            <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-[#E8C15A] shrink-0 mt-1" />
-                        </a>
-                    ))}
-                </div>
             </section>
 
             {/* Assignment Section (التاسك) */}
