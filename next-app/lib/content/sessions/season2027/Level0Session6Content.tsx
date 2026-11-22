@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Presentation, ExternalLink, Clock, Layers, ArrowRightLeft, Code2 } from 'lucide-react';
+import { Presentation, ExternalLink, Code2 } from 'lucide-react';
 
 import SlideViewer from '@/components/sessions/SlideViewer';
 
@@ -62,66 +62,6 @@ export default function Level0Session6Content() {
                     count={SLIDE_COUNT}
                     title="Session 06: Time Complexity & Ad-hoc"
                 />
-            </section>
-
-            {/* Core Concepts Breakdown */}
-            <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
-                {/* Prefix Sum Card */}
-                <div className="p-5 rounded-2xl bg-[#121214] border border-white/10 space-y-4">
-                    <div className="flex items-center gap-2 text-[#E8C15A]">
-                        <Layers className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold text-white">Prefix Sum (Range Queries)</h3>
-                    </div>
-                    <ul className="space-y-2.5 text-xs text-white/80 leading-relaxed">
-                        <li>
-                            <strong className="text-white">The Problem:</strong> Answering <code className="text-[#E8C15A]">q</code> range sum queries with a loop each time takes <code className="text-[#E8C15A]">O(n &middot; q)</code> and causes Time Limit Exceeded (TLE).
-                        </li>
-                        <li>
-                            <strong className="text-white">Definition:</strong> Build <code className="text-[#E8C15A]">pre[i] = pre[i - 1] + a[i]</code> with <code className="text-[#E8C15A]">pre[0] = 0</code> in <code className="text-[#E8C15A]">O(n)</code>.
-                        </li>
-                        <li>
-                            <strong className="text-white">O(1) Query:</strong> Any range sum from <code className="text-[#E8C15A]">l</code> to <code className="text-[#E8C15A]">r</code> is simply <code className="text-[#E8C15A]">pre[r] - pre[l - 1]</code>.
-                        </li>
-                    </ul>
-                </div>
-
-                {/* Difference Array Card */}
-                <div className="p-5 rounded-2xl bg-[#121214] border border-white/10 space-y-4">
-                    <div className="flex items-center gap-2 text-[#E8C15A]">
-                        <ArrowRightLeft className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold text-white">Difference Array (Range Updates)</h3>
-                    </div>
-                    <ul className="space-y-2.5 text-xs text-white/80 leading-relaxed">
-                        <li>
-                            <strong className="text-white">The Problem:</strong> Adding <code className="text-[#E8C15A]">x</code> to every element in <code className="text-[#E8C15A]">[l, r]</code> with a loop takes <code className="text-[#E8C15A]">O(n)</code> per update.
-                        </li>
-                        <li>
-                            <strong className="text-white">O(1) Update:</strong> Mark only the two boundaries: <code className="text-[#E8C15A]">d[l] += x</code> and <code className="text-[#E8C15A]">d[r + 1] -= x</code>.
-                        </li>
-                        <li>
-                            <strong className="text-white">Reconstruction:</strong> Run one prefix sum pass (<code className="text-[#E8C15A]">d[i] += d[i - 1]</code>) at the end to apply all updates in <code className="text-[#E8C15A]">O(n)</code>.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            {/* Karen & Coffee Callout */}
-            <section className="p-5 rounded-2xl bg-[#121214] border border-[#E8C15A]/20 space-y-3">
-                <div className="flex items-center gap-2 text-[#E8C15A] font-medium text-sm">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>Combining Both: Karen &amp; Coffee (O(n + m + q))</span>
-                </div>
-                <ol className="list-decimal list-inside space-y-1.5 text-xs text-white/80 leading-relaxed">
-                    <li>
-                        Mark each recipe interval <code className="text-[#E8C15A]">[a, b]</code> in a difference array: <code className="text-[#E8C15A]">v[a]++</code>, <code className="text-[#E8C15A]">v[b + 1]--</code>.
-                    </li>
-                    <li>
-                        Take a prefix sum over <code className="text-[#E8C15A]">v</code> to know how many recipes cover each temperature, then build a second prefix sum <code className="text-[#E8C15A]">pre[i] = pre[i - 1] + (v[i] &gt;= k ? 1 : 0)</code>.
-                    </li>
-                    <li>
-                        Answer every query <code className="text-[#E8C15A]">[l, r]</code> in <code className="text-[#E8C15A]">O(1)</code> with <code className="text-[#E8C15A]">pre[r] - pre[l - 1]</code>.
-                    </li>
-                </ol>
             </section>
 
             {/* Problems Discussed */}
