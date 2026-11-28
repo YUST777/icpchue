@@ -54,6 +54,8 @@ export interface TestCaseResult {
     output?: string;
     compileError?: string;
     runtimeError?: string;
+    expectedOutput?: string;
+    actualOutput?: string;
 }
 
 export interface SubmissionResult {

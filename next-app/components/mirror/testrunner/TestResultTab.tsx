@@ -101,18 +101,37 @@ export default function TestResultTab({ result, isRunning, testCasesCount = 2 }:
 
             <div className="bg-[#252526] rounded-xl border border-white/5 overflow-hidden">
                 {result.results.map((r) => (
-                    <div key={r.testCase} className={`flex items-center justify-between px-3.5 py-3 text-xs border-b border-white/5 last:border-b-0 transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
-                        <div className="flex items-center gap-3">
-                            {r.passed ? <CheckCircle2 size={16} className="text-[#E8C15A]" /> : <XCircle size={16} className="text-red-500" />}
-                            <span className="font-medium text-[#d4d4d4]">Test Case {r.testCase}</span>
+                    <div key={r.testCase} className={`flex flex-col border-b border-white/5 last:border-b-0 transition-colors ${!r.passed ? 'bg-red-500/5' : ''}`}>
+                        <div className="flex items-center justify-between px-3.5 py-3 text-xs">
+                            <div className="flex items-center gap-3">
+                                {r.passed ? <CheckCircle2 size={16} className="text-[#E8C15A]" /> : <XCircle size={16} className="text-red-500" />}
+                                <span className="font-medium text-[#d4d4d4]">Test Case {r.testCase}</span>
+                            </div>
+                            <div className="flex items-center gap-2 sm:gap-4 font-mono text-[#888]">
+                                <span>{r.time || '0ms'}</span>
+                                <span>{r.memory || '0KB'}</span>
+                                <span className={`font-bold min-w-10 text-center rounded-md border px-1.5 py-0.5 ${r.passed ? 'text-emerald-300 border-emerald-400/20 bg-emerald-400/5' : 'text-red-300 border-red-400/20 bg-red-400/5'}`}>
+                                    {getVerdictShort(r.verdict)}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-4 font-mono text-[#888]">
-                            <span>{r.time || '0ms'}</span>
-                            <span>{r.memory || '0KB'}</span>
-                            <span className={`font-bold min-w-10 text-center rounded-md border px-1.5 py-0.5 ${r.passed ? 'text-emerald-300 border-emerald-400/20 bg-emerald-400/5' : 'text-red-300 border-red-400/20 bg-red-400/5'}`}>
-                                {getVerdictShort(r.verdict)}
-                            </span>
-                        </div>
+
+                        {!r.passed && (
+                            <div className="px-3.5 pb-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
+                                <div className="bg-[#1e1e1e] p-2 rounded border border-red-500/20">
+                                    <span className="text-red-400 font-semibold block mb-1">Your Output:</span>
+                                    <pre className="text-zinc-300 overflow-x-auto whitespace-pre-wrap">
+                                        {r.actualOutput ?? r.output ?? 'Empty / No Output'}
+                                    </pre>
+                                </div>
+                                <div className="bg-[#1e1e1e] p-2 rounded border border-emerald-500/20">
+                                    <span className="text-emerald-400 font-semibold block mb-1">Expected Output:</span>
+                                    <pre className="text-zinc-300 overflow-x-auto whitespace-pre-wrap">
+                                        {r.expectedOutput ?? 'N/A'}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
